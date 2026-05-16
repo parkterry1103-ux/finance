@@ -1,6 +1,7 @@
-import { syncCongressTrades } from '../../scripts/sync-congress-trades.ts';
-import { syncSec13F } from '../../scripts/sync-sec-13f.ts';
-import { syncSecForm4 } from '../../scripts/sync-sec-form4.ts';
+import { syncCongressTrades } from '../../scripts/sync-congress-trades.js';
+import { syncSec13F } from '../../scripts/sync-sec-13f.js';
+import { syncSecForm4 } from '../../scripts/sync-sec-form4.js';
+import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils.js';
 
 function isAuthorized(req) {
   const configured = process.env.CRON_SECRET;
@@ -25,9 +26,15 @@ export default async function handler(req, res) {
       results: { form4, form13f, congress },
     });
   } catch (error) {
+    await recordSyncRun({
+      source: 'endpoint-trades',
+      status: 'failed',
+      startedAt: nowIso(),
+      errorMessage: errorMessage(error),
+    }).catch(() => undefined);
     res.status(500).json({
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
   }
 }

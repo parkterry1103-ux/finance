@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noImplicitAny": false,
+    "noEmit": false,
+    "outDir": ".sync-build",
+    "rootDir": ".",
+    "sourceMap": false,
+    "strict": false,
+    "target": "ES2022"
+  },
+  "include": ["scripts/**/*.ts", "scripts/**/*.d.ts", "src/data.ts", "src/services/**/*.ts"]
+}

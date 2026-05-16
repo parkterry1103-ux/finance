@@ -1,6 +1,6 @@
-import { companies } from '../src/data.ts';
-import { fetchKoreanFinancialsFromOpenDart } from '../src/services/financials.ts';
-import { envValue, errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.ts';
+import { companies } from '../src/data.js';
+import { fetchKoreanFinancialsFromOpenDart } from '../src/services/financials.js';
+import { envValue, errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
 
 function metricValue(summary, key) {
   return summary.metrics.find((metric) => metric.key === key)?.value ?? null;

@@ -694,6 +694,11 @@ type ReportLink = {
   url: string;
   note: string;
   isDirect: boolean;
+  isNavigable: boolean;
+  status: 'direct' | 'search-only' | 'needs-link';
+  statusLabel: string;
+  statusDetail: string;
+  regulator: 'DART' | 'SEC';
 };
 
 function getPrimaryReportLink(company: Company): ReportLink {
@@ -703,7 +708,51 @@ function getPrimaryReportLink(company: Company): ReportLink {
     url: filing.primary.url,
     note: filing.primary.note,
     isDirect: filing.primary.isDirect,
+    isNavigable: filing.primary.isNavigable,
+    status: filing.status,
+    statusLabel: filing.statusLabel,
+    statusDetail: filing.statusDetail,
+    regulator: filing.regulator,
   };
+}
+
+function reportLinkClass(reportLink: ReportLink) {
+  if (reportLink.status === 'direct') return 'direct';
+  if (reportLink.status === 'search-only') return 'search-only';
+  return 'pending';
+}
+
+function ReportAction({
+  reportLink,
+  className = '',
+  iconSize = 15,
+  label,
+}: {
+  reportLink: ReportLink;
+  className?: string;
+  iconSize?: number;
+  label?: string;
+}) {
+  const classes = [className, reportLinkClass(reportLink), reportLink.isDirect ? 'direct-action' : 'pending-action']
+    .filter(Boolean)
+    .join(' ');
+  const displayLabel = label ?? reportLink.label;
+
+  if (reportLink.isNavigable) {
+    return (
+      <a href={reportLink.url} target="_blank" rel="noreferrer" className={classes}>
+        <ExternalLink size={iconSize} />
+        {displayLabel}
+      </a>
+    );
+  }
+
+  return (
+    <span className={classes} role="status" aria-label={reportLink.label}>
+      <FileSearch size={iconSize} />
+      {displayLabel}
+    </span>
+  );
 }
 
 function parsePercentValue(value: string) {
@@ -834,10 +883,18 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
       '이 화면은 회사별 원문 확인 순서를 고정해 둔 구조입니다. 원문 수치가 반영된 기업은 위 카드처럼 실제 금액과 해석으로 계속 확장됩니다.',
     ],
     isCurated: false,
-    statusLabel: primaryReportLink.isDirect ? `${regulator} 원문 연결됨 · 분석 준비 중` : `${regulator} 원문 연결 필요`,
-    statusDetail: primaryReportLink.isDirect
-      ? '직접 원문 버튼은 연결되어 있지만, 아직 실제 원문 숫자를 회사별 해설에 완전히 반영하지 않은 상태입니다.'
-      : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
+    statusLabel:
+      primaryReportLink.status === 'direct'
+        ? `${regulator} 원문 연결됨 · 분석 준비 중`
+        : primaryReportLink.status === 'search-only'
+          ? `${regulator} 검색 링크만 연결됨`
+          : `${regulator} 원문 연결 필요`,
+    statusDetail:
+      primaryReportLink.status === 'direct'
+        ? '직접 원문 버튼은 연결되어 있지만, 아직 실제 원문 숫자를 회사별 해설에 완전히 반영하지 않은 상태입니다.'
+        : primaryReportLink.status === 'search-only'
+          ? '직접 원문 URL은 아직 없고 검색 링크만 연결되어 있습니다. 원문 확인 후 reportUrl을 추가하면 바로 직접 연결됩니다.'
+          : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
   };
 }
 
@@ -845,6 +902,7 @@ type AnalysisPageProps = {
   company: Company;
   anchor?: AnchorCompany;
   newsState: NewsState;
+  onHome: () => void;
   onBack: () => void;
   onRefreshNews: () => void;
 };
@@ -1091,11 +1149,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
                         <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
                       </>
                     )}
-                    {reportLink?.isDirect && (
-                      <a href={reportLink.url} target="_blank" rel="noreferrer">
-                        원문 보고서 보기
-                      </a>
-                    )}
+                    {reportLink && <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />}
                   </div>
                 </article>
               );
@@ -1266,11 +1320,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
                     ) : (
                       <button type="button">관련 분석 준비 중</button>
                     )}
-                    {reportLink?.isDirect && (
-                      <a href={reportLink.url} target="_blank" rel="noreferrer">
-                        원문 보고서 보기
-                      </a>
-                    )}
+                    {reportLink && <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />}
                     {move.sourceUrl && (
                       <a href={move.sourceUrl} target="_blank" rel="noreferrer">
                         출처 보기
@@ -1304,9 +1354,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
                     <span>{company.country === 'KR' ? 'DART 재무제표 해설' : 'SEC MD&A / Filing 해설'}</span>
                     <div>
                       <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
-                      <a href={reportLink.url} target="_blank" rel="noreferrer">
-                        원문 보고서 보기
-                      </a>
+                      <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
                     </div>
                   </article>
                 );
@@ -1318,9 +1366,9 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
   );
 }
 
-function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: AnalysisPageProps) {
+function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
-  const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.url !== primaryReportLink.url);
+  const disclosureLinks = externalDisclosureLinks(company).filter((link) => !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
   const displayMetrics = disclosureAnalysis.displayMetrics;
   const insights = disclosureAnalysis.insights;
@@ -1349,10 +1397,22 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
   return (
     <div className="analysis-shell">
       <header className="analysis-hero">
-        <button type="button" className="ghost-action" onClick={onBack}>
-          <ArrowRight size={16} />
-          대시보드로 돌아가기
-        </button>
+        <nav className="breadcrumb" aria-label="현재 위치">
+          <button type="button" onClick={onHome}>홈</button>
+          <span>기업분석</span>
+          <span>{company.name}</span>
+          <strong>{isKorea ? '재무제표 해설' : 'SEC Filing / MD&A'}</strong>
+        </nav>
+        <div className="analysis-nav-actions">
+          <button type="button" className="ghost-action" onClick={onHome}>
+            <Network size={16} />
+            홈
+          </button>
+          <button type="button" className="ghost-action" onClick={onBack}>
+            <ArrowRight size={16} />
+            공급망 목록
+          </button>
+        </div>
         <div>
           <p className="eyebrow">{disclosureAnalysis.isCurated ? (isKorea ? 'DART 원문 기반 재무제표 해석' : 'SEC 원문 기반 재무제표 해석') : `${isKorea ? 'DART' : 'SEC'} 회사별 공시 검증 화면`}</p>
           <h1>{company.name} 재무분석</h1>
@@ -1363,10 +1423,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           </p>
         </div>
         <div className="analysis-actions">
-          <a href={primaryReportLink.url} target="_blank" rel="noreferrer" className={primaryReportLink.isDirect ? 'direct-action' : 'pending-action'}>
-            <ExternalLink size={15} />
-            {primaryReportLink.label}
-          </a>
+          <ReportAction reportLink={primaryReportLink} />
           {disclosureLinks.map((link) => (
             <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
               <ExternalLink size={15} />
@@ -1439,19 +1496,33 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
             <span>{disclosureAnalysis.isCurated ? '공시 원문 해석' : '회사별 공시 검증 상태'}</span>
           </div>
           <div className="analysis-status-row">
-            <span className={`analysis-status-pill ${disclosureAnalysis.isCurated ? 'complete' : 'pending'}`}>
-              {disclosureAnalysis.statusLabel}
+            <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
+              {primaryReportLink.statusLabel}
             </span>
-            <small>{disclosureAnalysis.statusDetail}</small>
+            <small>{primaryReportLink.statusDetail}</small>
           </div>
+          <p className="source-status-copy">
+            {primaryReportLink.status === 'direct'
+              ? '이 해설은 아래 원문 보고서를 기준으로 검증할 수 있습니다.'
+              : primaryReportLink.status === 'search-only'
+                ? '현재 직접 원문 URL은 없고 검색 링크만 연결되어 있습니다. 원문 URL을 확인하면 바로 직접 연결로 바꿀 수 있습니다.'
+                : '직접 원문 URL이 아직 연결되지 않았습니다. 화면의 해설과 숫자는 원문 확인 전 상태로 명확히 표시됩니다.'}
+          </p>
           <div className="filing-brief-body">
             <span>{disclosureAnalysis.reportDate}</span>
             <strong>{disclosureAnalysis.headline}</strong>
             <p>{disclosureAnalysis.verdict}</p>
-            <a href={disclosureAnalysis.sourceUrl} target="_blank" rel="noreferrer">
-              {disclosureAnalysis.sourceLabel}
-              <ExternalLink size={14} />
-            </a>
+            {primaryReportLink.isNavigable ? (
+              <a href={primaryReportLink.url} target="_blank" rel="noreferrer">
+                {primaryReportLink.label}
+                <ExternalLink size={14} />
+              </a>
+            ) : (
+              <span className="filing-source-pending">
+                {primaryReportLink.label}
+                <FileSearch size={14} />
+              </span>
+            )}
           </div>
         </section>
 
@@ -1461,16 +1532,24 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
             <span>원문 확인 루트</span>
           </div>
           <div className="disclosure-list">
-            <a
-              href={primaryReportLink.url}
-              target="_blank"
-              rel="noreferrer"
-              className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
-            >
-              <strong>{primaryReportLink.label}</strong>
-              <span>{primaryReportLink.note}</span>
-              <ExternalLink size={14} />
-            </a>
+            {primaryReportLink.isNavigable ? (
+              <a
+                href={primaryReportLink.url}
+                target="_blank"
+                rel="noreferrer"
+                className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
+              >
+                <strong>{primaryReportLink.label}</strong>
+                <span>{primaryReportLink.note}</span>
+                <ExternalLink size={14} />
+              </a>
+            ) : (
+              <div className="pending-report-link report-status-card">
+                <strong>{primaryReportLink.label}</strong>
+                <span>{primaryReportLink.note}</span>
+                <FileSearch size={14} />
+              </div>
+            )}
             {disclosureLinks.map((link) => (
               <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
                 <strong>{link.label}</strong>
@@ -1836,6 +1915,7 @@ function App() {
           company={analysisCompany}
           anchor={analysisAnchor}
           newsState={newsState}
+          onHome={openHome}
           onBack={closeAnalysis}
           onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
         />
@@ -1990,28 +2070,39 @@ function App() {
 
         <main className="map-panel">
           <header className="topbar">
-            <div>
+            <div className="topbar-copy">
+              <nav className="breadcrumb" aria-label="현재 위치">
+                <button type="button" onClick={openHome}>홈</button>
+                <span>공급망</span>
+                <span>{selectedSector.label}</span>
+                <strong>{selectedAnchor.name}</strong>
+              </nav>
               <p className="eyebrow">
                 {country.label} · {selectedSector.label}
               </p>
               <h2>{selectedAnchor.name} 공급망</h2>
             </div>
             <div className="topbar-actions">
-              <button type="button" className="icon-action" aria-label="메인 페이지" onClick={openHome}>
+              <button type="button" className="icon-action text-action" onClick={openHome}>
                 <Network size={18} />
+                홈
               </button>
               <button
                 type="button"
-                className="icon-action"
-                aria-label="재무제표 분석"
+                className="icon-action text-action"
                 onClick={() => selectedCompany && openAnalysis(selectedCompany)}
               >
                 <Database size={18} />
+                재무·공시
               </button>
-              <button type="button" className="primary-action">
-                <Target size={17} />
-                관심 기업 저장
-              </button>
+              {selectedReportLink && (
+                <ReportAction
+                  reportLink={selectedReportLink}
+                  className="topbar-report-action"
+                  iconSize={15}
+                  label={selectedReportLink.status === 'direct' ? '원문 보고서' : selectedReportLink.status === 'search-only' ? '검색으로 확인' : '원문 연결 필요'}
+                />
+              )}
             </div>
           </header>
 
@@ -2117,13 +2208,14 @@ function App() {
                   <p>{selectedCompany.notes}</p>
                   <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
                     <FileSearch size={15} />
-                    재무제표 분석 열기
+                    재무제표 해설 열기
                   </button>
+                  {selectedReportLink && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
                   {selectedReportLink && (
-                    <a className={`analysis-link-button ${selectedReportLink.isDirect ? 'direct' : 'pending'}`} href={selectedReportLink.url} target="_blank" rel="noreferrer">
-                      <ExternalLink size={15} />
-                      {selectedReportLink.isDirect ? '원문 보고서 보기' : '원문 연결 필요'}
-                    </a>
+                    <div className={`report-state-note ${selectedReportLink.status}`}>
+                      <strong>{selectedReportLink.statusLabel}</strong>
+                      <span>{selectedReportLink.statusDetail}</span>
+                    </div>
                   )}
                 </div>
               </div>

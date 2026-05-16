@@ -92,7 +92,7 @@ Vercel에서 이 폴더를 프로젝트로 가져오면 됩니다.
 
 - `src/services/financials.ts`: OpenDART, SEC CompanyFacts 조회 구조와 fallback
 - `src/services/trades.ts`: OpenDART 소유보고, SEC Form 3/4/5, SEC 13F, 공개자료 import 구조와 fallback
-- `src/services/filings.ts`: DART/SEC 직접 원문 보고서 링크 우선, 검색 링크 fallback
+- `src/services/filings.ts`: DART/SEC 직접 원문 보고서 링크 우선, 검색 링크/원문 연결 필요 상태 fallback
 - `scripts/sync-opendart-financials.ts`
 - `scripts/sync-sec-companyfacts.ts`
 - `scripts/sync-sec-form4.ts`
@@ -120,11 +120,19 @@ CRON_SECRET=
 
 ```bash
 SEC_USER_AGENT=
-SYNC_DEFAULT_MARKET=KR,US
+SYNC_DEFAULT_MARKET=
 SEC_13F_MANAGER_CIKS=
 CONGRESS_TRADES_IMPORT_URL=
 NPS_IMPORT_URL=
 ```
+
+`src/data.ts`의 기업별 원문 링크 상태는 아래처럼 관리합니다.
+
+- `sourceStatus: 'direct'`: `reportUrl`, `sourceDirectUrl`, `dartRcpNo`처럼 직접 원문으로 갈 수 있는 값이 있음
+- `sourceStatus: 'search-only'`: 직접 원문은 없고 DART/SEC 검색 링크만 있음
+- `sourceStatus: 'needs-link'`: 원문 URL을 추가해야 하는 상태
+
+직접 링크가 없는 기업도 화면에서는 “원문 연결 필요” 또는 “검색으로 확인” 상태가 보이며, 기존 재무제표 해설과 MD&A/SEC 분석 텍스트는 삭제하지 않습니다.
 
 ### Supabase DB
 
@@ -146,9 +154,10 @@ NPS_IMPORT_URL=
 
 ### 수동 동기화
 
-동기화 스크립트는 `.ts` 파일이며 Node 22+의 TypeScript strip 기능을 사용합니다. GitHub Actions는 Node 24로 실행하도록 설정되어 있습니다.
+동기화 스크립트는 `.ts` 파일이지만 Node 20에서도 실행되도록 먼저 `.sync-build`에 JS로 컴파일한 뒤 실행합니다.
 
 ```bash
+npm run sync:compile
 npm run sync:financials
 npm run sync:trades
 npm run sync:all
@@ -173,13 +182,28 @@ API 키나 DB 환경변수가 없으면 실패하지 않고 안내 로그를 출
 - `/api/sync/financials`: 평일 09:00 UTC 1회
 - `/api/sync/trades`: 평일 03:00 UTC 1회
 
-엔드포인트는 `CRON_SECRET`으로 보호됩니다.
+엔드포인트는 `CRON_SECRET`으로 보호됩니다. Vercel Cron은 프로젝트 환경변수에 `CRON_SECRET`이 있으면 호출 시 `Authorization: Bearer ...` 헤더를 자동으로 보냅니다. 브라우저나 curl로 수동 테스트할 때는 아래처럼 헤더를 보내거나 query secret을 붙이면 됩니다.
 Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므로, 매수·매도 데이터를 더 자주 갱신하려면 아래 GitHub Actions 스케줄을 사용하거나 Vercel Pro에서 Cron 주기를 늘리세요.
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/financials
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/trades
 ```
+
+브라우저 수동 테스트:
+
+```text
+https://YOUR_DOMAIN/api/sync/financials?secret=CRON_SECRET값
+https://YOUR_DOMAIN/api/sync/trades?secret=CRON_SECRET값
+```
+
+수동 테스트 순서:
+
+1. Supabase SQL Editor에서 `supabase/schema.sql` 실행
+2. Vercel 프로젝트를 Production으로 재배포
+3. 위 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값` 호출
+4. Supabase `sync_runs` 테이블에서 `success`, `partial`, `skipped`, `failed` 로그 확인
+5. 실패 시 Vercel Logs에서 endpoint 응답과 Supabase REST 오류 확인
 
 ### GitHub Actions 대안
 
@@ -227,7 +251,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 7. 최초 수동 동기화 실행
    - `npm run sync:financials`
    - `npm run sync:trades`
-   - 또는 `/api/sync/financials`, `/api/sync/trades`를 `CRON_SECRET`과 함께 호출
+   - 또는 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값` 호출
 
 8. 자동 업데이트 성공 여부 확인
    - `sync_runs` 테이블 확인
@@ -249,7 +273,11 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 
 ## Vercel Node runtime
 
-`package.json`에서 Vercel 런타임을 Node.js 20.x로 고정했습니다. API 코드는 WHATWG `URL` API인 `new URL(...)`을 사용합니다.
+`package.json`에서 Vercel 런타임을 Node.js 20.x로 고정했습니다. 로컬도 Node 20.x를 권장합니다. Node 22/24로 실행하면 로컬 검증은 가능하지만, Vercel과 동일 조건을 보려면 Node 20에서 `npm ci && npm run build`를 확인하세요.
+
+## TODO
+
+- Vite 빌드 시 JS chunk가 500kB를 조금 넘을 수 있습니다. 현재는 기능 안정성이 우선이라 유지하며, 추후 `ReactFlow`와 분석 페이지를 `dynamic import`로 나누는 code splitting을 검토합니다.
 
 
 ## v2 확장 내용

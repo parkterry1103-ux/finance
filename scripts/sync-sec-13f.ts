@@ -1,4 +1,4 @@
-import { errorMessage, envValue, isDirectRun, nowIso, recordSyncRun, secHeaders, upsertRows } from './sync-utils.ts';
+import { errorMessage, envValue, isDirectRun, nowIso, recordSyncRun, secHeaders, upsertRows } from './sync-utils.js';
 
 function managerCiks() {
   return envValue('SEC_13F_MANAGER_CIKS')
@@ -56,7 +56,7 @@ export async function syncSec13F() {
         }));
 
       if (!rows.length) continue;
-      await upsertRows('ownership_trades', rows, ['raw_id']);
+      await upsertRows('ownership_trades', rows, ['source', 'raw_id']);
       insertedCount += rows.length;
     } catch (error) {
       errors.push(`${managerCik}: ${errorMessage(error)}`);

@@ -1,5 +1,6 @@
-import { syncOpenDartFinancials } from '../../scripts/sync-opendart-financials.ts';
-import { syncSecCompanyFacts } from '../../scripts/sync-sec-companyfacts.ts';
+import { syncOpenDartFinancials } from '../../scripts/sync-opendart-financials.js';
+import { syncSecCompanyFacts } from '../../scripts/sync-sec-companyfacts.js';
+import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils.js';
 
 function isAuthorized(req) {
   const configured = process.env.CRON_SECRET;
@@ -24,9 +25,15 @@ export default async function handler(req, res) {
       results: { opendart, sec },
     });
   } catch (error) {
+    await recordSyncRun({
+      source: 'endpoint-financials',
+      status: 'failed',
+      startedAt: nowIso(),
+      errorMessage: errorMessage(error),
+    }).catch(() => undefined);
     res.status(500).json({
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
   }
 }

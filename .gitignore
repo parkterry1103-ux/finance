@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.sync-build/
 .vercel/
 
 .env

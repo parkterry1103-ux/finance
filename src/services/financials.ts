@@ -1,10 +1,10 @@
-import { financialMetricGuides } from '../data.ts';
+import { financialMetricGuides } from '../data.js';
 import type {
   Company,
   FinancialMetric,
   FinancialMetricKey,
   FinancialStatementSummary,
-} from '../data.ts';
+} from '../data.js';
 
 type DartAccountRow = {
   account_nm?: string;
@@ -22,9 +22,8 @@ type SecFactUnit = {
 };
 
 function envValue(key: string) {
-  const meta = import.meta as ImportMeta & { env?: Record<string, string | undefined> };
   const runtime = globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } };
-  return meta.env?.[key] ?? runtime.process?.env?.[key];
+  return runtime.process?.env?.[key];
 }
 
 function compactAmount(value: string | number | undefined, unit = '') {
@@ -64,7 +63,11 @@ function findDartAmount(rows: DartAccountRow[], names: string[]) {
 }
 
 export function buildFallbackFinancials(company: Company): FinancialStatementSummary {
-  const reportUrl = company.reportUrl ?? company.filingSourceUrl ?? company.sourceDirectUrl;
+  const reportUrl =
+    company.reportUrl ??
+    company.filingSourceUrl ??
+    company.sourceDirectUrl ??
+    (company.dartRcpNo ? `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${company.dartRcpNo}` : undefined);
   const sourceSearchUrl =
     company.sourceSearchUrl ??
     (company.country === 'KR'
@@ -74,8 +77,8 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
   return {
     companyId: company.id,
     status: reportUrl ? 'fallback' : 'needs-source',
-    fiscalYear: 'fallback',
-    reportType: company.country === 'KR' ? 'DART 원문 확인 전' : 'SEC 원문 확인 전',
+    fiscalYear: company.fiscalYear ?? 'fallback',
+    reportType: company.reportType ?? (company.country === 'KR' ? 'DART 원문 확인 전' : 'SEC 원문 확인 전'),
     updatedAt: new Date().toISOString(),
     source: 'fallback-data',
     sourceLabel: '기존 데이터 기반 fallback',
@@ -102,6 +105,9 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
     sourceSearchUrl,
     dartRcpNo: company.dartRcpNo,
     secAccessionNumber: company.secAccessionNumber,
+    fiscalPeriod: company.fiscalPeriod,
+    filingDate: company.filingDate,
+    sourceStatus: company.sourceStatus ?? (reportUrl ? 'direct' : company.sourceSearchUrl ? 'search-only' : 'needs-link'),
   };
 }
 

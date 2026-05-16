@@ -4,6 +4,7 @@ export type RiskLevel = 'low' | 'medium' | 'high';
 export type CompanyStatus = 'core' | 'watch' | 'opportunity';
 export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 'seed-model';
 export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
+export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
 export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease';
@@ -73,6 +74,11 @@ export interface Company {
   secAccessionNumber?: string;
   sourceSearchUrl?: string;
   sourceDirectUrl?: string;
+  reportType?: string;
+  fiscalYear?: string;
+  fiscalPeriod?: string;
+  filingDate?: string;
+  sourceStatus?: FilingSourceStatus;
   corpCode?: string;
   cik?: string;
   layout: {
@@ -143,6 +149,9 @@ export interface FinancialStatementSummary {
   sourceSearchUrl?: string;
   dartRcpNo?: string;
   secAccessionNumber?: string;
+  fiscalPeriod?: string;
+  filingDate?: string;
+  sourceStatus?: FilingSourceStatus;
 }
 
 export interface MarketMover {
@@ -4903,7 +4912,22 @@ function buildCompanies() {
 const built = buildCompanies();
 
 type CompanyFilingSource = Partial<
-  Pick<Company, 'filingSourceUrl' | 'reportUrl' | 'dartRcpNo' | 'secAccessionNumber' | 'sourceSearchUrl' | 'sourceDirectUrl' | 'corpCode' | 'cik'>
+  Pick<
+    Company,
+    | 'filingSourceUrl'
+    | 'reportUrl'
+    | 'dartRcpNo'
+    | 'secAccessionNumber'
+    | 'sourceSearchUrl'
+    | 'sourceDirectUrl'
+    | 'corpCode'
+    | 'cik'
+    | 'reportType'
+    | 'fiscalYear'
+    | 'fiscalPeriod'
+    | 'filingDate'
+    | 'sourceStatus'
+  >
 >;
 
 const companyFilingSources: Record<string, CompanyFilingSource> = {
@@ -4914,6 +4938,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
     sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
     sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90',
+    reportType: '분기보고서',
+    fiscalYear: '2026',
+    fiscalPeriod: '1Q',
+    filingDate: '2026-05-15',
+    sourceStatus: 'direct',
   },
   'kr-semiconductors-sk-hynix': {
     corpCode: '00164779',
@@ -4922,6 +4951,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
     sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
     sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=SK%ED%95%98%EC%9D%B4%EB%8B%89%EC%8A%A4',
+    reportType: '분기보고서',
+    fiscalYear: '2026',
+    fiscalPeriod: '1Q',
+    filingDate: '2026-05-15',
+    sourceStatus: 'direct',
   },
   'kr-semiconductors-db-hitek': {
     dartRcpNo: '20260515001650',
@@ -4929,6 +4963,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
     sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
     sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=DB%ED%95%98%EC%9D%B4%ED%85%8D',
+    reportType: '분기보고서',
+    fiscalYear: '2026',
+    fiscalPeriod: '1Q',
+    filingDate: '2026-05-15',
+    sourceStatus: 'direct',
   },
   'kr-semiconductors-samsung-한미반도체': {
     dartRcpNo: '20260515001572',
@@ -4936,6 +4975,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
     sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
     sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=%ED%95%9C%EB%AF%B8%EB%B0%98%EB%8F%84%EC%B2%B4',
+    reportType: '분기보고서',
+    fiscalYear: '2026',
+    fiscalPeriod: '1Q',
+    filingDate: '2026-05-15',
+    sourceStatus: 'direct',
   },
   'us-semiconductors-nvidia': {
     cik: '1045810',
@@ -4944,6 +4988,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm',
     sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm',
     sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=NVIDIA%20Corporation',
+    reportType: '10-K',
+    fiscalYear: '2026',
+    fiscalPeriod: 'FY',
+    filingDate: '2026-02-25',
+    sourceStatus: 'direct',
   },
   'us-semiconductors-amd': {
     cik: '2488',
@@ -4952,6 +5001,11 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
     sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
     sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Advanced%20Micro%20Devices',
+    reportType: '10-K',
+    fiscalYear: '2025',
+    fiscalPeriod: 'FY',
+    filingDate: '2026-02-25',
+    sourceStatus: 'direct',
   },
   'us-semiconductors-intel': {
     cik: '50863',
@@ -4960,13 +5014,29 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
     filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
     sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
     sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Intel%20Corporation',
+    reportType: '10-K',
+    fiscalYear: '2025',
+    fiscalPeriod: 'FY',
+    filingDate: '2026-01-23',
+    sourceStatus: 'direct',
   },
 };
 
-export const companies = built.generatedCompanies.map((company) => ({
-  ...company,
-  ...(companyFilingSources[company.id] ?? {}),
-}));
+export const companies = built.generatedCompanies.map((company) => {
+  const filingSource = companyFilingSources[company.id] ?? {};
+  const hasDirectSource = Boolean(
+    filingSource.reportUrl ||
+      filingSource.filingSourceUrl ||
+      filingSource.sourceDirectUrl ||
+      filingSource.dartRcpNo,
+  );
+
+  return {
+    ...company,
+    ...filingSource,
+    sourceStatus: filingSource.sourceStatus ?? (hasDirectSource ? 'direct' : filingSource.sourceSearchUrl ? 'search-only' : 'needs-link'),
+  };
+});
 export const links = built.generatedLinks;
 export const analystOpinions = built.generatedOpinions;
 

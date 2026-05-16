@@ -1,5 +1,5 @@
-import { companies } from '../src/data.ts';
-import { errorMessage, isDirectRun, nowIso, recordSyncRun, secHeaders, upsertRows } from './sync-utils.ts';
+import { companies } from '../src/data.js';
+import { errorMessage, isDirectRun, nowIso, recordSyncRun, secHeaders, upsertRows } from './sync-utils.js';
 
 const FORM4_FORMS = new Set(['3', '4', '5']);
 
@@ -57,7 +57,7 @@ export async function syncSecForm4() {
       const payload = await response.json();
       const rows = recentOwnerFilingRows(company, payload?.filings?.recent);
       if (!rows.length) continue;
-      await upsertRows('ownership_trades', rows, ['raw_id', 'investor_name', 'trade_date', 'ticker', 'shares']);
+      await upsertRows('ownership_trades', rows, ['source', 'raw_id']);
       insertedCount += rows.length;
     } catch (error) {
       errors.push(`${company.name}: ${errorMessage(error)}`);

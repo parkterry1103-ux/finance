@@ -1,6 +1,6 @@
-import { companies } from '../src/data.ts';
-import { fetchUSFinancialsFromSEC } from '../src/services/financials.ts';
-import { errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.ts';
+import { companies } from '../src/data.js';
+import { fetchUSFinancialsFromSEC } from '../src/services/financials.js';
+import { errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
 
 function metricValue(summary, key) {
   return summary.metrics.find((metric) => metric.key === key)?.value ?? null;

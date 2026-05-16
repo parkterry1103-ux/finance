@@ -1,10 +1,9 @@
-import { smartMoneyMoves } from '../data.ts';
-import type { Company, SmartMoneyMove } from '../data.ts';
+import { smartMoneyMoves } from '../data.js';
+import type { Company, SmartMoneyMove } from '../data.js';
 
 function envValue(key: string) {
-  const meta = import.meta as ImportMeta & { env?: Record<string, string | undefined> };
   const runtime = globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } };
-  return meta.env?.[key] ?? runtime.process?.env?.[key];
+  return runtime.process?.env?.[key];
 }
 
 function byCompany(move: SmartMoneyMove, company: Company) {

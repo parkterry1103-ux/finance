@@ -1,5 +1,5 @@
-import { smartMoneyMoves } from '../src/data.ts';
-import { envValue, errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.ts';
+import { smartMoneyMoves } from '../src/data.js';
+import { envValue, errorMessage, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
 
 async function loadImportRows() {
   const importUrl = envValue('CONGRESS_TRADES_IMPORT_URL');
@@ -78,10 +78,10 @@ export async function syncCongressTrades() {
         return { source: 'congress-trades', status: 'skipped', insertedCount, updatedCount: 0, errors: [message] };
       }
 
-      await upsertRows('ownership_trades', mockRows, ['raw_id']);
+      await upsertRows('ownership_trades', mockRows, ['source', 'raw_id']);
       insertedCount = mockRows.length;
     } else {
-      await upsertRows('ownership_trades', normalizedRows, ['raw_id']);
+      await upsertRows('ownership_trades', normalizedRows, ['source', 'raw_id']);
       insertedCount = normalizedRows.length;
     }
   } catch (error) {
