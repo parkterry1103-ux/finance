@@ -3,6 +3,10 @@ export type CompanyTier = 'anchor' | 'tier1' | 'tier2';
 export type RiskLevel = 'low' | 'medium' | 'high';
 export type CompanyStatus = 'core' | 'watch' | 'opportunity';
 export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 'seed-model';
+export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
+export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
+export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
+export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -41,6 +45,7 @@ export interface Company {
   sectorId: string;
   name: string;
   legalName: string;
+  ticker?: string;
   tier: CompanyTier;
   sector: string;
   region: string;
@@ -62,6 +67,14 @@ export interface Company {
   notes: string;
   sourceType: SourceType;
   sourceNote: string;
+  filingSourceUrl?: string;
+  reportUrl?: string;
+  dartRcpNo?: string;
+  secAccessionNumber?: string;
+  sourceSearchUrl?: string;
+  sourceDirectUrl?: string;
+  corpCode?: string;
+  cik?: string;
   layout: {
     column: 0 | 1 | 2;
     row: number;
@@ -93,6 +106,81 @@ export interface SourcePolicy {
   label: string;
   domains: string[];
   note: string;
+}
+
+export interface FilingSourceLink {
+  label: string;
+  url: string;
+  sourceType: 'direct-report' | 'search' | 'api-docs' | 'news';
+  note: string;
+  isPrimary?: boolean;
+}
+
+export interface FinancialMetric {
+  key: FinancialMetricKey;
+  label: string;
+  value: string;
+  unit?: string;
+  beginnerExplanation: string;
+  keyTakeaway: string;
+}
+
+export interface FinancialStatementSummary {
+  companyId: string;
+  status: CompanyFinancialStatus;
+  fiscalYear: string;
+  reportType: string;
+  updatedAt: string;
+  source: 'OpenDART' | 'SEC CompanyFacts' | 'official-filing' | 'fallback-data';
+  sourceLabel: string;
+  isApiData: boolean;
+  isFallbackData: boolean;
+  metrics: FinancialMetric[];
+  beginnerExplanation: string;
+  keyTakeaway: string;
+  reportUrl?: string;
+  sourceDirectUrl?: string;
+  sourceSearchUrl?: string;
+  dartRcpNo?: string;
+  secAccessionNumber?: string;
+}
+
+export interface MarketMover {
+  id: string;
+  companyId: string;
+  companyName: string;
+  ticker: string;
+  market: 'KOSPI' | 'KOSDAQ' | 'NASDAQ' | 'NYSE';
+  move: string;
+  reason: string;
+  beginnerNote: string;
+  sectorId: string;
+  sectorLabel: string;
+}
+
+export interface SmartMoneyMove {
+  id: string;
+  investorName: string;
+  investorType: SmartMoneyInvestorType;
+  investorTypeLabel: string;
+  market: CountryId;
+  companyId: string;
+  relatedCompanyId?: string;
+  relatedSupplyChainId?: string;
+  companyName: string;
+  ticker: string;
+  action: SmartMoneyAction;
+  actionLabel: string;
+  disclosedDate: string;
+  tradeDateOptional?: string;
+  sectorId: string;
+  sector: string;
+  sectorLabel: string;
+  sourceLabel: string;
+  sourceUrl?: string;
+  isDelayedDisclosure: boolean;
+  note: string;
+  beginnerExplanation: string;
 }
 
 type SupplierSeed = {
@@ -4645,6 +4733,7 @@ function buildCompanies() {
       sectorId: anchor.sectorId,
       name: anchor.name,
       legalName: anchor.legalName,
+      ticker: anchor.ticker,
       tier: 'anchor',
       sector: anchor.sector,
       region: anchor.region,
@@ -4813,9 +4902,230 @@ function buildCompanies() {
 
 const built = buildCompanies();
 
-export const companies = built.generatedCompanies;
+type CompanyFilingSource = Partial<
+  Pick<Company, 'filingSourceUrl' | 'reportUrl' | 'dartRcpNo' | 'secAccessionNumber' | 'sourceSearchUrl' | 'sourceDirectUrl' | 'corpCode' | 'cik'>
+>;
+
+const companyFilingSources: Record<string, CompanyFilingSource> = {
+  'kr-semiconductors-samsung': {
+    corpCode: '00126380',
+    dartRcpNo: '20260515002181',
+    reportUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
+    filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
+    sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
+    sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90',
+  },
+  'kr-semiconductors-sk-hynix': {
+    corpCode: '00164779',
+    dartRcpNo: '20260515002287',
+    reportUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
+    filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
+    sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
+    sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=SK%ED%95%98%EC%9D%B4%EB%8B%89%EC%8A%A4',
+  },
+  'kr-semiconductors-db-hitek': {
+    dartRcpNo: '20260515001650',
+    reportUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
+    filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
+    sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
+    sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=DB%ED%95%98%EC%9D%B4%ED%85%8D',
+  },
+  'kr-semiconductors-samsung-한미반도체': {
+    dartRcpNo: '20260515001572',
+    reportUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
+    filingSourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
+    sourceDirectUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
+    sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=%ED%95%9C%EB%AF%B8%EB%B0%98%EB%8F%84%EC%B2%B4',
+  },
+  'us-semiconductors-nvidia': {
+    cik: '1045810',
+    secAccessionNumber: '0001045810-26-000021',
+    reportUrl: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm',
+    filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm',
+    sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm',
+    sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=NVIDIA%20Corporation',
+  },
+  'us-semiconductors-amd': {
+    cik: '2488',
+    secAccessionNumber: '0000002488-26-000021',
+    reportUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
+    filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
+    sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
+    sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Advanced%20Micro%20Devices',
+  },
+  'us-semiconductors-intel': {
+    cik: '50863',
+    secAccessionNumber: '0000050863-26-000011',
+    reportUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
+    filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
+    sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
+    sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Intel%20Corporation',
+  },
+};
+
+export const companies = built.generatedCompanies.map((company) => ({
+  ...company,
+  ...(companyFilingSources[company.id] ?? {}),
+}));
 export const links = built.generatedLinks;
 export const analystOpinions = built.generatedOpinions;
+
+export const financialMetricGuides: Record<FinancialMetricKey, string> = {
+  revenue: '회사가 얼마나 팔았는지 보여주는 숫자',
+  operatingIncome: '본업으로 얼마나 벌었는지 보여주는 숫자',
+  netIncome: '세금과 비용까지 반영한 최종 이익',
+  debtRatio: '빚 부담이 얼마나 큰지 보는 지표',
+  operatingMargin: '매출 중 본업 이익으로 남는 비율',
+  cashFlow: '실제로 현금이 들어오고 나가는 흐름',
+};
+
+export const marketMovers: MarketMover[] = [
+  {
+    id: 'mover-samsung-hbm',
+    companyId: 'kr-semiconductors-samsung',
+    companyName: '삼성전자',
+    ticker: '005930.KS',
+    market: 'KOSPI',
+    move: '+3.2%',
+    reason: 'HBM 공급 확대 기대와 메모리 가격 회복 기대가 같이 반영됐습니다.',
+    beginnerNote: '주가가 왜 움직였는지 뉴스와 재무 흐름을 함께 봅니다.',
+    sectorId: 'kr-semiconductors',
+    sectorLabel: '반도체',
+  },
+  {
+    id: 'mover-sk-hynix-ai-memory',
+    companyId: 'kr-semiconductors-sk-hynix',
+    companyName: 'SK하이닉스',
+    ticker: '000660.KS',
+    market: 'KOSPI',
+    move: '+4.1%',
+    reason: 'AI 서버용 메모리 수요가 실적 기대를 끌어올렸습니다.',
+    beginnerNote: '성장 기대가 실제 매출과 현금흐름으로 이어지는지 확인합니다.',
+    sectorId: 'kr-semiconductors',
+    sectorLabel: '반도체',
+  },
+  {
+    id: 'mover-hanmi-packaging',
+    companyId: 'kr-semiconductors-samsung-한미반도체',
+    companyName: '한미반도체',
+    ticker: '042700.KS',
+    market: 'KOSPI',
+    move: '+2.8%',
+    reason: '후공정 장비 수주 기대가 공급망 관심을 키웠습니다.',
+    beginnerNote: '수주 뉴스가 매출로 잡히는 시점과 재고 변화를 같이 봅니다.',
+    sectorId: 'kr-semiconductors',
+    sectorLabel: '반도체 장비',
+  },
+  {
+    id: 'mover-nvidia-datacenter',
+    companyId: 'us-semiconductors-nvidia',
+    companyName: 'NVIDIA',
+    ticker: 'NVDA',
+    market: 'NASDAQ',
+    move: '+1.9%',
+    reason: '데이터센터 매출 성장과 다음 분기 가이던스 기대가 반영됐습니다.',
+    beginnerNote: '미국 기업은 MD&A에서 경영진이 수요를 어떻게 설명했는지 봅니다.',
+    sectorId: 'us-semiconductors',
+    sectorLabel: 'AI 반도체',
+  },
+];
+
+export const smartMoneyMoves: SmartMoneyMove[] = [
+  {
+    id: 'smart-nps-samsung',
+    investorName: '국민연금',
+    investorType: 'nps',
+    investorTypeLabel: '국민연금 / 한국 공개 포트폴리오',
+    market: 'KR',
+    companyId: 'kr-semiconductors-samsung',
+    relatedCompanyId: 'kr-semiconductors-samsung',
+    relatedSupplyChainId: 'kr-semiconductors',
+    companyName: '삼성전자',
+    ticker: '005930.KS',
+    action: 'increase',
+    actionLabel: '비중확대',
+    disclosedDate: '2026-05-10',
+    tradeDateOptional: '2026-04-30',
+    sectorId: 'kr-semiconductors',
+    sector: '반도체',
+    sectorLabel: '반도체',
+    sourceLabel: '국민연금 공개자료 mock',
+    isDelayedDisclosure: true,
+    note: '공개 포트폴리오 기반 예시 데이터입니다.',
+    beginnerExplanation: '큰손 매매는 확정 신호가 아니라 추가로 확인할 참고 정보입니다.',
+  },
+  {
+    id: 'smart-institution-sk-hynix',
+    investorName: '국내 기관 합산',
+    investorType: 'institution',
+    investorTypeLabel: '기관 수급 mock',
+    market: 'KR',
+    companyId: 'kr-semiconductors-sk-hynix',
+    relatedCompanyId: 'kr-semiconductors-sk-hynix',
+    relatedSupplyChainId: 'kr-semiconductors',
+    companyName: 'SK하이닉스',
+    ticker: '000660.KS',
+    action: 'buy',
+    actionLabel: '매수',
+    disclosedDate: '2026-05-12',
+    tradeDateOptional: '2026-05-09',
+    sectorId: 'kr-semiconductors',
+    sector: '반도체',
+    sectorLabel: '반도체',
+    sourceLabel: 'KRX/증권사 API 연결 예정',
+    isDelayedDisclosure: true,
+    note: '기관 수급 API 연결 전 화면 검증용 mock 데이터입니다.',
+    beginnerExplanation: '기관 수급은 실적과 업황이 같이 개선되는지 확인할 때 더 의미가 있습니다.',
+  },
+  {
+    id: 'smart-us-insider-amd',
+    investorName: 'AMD 내부자 공시',
+    investorType: 'insider',
+    investorTypeLabel: '미국 내부자 매매',
+    market: 'US',
+    companyId: 'us-semiconductors-amd',
+    relatedCompanyId: 'us-semiconductors-amd',
+    relatedSupplyChainId: 'us-semiconductors',
+    companyName: 'AMD',
+    ticker: 'AMD',
+    action: 'decrease',
+    actionLabel: '비중축소',
+    disclosedDate: '2026-05-08',
+    tradeDateOptional: '2026-05-06',
+    sectorId: 'us-semiconductors',
+    sector: 'AI 반도체',
+    sectorLabel: 'AI 반도체',
+    sourceLabel: 'SEC Form 4 연결 예정',
+    sourceUrl: 'https://www.sec.gov/edgar/search/#/category=form-cat2',
+    isDelayedDisclosure: true,
+    note: 'Form 4는 실제 거래 후 며칠 뒤 공개될 수 있습니다.',
+    beginnerExplanation: '내부자 매도는 세금·보상 계획 때문일 수도 있어 MD&A와 실적을 함께 봅니다.',
+  },
+  {
+    id: 'smart-us-fund-nvidia',
+    investorName: '미국 대형 성장주 펀드',
+    investorType: 'fund',
+    investorTypeLabel: '기관·펀드 포트폴리오',
+    market: 'US',
+    companyId: 'us-semiconductors-nvidia',
+    relatedCompanyId: 'us-semiconductors-nvidia',
+    relatedSupplyChainId: 'us-semiconductors',
+    companyName: 'NVIDIA',
+    ticker: 'NVDA',
+    action: 'increase',
+    actionLabel: '비중확대',
+    disclosedDate: '2026-05-13',
+    tradeDateOptional: '2026-03-31',
+    sectorId: 'us-semiconductors',
+    sector: 'AI 반도체',
+    sectorLabel: 'AI 반도체',
+    sourceLabel: 'SEC 13F 연결 예정',
+    sourceUrl: 'https://www.sec.gov/edgar/search/#/category=form-cat5',
+    isDelayedDisclosure: true,
+    note: '13F는 분기 말 보유 현황이라 실제 매매 시점과 다를 수 있습니다.',
+    beginnerExplanation: '펀드 비중 확대는 관심 흐름을 보여주지만, 매수 가격과 시점은 따로 봐야 합니다.',
+  },
+];
 
 export const sourcePolicies: SourcePolicy[] = [
   {

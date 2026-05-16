@@ -4,7 +4,6 @@ import {
   Controls,
   Edge,
   Handle,
-  MiniMap,
   Node,
   NodeProps,
   Position,
@@ -45,11 +44,24 @@ import {
   CompanyTier,
   countries,
   CountryId,
+  FinancialStatementSummary,
   links,
+  marketMovers,
   RiskLevel,
   sectors,
+  SmartMoneyAction,
+  SmartMoneyInvestorType,
+  SmartMoneyMove,
+  smartMoneyMoves,
   sourcePolicies,
 } from './data';
+import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
+import {
+  externalDisclosureLinks,
+  newsSearchUrl,
+  resolveCompanyFilingLinks,
+} from './services/filings';
+import { fetchSmartMoneyTrades, fetchTradesByCompany } from './services/trades';
 
 type NodeData = {
   company: Company;
@@ -187,42 +199,6 @@ function analysisPath(company: Company) {
 
 function categoryPath(sectorId: string) {
   return `/ko/category/${encodeURIComponent(sectorId)}`;
-}
-
-function externalDisclosureLinks(company: Company) {
-  const keyword = encodeURIComponent(company.legalName || company.name);
-  if (company.country === 'KR') {
-    return [
-      {
-        label: 'DART 공시 통합검색',
-        url: `https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=${keyword}`,
-        note: '사업보고서, 감사보고서, 수주·증설 공시를 원문으로 확인합니다.',
-      },
-      {
-        label: 'OpenDART 재무정보 API',
-        url: 'https://opendart.fss.or.kr/guide/main.do?apiGrpCd=DE003',
-        note: 'API 키를 연결하면 손익계산서·재무상태표·현금흐름표를 자동 수집할 수 있습니다.',
-      },
-    ];
-  }
-
-  return [
-    {
-      label: 'SEC Search Filings',
-      url: `https://www.sec.gov/search-filings?keys=${keyword}`,
-      note: '10-K, 10-Q, 8-K와 감사 재무제표 원문을 검색합니다.',
-    },
-    {
-      label: 'SEC EDGAR 본문 검색',
-      url: `https://www.sec.gov/edgar/search/#/q=${keyword}`,
-      note: 'MD&A, Risk Factors, 재무제표 주석을 원문에서 확인합니다.',
-    },
-  ];
-}
-
-function newsSearchUrl(company: Company) {
-  const query = encodeURIComponent(`${company.legalName || company.name} ${company.sector} 실적 투자 공시`);
-  return `https://news.google.com/search?q=${query}`;
 }
 
 type CompanyDisplayMetrics = {
@@ -713,6 +689,23 @@ function getCompanyFilingAnalysis(company: Company) {
   return filingAnalyses[company.id];
 }
 
+type ReportLink = {
+  label: string;
+  url: string;
+  note: string;
+  isDirect: boolean;
+};
+
+function getPrimaryReportLink(company: Company): ReportLink {
+  const filing = resolveCompanyFilingLinks(company, getCompanyFilingAnalysis(company)?.sourceUrl);
+  return {
+    label: filing.primary.label,
+    url: filing.primary.url,
+    note: filing.primary.note,
+    isDirect: filing.primary.isDirect,
+  };
+}
+
 function parsePercentValue(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ''));
   return Number.isFinite(parsed) ? parsed : undefined;
@@ -771,7 +764,7 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
     };
   }
 
-  const disclosureLink = externalDisclosureLinks(company)[0];
+  const primaryReportLink = getPrimaryReportLink(company);
   const displayMetrics = getDisplayMetrics(company);
   const regulator = company.country === 'KR' ? 'DART' : 'SEC';
   const reportName = company.country === 'KR' ? '사업보고서·분기보고서' : '10-K·10-Q';
@@ -795,8 +788,8 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
   return {
     reportTitle: `${company.name} 회사별 공시 분석`,
     reportDate: `${regulator} ${reportName} 원문 연결형 · ${company.sourceType === 'seed-model' ? '후보 스크리닝 데이터' : '공시 데이터'} 기준`,
-    sourceLabel: disclosureLink?.label ?? `${regulator} 원문 검색`,
-    sourceUrl: disclosureLink?.url ?? newsSearchUrl(company),
+    sourceLabel: primaryReportLink.label,
+    sourceUrl: primaryReportLink.url,
     displayMetrics,
     headline: `${company.name}${topicParticle(company.name)} ${directCustomer}${directionParticle(directCustomer)}, ${company.sector} 매출이 실제 공시에서 확인되는지가 핵심입니다.`,
     verdict:
@@ -841,8 +834,10 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
       '이 화면은 회사별 원문 확인 순서를 고정해 둔 구조입니다. 원문 수치가 반영된 기업은 위 카드처럼 실제 금액과 해석으로 계속 확장됩니다.',
     ],
     isCurated: false,
-    statusLabel: `${regulator} 원문 연결 필요`,
-    statusDetail: '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
+    statusLabel: primaryReportLink.isDirect ? `${regulator} 원문 연결됨 · 분석 준비 중` : `${regulator} 원문 연결 필요`,
+    statusDetail: primaryReportLink.isDirect
+      ? '직접 원문 버튼은 연결되어 있지만, 아직 실제 원문 숫자를 회사별 해설에 완전히 반영하지 않은 상태입니다.'
+      : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
   };
 }
 
@@ -856,127 +851,466 @@ type AnalysisPageProps = {
 
 type LandingPageProps = {
   onOpenCategory: (sectorId: string) => void;
+  onOpenAnalysis: (company: Company) => void;
 };
 
-function LandingPage({ onOpenCategory }: LandingPageProps) {
-  const curatedCount = Object.keys(filingAnalyses).length;
-  const koreanSectors = sectors.filter((sector) => sector.country === 'KR');
-  const usSectors = sectors.filter((sector) => sector.country === 'US');
-  const heroSectors = sectors.slice(0, 6);
+function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
+  const [homeQuery, setHomeQuery] = useState('');
+  const [tradeItems, setTradeItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
+  const [tradeMarketFilter, setTradeMarketFilter] = useState<'all' | CountryId>('all');
+  const [tradeTypeFilter, setTradeTypeFilter] = useState<'all' | SmartMoneyInvestorType>('all');
+  const [tradeActionFilter, setTradeActionFilter] = useState<'all' | SmartMoneyAction>('all');
+  const [tradeSearch, setTradeSearch] = useState('');
+  const queryText = homeQuery.trim().toLowerCase();
+  const tradeSearchText = tradeSearch.trim().toLowerCase();
+  const featuredSectorIds = ['kr-semiconductors', 'kr-ship-defense', 'kr-battery-materials', 'kr-ai-datacenter', 'us-semiconductors'];
+  const beginnerSectorNotes: Record<string, string> = {
+    'kr-semiconductors': 'AI, 메모리, 장비 기업들이 어떻게 연결되는지 봅니다.',
+    'kr-ship-defense': '조선·방산 수주가 부품사와 협력사에 어떻게 이어지는지 봅니다.',
+    'kr-battery-materials': '배터리 셀, 소재, 장비 회사의 연결 구조를 봅니다.',
+    'kr-ai-datacenter': 'AI 서버와 데이터센터 투자가 어떤 기업에 연결되는지 봅니다.',
+    'us-semiconductors': '미국 AI 반도체 기업과 공급망 흐름을 함께 봅니다.',
+  };
+  const issueNotes: Record<string, string> = {
+    'kr-semiconductors': 'HBM, 후공정, 파운드리 투자 기대가 이어지고 있습니다.',
+    'kr-ship-defense': '수주 잔고와 방산 수출 뉴스가 협력사 관심으로 번지고 있습니다.',
+    'kr-battery-materials': '전기차 수요와 소재 가격이 실적 변동의 핵심입니다.',
+    'kr-ai-datacenter': 'AI 서버 전력·냉각·네트워크 투자 흐름을 같이 봅니다.',
+    'us-semiconductors': '데이터센터 CapEx와 AI 칩 수요가 MD&A의 핵심입니다.',
+  };
+
+  const companyResults = useMemo(() => {
+    if (!queryText) return [];
+    return companies
+      .filter((company) =>
+        [
+          company.name,
+          company.legalName,
+          company.sector,
+          company.sectorId,
+          company.region,
+          company.products.join(' '),
+          company.tags.join(' '),
+          company.anchorCustomer,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(queryText),
+      )
+      .slice(0, 6);
+  }, [queryText]);
+
+  const smartMoneyResults = useMemo(() => {
+    if (!queryText) return [];
+    return tradeItems
+      .filter((move) =>
+        [move.investorName, move.investorTypeLabel, move.companyName, move.ticker, move.actionLabel, move.sectorLabel, move.sourceLabel]
+          .join(' ')
+          .toLowerCase()
+          .includes(queryText),
+      )
+      .slice(0, 3);
+  }, [queryText]);
+
+  const popularSectors = featuredSectorIds
+    .map((sectorId) => sectors.find((sector) => sector.id === sectorId))
+    .filter((sector): sector is (typeof sectors)[number] => Boolean(sector));
+
+  const tradeTypeOptions = useMemo(() => {
+    const unique = new Map<SmartMoneyInvestorType, string>();
+    tradeItems.forEach((move) => unique.set(move.investorType, move.investorTypeLabel));
+    return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
+  }, [tradeItems]);
+
+  const filteredTradeItems = useMemo(
+    () =>
+      tradeItems.filter((move) => {
+        const matchesMarket = tradeMarketFilter === 'all' || move.market === tradeMarketFilter;
+        const matchesType = tradeTypeFilter === 'all' || move.investorType === tradeTypeFilter;
+        const matchesAction = tradeActionFilter === 'all' || move.action === tradeActionFilter;
+        const matchesSearch =
+          !tradeSearchText ||
+          [move.investorName, move.companyName, move.ticker, move.sectorLabel, move.sourceLabel]
+            .join(' ')
+            .toLowerCase()
+            .includes(tradeSearchText);
+        return matchesMarket && matchesType && matchesAction && matchesSearch;
+      }),
+    [tradeActionFilter, tradeItems, tradeMarketFilter, tradeSearchText, tradeTypeFilter],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSmartMoneyTrades().then((items) => {
+      if (!cancelled) setTradeItems(items.length ? items : smartMoneyMoves);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
-    <div className="landing-shell">
-      <header className="landing-nav">
-        <a href="/ko/" onClick={(event) => event.preventDefault()} className="landing-brand">
-          <span className="landing-logo">
+    <div className="home-shell">
+      <header className="home-nav">
+        <a href="/ko/" onClick={(event) => event.preventDefault()} className="home-brand">
+          <span className="home-logo">
             <Network size={20} />
           </span>
           <strong>FINANCE</strong>
         </a>
         <nav>
-          <a href={categoryPath('kr-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('kr-semiconductors'); }}>
-            한국 반도체
-          </a>
-          <a href={categoryPath('us-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('us-semiconductors'); }}>
-            미국 반도체
-          </a>
-          <a href="#categories">카테고리</a>
+          <a href="/ko/" onClick={(event) => event.preventDefault()}>홈</a>
+          <a href="#supply-chain">공급망</a>
+          <a href="#smart-money">매수·매도</a>
+          <a href="#market-movers">기업분석</a>
+          <a href="#filing-preview">공시·재무</a>
         </nav>
       </header>
 
       <main>
-        <section className="landing-hero">
-          <div className="landing-copy">
-            <p className="landing-kicker">DART · SEC FILING INTELLIGENCE</p>
-            <h1>공시를 읽고 공급망을 연결하는 투자 지도</h1>
-            <p>
-              한국 기업은 DART 재무제표와 감사기록, 미국 기업은 SEC 재무제표와 MD&A를 한국어로 풀어서 공급망 카테고리와 연결합니다.
-            </p>
-            <div className="landing-actions">
-              <a href={categoryPath('kr-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('kr-semiconductors'); }}>
-                시작하기
-              </a>
-              <a href="#categories" className="secondary">
-                카테고리 보기
-              </a>
+        <section className="home-hero">
+          <div className="home-hero-copy">
+            <p className="home-kicker">투자·주식 분석 플랫폼</p>
+            <h1>주식이 움직인 이유를 한눈에.</h1>
+            <p>공급망, 공시, 재무제표, 큰손 매매까지 쉽게 연결해서 봅니다.</p>
+            <div className="home-search" role="search">
+              <Search size={18} />
+              <input
+                type="search"
+                placeholder="기업명, 티커, 섹터, 투자자, 이슈 검색"
+                value={homeQuery}
+                onChange={(event) => setHomeQuery(event.target.value)}
+              />
             </div>
-          </div>
-
-          <div className="landing-preview" aria-label="공급망 앱 미리보기">
-            <div className="preview-toolbar">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="preview-grid">
-              <div className="preview-sidebar">
-                {heroSectors.slice(0, 4).map((sector) => (
-                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
-                    {sector.label}
+            {queryText && (
+              <div className="home-search-results">
+                <span>검색 결과</span>
+                {companyResults.length === 0 && smartMoneyResults.length === 0 && <p>아직 연결된 기업이나 매매 기록이 없습니다.</p>}
+                {companyResults.map((company) => (
+                  <button key={company.id} type="button" onClick={() => onOpenAnalysis(company)}>
+                    <strong>{company.name}</strong>
+                    <small>
+                      {company.sector} · 재무제표 해설 보기
+                    </small>
                   </button>
                 ))}
+                {smartMoneyResults.map((move) => {
+                  const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
+                  return (
+                    <button key={move.id} type="button" onClick={() => company && onOpenAnalysis(company)}>
+                      <strong>{move.investorName}</strong>
+                      <small>
+                        {move.actionLabel} · {move.companyName} · 큰손 매매 참고
+                      </small>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="preview-map">
-                <span className="preview-node main">삼성전자</span>
-                <span className="preview-line one" />
-                <span className="preview-node second">한미반도체</span>
-                <span className="preview-line two" />
-                <span className="preview-node third">NVIDIA</span>
-              </div>
-              <div className="preview-panel">
-                <strong>DART 원문 분석 완료</strong>
-                <p>매출 133.9조원 · 영업현금흐름 40.3조원</p>
-                <small>감사·MD&A 한국어 해석</small>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
-        <section className="landing-feature-row">
-          <article>
-            <strong>{curatedCount}개 실제 원문 분석</strong>
-            <p>삼성전자, SK하이닉스, DB하이텍, 한미반도체, NVIDIA, AMD, Intel부터 실제 공시 숫자로 해석합니다.</p>
+        <section className="home-feature-grid" aria-label="핵심 기능">
+          <article className="home-feature-card">
+            <div className="feature-icon">
+              <Network size={22} />
+            </div>
+            <div>
+              <h2>기업·공급망 분석</h2>
+              <p>이 기업이 어떤 산업과 회사들과 연결되어 있는지 봅니다.</p>
+              <small>공급망은 제품이 만들어지고 팔리기까지 연결된 기업 구조입니다.</small>
+            </div>
+            <ul>
+              <li>섹터별 공급망 지도</li>
+              <li>SME / 하청업체</li>
+              <li>재무제표 해설</li>
+              <li>공시 분석</li>
+              <li>원문 보고서</li>
+            </ul>
+            <button type="button" onClick={() => scrollToSection('supply-chain')}>
+              공급망 보기
+              <ArrowRight size={16} />
+            </button>
           </article>
-          <article>
-            <strong>MD&A 한국어 해석</strong>
-            <p>미국 기업은 경영진이 실적 변화를 설명하는 MD&A를 재무제표 숫자와 함께 읽습니다.</p>
-          </article>
-          <article>
-            <strong>카테고리형 확장</strong>
-            <p>각 산업 카테고리를 독립 주소로 연결해 앞으로 새 분석 도메인을 계속 붙일 수 있게 만들었습니다.</p>
+
+          <article className="home-feature-card accent">
+            <div className="feature-icon">
+              <CircleDollarSign size={22} />
+            </div>
+            <div>
+              <h2>매수·매도 추적</h2>
+              <p>큰손과 내부자가 어떤 종목을 사고파는지 봅니다.</p>
+              <small>공개된 매수·매도 자료로 시장의 관심 흐름을 참고합니다.</small>
+            </div>
+            <ul>
+              <li>미국 국회의원</li>
+              <li>내부자 매수·매도</li>
+              <li>기관·펀드 포트폴리오</li>
+              <li>국민연금 / 한국 공개 포트폴리오</li>
+            </ul>
+            <button type="button" onClick={() => scrollToSection('smart-money')}>
+              매수·매도 보기
+              <ArrowRight size={16} />
+            </button>
           </article>
         </section>
 
-        <section className="landing-categories" id="categories">
-          <div className="landing-section-head">
-            <p className="landing-kicker">CATEGORY DOMAINS</p>
-            <h2>분석 카테고리</h2>
+        <section className="home-section" id="market-movers">
+          <div className="home-section-head">
+            <span>1</span>
+            <div>
+              <h2>오늘 움직인 종목</h2>
+              <p>숫자만 보지 않고, 왜 움직였는지 한 줄로 먼저 봅니다.</p>
+            </div>
           </div>
-          <div className="category-columns">
+          <div className="home-card-grid">
+            {marketMovers.map((mover) => {
+              const company = companies.find((item) => item.id === mover.companyId);
+              const reportLink = company ? getPrimaryReportLink(company) : null;
+              return (
+                <article className="mover-card" key={mover.id}>
+                  <div className="card-topline">
+                    <span>{mover.market}</span>
+                    <strong className={mover.move.startsWith('-') ? 'down' : 'up'}>{mover.move}</strong>
+                  </div>
+                  <h3>{mover.companyName}</h3>
+                  <p className="ticker">{mover.ticker}</p>
+                  <p>{mover.reason}</p>
+                  <small>{mover.beginnerNote}</small>
+                  <div className="mini-tag-row">
+                    <span>{mover.sectorLabel}</span>
+                  </div>
+                  <div className="card-actions">
+                    {company && (
+                      <>
+                        <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button>
+                        <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
+                      </>
+                    )}
+                    {reportLink?.isDirect && (
+                      <a href={reportLink.url} target="_blank" rel="noreferrer">
+                        원문 보고서 보기
+                      </a>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="home-section" id="supply-chain">
+          <div className="home-section-head">
+            <span>2</span>
             <div>
-              <h3>한국</h3>
-              <div className="landing-card-grid">
-                {koreanSectors.map((sector) => (
-                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
-                    <span>{sector.label}</span>
-                    <small>{sector.description}</small>
-                    <em>{categoryPath(sector.id)}</em>
-                  </button>
-                ))}
-              </div>
+              <h2>인기 공급망 지도</h2>
+              <p>공급망은 기업들이 제품을 만들고 팔기까지 연결된 구조입니다.</p>
             </div>
+          </div>
+          <div className="home-card-grid supply-preview-grid">
+            {popularSectors.map((sector) => {
+              const sectorAnchors = anchors.filter((anchor) => anchor.sectorId === sector.id).slice(0, 3);
+              const relatedSmes = companies.filter((company) => company.sectorId === sector.id && company.tier === 'tier2').length;
+              return (
+                <article className="supply-preview-card" key={sector.id}>
+                  <div className="card-topline">
+                    <span>{sector.country === 'KR' ? '한국' : '미국'}</span>
+                    <em>{categoryPath(sector.id)}</em>
+                  </div>
+                  <h3>{sector.label}</h3>
+                  <p>{beginnerSectorNotes[sector.id] ?? sector.description}</p>
+                  <dl>
+                    <div>
+                      <dt>핵심 기업</dt>
+                      <dd>{sectorAnchors.map((anchor) => anchor.name).join(', ')}</dd>
+                    </div>
+                    <div>
+                      <dt>관련 SME 수</dt>
+                      <dd>{relatedSmes}개</dd>
+                    </div>
+                    <div>
+                      <dt>최근 이슈</dt>
+                      <dd>{issueNotes[sector.id] ?? sector.newsKeywords.slice(0, 3).join(', ')}</dd>
+                    </div>
+                  </dl>
+                  <button type="button" onClick={() => onOpenCategory(sector.id)}>
+                    공급망 보기
+                    <ArrowRight size={16} />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="home-section" id="smart-money">
+          <div className="home-section-head">
+            <span>3</span>
             <div>
-              <h3>미국</h3>
-              <div className="landing-card-grid">
-                {usSectors.map((sector) => (
-                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
-                    <span>{sector.label}</span>
-                    <small>{sector.description}</small>
-                    <em>{categoryPath(sector.id)}</em>
-                  </button>
-                ))}
-              </div>
+              <h2>최근 큰손 매수·매도</h2>
+              <p>큰손 매매는 확정 신호가 아니라 추가로 확인할 참고 정보입니다.</p>
             </div>
+          </div>
+          <div className="trade-filter-panel" aria-label="매수 매도 필터">
+            <div className="trade-filter-row">
+              {[
+                { value: 'all', label: '전체 시장' },
+                { value: 'KR', label: '한국' },
+                { value: 'US', label: '미국' },
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  className={tradeMarketFilter === filter.value ? 'active' : ''}
+                  onClick={() => setTradeMarketFilter(filter.value as 'all' | CountryId)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            <div className="trade-filter-row">
+              <button className={tradeTypeFilter === 'all' ? 'active' : ''} type="button" onClick={() => setTradeTypeFilter('all')}>
+                전체 유형
+              </button>
+              {tradeTypeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={tradeTypeFilter === option.value ? 'active' : ''}
+                  onClick={() => setTradeTypeFilter(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="trade-filter-row">
+              {[
+                { value: 'all', label: '전체 방향' },
+                { value: 'buy', label: '매수' },
+                { value: 'sell', label: '매도' },
+                { value: 'increase', label: '비중확대' },
+                { value: 'decrease', label: '비중축소' },
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  className={tradeActionFilter === filter.value ? 'active' : ''}
+                  onClick={() => setTradeActionFilter(filter.value as 'all' | SmartMoneyAction)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            <div className="trade-search">
+              <Search size={15} />
+              <input
+                type="search"
+                placeholder="종목, 섹터, 투자자 검색"
+                value={tradeSearch}
+                onChange={(event) => setTradeSearch(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="home-card-grid smart-money-grid">
+            {filteredTradeItems.map((move) => {
+              const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
+              const reportLink = company ? getPrimaryReportLink(company) : null;
+              const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
+              return (
+                <article className="smart-card" key={move.id}>
+                  <div className="card-topline">
+                    <span>{move.investorTypeLabel}</span>
+                    <strong>{move.actionLabel}</strong>
+                  </div>
+                  <h3>{move.investorName}</h3>
+                  <p className="ticker">
+                    {move.companyName} · {move.ticker}
+                  </p>
+                  <p>{move.beginnerExplanation}</p>
+                  <dl>
+                    <div>
+                      <dt>시장</dt>
+                      <dd>{move.market === 'KR' ? '한국' : '미국'}</dd>
+                    </div>
+                    <div>
+                      <dt>공개일</dt>
+                      <dd>{move.disclosedDate}</dd>
+                    </div>
+                    <div>
+                      <dt>거래일</dt>
+                      <dd>{move.tradeDateOptional ?? '공개 자료에서 확인 필요'}</dd>
+                    </div>
+                    <div>
+                      <dt>관련 섹터</dt>
+                      <dd>{move.sectorLabel}</dd>
+                    </div>
+                    <div>
+                      <dt>출처</dt>
+                      <dd>{move.sourceLabel}</dd>
+                    </div>
+                  </dl>
+                  <small className="trade-delay-note">
+                    {move.isDelayedDisclosure ? '지연 공시일 수 있어 실제 매매 시점과 다를 수 있습니다.' : move.note}
+                  </small>
+                  <div className="card-actions">
+                    <button type="button" onClick={() => onOpenCategory(supplyChainId)}>공급망 보기</button>
+                    {company ? (
+                      <>
+                        <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button>
+                        <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
+                      </>
+                    ) : (
+                      <button type="button">관련 분석 준비 중</button>
+                    )}
+                    {reportLink?.isDirect && (
+                      <a href={reportLink.url} target="_blank" rel="noreferrer">
+                        원문 보고서 보기
+                      </a>
+                    )}
+                    {move.sourceUrl && (
+                      <a href={move.sourceUrl} target="_blank" rel="noreferrer">
+                        출처 보기
+                      </a>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+            {filteredTradeItems.length === 0 && <div className="trade-empty">조건에 맞는 공개 매수·매도 데이터가 아직 없습니다.</div>}
+          </div>
+          <div className="home-note">
+            <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
+            <p>투자 권유가 아닌 참고용 데이터입니다.</p>
+          </div>
+        </section>
+
+        <section className="home-quick-access" id="filing-preview" aria-label="재무 공시 바로가기">
+          <div>
+            <h2>재무제표 해설이 있는 기업</h2>
+            <p>기존 DART / SEC 분석 텍스트는 그대로 유지하고, 바로 열 수 있게 모았습니다.</p>
+          </div>
+          <div className="quick-access-list">
+            {companies
+              .filter((company) => getCompanyFilingAnalysis(company))
+              .map((company) => {
+                const reportLink = getPrimaryReportLink(company);
+                return (
+                  <article key={company.id}>
+                    <strong>{company.name}</strong>
+                    <span>{company.country === 'KR' ? 'DART 재무제표 해설' : 'SEC MD&A / Filing 해설'}</span>
+                    <div>
+                      <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
+                      <a href={reportLink.url} target="_blank" rel="noreferrer">
+                        원문 보고서 보기
+                      </a>
+                    </div>
+                  </article>
+                );
+              })}
           </div>
         </section>
       </main>
@@ -985,12 +1319,32 @@ function LandingPage({ onOpenCategory }: LandingPageProps) {
 }
 
 function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: AnalysisPageProps) {
-  const disclosureLinks = externalDisclosureLinks(company);
+  const primaryReportLink = getPrimaryReportLink(company);
+  const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.url !== primaryReportLink.url);
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
   const displayMetrics = disclosureAnalysis.displayMetrics;
   const insights = disclosureAnalysis.insights;
   const isKorea = company.country === 'KR';
   const watchPoints = disclosureAnalysis.watchPoints;
+  const [financialSummary, setFinancialSummary] = useState<FinancialStatementSummary>(() => buildFallbackFinancials(company));
+  const [companyTrades, setCompanyTrades] = useState<SmartMoneyMove[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFinancialSummary(buildFallbackFinancials(company));
+    setCompanyTrades([]);
+
+    fetchFinancialsByCompany(company).then((summary) => {
+      if (!cancelled) setFinancialSummary(summary);
+    });
+    fetchTradesByCompany(company).then((items) => {
+      if (!cancelled) setCompanyTrades(items);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company]);
 
   return (
     <div className="analysis-shell">
@@ -1009,9 +1363,9 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           </p>
         </div>
         <div className="analysis-actions">
-          <a href={disclosureAnalysis.sourceUrl} target="_blank" rel="noreferrer">
+          <a href={primaryReportLink.url} target="_blank" rel="noreferrer" className={primaryReportLink.isDirect ? 'direct-action' : 'pending-action'}>
             <ExternalLink size={15} />
-            {disclosureAnalysis.isCurated ? '원문 보고서' : '원문 검색'}
+            {primaryReportLink.label}
           </a>
           {disclosureLinks.map((link) => (
             <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
@@ -1026,7 +1380,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
         <section className="analysis-card analysis-summary">
           <div className="section-title">
             <CircleDollarSign size={16} />
-            <span>공시 단위로 다시 보기</span>
+            <span>재무제표 핵심 숫자</span>
           </div>
           <div className="statement-metrics">
             <div>
@@ -1051,6 +1405,32 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
             </div>
           </div>
           <p className="basis-note">{displayMetrics.revenueBasis}</p>
+        </section>
+
+        <section className="analysis-card api-financial-card">
+          <div className="section-title">
+            <Database size={16} />
+            <span>자동 업데이트 재무 요약</span>
+          </div>
+          <div className="analysis-status-row">
+            <span className={`analysis-status-pill ${financialSummary.isApiData ? 'complete' : 'pending'}`}>
+              {financialSummary.isApiData ? 'API 데이터 연결됨' : financialSummary.status === 'needs-source' ? '원문 연결 필요' : 'API fallback 표시 중'}
+            </span>
+            <small>{financialSummary.sourceLabel} · {financialSummary.reportType} · {financialSummary.fiscalYear}</small>
+          </div>
+          <p className="api-financial-copy">{financialSummary.beginnerExplanation}</p>
+          <div className="api-metric-grid">
+            {financialSummary.metrics.map((item) => (
+              <article key={item.key}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                {item.unit && <em>{item.unit}</em>}
+                <p>{item.beginnerExplanation}</p>
+                <small>{item.keyTakeaway}</small>
+              </article>
+            ))}
+          </div>
+          <p className="basis-note">{financialSummary.keyTakeaway}</p>
         </section>
 
         <section className="analysis-card filing-brief">
@@ -1081,6 +1461,16 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
             <span>원문 확인 루트</span>
           </div>
           <div className="disclosure-list">
+            <a
+              href={primaryReportLink.url}
+              target="_blank"
+              rel="noreferrer"
+              className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
+            >
+              <strong>{primaryReportLink.label}</strong>
+              <span>{primaryReportLink.note}</span>
+              <ExternalLink size={14} />
+            </a>
             {disclosureLinks.map((link) => (
               <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
                 <strong>{link.label}</strong>
@@ -1099,7 +1489,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
         <section className="analysis-card insight-wide">
           <div className="section-title">
             <BarChart3 size={16} />
-            <span>{disclosureAnalysis.isCurated ? '공시 숫자로 읽은 해석' : '회사별 공시 확인 포인트'}</span>
+            <span>{disclosureAnalysis.isCurated ? '재무제표 해설' : '초보자용 공시 확인 포인트'}</span>
           </div>
           <div className="insight-grid">
             {insights.map((insight) => (
@@ -1116,7 +1506,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
         <section className="analysis-card">
           <div className="section-title">
             <ShieldAlert size={16} />
-            <span>{isKorea ? '감사·검토 기록' : '감사·MD&A 기록'}</span>
+            <span>{isKorea ? '감사·검토 기록' : 'MD&A / 경영진 해설'}</span>
           </div>
           <ul className="plain-list">
             {disclosureAnalysis.auditNotes.map((note) => (
@@ -1135,6 +1525,38 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
               <li key={point}>{point}</li>
             ))}
           </ul>
+        </section>
+
+        <section className="analysis-card related-trades">
+          <div className="section-title">
+            <CircleDollarSign size={16} />
+            <span>매수·매도 참고 정보</span>
+          </div>
+          {companyTrades.length === 0 ? (
+            <div className="trade-empty">관련 분석 준비 중입니다. 공개 자료가 연결되면 내부자, 기관, 펀드 매매를 함께 보여줍니다.</div>
+          ) : (
+            <div className="related-trade-list">
+              {companyTrades.slice(0, 4).map((move) => (
+                <article key={move.id}>
+                  <div>
+                    <strong>{move.investorName}</strong>
+                    <span>{move.investorTypeLabel} · {move.actionLabel}</span>
+                  </div>
+                  <p>{move.beginnerExplanation}</p>
+                  <small>
+                    공개일 {move.disclosedDate}
+                    {move.tradeDateOptional ? ` · 거래일 ${move.tradeDateOptional}` : ' · 거래일 확인 필요'}
+                    {' · '}
+                    {move.sourceLabel}
+                  </small>
+                </article>
+              ))}
+            </div>
+          )}
+          <div className="home-note">
+            <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
+            <p>매수·매도 정보는 투자 권유가 아닌 참고용 데이터입니다.</p>
+          </div>
         </section>
 
         <section className="analysis-card related-news">
@@ -1201,6 +1623,7 @@ function App() {
     groupCompanies[0];
   const selectedOpinions = analystOpinions.filter((opinion) => opinion.companyId === selectedCompany?.id);
   const selectedDisplayMetrics = selectedCompany ? getDisplayMetrics(selectedCompany) : null;
+  const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const opportunityCount = groupCompanies.filter((company) => company.status === 'opportunity').length;
@@ -1421,7 +1844,7 @@ function App() {
   }
 
   if (!isCategoryRoute) {
-    return <LandingPage onOpenCategory={openCategory} />;
+    return <LandingPage onOpenCategory={openCategory} onOpenAnalysis={openAnalysis} />;
   }
 
   return (
@@ -1544,19 +1967,23 @@ function App() {
               <span>선택 앵커 공급망</span>
             </div>
             {visibleCompanies.map((company) => (
-              <button
-                className={`company-row ${selectedCompany?.id === company.id ? 'selected' : ''}`}
-                key={company.id}
-                onClick={() => setSelectedCompanyId(company.id)}
-                type="button"
-              >
-                <span className={`tier-pill ${company.tier}`}>{tierLabels[company.tier]}</span>
-                <span className="company-row-main">
-                  <strong>{company.name}</strong>
-                  <small>{company.sector}</small>
-                </span>
-                <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
-              </button>
+              <div className={`company-row-card ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
+                <button
+                  className="company-row"
+                  onClick={() => setSelectedCompanyId(company.id)}
+                  type="button"
+                >
+                  <span className={`tier-pill ${company.tier}`}>{tierLabels[company.tier]}</span>
+                  <span className="company-row-main">
+                    <strong>{company.name}</strong>
+                    <small>{company.sector}</small>
+                  </span>
+                  <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
+                </button>
+                <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
+                  재무·공시 보기
+                </button>
+              </div>
             ))}
           </div>
         </aside>
@@ -1602,17 +2029,6 @@ function App() {
             >
               <Background color="#d1d5db" gap={22} />
               <Controls position="bottom-left" />
-              <MiniMap
-                position="bottom-right"
-                nodeColor={(node) => {
-                  const company = (node.data as NodeData).company;
-                  if (company.tier === 'anchor') return '#1d4ed8';
-                  if (company.riskLevel === 'high') return '#dc2626';
-                  if (company.riskLevel === 'medium') return '#d97706';
-                  return '#059669';
-                }}
-                maskColor="rgba(248, 250, 252, 0.74)"
-              />
             </ReactFlow>
           </section>
 
@@ -1703,6 +2119,12 @@ function App() {
                     <FileSearch size={15} />
                     재무제표 분석 열기
                   </button>
+                  {selectedReportLink && (
+                    <a className={`analysis-link-button ${selectedReportLink.isDirect ? 'direct' : 'pending'}`} href={selectedReportLink.url} target="_blank" rel="noreferrer">
+                      <ExternalLink size={15} />
+                      {selectedReportLink.isDirect ? '원문 보고서 보기' : '원문 연결 필요'}
+                    </a>
+                  )}
                 </div>
               </div>
 

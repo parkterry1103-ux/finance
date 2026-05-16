@@ -1,0 +1,32 @@
+name: Sync official finance data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 9 * * 1-5"
+    - cron: "15 */6 * * 1-5"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Sync official financials and trades
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          SEC_13F_MANAGER_CIKS: ${{ secrets.SEC_13F_MANAGER_CIKS }}
+          CONGRESS_TRADES_IMPORT_URL: ${{ secrets.CONGRESS_TRADES_IMPORT_URL }}
+          NPS_IMPORT_URL: ${{ secrets.NPS_IMPORT_URL }}
+        run: npm run sync:all

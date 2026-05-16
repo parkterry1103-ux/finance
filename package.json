@@ -7,7 +7,15 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "dev:vercel": "npx vercel dev"
+    "dev:vercel": "npx vercel dev",
+    "sync:opendart": "node --experimental-strip-types scripts/sync-opendart-financials.ts",
+    "sync:sec-companyfacts": "node --experimental-strip-types scripts/sync-sec-companyfacts.ts",
+    "sync:sec-form4": "node --experimental-strip-types scripts/sync-sec-form4.ts",
+    "sync:sec-13f": "node --experimental-strip-types scripts/sync-sec-13f.ts",
+    "sync:congress": "node --experimental-strip-types scripts/sync-congress-trades.ts",
+    "sync:financials": "npm run sync:opendart && npm run sync:sec-companyfacts",
+    "sync:trades": "npm run sync:sec-form4 && npm run sync:sec-13f && npm run sync:congress",
+    "sync:all": "npm run sync:financials && npm run sync:trades"
   },
   "engines": {
     "node": "20.x"
