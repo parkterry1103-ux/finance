@@ -18,6 +18,10 @@
       "destination": "/"
     },
     {
+      "source": "/ko/",
+      "destination": "/"
+    },
+    {
       "source": "/ko/:path*",
       "destination": "/"
     }
