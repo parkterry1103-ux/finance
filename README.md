@@ -171,9 +171,10 @@ API 키나 DB 환경변수가 없으면 실패하지 않고 안내 로그를 출
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
 
 - `/api/sync/financials`: 평일 09:00 UTC 1회
-- `/api/sync/trades`: 평일 6시간마다
+- `/api/sync/trades`: 평일 03:00 UTC 1회
 
 엔드포인트는 `CRON_SECRET`으로 보호됩니다.
+Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므로, 매수·매도 데이터를 더 자주 갱신하려면 아래 GitHub Actions 스케줄을 사용하거나 Vercel Pro에서 Cron 주기를 늘리세요.
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/financials
