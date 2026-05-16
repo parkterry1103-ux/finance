@@ -182,7 +182,11 @@ function formatNewsDate(value: string) {
 }
 
 function analysisPath(company: Company) {
-  return `/analysis?company=${encodeURIComponent(company.id)}`;
+  return `/ko/analysis/${encodeURIComponent(company.id)}`;
+}
+
+function categoryPath(sectorId: string) {
+  return `/ko/category/${encodeURIComponent(sectorId)}`;
 }
 
 function externalDisclosureLinks(company: Company) {
@@ -322,6 +326,195 @@ const filingAnalyses: Record<string, FilingAnalysis> = {
       '이 자체가 회계 문제라는 의미는 아닙니다. 투자자는 수주 뉴스만 보지 말고 실제 매출채권 회수, 재고 감소, 고객 검수 완료가 이어지는지 확인해야 합니다.',
     ],
   },
+  'kr-semiconductors-samsung': {
+    reportTitle: '삼성전자 2026년 1분기 분기보고서',
+    reportDate: '2026.05.15 공시 · 2026.03 연결 기준',
+    sourceLabel: 'DART 분기보고서 원문',
+    sourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181',
+    displayMetrics: {
+      revenue: '133,873,444',
+      revenueUnit: '단위: 백만원 · 2026년 1분기 연결 매출액',
+      revenueBasis: 'DART 분기보고서(2026.03) 연결 손익계산서 기준. 전년 동기 비교는 2025년 1분기 연결 금액과 비교했습니다.',
+      growth: '+69.2%',
+      growthBasis: '2026년 1분기 매출 133,873,444백만원 vs 2025년 1분기 79,140,503백만원',
+      opMargin: '42.8%',
+      debtRatio: '30.1%',
+    },
+    headline: '삼성전자는 매출과 영업이익이 동시에 크게 회복됐지만, 재고와 매출채권 증가가 현금흐름의 핵심 변수입니다.',
+    verdict:
+      '연결 매출은 133.9조원, 영업이익은 57.2조원입니다. 영업현금흐름도 40.3조원으로 강하지만, 영업활동 자산부채 변동이 -32.0조원이라 반도체 회복이 재고와 매출채권을 크게 동반한 분기였습니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 133.9조원 · 영업이익 57.2조원',
+        body:
+          '2026년 1분기 연결 매출은 전년 동기보다 69.2% 증가했습니다. 영업이익률은 42.8%로, 메모리 가격 회복과 고부가 제품 믹스가 이익에 크게 반영된 모습입니다.',
+        point:
+          '매출 회복 자체는 매우 강하지만, 메모리 업황은 가격과 출하 시점에 민감합니다. 다음 분기에도 HBM·서버 메모리 수요가 영업이익률을 유지하는지 확인해야 합니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 40.3조원',
+        body:
+          '영업현금흐름은 40.3조원으로 전년 동기 16.6조원보다 좋아졌습니다. 다만 영업활동 자산부채 변동은 -32.0조원으로, 매출 회복 과정에서 재고와 매출채권이 크게 늘었습니다.',
+        point:
+          '이익이 현금으로도 들어오고 있지만 운전자본이 같이 커졌습니다. 재고가 실제 출하로 이어지고 매출채권 회수가 안정적으로 진행되면 업황 회복의 질이 더 좋아집니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: '투자현금흐름 -21.5조원',
+        body:
+          '투자활동현금흐름은 -21.5조원이고 유형자산 취득은 17.1조원입니다. 메모리, 파운드리, 첨단 패키징 투자가 현금 유출로 먼저 반영되는 구조입니다.',
+        point:
+          '대규모 설비투자는 단기 현금을 줄이지만 다음 사이클 생산능력과 기술 우위의 기반입니다. 이후 감가상각비 증가가 이익률을 얼마나 누르는지도 함께 봐야 합니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 73.3조원 · 부채비율 30.1%',
+        body:
+          '분기 말 현금성자산은 73.3조원, 부채총계는 146.7조원, 자본총계는 486.6조원입니다. 부채비율은 30.1%로 재무 안정성은 강합니다.',
+        point:
+          '매출채권은 82.3조원, 재고는 58.3조원입니다. 업황 회복 국면에서는 이 숫자가 커질 수 있지만, 판매 속도가 꺾이면 현금 회수가 늦어질 수 있습니다.',
+      },
+    ],
+    watchPoints: [
+      '메모리와 HBM 수요가 매출뿐 아니라 영업이익률 40%대 유지로 이어지는지 확인합니다.',
+      '재고 58.3조원과 매출채권 82.3조원이 다음 분기에 줄거나 매출로 전환되는지가 현금흐름의 핵심입니다.',
+      '유형자산 취득 17.1조원은 미래 생산능력 투자입니다. 이후 감가상각비와 가동률이 함께 올라가는지 봐야 합니다.',
+      '자기주식 취득 7.6조원과 대규모 투자 집행이 동시에 있어, 주주환원과 성장투자 균형을 계속 확인합니다.',
+    ],
+    auditNotes: [
+      '제58기 1분기는 삼정회계법인의 검토 대상이며, 중요성 관점에서 공정하게 표시하지 않은 사항이 발견되지 않았다고 공시했습니다.',
+      '제57기 감사의견은 적정의견이고 계속기업 관련 중요한 불확실성은 해당사항 없음으로 공시됐습니다.',
+      '대형 반도체 기업은 재고 평가, 매출 인식, 설비투자와 감가상각이 핵심입니다. 특히 업황 회복기에는 재고가 이익으로 바뀌는 속도를 확인해야 합니다.',
+    ],
+  },
+  'kr-semiconductors-sk-hynix': {
+    reportTitle: 'SK하이닉스 2026년 1분기 분기보고서',
+    reportDate: '2026.05.15 공시 · 2026.03 연결 기준',
+    sourceLabel: 'DART 분기보고서 원문',
+    sourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287',
+    displayMetrics: {
+      revenue: '52,576,287',
+      revenueUnit: '단위: 백만원 · 2026년 1분기 연결 매출액',
+      revenueBasis: 'DART 분기보고서(2026.03) 연결 포괄손익계산서 기준. 전년 동기 비교는 2025년 1분기 연결 금액과 비교했습니다.',
+      growth: '+198.1%',
+      growthBasis: '2026년 1분기 매출 52,576,287백만원 vs 2025년 1분기 17,639,141백만원',
+      opMargin: '71.5%',
+      debtRatio: '35.6%',
+    },
+    headline: 'SK하이닉스는 HBM 중심 메모리 사이클에서 매출, 영업이익, 현금흐름이 모두 강하게 개선된 분기입니다.',
+    verdict:
+      '매출은 52.6조원, 영업이익은 37.6조원입니다. 영업현금흐름 26.3조원은 전년 동기 9.0조원보다 크게 늘었고, 투자현금흐름 -17.6조원은 HBM과 선단 공정 투자 부담을 보여줍니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 52.6조원 · 영업이익 37.6조원',
+        body:
+          '연결 매출은 전년 동기 대비 198.1% 증가했고 영업이익률은 71.5%입니다. 메모리 업황 반등과 고부가 HBM 비중이 손익에 강하게 반영된 것으로 해석됩니다.',
+        point:
+          '이익률이 매우 높아진 만큼, 다음에는 HBM 가격과 고객 인증, 일반 DRAM·NAND 가격이 꺾이지 않는지가 중요합니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 26.3조원',
+        body:
+          '영업활동현금흐름은 26.3조원으로 전년 동기보다 약 17.3조원 늘었습니다. 순이익 40.3조원 대비 낮지만, 배당금 수취 4.0조원과 법인세 납부 3.3조원도 같이 반영됐습니다.',
+        point:
+          '이익이 현금으로 잘 전환되고 있습니다. 다만 매출채권이 33.8조원으로 크게 늘어, 고객사 회수 속도를 같이 봐야 합니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: '투자현금흐름 -17.6조원',
+        body:
+          '투자활동현금흐름은 -17.6조원이고 유형자산 취득은 7.7조원입니다. HBM과 첨단 메모리 생산능력 확대를 위한 투자가 현금 유출로 먼저 잡힌 분기입니다.',
+        point:
+          '강한 투자는 미래 성장의 준비지만, 메모리 사이클이 식으면 고정비와 감가상각 부담이 커집니다. 투자 속도와 수요 지속성을 함께 봐야 합니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 21.2조원 · 부채비율 35.6%',
+        body:
+          '현금성자산은 21.2조원, 부채총계는 58.4조원, 자본총계는 164.4조원입니다. 부채비율은 35.6%로 재무 여력은 양호합니다.',
+        point:
+          '재고는 16.0조원으로 전년 말보다 늘었고 매출채권은 33.8조원입니다. 성장 구간에서는 자연스러운 증가지만, 출하와 회수 속도가 핵심입니다.',
+      },
+    ],
+    watchPoints: [
+      'HBM 매출이 고마진을 유지하는지, 고객 인증과 공급계약이 실제 매출로 이어지는지 봅니다.',
+      '매출채권 33.8조원 회수 속도와 재고 16.0조원 회전율이 다음 분기 현금흐름의 핵심입니다.',
+      '유형자산 취득 7.7조원은 성장 투자지만, 이후 감가상각비와 가동률이 같이 올라야 이익률이 유지됩니다.',
+      '차입금 상환으로 재무활동현금흐름은 -3.0조원입니다. 업황이 좋을 때 재무 부담을 낮추는 흐름은 긍정적입니다.',
+    ],
+    auditNotes: [
+      '분기보고서 기준 외부감사 항목은 분기 검토 성격으로 봐야 하며, 최종 감사의견은 사업보고서에서 확인합니다.',
+      '메모리 기업의 핵심 감사 포인트는 재고 평가와 수익 인식입니다. 제품 가격이 빠르게 움직이면 재고평가손실이나 환입이 이익에 크게 영향을 줍니다.',
+      '투자자는 HBM 수요 뉴스와 함께 재고, 매출채권, 설비투자 증가가 실제 현금흐름으로 이어지는지 확인해야 합니다.',
+    ],
+  },
+  'kr-semiconductors-db-hitek': {
+    reportTitle: 'DB하이텍 2026년 1분기 분기보고서',
+    reportDate: '2026.05.15 공시 · 2026.03 연결 기준',
+    sourceLabel: 'DART 분기보고서 원문',
+    sourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001650',
+    displayMetrics: {
+      revenue: '374,629',
+      revenueUnit: '단위: 백만원 · 2026년 1분기 연결 매출액',
+      revenueBasis: 'DART 분기보고서(2026.03) 연결 손익계산서 기준. 전년 동기 비교는 2025년 1분기 연결 금액과 비교했습니다.',
+      growth: '+26.0%',
+      growthBasis: '2026년 1분기 매출 374,629백만원 vs 2025년 1분기 297,381백만원',
+      opMargin: '17.0%',
+      debtRatio: '28.9%',
+    },
+    headline: 'DB하이텍은 매출과 이익이 개선됐지만, 투자현금흐름과 현금 잔고 감소를 함께 봐야 하는 분기입니다.',
+    verdict:
+      '매출은 3,746억원, 영업이익은 637억원입니다. 영업현금흐름은 700억원으로 안정적이지만 투자활동현금흐름은 -1,994억원이고, 기말 현금은 2,058억원으로 줄었습니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 3,746억원 · 영업이익 637억원',
+        body:
+          '연결 매출은 전년 동기 대비 26.0% 증가했고 영업이익률은 17.0%입니다. 8인치 파운드리와 전력반도체 수요가 손익 개선에 반영된 모습입니다.',
+        point:
+          '파운드리는 가동률이 이익률에 큰 영향을 줍니다. 매출 성장보다 중요한 것은 웨이퍼 투입량, 제품 믹스, 고객 단가가 유지되는지입니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 700억원',
+        body:
+          '영업활동현금흐름은 700억원으로 전년 동기 664억원보다 소폭 개선됐습니다. 순이익 869억원 대비 낮지만 본업 현금창출은 플러스입니다.',
+        point:
+          '매출채권은 1,536억원으로 늘었고 재고는 921억원으로 줄었습니다. 회수와 출하가 이어지면 현금흐름은 안정적으로 유지될 수 있습니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: '투자현금흐름 -1,994억원',
+        body:
+          '투자활동현금흐름은 -1,994억원입니다. 유형자산 취득은 401억원으로 크지 않지만, 금융상품 운용 등 투자활동 현금 유출이 크게 잡혔습니다.',
+        point:
+          '현금 감소를 설비투자만으로 단정하면 안 됩니다. 금융상품 이동인지, 생산능력 투자 증가인지 원문 세부 항목을 나눠 봐야 합니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 2,058억원 · 부채비율 28.9%',
+        body:
+          '현금성자산은 2,058억원, 부채총계는 6,841억원, 자본총계는 2조3,642억원입니다. 부채비율은 28.9%로 안정적입니다.',
+        point:
+          '기말 현금은 전년 말 3,231억원에서 감소했습니다. 투자 집행과 현금 회수 사이의 시간차를 다음 분기에 확인해야 합니다.',
+      },
+    ],
+    watchPoints: [
+      '8인치 파운드리 가동률과 전력반도체 수요가 매출 성장률 26%를 유지하는지 봅니다.',
+      '영업현금흐름은 플러스지만 기말 현금이 줄었습니다. 투자활동 세부 항목을 원문에서 나눠 봐야 합니다.',
+      '재고가 975억원에서 921억원으로 줄어든 점은 긍정적입니다. 매출채권 회수까지 이어지는지 확인합니다.',
+      '부채비율 28.9%는 안정적이지만, 파운드리 업황이 둔화되면 고정비 부담이 빠르게 커질 수 있습니다.',
+    ],
+    auditNotes: [
+      '분기보고서는 검토 성격입니다. 최종 감사의견과 핵심감사사항은 사업보고서 감사보고서에서 확인합니다.',
+      '파운드리 기업은 재고 평가, 유형자산 손상, 고객별 매출 인식이 주요 회계 리스크입니다.',
+      '투자자는 공장 가동률 뉴스와 함께 매출채권 회수, 재고 감소, 유형자산 투자 추이를 함께 봐야 합니다.',
+    ],
+  },
   'us-semiconductors-nvidia': {
     reportTitle: 'NVIDIA fiscal 2026 Form 10-K',
     reportDate: '2026.02.25 filed · fiscal year ended Jan 25, 2026',
@@ -386,6 +579,134 @@ const filingAnalyses: Record<string, FilingAnalysis> = {
       '투자자는 “수요가 많다”는 말만 볼 것이 아니라, H20 관련 재고·구매약정 비용처럼 규제와 제품 전환이 재고 손실로 이어지는 경우를 같이 봐야 합니다.',
     ],
   },
+  'us-semiconductors-amd': {
+    reportTitle: 'AMD fiscal 2025 Form 10-K',
+    reportDate: '2026.02.04 filed · fiscal year ended Dec 27, 2025',
+    sourceLabel: 'SEC 10-K 원문',
+    sourceUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
+    displayMetrics: {
+      revenue: '34,639',
+      revenueUnit: '단위: 백만 달러 · FY2025 연결 매출',
+      revenueBasis: 'SEC Form 10-K(FY2025) 연결 손익계산서 기준. 성장률은 FY2024 연결 매출 25,785백만 달러와 비교했습니다.',
+      growth: '+34.3%',
+      growthBasis: 'FY2025 매출 $34,639M vs FY2024 $25,785M',
+      opMargin: '10.7%',
+      debtRatio: '22.1%',
+    },
+    headline:
+      'AMD는 매출과 현금흐름이 모두 좋아졌지만, MD&A에서 말하는 데이터센터 GPU 성장과 재고 증가를 같이 읽어야 합니다.',
+    verdict:
+      'FY2025 매출은 346억 달러, 영업이익은 36.9억 달러입니다. 영업현금흐름은 77.1억 달러로 순이익 43.4억 달러보다 강하지만, 재고가 79.2억 달러로 늘어 AI 가속기 전환 속도가 핵심입니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 $34.6B · 영업이익률 10.7%',
+        body:
+          'FY2025 매출은 전년 대비 34.3% 증가했습니다. 영업이익률은 10.7%로 NVIDIA보다 낮지만, 데이터센터와 클라이언트 회복이 매출 확대를 이끌었습니다.',
+        point:
+          'MD&A는 Data Center, Client and Gaming, Embedded 세그먼트의 흐름을 나눠 설명합니다. AMD는 AI GPU 성장이 커졌지만, 제품 믹스와 원가 구조가 이익률 개선의 핵심입니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 $7.7B',
+        body:
+          '영업현금흐름은 77.1억 달러로 순이익 43.4억 달러보다 높습니다. 이익이 실제 현금으로 잘 전환된 해였고, AI 서버 수요 확대가 운전자본을 키운 모습입니다.',
+        point:
+          '매출채권은 63.2억 달러, 재고는 79.2억 달러입니다. AI 가속기 수요가 계속 강하면 준비된 재고가 매출로 바뀌지만, 수요가 늦어지면 현금이 묶일 수 있습니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: 'CapEx $1.0B',
+        body:
+          '유형자산 취득은 9.7억 달러로 팹리스 기업답게 삼성전자나 Intel보다 설비투자 부담이 작습니다. 대신 소프트웨어, IP, 공급망 선점, 파트너십이 더 중요합니다.',
+        point:
+          'AMD의 투자 포인트는 자체 공장보다 제품 로드맵과 외부 파운드리·패키징 공급망입니다. MD&A에서 제품 전환, 수요 전망, 고객 집중 설명을 같이 봐야 합니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 $5.5B · 부채비율 22.1%',
+        body:
+          '현금성자산은 55.4억 달러, 총부채는 139.3억 달러, 자본은 630.0억 달러입니다. 부채비율은 약 22.1%로 재무 부담은 낮은 편입니다.',
+        point:
+          '재무 안정성보다 중요한 리스크는 AI GPU 재고와 고객 수요 전환입니다. MD&A의 수요 설명이 매출채권 회수와 재고 회전으로 확인되는지 봅니다.',
+      },
+    ],
+    watchPoints: [
+      'MD&A에서 Data Center 성장 원인을 MI 시리즈 수요, EPYC 서버 CPU, 고객 채택으로 나눠 봅니다.',
+      '재고 79.2억 달러가 빠르게 늘었습니다. AI 가속기 수요가 실제 출하와 매출총이익으로 이어지는지 확인합니다.',
+      '영업현금흐름 77.1억 달러는 강합니다. 다음 해에도 순이익보다 현금흐름이 강한 구조가 유지되는지 봅니다.',
+      '미국 수출 규제와 특정 AI 제품 재고평가 이슈가 MD&A와 주석에 어떻게 설명되는지 확인해야 합니다.',
+    ],
+    auditNotes: [
+      '감사인은 Ernst & Young이고 FY2025 재무제표와 내부통제에 대한 감사의견을 확인해야 합니다.',
+      'AMD는 팹리스 구조라 유형자산보다 재고, 매출 인식, 공급계약, 인수 관련 무형자산이 핵심 회계 포인트입니다.',
+      '미국 기업은 숫자 자체보다 MD&A에서 경영진이 왜 변했는지 설명하는 부분이 중요합니다. 이 화면은 그 설명을 한국어 투자 체크포인트로 함께 보여주도록 구성했습니다.',
+    ],
+  },
+  'us-semiconductors-intel': {
+    reportTitle: 'Intel fiscal 2025 Form 10-K',
+    reportDate: '2026.01.23 filed · fiscal year ended Dec 27, 2025',
+    sourceLabel: 'SEC 10-K 원문',
+    sourceUrl: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm',
+    displayMetrics: {
+      revenue: '52,853',
+      revenueUnit: '단위: 백만 달러 · FY2025 연결 매출',
+      revenueBasis: 'SEC Form 10-K(FY2025) 연결 손익계산서 기준. 성장률은 FY2024 연결 매출 53,101백만 달러와 비교했습니다.',
+      growth: '-0.5%',
+      growthBasis: 'FY2025 매출 $52,853M vs FY2024 $53,101M',
+      opMargin: '-4.2%',
+      debtRatio: '85.0%',
+    },
+    headline:
+      'Intel은 매출이 정체되고 영업손실이 이어졌지만, 영업현금흐름은 플러스입니다. 핵심은 MD&A의 파운드리 전환 비용과 CapEx 부담입니다.',
+    verdict:
+      'FY2025 매출은 528.5억 달러, 영업손실은 22.1억 달러입니다. 영업현금흐름은 97.0억 달러지만 유형자산 취득이 146.5억 달러라, 제조 전환 투자 부담이 현금흐름을 누르고 있습니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 $52.9B · 영업손실 $2.2B',
+        body:
+          '매출은 전년 대비 0.5% 감소했고 영업이익률은 -4.2%입니다. 클라이언트와 서버 수요보다 파운드리 전환, 구조조정, 제조 원가 부담이 손익의 핵심입니다.',
+        point:
+          'Intel은 단순 반도체 설계사가 아니라 제조와 파운드리 전환을 같이 하는 회사입니다. 그래서 매출 성장보다 공정 전환 성공과 가동률 회복이 더 중요합니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 $9.7B',
+        body:
+          '순손실에도 영업현금흐름은 97.0억 달러로 플러스입니다. 감가상각과 비현금 비용이 커서 회계상 손실과 현금흐름이 다르게 움직입니다.',
+        point:
+          '영업현금흐름이 플러스인 점은 버틸 힘을 보여주지만, 투자현금 유출이 더 크면 외부 지원, 자산 매각, 차입 관리가 계속 중요해집니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: 'CapEx $14.6B',
+        body:
+          '유형자산 취득은 146.5억 달러입니다. 파운드리와 선단 공정 전환 투자가 크기 때문에, 당장 손익보다 미래 생산능력과 고객 확보가 관건입니다.',
+        point:
+          '투자가 미래 매출로 이어지면 회복의 기반이 되지만, 가동률이 낮거나 고객 확보가 늦으면 감가상각비와 고정비가 이익을 계속 누릅니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 $14.3B · 부채비율 85.0%',
+        body:
+          '현금성자산은 142.7억 달러, 총부채는 971.5억 달러, 자본은 1,142.8억 달러입니다. 부채비율 85.0%는 NVIDIA·AMD보다 부담이 큰 편입니다.',
+        point:
+          'Intel의 투자 판단은 재무 여력과 제조 전환 성공을 같이 봐야 합니다. MD&A의 유동성, 정부지원, 자본지출 계획을 특히 중요하게 읽어야 합니다.',
+      },
+    ],
+    watchPoints: [
+      'MD&A의 Client Computing, Data Center and AI, Intel Foundry 설명을 나눠서 봅니다. 특히 Foundry 손실 축소 여부가 중요합니다.',
+      '영업현금흐름 97.0억 달러보다 CapEx 146.5억 달러가 큽니다. 투자자금 조달과 현금 잔고 방어를 확인해야 합니다.',
+      '부채비율이 85.0%로 상대적으로 높습니다. 금리와 차입 만기, 정부 보조금 수령 조건을 함께 봅니다.',
+      '재고 116.2억 달러와 매출채권 38.4억 달러가 제품 전환기에 어떻게 움직이는지 확인해야 합니다.',
+    ],
+    auditNotes: [
+      '감사인은 Ernst & Young이고 FY2025 10-K에서 재무제표와 내부통제 의견을 확인해야 합니다.',
+      'Intel은 제조 전환 기업이라 유형자산 손상, 재고 평가, 정부 보조금, 구조조정 비용이 핵심 회계 포인트입니다.',
+      '미국 기업 분석에서는 MD&A가 매우 중요합니다. Intel은 경영진이 투자 부담, 파운드리 전략, 유동성 계획을 어떻게 설명하는지가 숫자만큼 중요합니다.',
+    ],
+  },
 };
 
 function getCompanyFilingAnalysis(company: Company) {
@@ -443,7 +764,10 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
       ...curated,
       isCurated: true,
       statusLabel: company.country === 'KR' ? 'DART 원문 분석 완료' : 'SEC 원문 분석 완료',
-      statusDetail: '손익계산서, 재무상태표, 현금흐름표, 감사·MD&A 내용을 실제 공시 숫자로 해석했습니다.',
+      statusDetail:
+        company.country === 'KR'
+          ? '손익계산서, 재무상태표, 현금흐름표, 감사·검토 기록을 실제 공시 숫자로 해석했습니다.'
+          : '손익계산서, 재무상태표, 현금흐름표, 감사의견, MD&A를 실제 공시 숫자로 해석했습니다.',
     };
   }
 
@@ -529,6 +853,136 @@ type AnalysisPageProps = {
   onBack: () => void;
   onRefreshNews: () => void;
 };
+
+type LandingPageProps = {
+  onOpenCategory: (sectorId: string) => void;
+};
+
+function LandingPage({ onOpenCategory }: LandingPageProps) {
+  const curatedCount = Object.keys(filingAnalyses).length;
+  const koreanSectors = sectors.filter((sector) => sector.country === 'KR');
+  const usSectors = sectors.filter((sector) => sector.country === 'US');
+  const heroSectors = sectors.slice(0, 6);
+
+  return (
+    <div className="landing-shell">
+      <header className="landing-nav">
+        <a href="/ko/" onClick={(event) => event.preventDefault()} className="landing-brand">
+          <span className="landing-logo">
+            <Network size={20} />
+          </span>
+          <strong>FINANCE</strong>
+        </a>
+        <nav>
+          <a href={categoryPath('kr-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('kr-semiconductors'); }}>
+            한국 반도체
+          </a>
+          <a href={categoryPath('us-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('us-semiconductors'); }}>
+            미국 반도체
+          </a>
+          <a href="#categories">카테고리</a>
+        </nav>
+      </header>
+
+      <main>
+        <section className="landing-hero">
+          <div className="landing-copy">
+            <p className="landing-kicker">DART · SEC FILING INTELLIGENCE</p>
+            <h1>공시를 읽고 공급망을 연결하는 투자 지도</h1>
+            <p>
+              한국 기업은 DART 재무제표와 감사기록, 미국 기업은 SEC 재무제표와 MD&A를 한국어로 풀어서 공급망 카테고리와 연결합니다.
+            </p>
+            <div className="landing-actions">
+              <a href={categoryPath('kr-semiconductors')} onClick={(event) => { event.preventDefault(); onOpenCategory('kr-semiconductors'); }}>
+                시작하기
+              </a>
+              <a href="#categories" className="secondary">
+                카테고리 보기
+              </a>
+            </div>
+          </div>
+
+          <div className="landing-preview" aria-label="공급망 앱 미리보기">
+            <div className="preview-toolbar">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="preview-grid">
+              <div className="preview-sidebar">
+                {heroSectors.slice(0, 4).map((sector) => (
+                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
+                    {sector.label}
+                  </button>
+                ))}
+              </div>
+              <div className="preview-map">
+                <span className="preview-node main">삼성전자</span>
+                <span className="preview-line one" />
+                <span className="preview-node second">한미반도체</span>
+                <span className="preview-line two" />
+                <span className="preview-node third">NVIDIA</span>
+              </div>
+              <div className="preview-panel">
+                <strong>DART 원문 분석 완료</strong>
+                <p>매출 133.9조원 · 영업현금흐름 40.3조원</p>
+                <small>감사·MD&A 한국어 해석</small>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-feature-row">
+          <article>
+            <strong>{curatedCount}개 실제 원문 분석</strong>
+            <p>삼성전자, SK하이닉스, DB하이텍, 한미반도체, NVIDIA, AMD, Intel부터 실제 공시 숫자로 해석합니다.</p>
+          </article>
+          <article>
+            <strong>MD&A 한국어 해석</strong>
+            <p>미국 기업은 경영진이 실적 변화를 설명하는 MD&A를 재무제표 숫자와 함께 읽습니다.</p>
+          </article>
+          <article>
+            <strong>카테고리형 확장</strong>
+            <p>각 산업 카테고리를 독립 주소로 연결해 앞으로 새 분석 도메인을 계속 붙일 수 있게 만들었습니다.</p>
+          </article>
+        </section>
+
+        <section className="landing-categories" id="categories">
+          <div className="landing-section-head">
+            <p className="landing-kicker">CATEGORY DOMAINS</p>
+            <h2>분석 카테고리</h2>
+          </div>
+          <div className="category-columns">
+            <div>
+              <h3>한국</h3>
+              <div className="landing-card-grid">
+                {koreanSectors.map((sector) => (
+                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
+                    <span>{sector.label}</span>
+                    <small>{sector.description}</small>
+                    <em>{categoryPath(sector.id)}</em>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3>미국</h3>
+              <div className="landing-card-grid">
+                {usSectors.map((sector) => (
+                  <button key={sector.id} type="button" onClick={() => onOpenCategory(sector.id)}>
+                    <span>{sector.label}</span>
+                    <small>{sector.description}</small>
+                    <em>{categoryPath(sector.id)}</em>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
 
 function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: AnalysisPageProps) {
   const disclosureLinks = externalDisclosureLinks(company);
@@ -754,19 +1208,32 @@ function App() {
   const routePath = route.split('?')[0];
   const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
   const routeParams = new URLSearchParams(routeQuery);
-  const routeCompany = companies.find((company) => company.id === routeParams.get('company'));
+  const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
+  const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
+  const routeAnalysisCompanyId = routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company');
+  const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
+  const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeCompany ?? selectedCompany;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
-  const newsCompany = routePath === '/analysis' && analysisCompany ? analysisCompany : selectedCompany;
-  const newsSector = routePath === '/analysis' && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
-  const newsAnchor = routePath === '/analysis' && analysisCompany ? analysisCompany.anchorId : selectedAnchor.id;
-  const newsCountry = routePath === '/analysis' && analysisCompany ? analysisCompany.country : selectedCountry;
+  const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
+  const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
+  const newsCompany = isAnalysisRoute && analysisCompany ? analysisCompany : selectedCompany;
+  const newsSector = isAnalysisRoute && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
+  const newsAnchor = isAnalysisRoute && analysisCompany ? analysisCompany.anchorId : selectedAnchor.id;
+  const newsCountry = isAnalysisRoute && analysisCompany ? analysisCompany.country : selectedCountry;
 
   useEffect(() => {
     const syncRoute = () => setRoute(`${window.location.pathname}${window.location.search}`);
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
   }, []);
+
+  useEffect(() => {
+    if (!routeCategoryId) return;
+    const routeSector = sectors.find((sector) => sector.id === routeCategoryId);
+    if (!routeSector || routeSector.id === selectedSectorId) return;
+    selectSectorScope(routeSector.id);
+  }, [routeCategoryId, selectedSectorId]);
 
   const flowNodes: Node<NodeData>[] = useMemo(
     () =>
@@ -879,7 +1346,31 @@ function App() {
   }
 
   function closeAnalysis() {
-    window.history.pushState({}, '', '/');
+    const sectorId = analysisCompany?.sectorId ?? selectedSector.id;
+    window.history.pushState({}, '', categoryPath(sectorId));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function selectSectorScope(sectorId: string) {
+    const nextSector = sectors.find((sector) => sector.id === sectorId) ?? sectors[0];
+    const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
+    const nextCompany = companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
+    setSelectedCountry(nextSector.country);
+    setSelectedSectorId(nextSector.id);
+    setSelectedAnchorId(nextAnchor.id);
+    setSelectedCompanyId(nextCompany.id);
+    setQuery('');
+    setRiskFilter('all');
+  }
+
+  function openCategory(sectorId: string) {
+    selectSectorScope(sectorId);
+    window.history.pushState({}, '', categoryPath(sectorId));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function openHome() {
+    window.history.pushState({}, '', '/ko/');
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
@@ -893,16 +1384,18 @@ function App() {
     setSelectedCompanyId(nextCompany.id);
     setQuery('');
     setRiskFilter('all');
+    if (isCategoryRoute) {
+      window.history.pushState({}, '', categoryPath(nextSector.id));
+      setRoute(`${window.location.pathname}${window.location.search}`);
+    }
   }
 
   function changeSector(sectorId: string) {
-    const nextAnchor = anchors.find((anchor) => anchor.sectorId === sectorId) ?? anchors[0];
-    const nextCompany = companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
-    setSelectedSectorId(sectorId);
-    setSelectedAnchorId(nextAnchor.id);
-    setSelectedCompanyId(nextCompany.id);
-    setQuery('');
-    setRiskFilter('all');
+    selectSectorScope(sectorId);
+    if (isCategoryRoute) {
+      window.history.pushState({}, '', categoryPath(sectorId));
+      setRoute(`${window.location.pathname}${window.location.search}`);
+    }
   }
 
   function changeAnchor(anchorId: string) {
@@ -913,7 +1406,7 @@ function App() {
     setRiskFilter('all');
   }
 
-  if (routePath === '/analysis' && analysisCompany) {
+  if (isAnalysisRoute && analysisCompany) {
     return (
       <ReactFlowProvider>
         <AnalysisPage
@@ -925,6 +1418,10 @@ function App() {
         />
       </ReactFlowProvider>
     );
+  }
+
+  if (!isCategoryRoute) {
+    return <LandingPage onOpenCategory={openCategory} />;
   }
 
   return (
@@ -1073,7 +1570,7 @@ function App() {
               <h2>{selectedAnchor.name} 공급망</h2>
             </div>
             <div className="topbar-actions">
-              <button type="button" className="icon-action" aria-label="공급망 맵">
+              <button type="button" className="icon-action" aria-label="메인 페이지" onClick={openHome}>
                 <Network size={18} />
               </button>
               <button

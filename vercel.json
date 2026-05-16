@@ -12,6 +12,14 @@
     {
       "source": "/analysis/:path*",
       "destination": "/"
+    },
+    {
+      "source": "/ko",
+      "destination": "/"
+    },
+    {
+      "source": "/ko/:path*",
+      "destination": "/"
     }
   ]
 }
