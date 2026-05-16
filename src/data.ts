@@ -47,7 +47,10 @@ export interface Company {
   products: string[];
   anchorCustomer: string;
   revenue: string;
+  revenueUnit: string;
+  revenueBasis: string;
   revenueTrend: number;
+  growthBasis: string;
   opMargin: string;
   debtRatio: string;
   customerConcentration: string;
@@ -4593,6 +4596,36 @@ function metric(seed: number, base: number, step: number, unit = '') {
   return `${base + seed * step}${unit}`;
 }
 
+function metricValue(seed: number, base: number, step: number) {
+  return base + seed * step;
+}
+
+function revenueUnit(country: CountryId) {
+  return country === 'KR' ? '단위: 백만원' : '단위: 백만달러';
+}
+
+function revenueBasis(country: CountryId, sourceType: SourceType) {
+  if (sourceType === 'official') {
+    return country === 'KR'
+      ? 'DART 최근 사업보고서 연결 손익계산서 원문 확인'
+      : 'SEC 최근 10-K 연결 손익계산서 원문 확인';
+  }
+  return country === 'KR'
+    ? 'DART 표시 방식에 맞춘 스크리닝 값. 실제 수치는 사업보고서 원문으로 확인'
+    : 'SEC 10-K 표시 방식에 맞춘 스크리닝 값. 실제 수치는 원문으로 확인';
+}
+
+function growthBasis(country: CountryId) {
+  return country === 'KR'
+    ? '전년 동기 또는 전 사업연도 연결 매출액 대비. 원문 연결 전에는 후보 스크리닝 기준'
+    : '전년 동기 또는 전 회계연도 revenue 대비. 원문 연결 전에는 후보 스크리닝 기준';
+}
+
+function formatDisclosureRevenue(country: CountryId, amount: number) {
+  const value = country === 'KR' ? amount * 100 : amount;
+  return value.toLocaleString(country === 'KR' ? 'ko-KR' : 'en-US');
+}
+
 function companySourceNote(tier: CompanyTier) {
   if (tier === 'anchor') return '공시·IR·거래소·감독기관 데이터 연결 대상';
   return '실명 기업 기반 검증 후보입니다. 특정 앵커 납품 관계는 공시·IR·계약·뉴스 API로 추가 확인해야 합니다.';
@@ -4617,8 +4650,11 @@ function buildCompanies() {
       region: anchor.region,
       products: anchor.products,
       anchorCustomer: '기준 기업',
-      revenue: '공시 연결',
+      revenue: anchor.country === 'KR' ? 'DART 원문 확인' : 'SEC 원문 확인',
+      revenueUnit: revenueUnit(anchor.country),
+      revenueBasis: revenueBasis(anchor.country, 'official'),
       revenueTrend: 4.8 + anchor.rank * 1.4,
+      growthBasis: growthBasis(anchor.country),
       opMargin: '공시 연결',
       debtRatio: '공시 연결',
       customerConcentration: 'N/A',
@@ -4660,6 +4696,7 @@ function buildCompanies() {
     template.tier1.forEach((tier1, tier1Index) => {
       const tier1Id = `${anchor.id}-${slugify(tier1.company.name)}`;
       const trendSeed = anchorIndex + tier1Index + 1;
+      const tier1Revenue = metricValue(trendSeed, 2_400, 520);
       const tier1Company: Company = {
         id: tier1Id,
         anchorId: anchor.id,
@@ -4672,8 +4709,11 @@ function buildCompanies() {
         region: tier1.company.region ?? '국내 주요 협력 기업군',
         products: tier1.company.products,
         anchorCustomer: anchor.name,
-        revenue: `${metric(trendSeed, 2_400, 520)}억`,
+        revenue: formatDisclosureRevenue(anchor.country, tier1Revenue),
+        revenueUnit: revenueUnit(anchor.country),
+        revenueBasis: revenueBasis(anchor.country, 'seed-model'),
         revenueTrend: tier1.company.status === 'opportunity' ? 11.4 + trendSeed * 1.2 : 5.2 + trendSeed * 0.8,
+        growthBasis: growthBasis(anchor.country),
         opMargin: `${(6.2 + trendSeed * 0.75).toFixed(1)}%`,
         debtRatio: tier1.company.risk === 'high' ? `${metric(trendSeed, 88, 7)}%` : `${metric(trendSeed, 42, 6)}%`,
         customerConcentration: `${metric(trendSeed, 34, 4)}%`,
@@ -4712,6 +4752,7 @@ function buildCompanies() {
       tier1.children.forEach((child, childIndex) => {
         const childId = `${tier1Id}-${slugify(child.name)}`;
         const childSeed = anchorIndex + tier1Index * 3 + childIndex + 2;
+        const childRevenue = metricValue(childSeed, 620, 88);
         const childCompany: Company = {
           id: childId,
           anchorId: anchor.id,
@@ -4724,8 +4765,11 @@ function buildCompanies() {
           region: child.region ?? '국내 하청·중소형 협력 기업군',
           products: child.products,
           anchorCustomer: tier1.company.name,
-          revenue: `${metric(childSeed, 620, 88)}억`,
+          revenue: formatDisclosureRevenue(anchor.country, childRevenue),
+          revenueUnit: revenueUnit(anchor.country),
+          revenueBasis: revenueBasis(anchor.country, 'seed-model'),
           revenueTrend: child.status === 'opportunity' ? 13.6 + childSeed * 0.85 : 3.8 + childSeed * 0.65,
+          growthBasis: growthBasis(anchor.country),
           opMargin: `${(4.8 + childSeed * 0.45).toFixed(1)}%`,
           debtRatio: child.risk === 'high' ? `${metric(childSeed, 92, 6)}%` : `${metric(childSeed, 38, 5)}%`,
           customerConcentration: child.risk === 'high' ? `${metric(childSeed, 57, 3)}%` : `${metric(childSeed, 27, 3)}%`,

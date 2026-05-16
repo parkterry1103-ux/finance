@@ -162,16 +162,18 @@ function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
-function buildQuery(sector, anchor) {
-  const keywords = unique([...(ANCHOR_KEYWORDS[anchor] || []), ...(SECTOR_KEYWORDS[sector] || [])]).slice(0, 8);
+function buildQuery(sector, anchor, company) {
+  const companyKeywords = company ? [String(company)] : [];
+  const keywords = unique([...companyKeywords, ...(ANCHOR_KEYWORDS[anchor] || []), ...(SECTOR_KEYWORDS[sector] || [])]).slice(0, 8);
   const quoted = keywords.map((keyword) => `"${keyword.replace(/"/g, '')}"`);
   return quoted.length ? `(${quoted.join(' OR ')})` : '"supply chain"';
 }
 
-function buildSimpleNewsQuery(sector, anchor) {
+function buildSimpleNewsQuery(sector, anchor, company) {
   const anchorKeywords = ANCHOR_KEYWORDS[anchor] || [];
   const sectorKeywords = SECTOR_KEYWORDS[sector] || [];
-  const keywords = unique([...anchorKeywords.slice(0, 2), ...sectorKeywords.slice(0, 3)]);
+  const companyKeywords = company ? [String(company)] : [];
+  const keywords = unique([...companyKeywords, ...anchorKeywords.slice(0, 2), ...sectorKeywords.slice(0, 3)]);
   return keywords.length ? keywords.map((keyword) => `"${keyword.replace(/"/g, '')}"`).join(' OR ') : '"supply chain"';
 }
 
@@ -285,8 +287,8 @@ async function fetchGdeltArticles(query, protocol = 'https:') {
   );
 }
 
-async function fetchGoogleNewsArticles(sector, anchor, country) {
-  const simpleQuery = buildSimpleNewsQuery(sector, anchor);
+async function fetchGoogleNewsArticles(sector, anchor, country, company) {
+  const simpleQuery = buildSimpleNewsQuery(sector, anchor, company);
   const url = new URL('https://news.google.com/rss/search');
   url.searchParams.set('q', `${simpleQuery} when:1d`);
   url.searchParams.set('hl', country === 'KR' ? 'ko' : 'en-US');
@@ -326,11 +328,12 @@ function dedupeAndTrust(articles) {
 }
 
 export default async function handler(req, res) {
-  const { country = 'KR', sector = 'kr-semiconductors', anchor = '' } = req.query || {};
+  const { country = 'KR', sector = 'kr-semiconductors', anchor = '', company = '' } = req.query || {};
   const normalizedCountry = String(country).toUpperCase();
   const normalizedSector = String(sector);
   const normalizedAnchor = String(anchor);
-  const query = buildQuery(normalizedSector, normalizedAnchor);
+  const normalizedCompany = String(company).trim();
+  const query = buildQuery(normalizedSector, normalizedAnchor, normalizedCompany);
   const upstreamErrors = [];
   let provider = 'GDELT DOC 2.0';
   let articles = [];
@@ -349,7 +352,7 @@ export default async function handler(req, res) {
 
   if (!trustedArticles.length) {
     try {
-      const fallbackArticles = await fetchGoogleNewsArticles(normalizedSector, normalizedAnchor, normalizedCountry);
+      const fallbackArticles = await fetchGoogleNewsArticles(normalizedSector, normalizedAnchor, normalizedCountry, normalizedCompany);
       const trustedFallbackArticles = dedupeAndTrust(fallbackArticles);
       if (trustedFallbackArticles.length) {
         trustedArticles = trustedFallbackArticles;
@@ -366,6 +369,7 @@ export default async function handler(req, res) {
     country: normalizedCountry,
     sector: normalizedSector,
     anchor: normalizedAnchor,
+    company: normalizedCompany,
     window: '1d',
     provider,
     trustedDomains: TRUSTED_DOMAINS,
