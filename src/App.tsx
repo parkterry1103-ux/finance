@@ -251,6 +251,12 @@ type FilingAnalysis = {
   auditNotes: string[];
 };
 
+type CompanyDisclosureAnalysis = FilingAnalysis & {
+  isCurated: boolean;
+  statusLabel: string;
+  statusDetail: string;
+};
+
 const filingAnalyses: Record<string, FilingAnalysis> = {
   'kr-semiconductors-samsung-한미반도체': {
     reportTitle: '한미반도체 2026년 1분기 분기보고서',
@@ -386,16 +392,43 @@ function getCompanyFilingAnalysis(company: Company) {
   return filingAnalyses[company.id];
 }
 
+function parsePercentValue(value: string) {
+  const parsed = Number(value.replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function topicParticle(value: string) {
+  const trimmed = value.trim();
+  const last = trimmed[trimmed.length - 1];
+  if (!last) return '는';
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return '는';
+  return (code - 0xac00) % 28 === 0 ? '는' : '은';
+}
+
+function directionParticle(value: string) {
+  const trimmed = value.trim();
+  const last = trimmed[trimmed.length - 1];
+  if (!last) return '로';
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return '로';
+  const finalConsonant = (code - 0xac00) % 28;
+  return finalConsonant === 0 || finalConsonant === 8 ? '로' : '으로';
+}
+
 function getDisplayMetrics(company: Company): CompanyDisplayMetrics {
   const filingAnalysis = getCompanyFilingAnalysis(company);
   if (filingAnalysis) {
     return filingAnalysis.displayMetrics;
   }
 
+  const isSeed = company.sourceType === 'seed-model';
   return {
     revenue: company.revenue,
-    revenueUnit: company.revenueUnit,
-    revenueBasis: company.revenueBasis,
+    revenueUnit: `${company.revenueUnit}${isSeed ? ' · 후보 스크리닝' : ''}`,
+    revenueBasis: isSeed
+      ? `${company.revenueBasis}. 이 값은 원문 수집 전 후보 비교용이며, 투자 판단 전 최신 공시 원문으로 확정해야 합니다.`
+      : company.revenueBasis,
     growth: `${company.revenueTrend > 0 ? '+' : ''}${company.revenueTrend.toFixed(1)}%`,
     growthBasis: company.growthBasis,
     opMargin: company.opMargin,
@@ -403,41 +436,90 @@ function getDisplayMetrics(company: Company): CompanyDisplayMetrics {
   };
 }
 
-function getFinancialInsights(company: Company) {
-  const productText = company.products.slice(0, 2).join('·') || company.sector;
-  const isKorea = company.country === 'KR';
-  const filingSystem = isKorea ? 'DART' : 'SEC';
-  const annualReport = isKorea ? '사업보고서' : '10-K';
-  const auditText = isKorea ? '감사의견과 강조사항' : '감사의견과 내부통제 의견';
+function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany): CompanyDisclosureAnalysis {
+  const curated = getCompanyFilingAnalysis(company);
+  if (curated) {
+    return {
+      ...curated,
+      isCurated: true,
+      statusLabel: company.country === 'KR' ? 'DART 원문 분석 완료' : 'SEC 원문 분석 완료',
+      statusDetail: '손익계산서, 재무상태표, 현금흐름표, 감사·MD&A 내용을 실제 공시 숫자로 해석했습니다.',
+    };
+  }
 
-  return [
-    {
-      title: '손익계산서',
-      kicker: '매출과 이익의 질',
-      body: `${company.name}의 매출은 ${company.revenueUnit} 기준으로 봅니다. 매출이 늘어도 영업이익률이 같이 오르지 않으면 원재료비, 인건비, 고객 단가 압박을 의심해야 합니다.`,
-      point: `${productText} 수요가 실제 매출로 이어지는지 ${annualReport}의 제품별 매출과 주석을 같이 봅니다.`,
-    },
-    {
-      title: '현금흐름표',
-      kicker: '돈이 실제로 들어왔는지',
-      body: '영업활동현금흐름이 플러스면 장사가 현금으로 이어진다는 뜻입니다. 반대로 이익은 나는데 현금이 약하면 매출채권 회수나 재고 부담을 확인해야 합니다.',
-      point: '투자활동현금흐름이 크게 마이너스면 나쁜 신호만은 아닙니다. 공장, 장비, 데이터센터 같은 대규모 증설 투자라면 다음 매출 사이클을 준비하는 지출일 수 있습니다.',
-    },
-    {
-      title: '투자와 감가상각',
-      kicker: '미래 비용과 절세 효과',
-      body: '설비 투자는 한 번에 비용 처리되지 않고 여러 해에 걸쳐 감가상각비로 나뉘어 반영됩니다. 그래서 초기에는 현금이 나가지만 이후에는 현금 유출 없는 비용이 생깁니다.',
-      point: '감가상각비는 회계상 비용이라 영업이익을 낮출 수 있지만, 과세소득을 줄여 세금 부담을 낮추는 효과도 있습니다. 투자 규모가 매출 증가로 연결되는지가 핵심입니다.',
-    },
-    {
-      title: isKorea ? '감사기록' : 'MD&A',
-      kicker: isKorea ? auditText : '경영진의 실적 해설',
-      body: isKorea
-        ? `${filingSystem}의 감사보고서에서 한정·부적정·의견거절, 계속기업 불확실성, 내부회계관리제도 지적이 있는지 먼저 봅니다. 초보 투자자는 이 부분만 확인해도 큰 회계 리스크를 줄일 수 있습니다.`
-        : 'SEC 10-K의 MD&A는 경영진이 매출, 비용, 현금흐름 변화 이유를 직접 설명하는 구간입니다. 숫자보다 “왜 변했는지”를 한국어로 풀어 읽는 것이 중요합니다.',
-      point: `${filingSystem} 원문에서 숫자, 주석, 경영진 설명이 같은 방향을 가리키는지 확인합니다.`,
-    },
-  ];
+  const disclosureLink = externalDisclosureLinks(company)[0];
+  const displayMetrics = getDisplayMetrics(company);
+  const regulator = company.country === 'KR' ? 'DART' : 'SEC';
+  const reportName = company.country === 'KR' ? '사업보고서·분기보고서' : '10-K·10-Q';
+  const managementSection = company.country === 'KR' ? '감사보고서와 주석' : 'MD&A와 Notes';
+  const directCustomer = company.tier === 'anchor' ? '섹터 기준 기업' : `${anchor?.name ?? company.anchorCustomer} 관련 후보`;
+  const concentration = parsePercentValue(company.customerConcentration);
+  const concentrationText =
+    concentration === undefined
+      ? '고객 집중도는 원문에서 별도 확인해야 합니다.'
+      : concentration >= 60
+        ? `고객집중도 ${company.customerConcentration}로 표시되어 있어 특정 고객 투자 사이클에 민감한 편입니다.`
+        : `고객집중도 ${company.customerConcentration}로 표시되어 있어 원문에서 주요 고객 비중이 실제로 낮아지는지 확인합니다.`;
+  const debt = parsePercentValue(company.debtRatio);
+  const debtText =
+    debt === undefined
+      ? '부채 부담은 원문 재무상태표에서 유동부채와 차입금을 다시 확인해야 합니다.'
+      : debt >= 100
+        ? `부채비율 ${company.debtRatio}라면 수주가 늘어도 이자비용과 운전자본 부담을 먼저 확인해야 합니다.`
+        : `부채비율 ${company.debtRatio} 기준으로는 과도한 레버리지보다 매출 회수와 재고 회전이 더 중요한 체크포인트입니다.`;
+
+  return {
+    reportTitle: `${company.name} 회사별 공시 분석`,
+    reportDate: `${regulator} ${reportName} 원문 연결형 · ${company.sourceType === 'seed-model' ? '후보 스크리닝 데이터' : '공시 데이터'} 기준`,
+    sourceLabel: disclosureLink?.label ?? `${regulator} 원문 검색`,
+    sourceUrl: disclosureLink?.url ?? newsSearchUrl(company),
+    displayMetrics,
+    headline: `${company.name}${topicParticle(company.name)} ${directCustomer}${directionParticle(directCustomer)}, ${company.sector} 매출이 실제 공시에서 확인되는지가 핵심입니다.`,
+    verdict:
+      company.sourceType === 'seed-model'
+        ? `현재 숫자는 ${company.name}을 빠르게 비교하기 위한 스크리닝 값입니다. 분석 화면은 ${regulator} 원문에서 매출, 영업현금흐름, 감사·주석을 확정해 읽도록 구성했습니다.`
+        : `${company.name}의 공시 기반 숫자를 ${regulator} 원문과 대조해 매출 성장, 현금 회수, 재무 부담을 함께 확인합니다.`,
+    insights: [
+      {
+        title: '손익 흐름',
+        kicker: `${displayMetrics.growth} · ${company.sector}`,
+        body: `${company.name}의 표시 매출은 ${displayMetrics.revenue}이고 기준은 ${displayMetrics.revenueUnit}입니다. 성장률은 ${displayMetrics.growthBasis} 기준으로 표시됩니다.`,
+        point: `${company.products.slice(0, 3).join(', ')} 매출이 실제 원문 주석에서 늘었는지 확인해야 합니다. 단순 수주 뉴스보다 공시 매출 인식 시점이 더 중요합니다.`,
+      },
+      {
+        title: '현금흐름',
+        kicker: '이익이 현금으로 바뀌는지',
+        body: `${company.name}은 ${company.products.slice(0, 2).join('·') || company.sector} 노출 기업입니다. 원문에서 순이익보다 영업현금흐름이 약하면 매출채권 회수 지연, 재고 증가, 선급금·계약부채 변화를 확인해야 합니다.`,
+        point: `${concentrationText} ${company.anchorCustomer} 쪽 수요가 실제 현금 회수로 이어지는지가 다음 분기 핵심입니다.`,
+      },
+      {
+        title: '투자·설비',
+        kicker: `${company.products[0] ?? company.sector} 투자 확인`,
+        body: `${company.sector} 기업은 성장 구간에서 설비, 장비, 개발비, 데이터센터, 생산능력 투자가 먼저 늘 수 있습니다. 원문의 투자활동현금흐름과 유형·무형자산 증가를 같이 봐야 합니다.`,
+        point: `투자가 늘면 단기 현금은 줄지만 미래 매출 기반이 될 수 있습니다. 반대로 매출 증가 없이 재고와 투자만 늘면 부담으로 바뀝니다.`,
+      },
+      {
+        title: company.country === 'KR' ? '감사·주석' : 'MD&A·주석',
+        kicker: managementSection,
+        body: `${company.name}의 리스크 표시는 ${riskLabels[company.riskLevel]}입니다. 원문에서는 계속기업 불확실성, 강조사항, 핵심감사사항, 고객·재고·매출채권 주석을 먼저 확인해야 합니다.`,
+        point: `${debtText} 숫자가 좋아 보여도 감사인이 강조한 항목과 경영진 설명이 같은 방향인지 확인합니다.`,
+      },
+    ],
+    watchPoints: [
+      `${regulator}에서 ${company.legalName}의 최신 ${reportName} 원문을 열고 연결 기준 매출, 영업이익, 순이익을 확인합니다.`,
+      `성장률 기준은 ${displayMetrics.growthBasis}입니다. 화면 숫자가 스크리닝이면 원문 숫자로 교체해 전년 동기 또는 전 회계연도와 다시 비교합니다.`,
+      `현금흐름표에서 영업현금흐름, 매출채권, 재고, 계약부채가 ${company.name}의 매출 방향과 같이 움직이는지 봅니다.`,
+      `${company.anchorCustomer} 관련 뉴스와 수주 공시가 실제 매출 인식, 재고 감소, 현금 회수로 이어지는지 확인합니다.`,
+    ],
+    auditNotes: [
+      `${company.country === 'KR' ? 'DART 감사보고서' : 'SEC auditor report'}에서 감사의견, 내부통제 의견, 계속기업 불확실성 여부를 확인합니다.`,
+      `${company.name}의 핵심감사사항은 매출 인식, 재고 평가, 손상, 충당부채처럼 ${company.sector} 사업 특성과 연결된 항목을 우선 봅니다.`,
+      '이 화면은 회사별 원문 확인 순서를 고정해 둔 구조입니다. 원문 수치가 반영된 기업은 위 카드처럼 실제 금액과 해석으로 계속 확장됩니다.',
+    ],
+    isCurated: false,
+    statusLabel: `${regulator} 원문 연결 필요`,
+    statusDetail: '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
+  };
 }
 
 type AnalysisPageProps = {
@@ -450,17 +532,11 @@ type AnalysisPageProps = {
 
 function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: AnalysisPageProps) {
   const disclosureLinks = externalDisclosureLinks(company);
-  const filingAnalysis = getCompanyFilingAnalysis(company);
-  const displayMetrics = getDisplayMetrics(company);
-  const insights = filingAnalysis?.insights ?? getFinancialInsights(company);
+  const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
+  const displayMetrics = disclosureAnalysis.displayMetrics;
+  const insights = disclosureAnalysis.insights;
   const isKorea = company.country === 'KR';
-  const watchPoints =
-    filingAnalysis?.watchPoints ?? [
-      '투자활동현금흐름 감소가 설비투자라면 생산능력 확대와 감가상각비 증가를 함께 봅니다.',
-      '감가상각비 증가는 단기 이익을 눌러도 현금 유출이 없는 비용이라 세금 부담 완화 효과가 생길 수 있습니다.',
-      '매출 성장률은 전년 대비 기준을 우선 보고, 고객 집중도가 높으면 특정 고객 투자 사이클 의존도를 따로 봅니다.',
-      isKorea ? '감사보고서의 강조사항과 내부회계관리제도 지적을 숫자보다 먼저 읽습니다.' : 'MD&A의 유동성, 자본지출, 리스크 요인을 숫자보다 먼저 읽습니다.',
-    ];
+  const watchPoints = disclosureAnalysis.watchPoints;
 
   return (
     <div className="analysis-shell">
@@ -470,21 +546,19 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           대시보드로 돌아가기
         </button>
         <div>
-          <p className="eyebrow">{filingAnalysis ? 'DART 원문 기반 재무제표 해석' : isKorea ? 'DART 재무제표 해설' : 'SEC 재무제표·MD&A 해설'}</p>
+          <p className="eyebrow">{disclosureAnalysis.isCurated ? (isKorea ? 'DART 원문 기반 재무제표 해석' : 'SEC 원문 기반 재무제표 해석') : `${isKorea ? 'DART' : 'SEC'} 회사별 공시 검증 화면`}</p>
           <h1>{company.name} 재무분석</h1>
           <p>
-            {filingAnalysis
-              ? `${filingAnalysis.reportTitle} 숫자를 기준으로 손익, 현금흐름, 감사기록을 초보 투자자도 판단할 수 있게 해석합니다.`
-              : `${company.sector} · ${anchor?.name ?? company.anchorCustomer} 공급망 후보를 초보 투자자도 읽을 수 있게 풀어봅니다.`}
+            {disclosureAnalysis.isCurated
+              ? `${disclosureAnalysis.reportTitle} 숫자를 기준으로 손익, 현금흐름, 감사기록을 초보 투자자도 판단할 수 있게 해석합니다.`
+              : `${company.sector} · ${anchor?.name ?? company.anchorCustomer} 후보를 공시 원문으로 검증할 수 있게 회사별 체크포인트로 정리합니다.`}
           </p>
         </div>
         <div className="analysis-actions">
-          {filingAnalysis && (
-            <a href={filingAnalysis.sourceUrl} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />
-              원문 보고서
-            </a>
-          )}
+          <a href={disclosureAnalysis.sourceUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={15} />
+            {disclosureAnalysis.isCurated ? '원문 보고서' : '원문 검색'}
+          </a>
           {disclosureLinks.map((link) => (
             <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
               <ExternalLink size={15} />
@@ -525,23 +599,27 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           <p className="basis-note">{displayMetrics.revenueBasis}</p>
         </section>
 
-        {filingAnalysis && (
-          <section className="analysis-card filing-brief">
-            <div className="section-title">
-              <FileSearch size={16} />
-              <span>공시 원문 해석</span>
-            </div>
-            <div className="filing-brief-body">
-              <span>{filingAnalysis.reportDate}</span>
-              <strong>{filingAnalysis.headline}</strong>
-              <p>{filingAnalysis.verdict}</p>
-              <a href={filingAnalysis.sourceUrl} target="_blank" rel="noreferrer">
-                {filingAnalysis.sourceLabel}
-                <ExternalLink size={14} />
-              </a>
-            </div>
-          </section>
-        )}
+        <section className="analysis-card filing-brief">
+          <div className="section-title">
+            <FileSearch size={16} />
+            <span>{disclosureAnalysis.isCurated ? '공시 원문 해석' : '회사별 공시 검증 상태'}</span>
+          </div>
+          <div className="analysis-status-row">
+            <span className={`analysis-status-pill ${disclosureAnalysis.isCurated ? 'complete' : 'pending'}`}>
+              {disclosureAnalysis.statusLabel}
+            </span>
+            <small>{disclosureAnalysis.statusDetail}</small>
+          </div>
+          <div className="filing-brief-body">
+            <span>{disclosureAnalysis.reportDate}</span>
+            <strong>{disclosureAnalysis.headline}</strong>
+            <p>{disclosureAnalysis.verdict}</p>
+            <a href={disclosureAnalysis.sourceUrl} target="_blank" rel="noreferrer">
+              {disclosureAnalysis.sourceLabel}
+              <ExternalLink size={14} />
+            </a>
+          </div>
+        </section>
 
         <section className="analysis-card">
           <div className="section-title">
@@ -567,7 +645,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
         <section className="analysis-card insight-wide">
           <div className="section-title">
             <BarChart3 size={16} />
-            <span>{filingAnalysis ? '공시 숫자로 읽은 해석' : '쉬운 재무제표 해설'}</span>
+            <span>{disclosureAnalysis.isCurated ? '공시 숫자로 읽은 해석' : '회사별 공시 확인 포인트'}</span>
           </div>
           <div className="insight-grid">
             {insights.map((insight) => (
@@ -581,19 +659,17 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           </div>
         </section>
 
-        {filingAnalysis && (
-          <section className="analysis-card">
-            <div className="section-title">
-              <ShieldAlert size={16} />
-              <span>감사·검토 기록</span>
-            </div>
-            <ul className="plain-list">
-              {filingAnalysis.auditNotes.map((note) => (
-                <li key={note}>{note}</li>
-              ))}
-            </ul>
-          </section>
-        )}
+        <section className="analysis-card">
+          <div className="section-title">
+            <ShieldAlert size={16} />
+            <span>{isKorea ? '감사·검토 기록' : '감사·MD&A 기록'}</span>
+          </div>
+          <ul className="plain-list">
+            {disclosureAnalysis.auditNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </section>
 
         <section className="analysis-card">
           <div className="section-title">

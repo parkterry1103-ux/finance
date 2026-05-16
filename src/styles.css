@@ -2159,6 +2159,47 @@ body {
   margin-top: 12px;
 }
 
+.analysis-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.analysis-status-row small {
+  min-width: 0;
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.analysis-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(122, 136, 158, 0.22);
+  border-radius: 8px;
+  color: #475569;
+  background: rgba(248, 250, 252, 0.9);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.analysis-status-pill.complete {
+  border-color: rgba(0, 122, 255, 0.25);
+  color: #0057d9;
+  background: rgba(235, 245, 255, 0.92);
+}
+
+.analysis-status-pill.pending {
+  border-color: rgba(217, 119, 6, 0.24);
+  color: #9a5a00;
+  background: rgba(255, 248, 237, 0.95);
+}
+
 .filing-brief-body span {
   color: #6b7684;
   font-size: 12px;
