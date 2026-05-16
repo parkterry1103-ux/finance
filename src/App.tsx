@@ -221,6 +221,124 @@ function newsSearchUrl(company: Company) {
   return `https://news.google.com/search?q=${query}`;
 }
 
+type CompanyDisplayMetrics = {
+  revenue: string;
+  revenueUnit: string;
+  revenueBasis: string;
+  growth: string;
+  growthBasis: string;
+  opMargin: string;
+  debtRatio: string;
+};
+
+type FilingInsight = {
+  title: string;
+  kicker: string;
+  body: string;
+  point: string;
+};
+
+type FilingAnalysis = {
+  reportTitle: string;
+  reportDate: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  displayMetrics: CompanyDisplayMetrics;
+  headline: string;
+  verdict: string;
+  insights: FilingInsight[];
+  watchPoints: string[];
+  auditNotes: string[];
+};
+
+const filingAnalyses: Record<string, FilingAnalysis> = {
+  'kr-semiconductors-samsung-한미반도체': {
+    reportTitle: '한미반도체 2026년 1분기 분기보고서',
+    reportDate: '2026.05.15 공시 · 2026.03 연결 기준',
+    sourceLabel: 'DART 분기보고서 원문',
+    sourceUrl: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572',
+    displayMetrics: {
+      revenue: '50,902',
+      revenueUnit: '단위: 백만원 · 2026년 1분기 연결 매출액',
+      revenueBasis: 'DART 분기보고서(2026.03) 연결 손익계산서 기준. 전년 동기 비교는 2025년 1분기 연결 금액과 비교했습니다.',
+      growth: '-65.5%',
+      growthBasis: '2026년 1분기 매출 50,902백만원 vs 2025년 1분기 147,392백만원',
+      opMargin: '16.6%',
+      debtRatio: '16.8%',
+    },
+    headline:
+      '매출과 영업이익은 전년 동기보다 크게 줄었지만, 더 중요한 신호는 이익이 아니라 현금흐름입니다.',
+    verdict:
+      '순이익은 190억원이었지만 영업현금흐름은 -384억원입니다. 재고와 매출채권이 늘고 법인세가 크게 나가면서, 장부상 이익이 현금으로 바로 쌓이지 않은 분기였습니다.',
+    insights: [
+      {
+        title: '손익계산서',
+        kicker: '매출 509억원 · 영업이익 85억원',
+        body:
+          '2026년 1분기 연결 매출은 509억원으로 전년 동기 1,474억원보다 65.5% 줄었습니다. 영업이익은 85억원으로 87.9% 감소했고, 영업이익률은 16.6%입니다.',
+        point:
+          '반도체 후공정 장비 회사는 장비 인도와 고객 검수 시점에 매출이 몰릴 수 있습니다. 그래서 한 분기만 보고 수요가 사라졌다고 단정하기보다 다음 분기의 수주, 검수, 매출채권 회수를 같이 봐야 합니다.',
+      },
+      {
+        title: '현금흐름표',
+        kicker: '영업현금흐름 -384억원',
+        body:
+          '순이익 190억원을 냈는데도 영업활동현금흐름은 -384억원입니다. 매출채권 증가가 약 97억원, 재고 증가가 약 237억원의 현금 부담으로 잡혔고 법인세 납부도 약 224억원 있었습니다.',
+        point:
+          '이 말은 “적자는 아닌데 돈이 아직 들어오지 않았거나 재고로 묶였다”는 쪽에 가깝습니다. 다음 분기에 재고가 출하되고 매출채권이 회수되면 현금흐름은 빠르게 좋아질 수 있습니다.',
+      },
+      {
+        title: '투자활동',
+        kicker: '투자현금흐름 +62억원',
+        body:
+          '투자활동현금흐름이 플러스인 이유는 설비투자를 크게 줄여서만이 아니라 금융자산 처분으로 약 119억원이 들어왔기 때문입니다. 유형자산 취득은 약 54억원으로 전년 동기 254억원보다 작았습니다.',
+        point:
+          '공격적인 증설보다 현금 방어와 투자 속도 조절에 가까운 분기입니다. 이후 HBM·TC 본더 수주가 실제 검수 매출로 바뀌는지가 더 중요합니다.',
+      },
+      {
+        title: '재무상태표',
+        kicker: '현금 1,747억원 · 부채비율 16.8%',
+        body:
+          '분기 말 현금성자산은 1,747억원이고 부채총계는 1,068억원, 자본은 6,359억원입니다. 부채비율은 약 16.8%로 매우 낮아 재무 안정성은 강한 편입니다.',
+        point:
+          '다만 현금이 2025년 말 2,762억원에서 3개월 만에 1,747억원으로 줄었습니다. 대규모 배당과 운전자본 부담이 겹쳤기 때문에 현금 잔고 회복 여부를 확인해야 합니다.',
+      },
+    ],
+    watchPoints: [
+      '재고 1,730억원이 다음 분기 매출로 풀리는지 확인합니다. 재고가 계속 늘면 수요 둔화나 검수 지연 신호일 수 있습니다.',
+      '매출채권 754억원이 실제 현금으로 회수되는지 봅니다. 이 숫자가 줄면 이번 분기의 약한 영업현금흐름은 일시적일 가능성이 커집니다.',
+      '재무활동현금흐름 -763억원 대부분은 배당 -759억원입니다. 주주환원은 강하지만 영업현금흐름이 약한 분기에는 현금 감소 압력이 됩니다.',
+      '유형자산 취득은 54억원으로 전년 동기보다 작았습니다. 다시 설비투자가 늘면 미래 성장 준비로 볼 수 있지만, 감가상각비 증가와 현금 유출도 같이 반영됩니다.',
+    ],
+    auditNotes: [
+      '2025년 사업보고서 기준 감사의견은 적정의견이고, 계속기업 불확실성·강조사항은 없었습니다.',
+      '핵심감사사항은 “장비제조판매 수익 기간귀속”입니다. 장비 회사는 인도와 검수 시점에 따라 매출 인식 분기가 달라질 수 있어서 감사인이 이 부분을 중점 확인했다는 뜻입니다.',
+      '이 자체가 회계 문제라는 의미는 아닙니다. 투자자는 수주 뉴스만 보지 말고 실제 매출채권 회수, 재고 감소, 고객 검수 완료가 이어지는지 확인해야 합니다.',
+    ],
+  },
+};
+
+function getCompanyFilingAnalysis(company: Company) {
+  return filingAnalyses[company.id];
+}
+
+function getDisplayMetrics(company: Company): CompanyDisplayMetrics {
+  const filingAnalysis = getCompanyFilingAnalysis(company);
+  if (filingAnalysis) {
+    return filingAnalysis.displayMetrics;
+  }
+
+  return {
+    revenue: company.revenue,
+    revenueUnit: company.revenueUnit,
+    revenueBasis: company.revenueBasis,
+    growth: `${company.revenueTrend > 0 ? '+' : ''}${company.revenueTrend.toFixed(1)}%`,
+    growthBasis: company.growthBasis,
+    opMargin: company.opMargin,
+    debtRatio: company.debtRatio,
+  };
+}
+
 function getFinancialInsights(company: Company) {
   const productText = company.products.slice(0, 2).join('·') || company.sector;
   const isKorea = company.country === 'KR';
@@ -268,8 +386,17 @@ type AnalysisPageProps = {
 
 function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: AnalysisPageProps) {
   const disclosureLinks = externalDisclosureLinks(company);
-  const insights = getFinancialInsights(company);
+  const filingAnalysis = getCompanyFilingAnalysis(company);
+  const displayMetrics = getDisplayMetrics(company);
+  const insights = filingAnalysis?.insights ?? getFinancialInsights(company);
   const isKorea = company.country === 'KR';
+  const watchPoints =
+    filingAnalysis?.watchPoints ?? [
+      '투자활동현금흐름 감소가 설비투자라면 생산능력 확대와 감가상각비 증가를 함께 봅니다.',
+      '감가상각비 증가는 단기 이익을 눌러도 현금 유출이 없는 비용이라 세금 부담 완화 효과가 생길 수 있습니다.',
+      '매출 성장률은 전년 대비 기준을 우선 보고, 고객 집중도가 높으면 특정 고객 투자 사이클 의존도를 따로 봅니다.',
+      isKorea ? '감사보고서의 강조사항과 내부회계관리제도 지적을 숫자보다 먼저 읽습니다.' : 'MD&A의 유동성, 자본지출, 리스크 요인을 숫자보다 먼저 읽습니다.',
+    ];
 
   return (
     <div className="analysis-shell">
@@ -279,13 +406,21 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           대시보드로 돌아가기
         </button>
         <div>
-          <p className="eyebrow">{isKorea ? 'DART 재무제표 해설' : 'SEC 재무제표·MD&A 해설'}</p>
+          <p className="eyebrow">{filingAnalysis ? 'DART 원문 기반 재무제표 해석' : isKorea ? 'DART 재무제표 해설' : 'SEC 재무제표·MD&A 해설'}</p>
           <h1>{company.name} 재무분석</h1>
           <p>
-            {company.sector} · {anchor?.name ?? company.anchorCustomer} 공급망 후보를 초보 투자자도 읽을 수 있게 풀어봅니다.
+            {filingAnalysis
+              ? `${filingAnalysis.reportTitle} 숫자를 기준으로 손익, 현금흐름, 감사기록을 초보 투자자도 판단할 수 있게 해석합니다.`
+              : `${company.sector} · ${anchor?.name ?? company.anchorCustomer} 공급망 후보를 초보 투자자도 읽을 수 있게 풀어봅니다.`}
           </p>
         </div>
         <div className="analysis-actions">
+          {filingAnalysis && (
+            <a href={filingAnalysis.sourceUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={15} />
+              원문 보고서
+            </a>
+          )}
           {disclosureLinks.map((link) => (
             <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
               <ExternalLink size={15} />
@@ -304,30 +439,45 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           <div className="statement-metrics">
             <div>
               <span>매출액</span>
-              <strong>{company.revenue}</strong>
-              <small>{company.revenueUnit}</small>
+              <strong>{displayMetrics.revenue}</strong>
+              <small>{displayMetrics.revenueUnit}</small>
             </div>
             <div>
               <span>성장률</span>
-              <strong>
-                {company.revenueTrend > 0 ? '+' : ''}
-                {company.revenueTrend.toFixed(1)}%
-              </strong>
-              <small>{company.growthBasis}</small>
+              <strong>{displayMetrics.growth}</strong>
+              <small>{displayMetrics.growthBasis}</small>
             </div>
             <div>
               <span>영업이익률</span>
-              <strong>{company.opMargin}</strong>
+              <strong>{displayMetrics.opMargin}</strong>
               <small>매출에서 영업비용을 뺀 본업 수익성</small>
             </div>
             <div>
               <span>부채비율</span>
-              <strong>{company.debtRatio}</strong>
+              <strong>{displayMetrics.debtRatio}</strong>
               <small>자기자본 대비 빚의 부담</small>
             </div>
           </div>
-          <p className="basis-note">{company.revenueBasis}</p>
+          <p className="basis-note">{displayMetrics.revenueBasis}</p>
         </section>
+
+        {filingAnalysis && (
+          <section className="analysis-card filing-brief">
+            <div className="section-title">
+              <FileSearch size={16} />
+              <span>공시 원문 해석</span>
+            </div>
+            <div className="filing-brief-body">
+              <span>{filingAnalysis.reportDate}</span>
+              <strong>{filingAnalysis.headline}</strong>
+              <p>{filingAnalysis.verdict}</p>
+              <a href={filingAnalysis.sourceUrl} target="_blank" rel="noreferrer">
+                {filingAnalysis.sourceLabel}
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          </section>
+        )}
 
         <section className="analysis-card">
           <div className="section-title">
@@ -353,7 +503,7 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
         <section className="analysis-card insight-wide">
           <div className="section-title">
             <BarChart3 size={16} />
-            <span>쉬운 재무제표 해설</span>
+            <span>{filingAnalysis ? '공시 숫자로 읽은 해석' : '쉬운 재무제표 해설'}</span>
           </div>
           <div className="insight-grid">
             {insights.map((insight) => (
@@ -367,16 +517,29 @@ function AnalysisPage({ company, anchor, newsState, onBack, onRefreshNews }: Ana
           </div>
         </section>
 
+        {filingAnalysis && (
+          <section className="analysis-card">
+            <div className="section-title">
+              <ShieldAlert size={16} />
+              <span>감사·검토 기록</span>
+            </div>
+            <ul className="plain-list">
+              {filingAnalysis.auditNotes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="analysis-card">
           <div className="section-title">
             <Target size={16} />
             <span>미래 반영 포인트</span>
           </div>
           <ul className="plain-list">
-            <li>투자활동현금흐름 감소가 설비투자라면 생산능력 확대와 감가상각비 증가를 함께 봅니다.</li>
-            <li>감가상각비 증가는 단기 이익을 눌러도 현금 유출이 없는 비용이라 세금 부담 완화 효과가 생길 수 있습니다.</li>
-            <li>매출 성장률은 전년 대비 기준을 우선 보고, 고객 집중도가 높으면 특정 고객 투자 사이클 의존도를 따로 봅니다.</li>
-            <li>{isKorea ? '감사보고서의 강조사항과 내부회계관리제도 지적' : 'MD&A의 유동성, 자본지출, 리스크 요인'}을 숫자보다 먼저 읽습니다.</li>
+            {watchPoints.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
           </ul>
         </section>
 
@@ -443,6 +606,7 @@ function App() {
     groupCompanies.find((company) => company.tier !== 'anchor') ??
     groupCompanies[0];
   const selectedOpinions = analystOpinions.filter((opinion) => opinion.companyId === selectedCompany?.id);
+  const selectedDisplayMetrics = selectedCompany ? getDisplayMetrics(selectedCompany) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const opportunityCount = groupCompanies.filter((company) => company.status === 'opportunity').length;
@@ -502,18 +666,18 @@ function App() {
             stroke: isConnected ? '#2563eb' : '#9ca3af',
           },
           labelStyle: {
-            fill: isConnected ? '#1d4ed8' : '#64748b',
-            fontWeight: isConnected ? 700 : 600,
-            fontSize: 12,
+            fill: isConnected ? '#0057d9' : '#475569',
+            fontWeight: isConnected ? 800 : 700,
+            fontSize: 13,
           },
           labelBgStyle: {
-            fill: '#ffffff',
-            fillOpacity: 0.96,
-            stroke: isConnected ? '#93c5fd' : '#e5e8ef',
+            fill: '#f8fafc',
+            fillOpacity: 1,
+            stroke: isConnected ? '#7bb5ff' : '#d8dee8',
             strokeWidth: 1,
           },
-          labelBgPadding: [8, 5],
-          labelBgBorderRadius: 6,
+          labelBgPadding: [11, 7],
+          labelBgBorderRadius: 8,
         };
       }),
     [groupLinks, selectedCompany, visibleLinks],
@@ -880,7 +1044,7 @@ function App() {
         </main>
 
         <aside className="right-panel">
-          {selectedCompany && (
+          {selectedCompany && selectedDisplayMetrics && (
             <>
               <div className="panel-heading">
                 <div>
@@ -909,30 +1073,27 @@ function App() {
                 <div className="finance-item">
                   <CircleDollarSign size={17} />
                   <span>매출</span>
-                  <strong>{selectedCompany.revenue}</strong>
-                  <small>{selectedCompany.revenueUnit}</small>
+                  <strong>{selectedDisplayMetrics.revenue}</strong>
+                  <small>{selectedDisplayMetrics.revenueUnit}</small>
                 </div>
                 <div className="finance-item">
                   <LineChart size={17} />
                   <span>성장률</span>
-                  <strong>
-                    {selectedCompany.revenueTrend > 0 ? '+' : ''}
-                    {selectedCompany.revenueTrend.toFixed(1)}%
-                  </strong>
-                  <small>{selectedCompany.growthBasis}</small>
+                  <strong>{selectedDisplayMetrics.growth}</strong>
+                  <small>{selectedDisplayMetrics.growthBasis}</small>
                 </div>
                 <div className="finance-item">
                   <BarChart3 size={17} />
                   <span>영업이익률</span>
-                  <strong>{selectedCompany.opMargin}</strong>
+                  <strong>{selectedDisplayMetrics.opMargin}</strong>
                 </div>
                 <div className="finance-item">
                   <AlertTriangle size={17} />
                   <span>부채비율</span>
-                  <strong>{selectedCompany.debtRatio}</strong>
+                  <strong>{selectedDisplayMetrics.debtRatio}</strong>
                 </div>
               </div>
-              <p className="finance-basis">{selectedCompany.revenueBasis}</p>
+              <p className="finance-basis">{selectedDisplayMetrics.revenueBasis}</p>
 
               <div className="detail-card">
                 <div className="section-title">

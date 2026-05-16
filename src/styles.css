@@ -1992,3 +1992,229 @@ button:hover {
     padding: 10px;
   }
 }
+
+/* macOS-inspired clarity layer */
+:root {
+  --mac-desktop: #eef0f4;
+  --mac-window: rgba(255, 255, 255, 0.78);
+  --mac-window-strong: rgba(255, 255, 255, 0.92);
+  --mac-border: rgba(122, 136, 158, 0.24);
+  --mac-shadow: 0 18px 48px rgba(30, 41, 59, 0.12);
+  --mac-blue: #007aff;
+}
+
+body {
+  background: var(--mac-desktop);
+}
+
+.app-shell,
+.analysis-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(232, 235, 240, 0.86)),
+    var(--mac-desktop);
+}
+
+.app-shell {
+  padding: 12px;
+  gap: 12px;
+}
+
+.left-panel,
+.right-panel,
+.topbar,
+.bottom-panel,
+.graph-wrap,
+.analysis-hero,
+.analysis-card {
+  border: 1px solid var(--mac-border);
+  background: var(--mac-window);
+  box-shadow: var(--mac-shadow);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+.left-panel,
+.right-panel,
+.topbar,
+.bottom-panel,
+.graph-wrap {
+  border-radius: 8px;
+}
+
+.brand-mark,
+.primary-action,
+.country-toggle button.active {
+  background: var(--mac-blue);
+  border-color: var(--mac-blue);
+  color: #ffffff;
+}
+
+.brand-mark {
+  box-shadow: 0 12px 26px rgba(0, 122, 255, 0.25);
+}
+
+.primary-action:hover,
+.analysis-actions a:hover,
+.ghost-action:hover,
+.analysis-link-button:hover,
+.refresh-action:hover,
+.icon-action:hover {
+  transform: translateY(-1px);
+}
+
+.graph-wrap {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 249, 252, 0.9)),
+    #ffffff;
+}
+
+.react-flow__edge-text {
+  fill: #1f2937;
+  font-size: 13px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: rgba(248, 250, 252, 0.98);
+  stroke-width: 5px;
+}
+
+.react-flow__edge-textbg {
+  fill: #f8fafc !important;
+  fill-opacity: 1 !important;
+  stroke: #d8dee8 !important;
+  stroke-width: 1px !important;
+  filter: drop-shadow(0 3px 7px rgba(15, 23, 42, 0.14));
+}
+
+.react-flow__minimap {
+  width: 142px !important;
+  height: 96px !important;
+  border: 1px solid var(--mac-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 28px rgba(30, 41, 59, 0.1);
+  overflow: hidden;
+}
+
+.react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--mac-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(30, 41, 59, 0.1);
+}
+
+.react-flow__controls-button {
+  border-color: rgba(122, 136, 158, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.supply-node.selected {
+  border-color: rgba(0, 122, 255, 0.72);
+  box-shadow: 0 16px 34px rgba(0, 122, 255, 0.16);
+}
+
+.analysis-shell {
+  padding: 16px;
+}
+
+.analysis-hero {
+  position: relative;
+  overflow: hidden;
+  padding-top: 52px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(249, 250, 252, 0.74)),
+    var(--mac-window);
+}
+
+.analysis-hero::before {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: #ff5f57;
+  box-shadow:
+    18px 0 0 #ffbd2e,
+    36px 0 0 #28c840;
+  content: "";
+}
+
+.analysis-card,
+.statement-metrics div,
+.insight-card,
+.plain-list li,
+.disclosure-list a,
+.finance-item,
+.detail-card {
+  background: var(--mac-window-strong);
+}
+
+.filing-brief {
+  grid-column: 1 / -1;
+}
+
+.filing-brief-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.filing-brief-body span {
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.filing-brief-body strong {
+  color: #111827;
+  font-size: 21px;
+  line-height: 1.38;
+}
+
+.filing-brief-body p {
+  max-width: 900px;
+  margin: 0;
+  color: #333d4b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.filing-brief-body a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(0, 122, 255, 0.22);
+  border-radius: 8px;
+  color: #0057d9;
+  background: rgba(245, 249, 255, 0.92);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.statement-metrics strong {
+  font-size: 23px;
+}
+
+.insight-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.insight-card p,
+.plain-list li {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+}
