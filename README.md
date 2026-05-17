@@ -207,6 +207,20 @@ SEC_13F_MANAGER_CIKS=0001067983,0001697748
 
 13F는 실시간 매수·매도 데이터가 아니라 분기 말 기관 보유 현황입니다. 실제 매수·매도 시점과 차이가 크므로 화면에서는 `13F 보유 변화`, `분기 포트폴리오`, `기관 보유 종목`처럼 표시하고, 투자 권유가 아니라 공개 자료 기반 참고 정보로만 다룹니다.
 
+13F 운영 기준:
+
+- `source`는 항상 `sec-13f`로 저장합니다.
+- `investor_name`에는 `Berkshire Hathaway`, `ARK Investment Management`, `BlackRock`처럼 실제 managerName 또는 기관명을 저장합니다.
+- SEC filing에서 managerName을 찾으면 그 값을 우선 사용하고, 없으면 CIK fallback 매핑을 사용합니다.
+- UI에서는 “Berkshire Hathaway 13F 보유 종목”, “ARK Investment Management 분기 포트폴리오”, “BlackRock 보유 종목 변화”처럼 표시합니다.
+- “오늘 버크셔가 샀다”, “방금 매수”처럼 실시간 매수로 오해될 표현은 쓰지 않습니다.
+- 13F는 공개 지연이 있으므로 “13F는 분기 보고 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.” 안내를 유지합니다.
+- upsert 전 `raw_id` 기준으로 dedupe를 수행해 같은 batch 안의 `ON CONFLICT` 중복 오류를 막습니다.
+- `raw_id`는 `accessionNumber + cusip + managerCik` 기준이며, CUSIP이 없으면 ticker 또는 issuer/title/shares/value/row index를 fallback으로 포함합니다.
+- holdings row는 500개 단위로 chunk upsert합니다. 한 chunk가 실패해도 다음 chunk와 다른 manager sync는 계속 진행됩니다.
+- `partial`은 일부 기관 또는 filing만 실패한 상태입니다. 이미 성공한 기관의 13F 데이터는 `ownership_trades`에 저장된 상태입니다.
+- `sync_runs.error_message`에는 긴 raw JSON 대신 `13F partial: 3 managers success, 2 partial, 8 failed...` 형식의 요약만 남기고, 상세는 endpoint JSON의 `results.form13f.managers`에서 확인합니다.
+
 ### 미국 국회의원 거래 import
 
 무료 API를 쓰지 않고 공개자료 기반 수동/반자동 import 구조를 사용합니다. 켜는 방법은 두 가지입니다.

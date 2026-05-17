@@ -9,7 +9,7 @@
     "moduleResolution": "NodeNext",
     "noImplicitAny": false,
     "noEmit": false,
-        "outDir": "scripts",
+    "outDir": ".sync-build",
     "rootDir": ".",
     "sourceMap": false,
     "strict": false,
