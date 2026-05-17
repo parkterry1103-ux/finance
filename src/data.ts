@@ -171,6 +171,9 @@ export interface MarketMover {
   ticker: string;
   market: 'KOSPI' | 'KOSDAQ' | 'NASDAQ' | 'NYSE';
   move: string;
+  impactFactor: string;
+  additionalFactor?: string;
+  interpretation: string;
   reason: string;
   beginnerNote: string;
   sectorId: string;
@@ -5100,6 +5103,9 @@ export const marketMovers: MarketMover[] = [
     ticker: '005930.KS',
     market: 'KOSPI',
     move: '+3.2%',
+    impactFactor: 'HBM 공급 확대 기대',
+    additionalFactor: '메모리 가격 회복 기대',
+    interpretation: '두 요인이 실적 회복 기대를 키웠습니다.',
     reason: 'HBM 공급 확대 기대와 메모리 가격 회복 기대가 같이 반영됐습니다.',
     beginnerNote: '주가가 왜 움직였는지 뉴스와 재무 흐름을 함께 봅니다.',
     sectorId: 'kr-semiconductors',
@@ -5112,6 +5118,9 @@ export const marketMovers: MarketMover[] = [
     ticker: '000660.KS',
     market: 'KOSPI',
     move: '+4.1%',
+    impactFactor: 'AI 서버용 메모리 수요',
+    additionalFactor: 'HBM 실적 기대',
+    interpretation: '수요 기대가 다음 분기 실적 눈높이를 높였습니다.',
     reason: 'AI 서버용 메모리 수요가 실적 기대를 끌어올렸습니다.',
     beginnerNote: '성장 기대가 실제 매출과 현금흐름으로 이어지는지 확인합니다.',
     sectorId: 'kr-semiconductors',
@@ -5124,6 +5133,9 @@ export const marketMovers: MarketMover[] = [
     ticker: '042700.KS',
     market: 'KOSPI',
     move: '+2.8%',
+    impactFactor: '후공정 장비 수주 기대',
+    additionalFactor: 'HBM 투자 확대 관심',
+    interpretation: '공급망 안에서 장비 기업 관심이 커졌습니다.',
     reason: '후공정 장비 수주 기대가 공급망 관심을 키웠습니다.',
     beginnerNote: '수주 뉴스가 매출로 잡히는 시점과 재고 변화를 같이 봅니다.',
     sectorId: 'kr-semiconductors',
@@ -5136,6 +5148,9 @@ export const marketMovers: MarketMover[] = [
     ticker: 'NVDA',
     market: 'NASDAQ',
     move: '+1.9%',
+    impactFactor: '데이터센터 매출 성장',
+    additionalFactor: '다음 분기 가이던스 기대',
+    interpretation: '경영진 수요 전망이 실적 기대를 뒷받침했습니다.',
     reason: '데이터센터 매출 성장과 다음 분기 가이던스 기대가 반영됐습니다.',
     beginnerNote: '미국 기업은 MD&A에서 경영진이 수요를 어떻게 설명했는지 봅니다.',
     sectorId: 'us-semiconductors',

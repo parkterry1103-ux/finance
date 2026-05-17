@@ -449,6 +449,28 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 공식/정책: `dart.fss.or.kr`, `kind.krx.co.kr`, `fss.or.kr`, `fsc.go.kr`, `bok.or.kr`, `motie.go.kr`
 - 뉴스/산업지: `reuters.com`, `yna.co.kr`, `hankyung.com`, `mk.co.kr`, `etnews.com`, `thelec.kr`, `zdnet.co.kr`, `businesspost.co.kr`
 
+## 이번 주 해부 종목 업데이트 방법
+
+`주가해부실 Pick`은 운영자가 매주 인스타그램 카드뉴스에 맞춰 `src/data.ts`의 `stockAutopsyPicks` 배열만 수정하면 됩니다.
+
+1. 새 카드 추가: `id`, `companyName`, `ticker`, `movementDirection`, `movementLabel`, `reasonSummary`, `beginnerSummary`, `sector`, `valueChainPosition`, `connectedLeaders`, `relatedCompanies`, `publishedAt`을 입력합니다.
+2. 공급망 연결: 가능한 경우 `relatedSupplyChainId`와 `relatedCompanyId`를 넣습니다. 이 값이 있으면 상세 페이지에서 공급망 지도와 재무제표 해설로 바로 연결됩니다.
+3. 삭제/교체: 이번 주에 노출하지 않을 카드는 배열에서 제거하거나 아래쪽으로 이동합니다.
+4. 표현 주의: 직접 납품 관계가 확인되지 않은 기업은 “직접 납품”, “확정 수혜”라고 쓰지 말고 “같은 밸류체인에서 함께 볼 기업”으로 표현합니다.
+
+필드 기준:
+
+- 종목명: `companyName`
+- 티커: `ticker`
+- 상승/하락: `movementDirection`
+- 왜 움직였나: `reasonSummary`
+- 관련 섹터: `sector`
+- 공급망 위치: `valueChainPosition`
+- 연결 대장주: `connectedLeaders`
+- 카드뉴스 발행일: `publishedAt`
+- 상세 설명: `beginnerSummary`
+- 공급망 지도 링크: `relatedSupplyChainId`
+
 ## 데이터 주의사항
 
 내장 데이터는 투자 검토용 후보군입니다. 기업명은 실제 기업명을 사용했지만, 특정 원청에 대한 납품 관계를 확정한 데이터가 아닙니다. 실제 서비스로 확장할 때는 OpenDART, KRX, SEC EDGAR, 회사 IR, 공급계약 공시, 뉴스 원문처럼 무료 공식·공개 자료로 관계를 검증해야 합니다.

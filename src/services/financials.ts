@@ -30,6 +30,18 @@ function compactAmount(value: string | number | undefined, unit = '') {
   if (value === undefined || value === '') return '확인 필요';
   const numeric = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
   if (!Number.isFinite(numeric)) return String(value);
+  if (unit === '원') {
+    const abs = Math.abs(numeric);
+    if (abs >= 1_000_000_000_000) return `${(numeric / 1_000_000_000_000).toFixed(1)}조원`;
+    if (abs >= 100_000_000) return `${(numeric / 100_000_000).toFixed(1)}억원`;
+    return `${numeric.toLocaleString('ko-KR')}원`;
+  }
+  if (unit === 'USD') {
+    const abs = Math.abs(numeric);
+    if (abs >= 1_000_000_000) return `$${(numeric / 1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000) return `$${(numeric / 1_000_000).toFixed(1)}M`;
+    return `$${numeric.toLocaleString('en-US')}`;
+  }
   return `${numeric.toLocaleString('ko-KR')}${unit ? ` ${unit}` : ''}`;
 }
 
@@ -91,7 +103,7 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
       metric(
         'cashFlow',
         '현금흐름',
-        '원문 연결 후 업데이트',
+        '원문 보고서 연결 후 금액 표시 예정',
         '이익이 실제 현금으로 들어오는지 확인하는 단계입니다.',
       ),
     ],
