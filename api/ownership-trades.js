@@ -44,7 +44,7 @@ function normalizeAction(row) {
 
 function securityFromRawId(rawId) {
   const parts = String(rawId || '').split(':').filter(Boolean);
-  const key = parts.at(-1) || '';
+  const key = parts.length >= 3 ? parts.at(-2) || '' : parts.at(-1) || '';
   if (!key) return '';
   if (/^[A-Z0-9]{6,12}$/i.test(key)) return `CUSIP ${key.toUpperCase()}`;
   return key.replaceAll('-', ' ').slice(0, 80);
