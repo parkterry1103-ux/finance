@@ -136,6 +136,21 @@ async function querySupabase({ source, limit, investor, ticker }) {
   return response.json();
 }
 
+async function queryProminent13fRows() {
+  const settled = await Promise.allSettled(
+    PROMINENT_13F_INVESTORS.map((investor) =>
+      querySupabase({
+        source: 'sec-13f',
+        limit: 8,
+        investor,
+        ticker: '',
+      }),
+    ),
+  );
+
+  return settled.flatMap((result) => (result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : []));
+}
+
 function diversifyTrades(trades, limit) {
   const normalizedLimit = Math.min(Math.max(Number(limit) || DEFAULT_PUBLIC_LIMIT, 1), MAX_LIMIT);
   const byInvestor = new Map();
@@ -190,7 +205,16 @@ export default async function handler(req, res) {
       investor,
       ticker,
     });
-    const normalizedRows = rows.map(normalizeTrade);
+    const prominentRows = shouldDiversify ? await queryProminent13fRows() : [];
+    const seenRows = new Set();
+    const normalizedRows = [...rows, ...prominentRows]
+      .filter((row) => {
+        const key = row.id || `${row.source}:${row.raw_id}:${row.investor_name}:${row.ticker}:${row.disclosed_date}`;
+        if (seenRows.has(key)) return false;
+        seenRows.add(key);
+        return true;
+      })
+      .map(normalizeTrade);
     const trades = shouldDiversify ? diversifyTrades(normalizedRows, limit) : normalizedRows.slice(0, limit);
     res.status(200).json({
       ok: true,
