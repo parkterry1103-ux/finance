@@ -949,6 +949,9 @@ function ReportAction({
 }
 
 function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; compact?: boolean }) {
+  if (price === undefined) {
+    return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 불러오는 중</span>;
+  }
   const direction = priceDirection(price);
   if (!price) {
     return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 준비 중</span>;

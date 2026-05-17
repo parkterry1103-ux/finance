@@ -195,13 +195,16 @@ export async function fetchPriceByPick(pick: StockAutopsyPick): Promise<MarketPr
 }
 
 export function getPriceForCompany(company: Company, prices?: MarketPrice[]) {
+  if (prices && prices.length === 0) return undefined;
   return findFallbackPrice(company.ticker, company.id, prices);
 }
 
 export function getPriceForPick(pick: StockAutopsyPick, prices?: MarketPrice[]) {
+  if (prices && prices.length === 0) return undefined;
   return findFallbackPrice(pick.ticker, pick.relatedCompanyId, prices);
 }
 
 export function getPriceForTicker(ticker?: string, companyId?: string, prices?: MarketPrice[]) {
+  if (prices && prices.length === 0) return undefined;
   return findFallbackPrice(ticker, companyId, prices);
 }
