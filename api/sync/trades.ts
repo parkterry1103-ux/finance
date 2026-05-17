@@ -1,4 +1,4 @@
-import { syncCongressTrades } from '../../scripts/sync-congress-trades';
+import { syncCongressTrades } from '../../scripts/sync-congress-trades.ts';
 import { syncSec13F } from '../../scripts/sync-sec-13f';
 import { syncSecForm4 } from '../../scripts/sync-sec-form4';
 import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils';
