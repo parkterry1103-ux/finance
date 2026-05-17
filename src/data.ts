@@ -7,7 +7,7 @@ export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
 export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
-export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease';
+export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease' | 'holding';
 export type StockAutopsyDirection = 'up' | 'down';
 export type StockAutopsyValueChainPosition =
   | 'leader'
@@ -5374,10 +5374,10 @@ export const smartMoneyMoves: SmartMoneyMove[] = [
     sectorId: 'kr-semiconductors',
     sector: '반도체',
     sectorLabel: '반도체',
-    sourceLabel: '국민연금 공개자료 mock',
+    sourceLabel: '국민연금 공개 보유자료 mock',
     isDelayedDisclosure: true,
     note: '공개 포트폴리오 기반 예시 데이터입니다.',
-    beginnerExplanation: '큰손 매매는 확정 신호가 아니라 추가로 확인할 참고 정보입니다.',
+    beginnerExplanation: '공개 보유 변화는 확정 신호가 아니라 추가로 확인할 참고 정보입니다.',
   },
   {
     id: 'smart-institution-sk-hynix',
@@ -5430,25 +5430,25 @@ export const smartMoneyMoves: SmartMoneyMove[] = [
     id: 'smart-us-fund-nvidia',
     investorName: '미국 대형 성장주 펀드',
     investorType: 'fund',
-    investorTypeLabel: '기관·펀드 포트폴리오',
+    investorTypeLabel: 'SEC 13F 분기 포트폴리오',
     market: 'US',
     companyId: 'us-semiconductors-nvidia',
     relatedCompanyId: 'us-semiconductors-nvidia',
     relatedSupplyChainId: 'us-semiconductors',
     companyName: 'NVIDIA',
     ticker: 'NVDA',
-    action: 'increase',
-    actionLabel: '비중확대',
+    action: 'holding',
+    actionLabel: '13F 보유 변화',
     disclosedDate: '2026-05-13',
     tradeDateOptional: '2026-03-31',
     sectorId: 'us-semiconductors',
     sector: 'AI 반도체',
     sectorLabel: 'AI 반도체',
-    sourceLabel: 'SEC 13F 연결 예정',
+    sourceLabel: 'SEC 13F 보유 보고 연결 예정',
     sourceUrl: 'https://www.sec.gov/edgar/search/#/category=form-cat5',
     isDelayedDisclosure: true,
-    note: '13F는 분기 말 보유 현황이라 실제 매매 시점과 다를 수 있습니다.',
-    beginnerExplanation: '펀드 비중 확대는 관심 흐름을 보여주지만, 매수 가격과 시점은 따로 봐야 합니다.',
+    note: '13F는 분기 말 보유 현황이라 실제 매수·매도 시점과 다를 수 있습니다.',
+    beginnerExplanation: '13F 보유 변화는 기관 관심 흐름을 보여주지만, 보고가 지연되고 분기 말 보유 기준이라 당일 매매 신호가 아닙니다.',
   },
 ];
 

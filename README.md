@@ -205,7 +205,7 @@ SEC_13F_MANAGER_CIKS=0001067983,0001697748
 - 수동 테스트: `/api/sync/trades?secret=CRON_SECRET값`
 - 결과 확인: Supabase `sync_runs`에서 `sec-13f` status와 endpoint 응답 JSON의 `results.form13f.managers`를 확인합니다.
 
-13F는 분기 말 보유 현황이라 실제 매수·매도 시점과 다를 수 있습니다. 화면에서는 투자 권유가 아니라 공개 자료 기반 참고 정보로만 표시합니다.
+13F는 실시간 매수·매도 데이터가 아니라 분기 말 기관 보유 현황입니다. 실제 매수·매도 시점과 차이가 크므로 화면에서는 `13F 보유 변화`, `분기 포트폴리오`, `기관 보유 종목`처럼 표시하고, 투자 권유가 아니라 공개 자료 기반 참고 정보로만 다룹니다.
 
 ### 미국 국회의원 거래 import
 
@@ -249,7 +249,7 @@ https://YOUR_DOMAIN/api/sync/trades?secret=CRON_SECRET값
 - Supabase `sync_runs`에서 `congress-trades`
 - Supabase `ownership_trades`에서 `source = congress-trades`
 
-국회의원 거래는 실제 거래일과 공개일이 다를 수 있습니다. “공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.” 문구를 유지합니다.
+국회의원 거래는 공개된 거래 보고 기준이며 실제 거래일과 공개일이 다를 수 있습니다. 화면에서는 실시간 매매처럼 표현하지 않고 “공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.” 문구를 유지합니다.
 
 ### 원문 보고서 링크 점검과 보강
 
@@ -347,7 +347,7 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 - `/api/sync/trades`: 평일 03:00 UTC 1회
 
 엔드포인트는 `CRON_SECRET`으로 보호됩니다. Vercel Cron은 프로젝트 환경변수에 `CRON_SECRET`이 있으면 호출 시 `Authorization: Bearer ...` 헤더를 자동으로 보냅니다. 브라우저나 curl로 수동 테스트할 때는 아래처럼 헤더를 보내거나 query secret을 붙이면 됩니다.
-Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므로, 매수·매도 데이터를 더 자주 갱신하려면 아래 GitHub Actions 스케줄을 사용하거나 Vercel Pro에서 Cron 주기를 늘리세요.
+Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므로, 공개 보유/거래 보고 데이터를 더 자주 갱신하려면 아래 GitHub Actions 스케줄을 사용하거나 Vercel Pro에서 Cron 주기를 늘리세요.
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/financials

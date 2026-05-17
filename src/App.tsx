@@ -788,6 +788,42 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
   );
 }
 
+function isQuarterlyHoldingReport(move: SmartMoneyMove) {
+  return move.action === 'holding' || move.sourceLabel.includes('13F') || move.investorType === 'fund';
+}
+
+function isCongressTradeReport(move: SmartMoneyMove) {
+  return move.investorType === 'us-politician' || move.sourceLabel.toLowerCase().includes('congress');
+}
+
+function publicReportActionLabel(move: SmartMoneyMove) {
+  if (isQuarterlyHoldingReport(move)) return '13F 보유 변화';
+  if (isCongressTradeReport(move)) return `공개 거래 보고${move.actionLabel ? ` · ${move.actionLabel}` : ''}`;
+  return move.actionLabel;
+}
+
+function publicReportDateLabel(move: SmartMoneyMove) {
+  if (isQuarterlyHoldingReport(move)) return '보고 기준일';
+  if (isCongressTradeReport(move)) return '보고된 거래일';
+  return '거래일';
+}
+
+function publicReportDateFallback(move: SmartMoneyMove) {
+  if (isQuarterlyHoldingReport(move)) return '분기 기준일 확인 필요';
+  return '공개 자료에서 확인 필요';
+}
+
+function publicReportDelayNote(move: SmartMoneyMove) {
+  if (isQuarterlyHoldingReport(move)) {
+    return '13F는 분기 말 기관 보유 현황이며 실제 매수·매도 시점과 차이가 있습니다.';
+  }
+  if (isCongressTradeReport(move)) {
+    return '국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.';
+  }
+  if (move.isDelayedDisclosure) return '공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.';
+  return move.note;
+}
+
 function parsePercentValue(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ''));
   return Number.isFinite(parsed) ? parsed : undefined;
@@ -1079,7 +1115,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
         <nav>
           <a href="/ko/" onClick={(event) => event.preventDefault()}>홈</a>
           <a href="#supply-chain">공급망</a>
-          <a href="#smart-money">매수·매도</a>
+          <a href="#smart-money">보유·거래 보고</a>
 	          <a href="#market-movers">기업분석</a>
 	          <a href="#filing-preview">공시·재무</a>
 	          <a
@@ -1099,7 +1135,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
           <div className="home-hero-copy">
             <p className="home-kicker">투자·주식 분석 플랫폼</p>
             <h1>주식이 움직인 이유를 한눈에.</h1>
-            <p>공급망, 공시, 재무제표, 큰손 매매까지 쉽게 연결해서 봅니다.</p>
+            <p>공급망, 공시, 재무제표, 공개 보유·거래 보고까지 쉽게 연결해서 봅니다.</p>
             <div className="home-search" role="search">
               <Search size={18} />
               <input
@@ -1113,7 +1149,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
               <div className="home-search-results">
                 <span>검색 결과</span>
 	                {companyResults.length === 0 && smartMoneyResults.length === 0 && pickResults.length === 0 && (
-	                  <p>아직 연결된 기업이나 매매 기록이 없습니다.</p>
+	                  <p>아직 연결된 기업이나 공개 보고 기록이 없습니다.</p>
 	                )}
                 {companyResults.map((company) => (
                   <button key={company.id} type="button" onClick={() => onOpenAnalysis(company)}>
@@ -1129,7 +1165,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                     <button key={move.id} type="button" onClick={() => company && onOpenAnalysis(company)}>
                       <strong>{move.investorName}</strong>
                       <small>
-                        {move.actionLabel} · {move.companyName} · 큰손 매매 참고
+                        {publicReportActionLabel(move)} · {move.companyName} · 공개 보고 참고
                       </small>
                     </button>
 	                  );
@@ -1175,18 +1211,18 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
               <CircleDollarSign size={22} />
             </div>
             <div>
-              <h2>매수·매도 추적</h2>
-              <p>큰손과 내부자가 어떤 종목을 사고파는지 봅니다.</p>
-              <small>공개된 매수·매도 자료로 시장의 관심 흐름을 참고합니다.</small>
+              <h2>공개 보유·거래 추적</h2>
+              <p>기관 보유 변화와 공개된 거래 보고를 함께 봅니다.</p>
+              <small>13F는 분기 포트폴리오, 국회의원 거래는 공개된 보고 기준으로 참고합니다.</small>
             </div>
             <ul>
-              <li>미국 국회의원</li>
-              <li>내부자 매수·매도</li>
-              <li>기관·펀드 포트폴리오</li>
-              <li>국민연금 / 한국 공개 포트폴리오</li>
+              <li>미국 국회의원 공개 거래 보고</li>
+              <li>내부자 Form 4 거래 보고</li>
+              <li>기관·펀드 13F 분기 포트폴리오</li>
+              <li>국민연금 / 한국 공개 보유 변화</li>
             </ul>
             <button type="button" onClick={() => scrollToSection('smart-money')}>
-              매수·매도 보기
+              공개 보고 보기
               <ArrowRight size={16} />
             </button>
           </article>
@@ -1282,11 +1318,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
           <div className="home-section-head">
             <span>3</span>
             <div>
-              <h2>최근 큰손 매수·매도</h2>
-              <p>큰손 매매는 확정 신호가 아니라 추가로 확인할 참고 정보입니다.</p>
+              <h2>최근 보유·거래 보고</h2>
+              <p>13F는 분기 보유 보고, 국회의원 거래는 공개된 거래 보고 기준입니다.</p>
             </div>
           </div>
-          <div className="trade-filter-panel" aria-label="매수 매도 필터">
+          <div className="trade-filter-panel" aria-label="공개 보유 거래 보고 필터">
             <div className="trade-filter-row">
               {[
                 { value: 'all', label: '전체 시장' },
@@ -1325,6 +1361,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                 { value: 'sell', label: '매도' },
                 { value: 'increase', label: '비중확대' },
                 { value: 'decrease', label: '비중축소' },
+                { value: 'holding', label: '보유 변화' },
               ].map((filter) => (
                 <button
                   key={filter.value}
@@ -1355,7 +1392,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                 <article className="smart-card" key={move.id}>
                   <div className="card-topline">
                     <span>{move.investorTypeLabel}</span>
-                    <strong>{move.actionLabel}</strong>
+                    <strong>{publicReportActionLabel(move)}</strong>
                   </div>
                   <h3>{move.investorName}</h3>
                   <p className="ticker">
@@ -1372,8 +1409,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                       <dd>{move.disclosedDate}</dd>
                     </div>
                     <div>
-                      <dt>거래일</dt>
-                      <dd>{move.tradeDateOptional ?? '공개 자료에서 확인 필요'}</dd>
+                      <dt>{publicReportDateLabel(move)}</dt>
+                      <dd>{move.tradeDateOptional ?? publicReportDateFallback(move)}</dd>
                     </div>
                     <div>
                       <dt>관련 섹터</dt>
@@ -1385,7 +1422,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                     </div>
                   </dl>
                   <small className="trade-delay-note">
-                    {move.isDelayedDisclosure ? '지연 공시일 수 있어 실제 매매 시점과 다를 수 있습니다.' : move.note}
+                    {publicReportDelayNote(move)}
                   </small>
                   <div className="card-actions">
                     <button type="button" onClick={() => onOpenCategory(supplyChainId)}>공급망 보기</button>
@@ -1407,10 +1444,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                 </article>
               );
             })}
-            {filteredTradeItems.length === 0 && <div className="trade-empty">조건에 맞는 공개 매수·매도 데이터가 아직 없습니다.</div>}
+            {filteredTradeItems.length === 0 && <div className="trade-empty">조건에 맞는 공개 보유·거래 보고가 아직 없습니다.</div>}
           </div>
           <div className="home-note">
-            <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
+            <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
+            <p>국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.</p>
             <p>투자 권유가 아닌 참고용 데이터입니다.</p>
           </div>
         </section>
@@ -2055,26 +2093,28 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             <summary>
               <span>
                 <CircleDollarSign size={16} />
-                <strong>관련 매수·매도 기록</strong>
-                <small>내부자, 기관, 펀드 공개 자료를 참고합니다.</small>
+                <strong>관련 보유·거래 보고</strong>
+                <small>13F 분기 보유 보고와 내부자·국회의원 공개 거래 보고를 참고합니다.</small>
               </span>
               <ChevronDown size={16} />
             </summary>
             <div className="analysis-detail-content">
               {companyTrades.length === 0 ? (
-                <div className="trade-empty">관련 분석 준비 중입니다. 공개 자료가 연결되면 내부자, 기관, 펀드 매매를 함께 보여줍니다.</div>
+                <div className="trade-empty">관련 공개 보고 준비 중입니다. 데이터가 연결되면 13F 보유 변화와 공개 거래 보고를 함께 보여줍니다.</div>
               ) : (
                 <div className="related-trade-list">
                   {companyTrades.slice(0, 4).map((move) => (
                     <article key={move.id}>
                       <div>
                         <strong>{move.investorName}</strong>
-                        <span>{move.investorTypeLabel} · {move.actionLabel}</span>
+                        <span>{move.investorTypeLabel} · {publicReportActionLabel(move)}</span>
                       </div>
                       <p>{move.beginnerExplanation}</p>
                       <small>
                         공개일 {move.disclosedDate}
-                        {move.tradeDateOptional ? ` · 거래일 ${move.tradeDateOptional}` : ' · 거래일 확인 필요'}
+                        {move.tradeDateOptional
+                          ? ` · ${publicReportDateLabel(move)} ${move.tradeDateOptional}`
+                          : ` · ${publicReportDateLabel(move)} 확인 필요`}
                         {' · '}
                         {move.sourceLabel}
                       </small>
@@ -2083,8 +2123,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
                 </div>
               )}
               <div className="home-note">
-                <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
-                <p>매수·매도 정보는 투자 권유가 아닌 참고용 데이터입니다.</p>
+                <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
+                <p>국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.</p>
+                <p>보유·거래 보고는 투자 권유가 아닌 참고용 데이터입니다.</p>
               </div>
             </div>
           </details>
