@@ -29,4 +29,5 @@ jobs:
           SEC_13F_MANAGER_CIKS: ${{ secrets.SEC_13F_MANAGER_CIKS }}
           CONGRESS_TRADES_IMPORT_URL: ${{ secrets.CONGRESS_TRADES_IMPORT_URL }}
           NPS_IMPORT_URL: ${{ secrets.NPS_IMPORT_URL }}
+          MARKET_PRICES_IMPORT_URL: ${{ secrets.MARKET_PRICES_IMPORT_URL }}
         run: npm run sync:all

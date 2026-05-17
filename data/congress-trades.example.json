@@ -1,0 +1,17 @@
+[
+  {
+    "reportId": "example-2026-001",
+    "politicianName": "Example Member",
+    "chamber": "House",
+    "ticker": "NVDA",
+    "companyName": "NVIDIA",
+    "assetName": "NVIDIA common stock",
+    "action": "buy",
+    "amountRange": "$15,001 - $50,000",
+    "transactionDate": "2026-05-01",
+    "disclosedDate": "2026-05-12",
+    "sourceUrl": "https://disclosures-clerk.house.gov/",
+    "sector": "AI 반도체",
+    "note": "공개자료 import 예시입니다. 실제 데이터로 교체하세요."
+  }
+]

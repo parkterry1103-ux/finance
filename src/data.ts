@@ -17,6 +17,7 @@ export type StockAutopsyValueChainPosition =
   | 'customer'
   | 'competitor'
   | 'other';
+export type MarketStatus = 'open' | 'closed' | 'premarket' | 'afterhours' | 'delayed' | 'unknown';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -218,6 +219,20 @@ export interface StockAutopsyPick {
   relatedCompanyId?: string;
   relatedTradeTags?: string[];
   publishedAt?: string;
+}
+
+export interface MarketPrice {
+  companyId?: string;
+  ticker: string;
+  market: 'KOSPI' | 'KOSDAQ' | 'NASDAQ' | 'NYSE' | 'KR' | 'US';
+  price: string;
+  change: string;
+  changePercent: string;
+  currency: 'KRW' | 'USD';
+  marketStatus: MarketStatus;
+  asOf: string;
+  source: string;
+  isDelayed: boolean;
 }
 
 type SupplierSeed = {
@@ -5125,6 +5140,126 @@ export const marketMovers: MarketMover[] = [
     beginnerNote: '미국 기업은 MD&A에서 경영진이 수요를 어떻게 설명했는지 봅니다.',
     sectorId: 'us-semiconductors',
     sectorLabel: 'AI 반도체',
+  },
+];
+
+export const mockMarketPrices: MarketPrice[] = [
+  {
+    companyId: 'kr-semiconductors-samsung',
+    ticker: '005930.KS',
+    market: 'KOSPI',
+    price: '82,400',
+    change: '+2,100',
+    changePercent: '+2.61%',
+    currency: 'KRW',
+    marketStatus: 'closed',
+    asOf: '2026-05-15 15:30 KST',
+    source: 'mock close price',
+    isDelayed: true,
+  },
+  {
+    companyId: 'kr-semiconductors-sk-hynix',
+    ticker: '000660.KS',
+    market: 'KOSPI',
+    price: '214,500',
+    change: '+6,500',
+    changePercent: '+3.13%',
+    currency: 'KRW',
+    marketStatus: 'closed',
+    asOf: '2026-05-15 15:30 KST',
+    source: 'mock close price',
+    isDelayed: true,
+  },
+  {
+    companyId: 'kr-semiconductors-samsung-한미반도체',
+    ticker: '042700.KS',
+    market: 'KOSPI',
+    price: '147,300',
+    change: '+4,000',
+    changePercent: '+2.79%',
+    currency: 'KRW',
+    marketStatus: 'closed',
+    asOf: '2026-05-15 15:30 KST',
+    source: 'mock close price',
+    isDelayed: true,
+  },
+  {
+    companyId: 'kr-battery-materials-posco-futurem',
+    ticker: '003670.KS',
+    market: 'KOSPI',
+    price: '248,000',
+    change: '-3,500',
+    changePercent: '-1.39%',
+    currency: 'KRW',
+    marketStatus: 'closed',
+    asOf: '2026-05-15 15:30 KST',
+    source: 'mock close price',
+    isDelayed: true,
+  },
+  {
+    companyId: 'us-semiconductors-nvidia',
+    ticker: 'NVDA',
+    market: 'NASDAQ',
+    price: '1,126.40',
+    change: '+34.10',
+    changePercent: '+3.12%',
+    currency: 'USD',
+    marketStatus: 'afterhours',
+    asOf: '2026-05-15 20:00 ET',
+    source: 'mock delayed quote',
+    isDelayed: true,
+  },
+  {
+    companyId: 'us-semiconductors-amd',
+    ticker: 'AMD',
+    market: 'NASDAQ',
+    price: '168.22',
+    change: '-2.47',
+    changePercent: '-1.45%',
+    currency: 'USD',
+    marketStatus: 'afterhours',
+    asOf: '2026-05-15 20:00 ET',
+    source: 'mock delayed quote',
+    isDelayed: true,
+  },
+  {
+    companyId: 'us-ai-cloud-datacenter-microsoft',
+    ticker: 'MSFT',
+    market: 'NASDAQ',
+    price: '487.90',
+    change: '+5.24',
+    changePercent: '+1.09%',
+    currency: 'USD',
+    marketStatus: 'afterhours',
+    asOf: '2026-05-15 20:00 ET',
+    source: 'mock delayed quote',
+    isDelayed: true,
+  },
+  {
+    companyId: 'us-ai-cloud-datacenter-amazon',
+    ticker: 'AMZN',
+    market: 'NASDAQ',
+    price: '224.18',
+    change: '+1.44',
+    changePercent: '+0.65%',
+    currency: 'USD',
+    marketStatus: 'afterhours',
+    asOf: '2026-05-15 20:00 ET',
+    source: 'mock delayed quote',
+    isDelayed: true,
+  },
+  {
+    companyId: 'us-ev-mobility-tesla',
+    ticker: 'TSLA',
+    market: 'NYSE',
+    price: '178.80',
+    change: '-1.20',
+    changePercent: '-0.67%',
+    currency: 'USD',
+    marketStatus: 'afterhours',
+    asOf: '2026-05-15 20:00 ET',
+    source: 'mock delayed quote',
+    isDelayed: true,
   },
 ];
 

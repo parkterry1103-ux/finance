@@ -1,0 +1,15 @@
+[
+  {
+    "companyId": "us-semiconductors-nvidia",
+    "ticker": "NVDA",
+    "market": "NASDAQ",
+    "price": "1126.40",
+    "change": "+34.10",
+    "changePercent": "+3.12%",
+    "currency": "USD",
+    "marketStatus": "afterhours",
+    "asOf": "2026-05-15T20:00:00-04:00",
+    "source": "manual-delayed-close",
+    "isDelayed": true
+  }
+]

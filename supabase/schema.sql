@@ -85,12 +85,32 @@ create table if not exists ownership_trades (
 create unique index if not exists ownership_trades_source_raw_key
   on ownership_trades (source, raw_id);
 
+create table if not exists market_prices (
+  id uuid primary key default gen_random_uuid(),
+  company_id text references companies(id) on delete set null,
+  ticker text not null,
+  market text,
+  price text,
+  change text,
+  change_percent text,
+  currency text,
+  market_status text check (market_status in ('open', 'closed', 'premarket', 'afterhours', 'delayed', 'unknown')),
+  as_of text not null,
+  source text not null,
+  is_delayed boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists market_prices_ticker_source_asof_key
+  on market_prices (ticker, source, as_of);
+
 -- 중복 방지 설계:
 -- OpenDART: dart_rcept_no
 -- SEC filing: accession_number
 -- SEC Form 4 transaction: accessionNumber + ownerCik + transactionDate + securityTitle + shares를 raw_id로 저장
 -- 13F: accessionNumber + cusip + managerCik를 raw_id로 저장
 -- Congress: reportId + transactionDate + assetName + amountRange를 raw_id로 저장
+-- Prices: ticker + source + as_of
 
 create table if not exists sync_runs (
   id uuid primary key default gen_random_uuid(),

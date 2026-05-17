@@ -47,6 +47,7 @@ import {
   FinancialStatementSummary,
   links,
   marketMovers,
+  MarketPrice,
   RiskLevel,
   sectors,
   SmartMoneyAction,
@@ -64,6 +65,7 @@ import {
   resolveCompanyFilingLinks,
 } from './services/filings';
 import { fetchSmartMoneyTrades, fetchTradesByCompany } from './services/trades';
+import { getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceStatusLabel } from './services/prices';
 
 type NodeData = {
   company: Company;
@@ -769,6 +771,23 @@ function ReportAction({
   );
 }
 
+function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; compact?: boolean }) {
+  const direction = priceDirection(price);
+  if (!price) {
+    return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 준비 중</span>;
+  }
+
+  return (
+    <span className={`price-badge ${direction} ${compact ? 'compact' : ''}`} title={`${price.source} · ${price.asOf}`}>
+      <strong>
+        {price.currency === 'KRW' ? `${price.price}원` : `$${price.price}`}
+      </strong>
+      <em>{price.changePercent}</em>
+      <small>{priceStatusLabel(price)}</small>
+    </span>
+  );
+}
+
 function parsePercentValue(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ''));
   return Number.isFinite(parsed) ? parsed : undefined;
@@ -1185,6 +1204,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
             {marketMovers.map((mover) => {
               const company = companies.find((item) => item.id === mover.companyId);
               const reportLink = company ? getPrimaryReportLink(company) : null;
+              const price = getPriceForTicker(mover.ticker, mover.companyId);
               return (
                 <article className="mover-card" key={mover.id}>
                   <div className="card-topline">
@@ -1193,6 +1213,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
                   </div>
                   <h3>{mover.companyName}</h3>
                   <p className="ticker">{mover.ticker}</p>
+                  <PriceBadge price={price} compact />
                   <p>{mover.reason}</p>
                   <small>{mover.beginnerNote}</small>
                   <div className="mini-tag-row">
@@ -1487,6 +1508,7 @@ function StockAutopsyPicksPage({
       (company) => company.id === detailPick.relatedCompanyId || company.ticker === detailPick.ticker,
     );
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
+    const price = getPriceForPick(detailPick);
     const highlightedStep = valueChainStepByPosition[detailPick.valueChainPosition];
     const reasonLines = [
       detailPick.reasonSummary,
@@ -1517,7 +1539,10 @@ function StockAutopsyPicksPage({
               <h1>{detailPick.companyName} 해부</h1>
               <p>{detailPick.ticker} · {detailPick.market === 'KR' ? '한국' : '미국'} · {detailPick.sector}</p>
             </div>
-            <strong>{detailPick.beginnerSummary}</strong>
+            <div className="pick-hero-side">
+              <PriceBadge price={price} />
+              <strong>{detailPick.beginnerSummary}</strong>
+            </div>
           </section>
 
           <section className="pick-detail-card">
@@ -1626,6 +1651,7 @@ function StockAutopsyPicksPage({
                 </strong>
               </div>
               <h2>{pick.companyName}</h2>
+              <PriceBadge price={getPriceForPick(pick)} compact />
               <p>{pick.reasonSummary}</p>
               <div className="pick-meta-grid">
                 <div>
@@ -1720,6 +1746,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
   const recentMover = marketMovers.find((mover) => mover.companyId === company.id);
   const recentMovementSummary = recentMover?.reason ?? `${company.analystSignal} ${company.investmentView}`;
   const companySector = sectors.find((sector) => sector.id === company.sectorId);
+  const companyPrice = getPriceForCompany(company);
   const sourceStatusShort =
     primaryReportLink.status === 'direct'
       ? '원문 보고서 연결됨'
@@ -1774,7 +1801,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
               <h2>{company.name}</h2>
               <p>{company.ticker ?? company.legalName}</p>
             </div>
-            <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
+            <div className="analysis-overview-side">
+              <PriceBadge price={companyPrice} />
+              <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
+              <small className="analysis-report-meta">{primaryReportLink.statusDetail}</small>
+            </div>
           </div>
           <div className="analysis-quick-metrics">
             {quickMetrics.map((metric) => (
@@ -2134,6 +2165,7 @@ function App() {
   const selectedOpinions = analystOpinions.filter((opinion) => opinion.companyId === selectedCompany?.id);
   const selectedDisplayMetrics = selectedCompany ? getDisplayMetrics(selectedCompany) : null;
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
+  const selectedCompanyPrice = selectedCompany ? getPriceForCompany(selectedCompany) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const opportunityCount = groupCompanies.filter((company) => company.status === 'opportunity').length;
@@ -2665,9 +2697,12 @@ function App() {
                   <h2>{selectedCompany.name}</h2>
                   <span>{selectedCompany.legalName}</span>
                 </div>
-                <span className={`risk-badge ${riskClass[selectedCompany.riskLevel]}`}>
-                  리스크 {riskLabels[selectedCompany.riskLevel]}
-                </span>
+                <div className="panel-heading-actions">
+                  <PriceBadge price={selectedCompanyPrice} compact />
+                  <span className={`risk-badge ${riskClass[selectedCompany.riskLevel]}`}>
+                    리스크 {riskLabels[selectedCompany.riskLevel]}
+                  </span>
+                </div>
               </div>
 
               <div className="detail-card summary">

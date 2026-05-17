@@ -3120,6 +3120,81 @@ body {
   font-weight: 850;
 }
 
+.price-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  color: #475467;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.price-badge strong,
+.price-badge em,
+.price-badge small {
+  font-style: normal;
+  line-height: 1.2;
+}
+
+.price-badge strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.price-badge em {
+  font-size: 13px;
+}
+
+.price-badge small {
+  color: #667085;
+  font-size: 11px;
+}
+
+.price-badge.up {
+  border-color: rgba(220, 38, 38, 0.18);
+  color: #dc2626;
+  background: #fff1f2;
+}
+
+.price-badge.up strong,
+.price-badge.up em {
+  color: #dc2626;
+}
+
+.price-badge.down {
+  border-color: rgba(37, 99, 235, 0.18);
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.price-badge.down strong,
+.price-badge.down em {
+  color: #2563eb;
+}
+
+.price-badge.flat {
+  color: #667085;
+  background: #f8fafc;
+}
+
+.price-badge.pending {
+  color: #667085;
+  background: #f8fafc;
+}
+
+.price-badge.compact {
+  min-height: 30px;
+  padding: 0 9px;
+}
+
 .mini-tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -3899,6 +3974,29 @@ body,
   gap: 12px;
 }
 
+.analysis-overview-side,
+.pick-hero-side,
+.panel-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.analysis-overview-side {
+  max-width: 460px;
+}
+
+.analysis-report-meta {
+  flex-basis: 100%;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: right;
+}
+
 .analysis-overview-head h2 {
   margin: 8px 0 4px;
   color: #111827;
@@ -4337,6 +4435,10 @@ body,
   font-size: 17px;
 }
 
+.pick-hero-side {
+  max-width: 460px;
+}
+
 .pick-move.up {
   color: #047857;
   background: #e8f8f0;
@@ -4464,6 +4566,16 @@ body,
   .pick-detail-hero {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .analysis-overview-side,
+  .pick-hero-side,
+  .panel-heading-actions {
+    justify-content: flex-start;
+  }
+
+  .analysis-report-meta {
+    text-align: left;
   }
 
   .pick-nav {

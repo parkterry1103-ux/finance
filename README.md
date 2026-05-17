@@ -95,13 +95,18 @@ Vercel에서 이 폴더를 프로젝트로 가져오면 됩니다.
 - `src/services/financials.ts`: OpenDART, SEC CompanyFacts 조회 구조와 fallback
 - `src/services/trades.ts`: OpenDART 소유보고, SEC Form 3/4/5, SEC 13F, 공개자료 import 구조와 fallback
 - `src/services/filings.ts`: DART/SEC 직접 원문 보고서 링크 우선, 검색 링크/원문 연결 필요 상태 fallback
+- `src/services/prices.ts`: 지연 가능 가격 fallback과 가격 표시용 helper
 - `scripts/sync-opendart-financials.ts`
 - `scripts/sync-sec-companyfacts.ts`
 - `scripts/sync-sec-form4.ts`
 - `scripts/sync-sec-13f.ts`
 - `scripts/sync-congress-trades.ts`
+- `scripts/audit-filing-links.ts`
+- `scripts/sync-filing-links.ts`
+- `scripts/sync-prices.ts`
 - `api/sync/financials.ts`
 - `api/sync/trades.ts`
+- `api/sync/prices.ts`
 - `supabase/schema.sql`
 - `.github/workflows/sync.yml`
 
@@ -126,6 +131,7 @@ SYNC_DEFAULT_MARKET=
 SEC_13F_MANAGER_CIKS=
 CONGRESS_TRADES_IMPORT_URL=
 NPS_IMPORT_URL=
+MARKET_PRICES_IMPORT_URL=
 ```
 
 `src/data.ts`의 기업별 원문 링크 상태는 아래처럼 관리합니다.
@@ -144,6 +150,7 @@ NPS_IMPORT_URL=
 - `filings`
 - `financial_metrics`
 - `ownership_trades`
+- `market_prices`
 - `sync_runs`
 
 중복 저장 방지 기준:
@@ -153,6 +160,7 @@ NPS_IMPORT_URL=
 - SEC Form 4 transaction: `accessionNumber + ownerCik + transactionDate + securityTitle + shares`를 `raw_id`로 저장
 - SEC 13F: `accessionNumber + cusip + managerCik`를 `raw_id`로 저장
 - Congress: `reportId + transactionDate + assetName + amountRange`를 `raw_id`로 저장
+- Prices: `ticker + source + as_of`
 
 ### 수동 동기화
 
@@ -162,6 +170,9 @@ NPS_IMPORT_URL=
 npm run sync:compile
 npm run sync:financials
 npm run sync:trades
+npm run sync:prices
+npm run audit:filings
+npm run sync:filing-links
 npm run sync:all
 ```
 
@@ -173,9 +184,160 @@ npm run sync:sec-companyfacts
 npm run sync:sec-form4
 npm run sync:sec-13f
 npm run sync:congress
+npm run sync:prices
 ```
 
 API 키나 DB 환경변수가 없으면 실패하지 않고 안내 로그를 출력하며 기존 mock/fallback 데이터가 유지됩니다.
+
+### SEC 13F 기관 포트폴리오
+
+SEC 13F를 켜려면 Vercel Environment Variables 또는 GitHub Secrets에 `SEC_13F_MANAGER_CIKS`를 추가합니다.
+
+```bash
+SEC_13F_MANAGER_CIKS=0001067983,0001697748
+```
+
+- 값은 comma-separated CIK 문자열입니다.
+- 앞의 `0`은 유지해도 되고, 공백은 자동으로 trim합니다.
+- CIK는 SEC EDGAR에서 운용사/기관 페이지를 직접 확인해 입력합니다.
+- 잘못된 CIK가 하나 있어도 다른 CIK sync는 계속 진행됩니다.
+- 추가 후 Vercel Production Redeploy가 필요합니다.
+- 수동 테스트: `/api/sync/trades?secret=CRON_SECRET값`
+- 결과 확인: Supabase `sync_runs`에서 `sec-13f` status와 endpoint 응답 JSON의 `results.form13f.managers`를 확인합니다.
+
+13F는 분기 말 보유 현황이라 실제 매수·매도 시점과 다를 수 있습니다. 화면에서는 투자 권유가 아니라 공개 자료 기반 참고 정보로만 표시합니다.
+
+### 미국 국회의원 거래 import
+
+무료 API를 쓰지 않고 공개자료 기반 수동/반자동 import 구조를 사용합니다. 켜는 방법은 두 가지입니다.
+
+1. `data/congress-trades.json` 파일을 추가
+2. `CONGRESS_TRADES_IMPORT_URL` 환경변수에 JSON 또는 CSV URL 추가
+
+JSON 예시:
+
+```json
+[
+  {
+    "reportId": "example-2026-001",
+    "politicianName": "Example Member",
+    "chamber": "House",
+    "ticker": "NVDA",
+    "companyName": "NVIDIA",
+    "assetName": "NVIDIA common stock",
+    "action": "buy",
+    "amountRange": "$15,001 - $50,000",
+    "transactionDate": "2026-05-01",
+    "disclosedDate": "2026-05-12",
+    "sourceUrl": "https://disclosures-clerk.house.gov/",
+    "sector": "AI 반도체",
+    "note": "공개자료 import 예시"
+  }
+]
+```
+
+필드는 CSV 헤더로도 동일하게 사용할 수 있습니다. 저장 시 `investor_type`은 `us-politician`, `source`는 `congress-trades`, `raw_id`는 `reportId + transactionDate + assetName + amountRange` 기반으로 생성합니다.
+
+수동 테스트:
+
+```text
+https://YOUR_DOMAIN/api/sync/trades?secret=CRON_SECRET값
+```
+
+결과 확인:
+
+- Supabase `sync_runs`에서 `congress-trades`
+- Supabase `ownership_trades`에서 `source = congress-trades`
+
+국회의원 거래는 실제 거래일과 공개일이 다를 수 있습니다. “공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.” 문구를 유지합니다.
+
+### 원문 보고서 링크 점검과 보강
+
+원문 연결 상태를 점검:
+
+```bash
+npm run audit:filings
+```
+
+출력 항목:
+
+- 전체 기업 수
+- `direct`, `search-only`, `needs-link` 기업 수
+- `needs-link` 기업 목록
+- `companyId`, `companyName`, `market`, `ticker`
+- 필요한 식별자: `dartCorpCode` 또는 `secCik`
+- `sourceSearchUrl` 여부
+
+OpenDART/SEC에서 가능한 원문 링크를 보강:
+
+```bash
+npm run sync:filing-links
+```
+
+- 한국 기업은 `corpCode + OPENDART_API_KEY`로 최신 분기보고서/반기보고서/사업보고서 `rcept_no`를 찾습니다.
+- 미국 기업은 `cik`로 SEC submissions에서 최신 `10-K`/`10-Q`와 primary document를 찾습니다.
+- 기존 `direct` 링크는 덮어쓰지 않습니다.
+- 확실한 원문을 찾은 경우에만 direct URL을 생성합니다.
+- DB가 있으면 Supabase `filings` 테이블에 저장하고, DB가 없으면 `reports/filing-links-report.json` 리포트로 확인합니다.
+
+수동으로 보강할 때는 `src/data.ts`의 기업 데이터에 아래 필드 중 확인된 값만 추가하세요.
+
+```ts
+reportUrl
+sourceDirectUrl
+dartRcpNo
+secAccessionNumber
+reportType
+fiscalYear
+fiscalPeriod
+filingDate
+sourceStatus
+```
+
+가짜 원문 링크는 넣지 않습니다. 확실하지 않으면 `search-only` 또는 `needs-link`로 유지합니다.
+
+### 가격 데이터
+
+유료 실시간 시세 API는 사용하지 않습니다. 무료·공개 데이터는 지연 시세이거나 장마감 기준일 수 있으므로 UI에 `지연 가능`, `장마감 종가`, `가격 준비 중` 상태를 표시합니다.
+
+가격 import 방법:
+
+1. `data/prices.json` 파일 추가
+2. `MARKET_PRICES_IMPORT_URL` 환경변수에 JSON 또는 CSV URL 추가
+
+수동 실행:
+
+```bash
+npm run sync:prices
+```
+
+수동 endpoint:
+
+```text
+https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
+```
+
+가격 필드 예시:
+
+```json
+[
+  {
+    "companyId": "us-semiconductors-nvidia",
+    "ticker": "NVDA",
+    "market": "NASDAQ",
+    "price": "1126.40",
+    "change": "+34.10",
+    "changePercent": "+3.12%",
+    "currency": "USD",
+    "marketStatus": "afterhours",
+    "asOf": "2026-05-15T20:00:00-04:00",
+    "source": "manual-delayed-close",
+    "isDelayed": true
+  }
+]
+```
+
+데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 사용합니다. 가격 데이터는 투자 참고용이며 완전한 실시간성을 보장하지 않습니다.
 
 ### Vercel Cron
 
@@ -190,6 +352,7 @@ Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므�
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/financials
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/trades
+curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/prices
 ```
 
 브라우저 수동 테스트:
@@ -197,6 +360,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/trades
 ```text
 https://YOUR_DOMAIN/api/sync/financials?secret=CRON_SECRET값
 https://YOUR_DOMAIN/api/sync/trades?secret=CRON_SECRET값
+https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 ```
 
 수동 테스트 순서:
@@ -216,7 +380,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CRON_SECRET`
 - `SEC_USER_AGENT`
-- 선택: `SEC_13F_MANAGER_CIKS`, `CONGRESS_TRADES_IMPORT_URL`, `NPS_IMPORT_URL`
+- 선택: `SEC_13F_MANAGER_CIKS`, `CONGRESS_TRADES_IMPORT_URL`, `NPS_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`
 
 ## 운영자가 직접 해야 하는 것
 
@@ -253,6 +417,8 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 7. 최초 수동 동기화 실행
    - `npm run sync:financials`
    - `npm run sync:trades`
+   - `npm run sync:prices`
+   - `npm run audit:filings`
    - 또는 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값` 호출
 
 8. 자동 업데이트 성공 여부 확인

@@ -14,9 +14,12 @@
     "sync:sec-form4": "npm run sync:compile && node .sync-build/scripts/sync-sec-form4.js",
     "sync:sec-13f": "npm run sync:compile && node .sync-build/scripts/sync-sec-13f.js",
     "sync:congress": "npm run sync:compile && node .sync-build/scripts/sync-congress-trades.js",
+    "sync:prices": "npm run sync:compile && node .sync-build/scripts/sync-prices.js",
+    "audit:filings": "npm run sync:compile && node .sync-build/scripts/audit-filing-links.js",
+    "sync:filing-links": "npm run sync:compile && node .sync-build/scripts/sync-filing-links.js",
     "sync:financials": "npm run sync:opendart && npm run sync:sec-companyfacts",
     "sync:trades": "npm run sync:sec-form4 && npm run sync:sec-13f && npm run sync:congress",
-    "sync:all": "npm run sync:financials && npm run sync:trades"
+    "sync:all": "npm run sync:financials && npm run sync:trades && npm run sync:prices"
   },
   "engines": {
     "node": "20.x"

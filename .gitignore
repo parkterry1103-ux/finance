@@ -2,6 +2,7 @@ node_modules/
 dist/
 .sync-build/
 .vercel/
+reports/*.json
 
 .env
 .env.*

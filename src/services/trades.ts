@@ -45,10 +45,11 @@ export async function fetchUSCongressTrades(symbol?: string): Promise<SmartMoney
 
 export async function fetchInstitutionalHoldings(symbol?: string): Promise<SmartMoneyMove[]> {
   const secUserAgent = envValue('SEC_USER_AGENT');
+  const managerCiks = envValue('SEC_13F_MANAGER_CIKS');
 
   // SEC 13F: 기관/펀드 포트폴리오 원천 데이터입니다.
   // manager CIK 목록과 SEC_USER_AGENT가 없으면 mock 데이터로 fallback합니다.
-  if (!secUserAgent) {
+  if (!secUserAgent || !managerCiks) {
     return smartMoneyMoves.filter((move) => ['institution', 'fund', 'nps'].includes(move.investorType) && (!symbol || move.ticker === symbol));
   }
 
@@ -80,6 +81,7 @@ export async function fetchSmartMoneyTrades(): Promise<SmartMoneyMove[]> {
     envValue('SEC_USER_AGENT') ||
       envValue('OPENDART_API_KEY') ||
       envValue('CONGRESS_TRADES_IMPORT_URL') ||
+      envValue('SEC_13F_MANAGER_CIKS') ||
       envValue('NPS_IMPORT_URL'),
   );
 
