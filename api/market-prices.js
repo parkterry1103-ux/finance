@@ -76,6 +76,11 @@ export default async function handler(req, res) {
 
     res.status(200).json({ ok: true, source: 'supabase', limit, prices: Array.from(deduped.values()) });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error), prices: [] });
+    res.status(200).json({
+      ok: true,
+      source: 'fallback',
+      prices: [],
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }

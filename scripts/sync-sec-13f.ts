@@ -352,7 +352,7 @@ export async function syncSec13F() {
         table.rows.forEach((holding) => {
           allRows.push({
             company_id: null,
-            ticker: holding.ticker || null,
+            ticker: holding.ticker || holding.issuer || holding.cusip || null,
             investor_name: filingManagerName,
             investor_type: 'fund',
             action: 'holding',

@@ -42,13 +42,22 @@ function normalizeAction(row) {
   return [action || 'increase', source.includes('form') ? '내부자 거래 보고' : '공개 보유·거래 보고'];
 }
 
+function securityFromRawId(rawId) {
+  const parts = String(rawId || '').split(':').filter(Boolean);
+  const key = parts.at(-1) || '';
+  if (!key) return '';
+  if (/^[A-Z0-9]{6,12}$/i.test(key)) return `CUSIP ${key.toUpperCase()}`;
+  return key.replaceAll('-', ' ').slice(0, 80);
+}
+
 function normalizeTrade(row) {
   const ticker = String(row.ticker || '').trim();
   const lookup = companyMap().get(ticker.toUpperCase()) || companyMap().get(ticker);
   const source = String(row.source || '');
   const is13f = source === 'sec-13f';
   const [action, actionLabel] = normalizeAction(row);
-  const companyName = lookup?.[0] || ticker || '종목 확인 필요';
+  const fallbackSecurity = securityFromRawId(row.raw_id);
+  const companyName = lookup?.[0] || ticker || fallbackSecurity || '보유 종목 확인 필요';
   const market = lookup?.[1] || (ticker.includes('.KS') || ticker.includes('.KQ') ? 'KR' : 'US');
   const sector = lookup?.[2] || '섹터 확인 필요';
 
@@ -58,7 +67,7 @@ function normalizeTrade(row) {
     investorType: is13f ? 'fund' : 'insider',
     investorTypeLabel: is13f ? '기관 13F 분기 포트폴리오' : 'Form 4 내부자 거래 보고',
     companyName,
-    ticker,
+    ticker: ticker || fallbackSecurity,
     market,
     action,
     actionLabel,
