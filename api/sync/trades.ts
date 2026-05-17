@@ -1,7 +1,7 @@
-import { syncCongressTrades } from '../../scripts/sync-congress-trades.ts';
-import { syncSec13F } from '../../scripts/sync-sec-13f';
-import { syncSecForm4 } from '../../scripts/sync-sec-form4';
-import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils';
+import { syncCongressTrades } from '../../scripts/sync-congress-trades.js';
+import { syncSec13F } from '../../scripts/sync-sec-13f.js';
+import { syncSecForm4 } from '../../scripts/sync-sec-form4.js';
+import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils.js';
 
 function isAuthorized(req) {
   const configured = process.env.CRON_SECRET;
