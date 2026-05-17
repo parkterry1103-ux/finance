@@ -4,7 +4,7 @@ export type RiskLevel = 'low' | 'medium' | 'high';
 export type CompanyStatus = 'core' | 'watch' | 'opportunity';
 export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 'seed-model';
 export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
-export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link';
+export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
 export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease' | 'holding';
@@ -18,6 +18,7 @@ export type StockAutopsyValueChainPosition =
   | 'competitor'
   | 'other';
 export type MarketStatus = 'open' | 'closed' | 'premarket' | 'afterhours' | 'delayed' | 'unknown';
+export type PriceLabel = 'latest' | 'close' | 'delayed' | 'fallback' | 'unavailable';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -229,9 +230,13 @@ export interface MarketPrice {
   ticker: string;
   market: 'KOSPI' | 'KOSDAQ' | 'NASDAQ' | 'NYSE' | 'KR' | 'US';
   price: string;
+  open?: string;
+  previousClose?: string;
+  close?: string;
   change: string;
   changePercent: string;
   currency: 'KRW' | 'USD';
+  priceLabel?: PriceLabel;
   marketStatus: MarketStatus;
   asOf: string;
   source: string;
@@ -5443,9 +5448,9 @@ export const smartMoneyMoves: SmartMoneyMove[] = [
   },
   {
     id: 'smart-us-fund-nvidia',
-    investorName: '미국 대형 성장주 펀드',
+    investorName: 'ARK Investment Management',
     investorType: 'fund',
-    investorTypeLabel: 'SEC 13F 분기 포트폴리오',
+    investorTypeLabel: '기관 13F 분기 포트폴리오',
     market: 'US',
     companyId: 'us-semiconductors-nvidia',
     relatedCompanyId: 'us-semiconductors-nvidia',
@@ -5459,7 +5464,7 @@ export const smartMoneyMoves: SmartMoneyMove[] = [
     sectorId: 'us-semiconductors',
     sector: 'AI 반도체',
     sectorLabel: 'AI 반도체',
-    sourceLabel: 'SEC 13F 보유 보고 연결 예정',
+    sourceLabel: 'SEC 13F 분기 포트폴리오 mock',
     sourceUrl: 'https://www.sec.gov/edgar/search/#/category=form-cat5',
     isDelayedDisclosure: true,
     note: '13F는 분기 말 보유 현황이라 실제 매수·매도 시점과 다를 수 있습니다.',

@@ -68,8 +68,96 @@ async function loadPriceRows() {
     const raw = await fs.readFile(projectFile('data/prices.json'), 'utf-8');
     return { rows: parseRows(raw, 'data/prices.json'), sourceLabel: 'data/prices.json' };
   } catch {
+    const yahooRows = await fetchYahooFinanceRows();
+    if (yahooRows.length) return { rows: yahooRows, sourceLabel: 'yahoo-finance-public-quote' };
     return { rows: [], sourceLabel: '' };
   }
+}
+
+function uniqueTickersForPriceSync() {
+  return Array.from(
+    new Set(
+      companies
+        .map((company) => company.ticker)
+        .filter((ticker): ticker is string => Boolean(ticker && ticker !== 'WATCH')),
+    ),
+  );
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
+  return chunks;
+}
+
+function yahooMarketStatus(marketState) {
+  const normalized = String(marketState ?? '').toUpperCase();
+  if (normalized === 'REGULAR') return 'open';
+  if (normalized === 'PRE' || normalized === 'PREPRE') return 'premarket';
+  if (normalized === 'POST' || normalized === 'POSTPOST') return 'afterhours';
+  if (normalized === 'CLOSED') return 'closed';
+  return 'unknown';
+}
+
+function yahooPriceLabel(marketState) {
+  const status = yahooMarketStatus(marketState);
+  if (status === 'open') return 'latest';
+  if (status === 'closed') return 'close';
+  return 'delayed';
+}
+
+function signedPercent(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return `${parsed > 0 ? '+' : ''}${parsed.toFixed(2)}%`;
+}
+
+function nullableString(value) {
+  return value === undefined || value === null || value === '' ? null : String(value);
+}
+
+async function fetchYahooFinanceRows() {
+  if (envValue('PRICE_SYNC_SOURCE') === 'manual-only') return [];
+  const tickers = uniqueTickersForPriceSync();
+  const rows = [];
+  for (const chunk of chunkArray(tickers, 70)) {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(chunk.join(','))}`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': envValue('SEC_USER_AGENT', 'finance-supply-chain-app contact@example.com'),
+        },
+      });
+      if (!response.ok) throw new Error(`Yahoo quote ${response.status}`);
+      const payload = await response.json();
+      const results = payload?.quoteResponse?.result;
+      if (!Array.isArray(results)) continue;
+      results.forEach((quote) => {
+        const company = companies.find((item) => item.ticker === quote.symbol);
+        rows.push({
+          companyId: company?.id,
+          ticker: quote.symbol,
+          market: company?.country ?? quote.fullExchangeName ?? 'unknown',
+          price: quote.regularMarketPrice,
+          open: quote.regularMarketOpen,
+          previousClose: quote.regularMarketPreviousClose,
+          close: yahooMarketStatus(quote.marketState) === 'closed' ? quote.regularMarketPrice : quote.regularMarketPreviousClose,
+          change: quote.regularMarketChange,
+          changePercent: signedPercent(quote.regularMarketChangePercent),
+          currency: quote.currency,
+          priceLabel: yahooPriceLabel(quote.marketState),
+          marketStatus: yahooMarketStatus(quote.marketState),
+          asOf: quote.regularMarketTime ? new Date(Number(quote.regularMarketTime) * 1000).toISOString() : nowIso(),
+          source: 'yahoo-finance-public-quote',
+          isDelayed: true,
+        });
+      });
+    } catch (error) {
+      console.warn(`[sync-prices] Yahoo chunk skipped: ${errorMessage(error)}`);
+    }
+  }
+  return rows;
 }
 
 function normalizePriceRow(row) {
@@ -77,10 +165,14 @@ function normalizePriceRow(row) {
     company_id: row.company_id ?? row.companyId ?? null,
     ticker: row.ticker,
     market: row.market ?? 'unknown',
-    price: row.price === undefined ? null : String(row.price),
-    change: row.change === undefined ? null : String(row.change),
+    price: nullableString(row.price),
+    open: nullableString(row.open),
+    previous_close: nullableString(row.previousClose ?? row.previous_close),
+    close: nullableString(row.close),
+    change: nullableString(row.change),
     change_percent: row.changePercent ?? row.change_percent ?? null,
     currency: row.currency ?? null,
+    price_label: row.priceLabel ?? row.price_label ?? 'delayed',
     market_status: row.marketStatus ?? row.market_status ?? 'unknown',
     as_of: row.asOf ?? row.as_of ?? nowIso(),
     source: row.source ?? 'manual-price-import',

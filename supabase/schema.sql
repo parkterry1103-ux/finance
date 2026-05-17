@@ -91,9 +91,13 @@ create table if not exists market_prices (
   ticker text not null,
   market text,
   price text,
+  open text,
+  previous_close text,
+  close text,
   change text,
   change_percent text,
   currency text,
+  price_label text check (price_label in ('latest', 'close', 'delayed', 'fallback', 'unavailable')),
   market_status text check (market_status in ('open', 'closed', 'premarket', 'afterhours', 'delayed', 'unknown')),
   as_of text not null,
   source text not null,
@@ -103,6 +107,11 @@ create table if not exists market_prices (
 
 create unique index if not exists market_prices_ticker_source_asof_key
   on market_prices (ticker, source, as_of);
+
+alter table if exists market_prices add column if not exists open text;
+alter table if exists market_prices add column if not exists previous_close text;
+alter table if exists market_prices add column if not exists close text;
+alter table if exists market_prices add column if not exists price_label text;
 
 -- 중복 방지 설계:
 -- OpenDART: dart_rcept_no

@@ -140,6 +140,10 @@ export async function syncFilingLinks() {
       skipped.push({ companyId: company.id, companyName: company.name, status: 'direct-exists' });
       continue;
     }
+    if (current.status === 'private-company' || current.status === 'no-public-filing') {
+      skipped.push({ companyId: company.id, companyName: company.name, status: current.status, detail: current.statusDetail });
+      continue;
+    }
 
     try {
       const item = company.country === 'KR' ? await fetchDartLatestFiling(company) : await fetchSecLatestFiling(company);

@@ -3530,25 +3530,25 @@ body {
 }
 
 .price-badge.up {
+  border-color: rgba(4, 120, 87, 0.18);
+  color: #047857;
+  background: #ecfdf3;
+}
+
+.price-badge.up strong,
+.price-badge.up em {
+  color: #047857;
+}
+
+.price-badge.down {
   border-color: rgba(220, 38, 38, 0.18);
   color: #dc2626;
   background: #fff1f2;
 }
 
-.price-badge.up strong,
-.price-badge.up em {
-  color: #dc2626;
-}
-
-.price-badge.down {
-  border-color: rgba(37, 99, 235, 0.18);
-  color: #2563eb;
-  background: #eff6ff;
-}
-
 .price-badge.down strong,
 .price-badge.down em {
-  color: #2563eb;
+  color: #dc2626;
 }
 
 .price-badge.flat {
@@ -3651,6 +3651,27 @@ body {
   font-weight: 800;
 }
 
+.section-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.section-more-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: 8px;
+  color: #0057d9;
+  background: #f4f9ff;
+  font-size: 13px;
+  font-weight: 950;
+}
+
 .trade-filter-panel {
   display: grid;
   gap: 8px;
@@ -3723,6 +3744,87 @@ body {
   font-size: 13px;
   font-weight: 800;
   line-height: 1.55;
+}
+
+.ownership-shell {
+  min-height: 100vh;
+  padding: 12px 0 64px;
+  color: #1f2937;
+  background: linear-gradient(180deg, #f7f9fc 0%, #eef2f6 52%, #f8fafc 100%);
+}
+
+.ownership-main {
+  display: grid;
+  gap: 18px;
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding-top: 36px;
+}
+
+.ownership-hero {
+  display: grid;
+  gap: 10px;
+}
+
+.ownership-hero h1 {
+  max-width: 780px;
+  margin: 0;
+  color: #111827;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.12;
+}
+
+.ownership-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: #344054;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.ownership-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(180px, 0.7fr) minmax(180px, 0.7fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.ownership-filter-panel label {
+  display: grid;
+  gap: 6px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ownership-filter-panel input {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.ownership-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.ownership-status-row span {
+  color: #0057d9;
 }
 
 .home-quick-access {
@@ -4918,7 +5020,8 @@ body,
   .pick-grid,
   .pick-detail,
   .pick-empty,
-  .pick-nav {
+  .pick-nav,
+  .ownership-main {
     width: min(100% - 24px, 1180px);
   }
 
@@ -4969,6 +5072,10 @@ body,
   }
 
   .value-chain-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .ownership-filter-panel {
     grid-template-columns: 1fr;
   }
 

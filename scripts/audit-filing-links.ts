@@ -27,15 +27,21 @@ function auditFilingLinks() {
     direct: rows.filter((row) => row.sourceStatus === 'direct').length,
     searchOnly: rows.filter((row) => row.sourceStatus === 'search-only').length,
     needsLink: rows.filter((row) => row.sourceStatus === 'needs-link').length,
+    privateCompany: rows.filter((row) => row.sourceStatus === 'private-company').length,
+    noPublicFiling: rows.filter((row) => row.sourceStatus === 'no-public-filing').length,
   };
 
   const needsLinkCompanies = rows.filter((row) => row.sourceStatus === 'needs-link');
   const searchOnlyCompanies = rows.filter((row) => row.sourceStatus === 'search-only');
+  const privateOrNoPublicCompanies = rows.filter(
+    (row) => row.sourceStatus === 'private-company' || row.sourceStatus === 'no-public-filing',
+  );
 
   return {
     summary,
     needsLinkCompanies,
     searchOnlyCompanies,
+    privateOrNoPublicCompanies,
   };
 }
 

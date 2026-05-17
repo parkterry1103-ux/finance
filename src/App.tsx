@@ -46,6 +46,7 @@ import {
   CompanyTier,
   countries,
   CountryId,
+  FilingSourceStatus,
   FinancialStatementSummary,
   links,
   marketMovers,
@@ -65,8 +66,8 @@ import {
   externalDisclosureLinks,
   resolveCompanyFilingLinks,
 } from './services/filings';
-import { fetchSmartMoneyTrades, fetchTradesByCompany } from './services/trades';
-import { getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceStatusLabel } from './services/prices';
+import { fetchOwnershipTrades, fetchSmartMoneyTrades, fetchTradesByCompany } from './services/trades';
+import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 
 type NodeData = {
   company: Company;
@@ -767,7 +768,7 @@ type ReportLink = {
   note: string;
   isDirect: boolean;
   isNavigable: boolean;
-  status: 'direct' | 'search-only' | 'needs-link';
+  status: FilingSourceStatus;
   statusLabel: string;
   statusDetail: string;
   regulator: 'DART' | 'SEC';
@@ -791,6 +792,7 @@ function getPrimaryReportLink(company: Company): ReportLink {
 function reportLinkClass(reportLink: ReportLink) {
   if (reportLink.status === 'direct') return 'direct';
   if (reportLink.status === 'search-only') return 'search-only';
+  if (reportLink.status === 'private-company' || reportLink.status === 'no-public-filing') return 'no-public-filing';
   return 'pending';
 }
 
@@ -832,14 +834,13 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
   if (!price) {
     return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 준비 중</span>;
   }
+  const display = priceDisplay(price);
 
   return (
     <span className={`price-badge ${direction} ${compact ? 'compact' : ''}`} title={`${price.source} · ${price.asOf}`}>
-      <strong>
-        {price.currency === 'KRW' ? `${price.price}원` : `$${price.price}`}
-      </strong>
-      <em>{price.changePercent}</em>
-      <small>{priceStatusLabel(price)}</small>
+      <strong>{display.amount}</strong>
+      {display.percent && <em>{display.percent}</em>}
+      <small>{[display.status, display.basis].filter(Boolean).join(' · ')}</small>
     </span>
   );
 }
@@ -1037,6 +1038,7 @@ type AnalysisPageProps = {
   onHome: () => void;
   onBack: (company?: Company) => void;
   onRefreshNews: () => void;
+  marketPrices: MarketPrice[];
 };
 
 type LandingPageProps = {
@@ -1044,9 +1046,11 @@ type LandingPageProps = {
   onOpenAnalysis: (company: Company) => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
+  onOpenOwnership: () => void;
+  marketPrices: MarketPrice[];
 };
 
-function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }: LandingPageProps) {
+function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, onOpenOwnership, marketPrices }: LandingPageProps) {
   const [homeQuery, setHomeQuery] = useState('');
   const [moverRegionFilter, setMoverRegionFilter] = useState<MoverRegionFilter>('all');
   const [tradeItems, setTradeItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
@@ -1327,7 +1331,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
             {filteredMarketMovers.map((mover) => {
               const company = companies.find((item) => item.id === mover.companyId);
               const reportLink = company ? getPrimaryReportLink(company) : null;
-              const price = getPriceForTicker(mover.ticker, mover.companyId);
+              const price = getPriceForTicker(mover.ticker, mover.companyId, marketPrices);
               return (
                 <article className="mover-card" key={mover.id}>
                   <div className="card-topline">
@@ -1484,7 +1488,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
             </div>
           </div>
           <div className="home-card-grid smart-money-grid">
-            {filteredTradeItems.map((move) => {
+            {filteredTradeItems.slice(0, 20).map((move) => {
               const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
               const reportLink = company ? getPrimaryReportLink(company) : null;
               const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
@@ -1535,6 +1539,12 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }
             })}
             {filteredTradeItems.length === 0 && <div className="trade-empty">조건에 맞는 공개 보유·거래 보고가 아직 없습니다.</div>}
           </div>
+          <div className="section-more-row">
+            <button type="button" onClick={onOpenOwnership}>
+              기관 보유 보고 더 보기
+              <ArrowRight size={16} />
+            </button>
+          </div>
           <div className="home-note">
             <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
             <p>국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.</p>
@@ -1578,6 +1588,7 @@ type StockAutopsyPicksPageProps = {
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
   onOpenSmartMoney: () => void;
+  marketPrices: MarketPrice[];
 };
 
 const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
@@ -1610,6 +1621,7 @@ function StockAutopsyPicksPage({
   onOpenPick,
   onOpenPicks,
   onOpenSmartMoney,
+  marketPrices,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
   const detailPick = selectedPickId ? selectedPick : undefined;
@@ -1635,7 +1647,7 @@ function StockAutopsyPicksPage({
       (company) => company.id === detailPick.relatedCompanyId || company.ticker === detailPick.ticker,
     );
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
-    const price = getPriceForPick(detailPick);
+    const price = getPriceForPick(detailPick, marketPrices);
     const highlightedStep = valueChainStepByPosition[detailPick.valueChainPosition];
     const reasonLines = [
       detailPick.reasonSummary,
@@ -1725,7 +1737,7 @@ function StockAutopsyPicksPage({
               공급망지도 보기
             </button>
             <button type="button" onClick={onOpenSmartMoney}>
-              거물 매수매도 지도 보기
+              보유·거래 보고 보기
             </button>
             {relatedCompany ? (
               <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
@@ -1778,7 +1790,7 @@ function StockAutopsyPicksPage({
                 </strong>
               </div>
               <h2>{pick.companyName}</h2>
-              <PriceBadge price={getPriceForPick(pick)} compact />
+              <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
               <p>{pick.reasonSummary}</p>
               <div className="pick-meta-grid">
                 <div>
@@ -1808,7 +1820,7 @@ function StockAutopsyPicksPage({
   );
 }
 
-function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews }: AnalysisPageProps) {
+function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const disclosureLinks = externalDisclosureLinks(company).filter((link) => !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
@@ -1877,19 +1889,25 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
   const recentMover = marketMovers.find((mover) => mover.companyId === company.id);
   const recentMovementSummary = recentMover?.reason ?? `${company.analystSignal} ${company.investmentView}`;
   const companySector = sectors.find((sector) => sector.id === company.sectorId);
-  const companyPrice = getPriceForCompany(company);
+  const companyPrice = getPriceForCompany(company, marketPrices);
   const sourceStatusShort =
     primaryReportLink.status === 'direct'
       ? '원문 보고서 연결됨'
       : primaryReportLink.status === 'search-only'
         ? '검색으로 원문 확인 가능'
-        : '원문 연결 준비 중';
+        : primaryReportLink.status === 'private-company'
+          ? '비상장/공시 의무 없음'
+          : primaryReportLink.status === 'no-public-filing'
+            ? '공개 원문 보고서 없음'
+            : '원문 연결 준비 중';
   const sourceStatusCopy =
     primaryReportLink.status === 'direct'
       ? '이 해설은 연결된 원문 보고서에서 확인할 수 있습니다.'
       : primaryReportLink.status === 'search-only'
         ? '직접 원문 URL은 아직 없고 검색 링크로 확인할 수 있습니다.'
-        : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
+        : primaryReportLink.status === 'private-company' || primaryReportLink.status === 'no-public-filing'
+          ? '상장 공시 원문 확인 대상과 구분해 표시합니다. 공개 보고서가 확인되면 원문 링크를 보강합니다.'
+          : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
 
   return (
     <div className="analysis-shell">
@@ -2281,6 +2299,134 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
   );
 }
 
+type OwnershipReportsPageProps = {
+  onHome: () => void;
+  onOpenAnalysis: (company: Company) => void;
+  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
+};
+
+function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: OwnershipReportsPageProps) {
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'sec-13f' | 'sec-form4'>('all');
+  const [investorQuery, setInvestorQuery] = useState('');
+  const [tickerQuery, setTickerQuery] = useState('');
+  const [items, setItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    fetchOwnershipTrades({
+      source: sourceFilter,
+      investor: investorQuery.trim() || undefined,
+      ticker: tickerQuery.trim() || undefined,
+      limit: 50,
+    }).then((rows) => {
+      if (cancelled) return;
+      setItems(rows.length ? rows : smartMoneyMoves);
+      setStatus(rows.length ? 'ready' : 'fallback');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [investorQuery, sourceFilter, tickerQuery]);
+
+  return (
+    <div className="ownership-shell">
+      <header className="pick-nav">
+        <div className="breadcrumb" aria-label="현재 위치">
+          <button type="button" onClick={onHome}>홈</button>
+          <strong>기관 보유·거래 보고</strong>
+        </div>
+        <button type="button" className="ghost-action" onClick={onHome}>
+          <Network size={15} />
+          홈
+        </button>
+      </header>
+
+      <main className="ownership-main">
+        <section className="ownership-hero">
+          <p className="home-kicker">공개 자료 기준</p>
+          <h1>최근 공개된 기관 보유·내부자 거래 보고</h1>
+          <p>13F는 분기 포트폴리오, Form 4는 내부자 거래 보고입니다. 한 번에 최대 50개만 보여줍니다.</p>
+        </section>
+
+        <section className="ownership-filter-panel" aria-label="기관 보유 거래 보고 필터">
+          <div className="trade-filter-row">
+            {[
+              { value: 'all', label: '전체' },
+              { value: 'sec-13f', label: '13F 보유 보고' },
+              { value: 'sec-form4', label: 'Form 4 내부자' },
+            ].map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={sourceFilter === filter.value ? 'active' : ''}
+                onClick={() => setSourceFilter(filter.value as 'all' | 'sec-13f' | 'sec-form4')}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <label>
+            <span>기관명</span>
+            <input type="search" placeholder="Berkshire, ARK..." value={investorQuery} onChange={(event) => setInvestorQuery(event.target.value)} />
+          </label>
+          <label>
+            <span>종목명/티커</span>
+            <input type="search" placeholder="AAPL, NVDA..." value={tickerQuery} onChange={(event) => setTickerQuery(event.target.value)} />
+          </label>
+        </section>
+
+        <div className="ownership-status-row">
+          <span>{status === 'loading' ? '불러오는 중' : status === 'ready' ? 'Supabase 최신 공개 기록' : 'mock fallback 표시 중'}</span>
+          <small>기본 50개 제한 · 화면 과밀 방지</small>
+        </div>
+
+        <section className="home-card-grid smart-money-grid">
+          {items.slice(0, 50).map((move) => {
+            const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
+            const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
+            return (
+              <article className="smart-card" key={move.id}>
+                <div className="smart-card-primary">
+                  <div>
+                    <span>보고자</span>
+                    <h3>{move.investorName}</h3>
+                  </div>
+                  <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
+                </div>
+                <div className="smart-company-focus">
+                  <strong>{move.companyName}</strong>
+                  <small>{move.ticker}</small>
+                </div>
+                <span className="trade-type-badge">{publicReportTypeBadge(move)}</span>
+                <p>{move.beginnerExplanation}</p>
+                <dl className="smart-meta-list">
+                  <div><dt>공개일</dt><dd>{move.disclosedDate || '확인 필요'}</dd></div>
+                  <div><dt>{publicReportDateLabel(move)}</dt><dd>{move.tradeDateOptional ?? publicReportDateFallback(move)}</dd></div>
+                  <div><dt>출처</dt><dd>{move.sourceLabel}</dd></div>
+                </dl>
+                <small className="trade-delay-note">{publicReportDelayNote(move)}</small>
+                <div className="card-actions">
+                  <button type="button" onClick={() => onOpenCategory(supplyChainId, company?.id ?? move.relatedCompanyId ?? move.companyId)}>공급망 보기</button>
+                  {company ? <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button> : <button type="button">관련 분석 준비 중</button>}
+                  {move.sourceUrl && <a href={move.sourceUrl} target="_blank" rel="noreferrer">출처 보기</a>}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+
+        <div className="home-note">
+          <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
+          <p>Form 4 내부자 거래 보고도 공개 시점이 늦을 수 있습니다.</p>
+          <p>투자 권유가 아닌 참고용 데이터입니다.</p>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function App() {
   const [selectedCountry, setSelectedCountry] = useState<CountryId>('KR');
   const [selectedSectorId, setSelectedSectorId] = useState('kr-semiconductors');
@@ -2292,6 +2438,7 @@ function App() {
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
   const [isMapLocked, setIsMapLocked] = useState(false);
+  const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
 
   const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
   const countrySectors = sectors.filter((sector) => sector.country === selectedCountry);
@@ -2315,7 +2462,7 @@ function App() {
       ? formatDisplayAmount(selectedDisplayMetrics.revenue, selectedDisplayMetrics.revenueUnit, selectedCompany.country)
       : null;
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
-  const selectedCompanyPrice = selectedCompany ? getPriceForCompany(selectedCompany) : null;
+  const selectedCompanyPrice = selectedCompany ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const opportunityCount = groupCompanies.filter((company) => company.status === 'opportunity').length;
@@ -2329,6 +2476,7 @@ function App() {
     routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) ??
     routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
     routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
+  const routeOwnershipMatch = routePath.match(/^\/ko\/ownership(?:\/)?$/) ?? routePath.match(/^\/ownership-trades(?:\/)?$/);
   const routeAnalysisCompanyId = routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company');
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? routeParams.get('company') ?? undefined : undefined;
@@ -2338,6 +2486,7 @@ function App() {
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
   const isPicksRoute = Boolean(routePickMatch);
+  const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
   const newsCompany = isAnalysisRoute && analysisCompany ? analysisCompany : selectedCompany;
   const newsSector = isAnalysisRoute && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
@@ -2348,6 +2497,16 @@ function App() {
     const syncRoute = () => setRoute(`${window.location.pathname}${window.location.search}`);
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMarketPrices().then((items) => {
+      if (!cancelled) setMarketPrices(items);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -2531,6 +2690,11 @@ function App() {
     }, 0);
   }
 
+  function openOwnershipReports() {
+    window.history.pushState({}, '', '/ko/ownership');
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
   function changeCountry(countryId: CountryId) {
     const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
     const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
@@ -2573,8 +2737,13 @@ function App() {
         onOpenPick={openPick}
         onOpenPicks={openPicks}
         onOpenSmartMoney={openSmartMoneyFromPick}
+        marketPrices={marketPrices}
       />
     );
+  }
+
+  if (isOwnershipRoute) {
+    return <OwnershipReportsPage onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />;
   }
 
   if (isAnalysisRoute && analysisCompany) {
@@ -2587,13 +2756,23 @@ function App() {
           onHome={openHome}
           onBack={closeAnalysis}
           onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
+          marketPrices={marketPrices}
         />
       </ReactFlowProvider>
     );
   }
 
   if (!isCategoryRoute) {
-    return <LandingPage onOpenCategory={openCategory} onOpenAnalysis={openAnalysis} onOpenPicks={openPicks} onOpenPick={openPick} />;
+    return (
+      <LandingPage
+        onOpenCategory={openCategory}
+        onOpenAnalysis={openAnalysis}
+        onOpenPicks={openPicks}
+        onOpenPick={openPick}
+        onOpenOwnership={openOwnershipReports}
+        marketPrices={marketPrices}
+      />
+    );
   }
 
   return (
@@ -2785,7 +2964,17 @@ function App() {
                   reportLink={selectedReportLink}
                   className="topbar-report-action"
                   iconSize={15}
-                  label={selectedReportLink.status === 'direct' ? '원문 보고서' : selectedReportLink.status === 'search-only' ? '검색으로 확인' : '원문 연결 필요'}
+                  label={
+                    selectedReportLink.status === 'direct'
+                      ? '원문 보고서'
+                      : selectedReportLink.status === 'search-only'
+                        ? '검색으로 확인'
+                        : selectedReportLink.status === 'private-company'
+                          ? '비상장/공시 없음'
+                          : selectedReportLink.status === 'no-public-filing'
+                            ? '공개 보고서 없음'
+                            : '원문 연결 필요'
+                  }
                 />
               )}
             </div>

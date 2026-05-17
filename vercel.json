@@ -12,6 +12,10 @@
     {
       "path": "/api/sync/trades",
       "schedule": "0 3 * * 1-5"
+    },
+    {
+      "path": "/api/sync/prices",
+      "schedule": "30 8 * * 1-5"
     }
   ],
   "rewrites": [
@@ -37,6 +41,14 @@
     },
     {
       "source": "/stock-autopsy-picks/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/ownership-trades",
+      "destination": "/"
+    },
+    {
+      "source": "/ownership-trades/:path*",
       "destination": "/"
     },
     {

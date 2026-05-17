@@ -1,6 +1,6 @@
 import type { Company, FilingSourceLink } from '../data.js';
 
-export type FilingLinkStatus = 'direct' | 'search-only' | 'needs-link';
+export type FilingLinkStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
 
 export type ResolvedFilingAction = FilingSourceLink & {
   isDirect: boolean;
@@ -48,6 +48,37 @@ function hasDirectReport(company: Company, preferredDirectUrl?: string) {
 
 function explicitSearchUrl(company: Company) {
   return company.sourceSearchUrl;
+}
+
+export function isLikelyPublicCompany(company: Company) {
+  const ticker = company.ticker?.trim();
+  if (!ticker || ticker === 'WATCH') return false;
+  if (company.sourceStatus === 'private-company' || company.sourceStatus === 'no-public-filing') return false;
+  if (company.country === 'KR') return /\.(KS|KQ)$/i.test(ticker) || /^\d{6}$/.test(ticker) || Boolean(company.corpCode || company.dartRcpNo);
+  return /^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker) || Boolean(company.cik || company.secAccessionNumber);
+}
+
+function nonPublicStatus(company: Company): Extract<FilingLinkStatus, 'private-company' | 'no-public-filing'> {
+  if (company.sourceStatus === 'private-company') return 'private-company';
+  if (company.sourceStatus === 'no-public-filing') return 'no-public-filing';
+  return company.tier === 'tier2' ? 'private-company' : 'no-public-filing';
+}
+
+function nonPublicStatusLabels(company: Company) {
+  const status = nonPublicStatus(company);
+  if (status === 'private-company') {
+    return {
+      status,
+      label: '비상장/공시 의무 없음',
+      detail: '상장 공시 원문이 확인되지 않는 협력사입니다. 공시 검색 대상과 원문 연결 필요 기업을 구분해 표시합니다.',
+    };
+  }
+
+  return {
+    status,
+    label: '공개 원문 보고서 없음',
+    detail: '현재 공개 사업·분기보고서가 확인되지 않습니다. 상장 여부나 보고 의무가 확인되면 원문 링크를 보강합니다.',
+  };
 }
 
 function generatedSearchLink(company: Company): FilingSourceLink {
@@ -116,6 +147,32 @@ export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?:
     dartRcpNo: company.dartRcpNo,
     secAccessionNumber: company.secAccessionNumber,
   };
+
+  if (
+    !hasDirectReport(company, preferredDirectUrl) &&
+    (company.sourceStatus === 'private-company' ||
+      company.sourceStatus === 'no-public-filing' ||
+      (!explicitSearchUrl(company) && !isLikelyPublicCompany(company)))
+  ) {
+    const statusCopy = nonPublicStatusLabels(company);
+    return {
+      status: statusCopy.status,
+      regulator,
+      primary: {
+        ...generatedSearchLink(company),
+        label: statusCopy.label,
+        note: statusCopy.detail,
+        isPrimary: true,
+        isDirect: false,
+        isNavigable: false,
+        status: statusCopy.status,
+      },
+      secondary,
+      statusLabel: statusCopy.label,
+      statusDetail: statusCopy.detail,
+      reportMeta,
+    };
+  }
 
   if (directUrl && hasDirectReport(company, preferredDirectUrl)) {
     return {

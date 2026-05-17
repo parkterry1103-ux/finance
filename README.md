@@ -132,6 +132,7 @@ SEC_13F_MANAGER_CIKS=
 CONGRESS_TRADES_IMPORT_URL=
 NPS_IMPORT_URL=
 MARKET_PRICES_IMPORT_URL=
+PRICE_SYNC_SOURCE=
 ```
 
 `src/data.ts`의 기업별 원문 링크 상태는 아래처럼 관리합니다.
@@ -139,8 +140,10 @@ MARKET_PRICES_IMPORT_URL=
 - `sourceStatus: 'direct'`: `reportUrl`, `sourceDirectUrl`, `dartRcpNo`처럼 직접 원문으로 갈 수 있는 값이 있음
 - `sourceStatus: 'search-only'`: 직접 원문은 없고 DART/SEC 검색 링크만 있음
 - `sourceStatus: 'needs-link'`: 원문 URL을 추가해야 하는 상태
+- `sourceStatus: 'private-company'`: 비상장 또는 공시 의무가 없는 협력사
+- `sourceStatus: 'no-public-filing'`: 공개 원문 보고서를 확인할 수 없는 기업
 
-직접 링크가 없는 기업도 화면에서는 “원문 연결 필요” 또는 “검색으로 확인” 상태가 보이며, 기존 재무제표 해설과 MD&A/SEC 분석 텍스트는 삭제하지 않습니다.
+직접 링크가 없는 기업도 화면에서는 “원문 연결 필요”, “검색으로 확인”, “비상장/공시 의무 없음” 상태가 보이며, 기존 재무제표 해설과 MD&A/SEC 분석 텍스트는 삭제하지 않습니다.
 
 ### Supabase DB
 
@@ -161,6 +164,8 @@ MARKET_PRICES_IMPORT_URL=
 - SEC 13F: `accessionNumber + cusip + managerCik`를 `raw_id`로 저장
 - Congress: `reportId + transactionDate + assetName + amountRange`를 `raw_id`로 저장
 - Prices: `ticker + source + as_of`
+
+`market_prices`는 `open`, `previous_close`, `close`, `price_label`을 함께 저장합니다. 기존 테이블이 이미 있다면 `supabase/schema.sql`의 `alter table ... add column if not exists` 구문까지 실행해 최신 컬럼을 반영하세요.
 
 ### 수동 동기화
 
@@ -221,6 +226,19 @@ SEC_13F_MANAGER_CIKS=0001067983,0001697748
 - `partial`은 일부 기관 또는 filing만 실패한 상태입니다. 이미 성공한 기관의 13F 데이터는 `ownership_trades`에 저장된 상태입니다.
 - `sync_runs.error_message`에는 긴 raw JSON 대신 `13F partial: 3 managers success, 2 partial, 8 failed...` 형식의 요약만 남기고, 상세는 endpoint JSON의 `results.form13f.managers`에서 확인합니다.
 
+프론트 화면은 `/api/ownership-trades`에서 최신 공개 기록만 읽습니다.
+
+```text
+/api/ownership-trades?source=all&limit=20
+/api/ownership-trades?source=sec-13f&limit=20&investor=Berkshire
+/api/ownership-trades?source=sec-form4&limit=20&ticker=NVDA
+```
+
+- 기본 `limit`은 20, 최대 `limit`은 100입니다.
+- 서버에서 Supabase `ownership_trades`에 직접 limit/order를 적용하므로 13F 전체 row를 홈 화면에 한 번에 보내지 않습니다.
+- `SUPABASE_SERVICE_ROLE_KEY`는 `/api/ownership-trades` 서버리스 함수 안에서만 사용하고 프론트 번들에는 노출하지 않습니다.
+- endpoint 실패 또는 Supabase 미설정 시 프론트는 기존 mock fallback을 사용합니다.
+
 ### 미국 국회의원 거래 import
 
 무료 API를 쓰지 않고 공개자료 기반 수동/반자동 import 구조를 사용합니다. 켜는 방법은 두 가지입니다.
@@ -276,11 +294,12 @@ npm run audit:filings
 출력 항목:
 
 - 전체 기업 수
-- `direct`, `search-only`, `needs-link` 기업 수
+- `direct`, `search-only`, `needs-link`, `private-company`, `no-public-filing` 기업 수
 - `needs-link` 기업 목록
 - `companyId`, `companyName`, `market`, `ticker`
 - 필요한 식별자: `dartCorpCode` 또는 `secCik`
 - `sourceSearchUrl` 여부
+- 비상장/공시 의무 없음 기업은 `needs-link`로 세지 않습니다.
 
 OpenDART/SEC에서 가능한 원문 링크를 보강:
 
@@ -291,6 +310,7 @@ npm run sync:filing-links
 - 한국 기업은 `corpCode + OPENDART_API_KEY`로 최신 분기보고서/반기보고서/사업보고서 `rcept_no`를 찾습니다.
 - 미국 기업은 `cik`로 SEC submissions에서 최신 `10-K`/`10-Q`와 primary document를 찾습니다.
 - 기존 `direct` 링크는 덮어쓰지 않습니다.
+- `private-company`, `no-public-filing` 상태는 자동 보강 대상에서 제외합니다.
 - 확실한 원문을 찾은 경우에만 direct URL을 생성합니다.
 - DB가 있으면 Supabase `filings` 테이블에 저장하고, DB가 없으면 `reports/filing-links-report.json` 리포트로 확인합니다.
 
@@ -308,7 +328,7 @@ filingDate
 sourceStatus
 ```
 
-가짜 원문 링크는 넣지 않습니다. 확실하지 않으면 `search-only` 또는 `needs-link`로 유지합니다.
+가짜 원문 링크는 넣지 않습니다. 상장 기업인데 링크가 없으면 `needs-link`, 비상장 또는 공개 보고 의무가 없으면 `private-company`/`no-public-filing`으로 구분합니다.
 
 ### 가격 데이터
 
@@ -318,6 +338,9 @@ sourceStatus
 
 1. `data/prices.json` 파일 추가
 2. `MARKET_PRICES_IMPORT_URL` 환경변수에 JSON 또는 CSV URL 추가
+3. 위 두 값이 없으면 `scripts/sync-prices.ts`가 Yahoo Finance 공개 quote endpoint를 서버사이드에서 best-effort로 조회합니다. 이 경로는 무료 공개 데이터라 지연되거나 실패할 수 있습니다.
+
+Yahoo 조회를 끄고 수동 import만 쓰려면 `PRICE_SYNC_SOURCE=manual-only`를 설정하세요.
 
 수동 실행:
 
@@ -340,9 +363,13 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
     "ticker": "NVDA",
     "market": "NASDAQ",
     "price": "1126.40",
+    "open": "1102.00",
+    "previousClose": "1092.30",
+    "close": "1126.40",
     "change": "+34.10",
     "changePercent": "+3.12%",
     "currency": "USD",
+    "priceLabel": "close",
     "marketStatus": "afterhours",
     "asOf": "2026-05-15T20:00:00-04:00",
     "source": "manual-delayed-close",
@@ -351,7 +378,16 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 ]
 ```
 
-데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 사용합니다. 가격 데이터는 투자 참고용이며 완전한 실시간성을 보장하지 않습니다.
+화면 표기는 `최신가`, `종가`, `지연 가능`, `가격 준비 중`으로 구분합니다. 등락률 기준가는 `open` → `previousClose` → fallback 순서로 사용합니다. 데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 사용합니다. 가격 데이터는 투자 참고용이며 완전한 실시간성을 보장하지 않습니다.
+
+프론트 공개 조회 endpoint:
+
+```text
+/api/market-prices?limit=200
+/api/market-prices?ticker=NVDA
+```
+
+이 endpoint도 서버에서 Supabase를 읽고, service role key는 프론트에 노출하지 않습니다.
 
 ### Vercel Cron
 
@@ -359,6 +395,7 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 - `/api/sync/financials`: 평일 09:00 UTC 1회
 - `/api/sync/trades`: 평일 03:00 UTC 1회
+- `/api/sync/prices`: 평일 08:30 UTC 1회
 
 엔드포인트는 `CRON_SECRET`으로 보호됩니다. Vercel Cron은 프로젝트 환경변수에 `CRON_SECRET`이 있으면 호출 시 `Authorization: Bearer ...` 헤더를 자동으로 보냅니다. 브라우저나 curl로 수동 테스트할 때는 아래처럼 헤더를 보내거나 query secret을 붙이면 됩니다.
 Vercel Hobby 플랜은 하루 1회보다 잦은 Cron을 허용하지 않으므로, 공개 보유/거래 보고 데이터를 더 자주 갱신하려면 아래 GitHub Actions 스케줄을 사용하거나 Vercel Pro에서 Cron 주기를 늘리세요.
@@ -381,7 +418,7 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 1. Supabase SQL Editor에서 `supabase/schema.sql` 실행
 2. Vercel 프로젝트를 Production으로 재배포
-3. 위 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값` 호출
+3. 위 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값`, `/api/sync/prices?secret=CRON_SECRET값` 호출
 4. Supabase `sync_runs` 테이블에서 `success`, `partial`, `skipped`, `failed` 로그 확인
 5. 실패 시 Vercel Logs에서 endpoint 응답과 Supabase REST 오류 확인
 
