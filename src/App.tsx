@@ -54,6 +54,8 @@ import {
   SmartMoneyMove,
   smartMoneyMoves,
   sourcePolicies,
+  StockAutopsyPick,
+  stockAutopsyPicks,
 } from './data';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import {
@@ -199,6 +201,18 @@ function analysisPath(company: Company) {
 
 function categoryPath(sectorId: string) {
   return `/ko/category/${encodeURIComponent(sectorId)}`;
+}
+
+function picksPath(pick?: StockAutopsyPick) {
+  return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
+}
+
+const nyseTickers = new Set(['BRK.B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN']);
+
+function marketDisplayLabel(country: CountryId, ticker?: string) {
+  if (country === 'KR') return ticker?.endsWith('.KQ') ? 'KOSDAQ' : 'KOSPI';
+  if (ticker && nyseTickers.has(ticker)) return 'NYSE';
+  return 'NASDAQ';
 }
 
 type CompanyDisplayMetrics = {
@@ -910,9 +924,11 @@ type AnalysisPageProps = {
 type LandingPageProps = {
   onOpenCategory: (sectorId: string) => void;
   onOpenAnalysis: (company: Company) => void;
+  onOpenPicks: () => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
 };
 
-function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
+function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick }: LandingPageProps) {
   const [homeQuery, setHomeQuery] = useState('');
   const [tradeItems, setTradeItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
   const [tradeMarketFilter, setTradeMarketFilter] = useState<'all' | CountryId>('all');
@@ -963,6 +979,27 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
     return tradeItems
       .filter((move) =>
         [move.investorName, move.investorTypeLabel, move.companyName, move.ticker, move.actionLabel, move.sectorLabel, move.sourceLabel]
+          .join(' ')
+          .toLowerCase()
+          .includes(queryText),
+      )
+      .slice(0, 3);
+  }, [queryText]);
+
+  const pickResults = useMemo(() => {
+    if (!queryText) return [];
+    return stockAutopsyPicks
+      .filter((pick) =>
+        [
+          pick.companyName,
+          pick.ticker,
+          pick.movementLabel,
+          pick.reasonSummary,
+          pick.sector,
+          pick.valueChainPosition,
+          pick.connectedLeaders.join(' '),
+          pick.relatedCompanies.join(' '),
+        ]
           .join(' ')
           .toLowerCase()
           .includes(queryText),
@@ -1024,10 +1061,19 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
           <a href="/ko/" onClick={(event) => event.preventDefault()}>홈</a>
           <a href="#supply-chain">공급망</a>
           <a href="#smart-money">매수·매도</a>
-          <a href="#market-movers">기업분석</a>
-          <a href="#filing-preview">공시·재무</a>
-        </nav>
-      </header>
+	          <a href="#market-movers">기업분석</a>
+	          <a href="#filing-preview">공시·재무</a>
+	          <a
+	            href="/ko/picks"
+	            onClick={(event) => {
+	              event.preventDefault();
+	              onOpenPicks();
+	            }}
+	          >
+	            주가해부실 Pick
+	          </a>
+	        </nav>
+	      </header>
 
       <main>
         <section className="home-hero">
@@ -1047,7 +1093,9 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
             {queryText && (
               <div className="home-search-results">
                 <span>검색 결과</span>
-                {companyResults.length === 0 && smartMoneyResults.length === 0 && <p>아직 연결된 기업이나 매매 기록이 없습니다.</p>}
+	                {companyResults.length === 0 && smartMoneyResults.length === 0 && pickResults.length === 0 && (
+	                  <p>아직 연결된 기업이나 매매 기록이 없습니다.</p>
+	                )}
                 {companyResults.map((company) => (
                   <button key={company.id} type="button" onClick={() => onOpenAnalysis(company)}>
                     <strong>{company.name}</strong>
@@ -1056,7 +1104,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
                     </small>
                   </button>
                 ))}
-                {smartMoneyResults.map((move) => {
+	                {smartMoneyResults.map((move) => {
                   const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
                   return (
                     <button key={move.id} type="button" onClick={() => company && onOpenAnalysis(company)}>
@@ -1065,10 +1113,18 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
                         {move.actionLabel} · {move.companyName} · 큰손 매매 참고
                       </small>
                     </button>
-                  );
-                })}
-              </div>
-            )}
+	                  );
+	                })}
+	                {pickResults.map((pick) => (
+	                  <button key={pick.id} type="button" onClick={() => onOpenPick(pick)}>
+	                    <strong>{pick.companyName} 해부 Pick</strong>
+	                    <small>
+	                      {pick.movementLabel} · {pick.sector} · 밸류체인 보기
+	                    </small>
+	                  </button>
+	                ))}
+	              </div>
+	            )}
           </div>
         </section>
 
@@ -1366,6 +1422,239 @@ function LandingPage({ onOpenCategory, onOpenAnalysis }: LandingPageProps) {
   );
 }
 
+type StockAutopsyPicksPageProps = {
+  selectedPickId?: string;
+  onHome: () => void;
+  onOpenCategory: (sectorId: string) => void;
+  onOpenAnalysis: (company: Company) => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
+  onOpenPicks: () => void;
+  onOpenSmartMoney: () => void;
+};
+
+const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
+
+const valueChainPositionLabel: Record<StockAutopsyPick['valueChainPosition'], string> = {
+  leader: '대장주',
+  supplier: '부품',
+  materials: '소재',
+  equipment: '장비',
+  customer: '고객사',
+  competitor: '경쟁사',
+  other: '관심 구간',
+};
+
+const valueChainStepByPosition: Record<StockAutopsyPick['valueChainPosition'], string> = {
+  leader: '대장주/최종수요',
+  supplier: '부품',
+  materials: '원재료',
+  equipment: '장비',
+  customer: '대장주/최종수요',
+  competitor: '제조',
+  other: '제조',
+};
+
+function StockAutopsyPicksPage({
+  selectedPickId,
+  onHome,
+  onOpenCategory,
+  onOpenAnalysis,
+  onOpenPick,
+  onOpenPicks,
+  onOpenSmartMoney,
+}: StockAutopsyPicksPageProps) {
+  const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
+  const detailPick = selectedPickId ? selectedPick : undefined;
+
+  if (selectedPickId && !detailPick) {
+    return (
+      <div className="pick-shell">
+        <header className="pick-nav">
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenPicks}>Pick 목록</button>
+        </header>
+        <main className="pick-empty">
+          <h1>Pick을 찾을 수 없습니다.</h1>
+          <p>아직 등록되지 않은 해부 종목입니다. Pick 목록에서 다시 선택해주세요.</p>
+          <button type="button" onClick={onOpenPicks}>주가해부실 Pick 보기</button>
+        </main>
+      </div>
+    );
+  }
+
+  if (detailPick) {
+    const relatedCompany = companies.find(
+      (company) => company.id === detailPick.relatedCompanyId || company.ticker === detailPick.ticker,
+    );
+    const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
+    const highlightedStep = valueChainStepByPosition[detailPick.valueChainPosition];
+    const reasonLines = [
+      detailPick.reasonSummary,
+      '시장은 이 흐름을 수요 변화 신호로 해석할 수 있습니다.',
+      '같은 밸류체인에 있는 대표 기업들도 함께 확인해야 합니다.',
+    ];
+
+    return (
+      <div className="pick-shell">
+        <header className="pick-nav">
+          <div className="breadcrumb" aria-label="현재 위치">
+            <button type="button" onClick={onHome}>홈</button>
+            <button type="button" onClick={onOpenPicks}>주가해부실 Pick</button>
+            <strong>{detailPick.companyName}</strong>
+          </div>
+          <button type="button" className="ghost-action" onClick={onOpenPicks}>
+            <ArrowRight size={15} />
+            Pick 목록
+          </button>
+        </header>
+
+        <main className="pick-detail">
+          <section className="pick-detail-hero">
+            <div>
+              <span className={`pick-move ${detailPick.movementDirection}`}>
+                {detailPick.movementDirection === 'up' ? '상승' : '하락'} · {detailPick.movementLabel}
+              </span>
+              <h1>{detailPick.companyName} 해부</h1>
+              <p>{detailPick.ticker} · {detailPick.market === 'KR' ? '한국' : '미국'} · {detailPick.sector}</p>
+            </div>
+            <strong>{detailPick.beginnerSummary}</strong>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">한 줄 결론</span>
+            <h2>{detailPick.reasonSummary}</h2>
+            <p>이 종목은 {detailPick.sector} 흐름 안에서 {valueChainPositionLabel[detailPick.valueChainPosition]} 위치로 함께 봅니다.</p>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">왜 움직였나</span>
+            <div className="pick-reason-list">
+              {reasonLines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">밸류체인 위치</span>
+            <div className="value-chain-steps" aria-label="밸류체인 단계">
+              {valueChainSteps.map((step) => (
+                <span key={step} className={step === highlightedStep ? 'active' : ''}>
+                  {step}
+                </span>
+              ))}
+            </div>
+            <p className="pick-helper-copy">
+              거래 관계를 단정하지 않고, 같은 밸류체인에서 함께 봐야 할 대표 기업을 연결합니다.
+            </p>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">연결 대장주</span>
+            <div className="pick-chip-row">
+              {detailPick.connectedLeaders.map((leader) => (
+                <span key={leader}>{leader}</span>
+              ))}
+            </div>
+            <p className="pick-helper-copy">수요 영향을 받을 수 있는 대표 기업입니다. 실제 매출 연결은 공시와 뉴스로 확인해야 합니다.</p>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">같이 볼 기업</span>
+            <div className="pick-chip-row soft">
+              {detailPick.relatedCompanies.map((companyName) => (
+                <span key={companyName}>{companyName}</span>
+              ))}
+            </div>
+          </section>
+
+          <section className="pick-detail-card pick-detail-actions">
+            <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId)}>
+              공급망지도 보기
+            </button>
+            <button type="button" onClick={onOpenSmartMoney}>
+              거물 매수매도 지도 보기
+            </button>
+            {relatedCompany ? (
+              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                재무제표 핵심 숫자 보기
+              </button>
+            ) : (
+              <span className="pick-disabled-action">재무제표 연결 준비 중</span>
+            )}
+            {reportLink ? (
+              <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
+            ) : (
+              <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
+            )}
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pick-shell">
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo">
+            <Network size={20} />
+          </span>
+          <strong>FINANCE</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenPicks}>주가해부실 Pick</button>
+        </nav>
+      </header>
+
+      <main>
+        <section className="pick-hero">
+          <p className="home-kicker">주가해부실 Pick</p>
+          <h1>이번 주 해부 종목</h1>
+          <p>급등·급락한 이유를 쉽게 정리했습니다.</p>
+          <small>인스타그램에서 다룬 종목을 밸류체인과 함께 확인하세요.</small>
+        </section>
+
+        <section className="pick-grid" aria-label="주가해부실 Pick 목록">
+          {stockAutopsyPicks.map((pick) => (
+            <article className="pick-card" key={pick.id}>
+              <div className="card-topline">
+                <span>{pick.market === 'KR' ? '한국' : '미국'} · {pick.ticker}</span>
+                <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
+                  {pick.movementDirection === 'up' ? '상승' : '하락'}
+                </strong>
+              </div>
+              <h2>{pick.companyName}</h2>
+              <p>{pick.reasonSummary}</p>
+              <div className="pick-meta-grid">
+                <div>
+                  <span>관련 섹터</span>
+                  <strong>{pick.sector}</strong>
+                </div>
+                <div>
+                  <span>공급망 위치</span>
+                  <strong>{valueChainPositionLabel[pick.valueChainPosition]}</strong>
+                </div>
+              </div>
+              <div className="pick-chip-row">
+                {pick.connectedLeaders.slice(0, 4).map((leader) => (
+                  <span key={leader}>{leader}</span>
+                ))}
+              </div>
+              <p className="pick-helper-copy">{pick.beginnerSummary}</p>
+              <button type="button" className="pick-primary-action" onClick={() => onOpenPick(pick)}>
+                해부 보기
+                <ArrowRight size={16} />
+              </button>
+            </article>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
+}
+
 function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const disclosureLinks = externalDisclosureLinks(company).filter((link) => !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
@@ -1393,6 +1682,56 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
       cancelled = true;
     };
   }, [company]);
+
+  const metricByKey = new Map(financialSummary.metrics.map((metric) => [metric.key, metric]));
+  const revenueMetric = metricByKey.get('revenue');
+  const operatingIncomeMetric = metricByKey.get('operatingIncome');
+  const netIncomeMetric = metricByKey.get('netIncome');
+  const cashFlowMetric = metricByKey.get('cashFlow');
+  const debtRatioMetric = metricByKey.get('debtRatio');
+  const operatingMarginMetric = metricByKey.get('operatingMargin');
+  const quickMetrics = [
+    {
+      label: '매출',
+      value: revenueMetric?.value ?? displayMetrics.revenue,
+      note: revenueMetric?.beginnerExplanation ?? displayMetrics.revenueUnit,
+    },
+    {
+      label: '영업이익',
+      value: operatingIncomeMetric?.value ?? displayMetrics.opMargin,
+      note: operatingIncomeMetric ? operatingIncomeMetric.beginnerExplanation : '본업 수익성은 영업이익률로 먼저 봅니다.',
+    },
+    {
+      label: '순이익',
+      value: netIncomeMetric?.value ?? '원문에서 확인',
+      note: netIncomeMetric?.beginnerExplanation ?? '세금과 비용까지 반영한 최종 이익입니다.',
+    },
+    {
+      label: '현금흐름',
+      value: cashFlowMetric?.value ?? '원문에서 확인',
+      note: cashFlowMetric?.beginnerExplanation ?? '실제로 현금이 들어오고 나가는 흐름입니다.',
+    },
+    {
+      label: debtRatioMetric ? '부채비율' : '영업마진',
+      value: debtRatioMetric?.value ?? operatingMarginMetric?.value ?? displayMetrics.debtRatio,
+      note: debtRatioMetric?.beginnerExplanation ?? operatingMarginMetric?.beginnerExplanation ?? '빚 부담과 본업 수익성을 같이 봅니다.',
+    },
+  ];
+  const recentMover = marketMovers.find((mover) => mover.companyId === company.id);
+  const recentMovementSummary = recentMover?.reason ?? `${company.analystSignal} ${company.investmentView}`;
+  const companySector = sectors.find((sector) => sector.id === company.sectorId);
+  const sourceStatusShort =
+    primaryReportLink.status === 'direct'
+      ? '원문 보고서 연결됨'
+      : primaryReportLink.status === 'search-only'
+        ? '검색으로 원문 확인 가능'
+        : '원문 연결 준비 중';
+  const sourceStatusCopy =
+    primaryReportLink.status === 'direct'
+      ? '이 해설은 연결된 원문 보고서에서 확인할 수 있습니다.'
+      : primaryReportLink.status === 'search-only'
+        ? '직접 원문 URL은 아직 없고 검색 링크로 확인할 수 있습니다.'
+        : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
 
   return (
     <div className="analysis-shell">
@@ -1424,251 +1763,343 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
         </div>
         <div className="analysis-actions">
           <ReportAction reportLink={primaryReportLink} />
-          {disclosureLinks.map((link) => (
-            <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />
-              {link.label}
-            </a>
-          ))}
         </div>
       </header>
 
-      <main className="analysis-grid">
-        <section className="analysis-card analysis-summary">
-          <div className="section-title">
-            <CircleDollarSign size={16} />
-            <span>재무제표 핵심 숫자</span>
-          </div>
-          <div className="statement-metrics">
+      <main className="analysis-detail-flow">
+        <section className="analysis-card analysis-overview-card">
+          <div className="analysis-overview-head">
             <div>
-              <span>매출액</span>
-              <strong>{displayMetrics.revenue}</strong>
-              <small>{displayMetrics.revenueUnit}</small>
+              <span className="analysis-market-pill">{marketDisplayLabel(company.country, company.ticker)}</span>
+              <h2>{company.name}</h2>
+              <p>{company.ticker ?? company.legalName}</p>
             </div>
-            <div>
-              <span>성장률</span>
-              <strong>{displayMetrics.growth}</strong>
-              <small>{displayMetrics.growthBasis}</small>
-            </div>
-            <div>
-              <span>영업이익률</span>
-              <strong>{displayMetrics.opMargin}</strong>
-              <small>매출에서 영업비용을 뺀 본업 수익성</small>
-            </div>
-            <div>
-              <span>부채비율</span>
-              <strong>{displayMetrics.debtRatio}</strong>
-              <small>자기자본 대비 빚의 부담</small>
-            </div>
+            <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
           </div>
-          <p className="basis-note">{displayMetrics.revenueBasis}</p>
-        </section>
-
-        <section className="analysis-card api-financial-card">
-          <div className="section-title">
-            <Database size={16} />
-            <span>자동 업데이트 재무 요약</span>
-          </div>
-          <div className="analysis-status-row">
-            <span className={`analysis-status-pill ${financialSummary.isApiData ? 'complete' : 'pending'}`}>
-              {financialSummary.isApiData ? 'API 데이터 연결됨' : financialSummary.status === 'needs-source' ? '원문 연결 필요' : 'API fallback 표시 중'}
-            </span>
-            <small>{financialSummary.sourceLabel} · {financialSummary.reportType} · {financialSummary.fiscalYear}</small>
-          </div>
-          <p className="api-financial-copy">{financialSummary.beginnerExplanation}</p>
-          <div className="api-metric-grid">
-            {financialSummary.metrics.map((item) => (
-              <article key={item.key}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                {item.unit && <em>{item.unit}</em>}
-                <p>{item.beginnerExplanation}</p>
-                <small>{item.keyTakeaway}</small>
+          <div className="analysis-quick-metrics">
+            {quickMetrics.map((metric) => (
+              <article key={metric.label}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <small>{metric.note}</small>
               </article>
             ))}
           </div>
-          <p className="basis-note">{financialSummary.keyTakeaway}</p>
-        </section>
-
-        <section className="analysis-card filing-brief">
-          <div className="section-title">
-            <FileSearch size={16} />
-            <span>{disclosureAnalysis.isCurated ? '공시 원문 해석' : '회사별 공시 검증 상태'}</span>
-          </div>
-          <div className="analysis-status-row">
-            <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
-              {primaryReportLink.statusLabel}
-            </span>
-            <small>{primaryReportLink.statusDetail}</small>
-          </div>
-          <p className="source-status-copy">
-            {primaryReportLink.status === 'direct'
-              ? '이 해설은 아래 원문 보고서를 기준으로 검증할 수 있습니다.'
-              : primaryReportLink.status === 'search-only'
-                ? '현재 직접 원문 URL은 없고 검색 링크만 연결되어 있습니다. 원문 URL을 확인하면 바로 직접 연결로 바꿀 수 있습니다.'
-                : '직접 원문 URL이 아직 연결되지 않았습니다. 화면의 해설과 숫자는 원문 확인 전 상태로 명확히 표시됩니다.'}
-          </p>
-          <div className="filing-brief-body">
-            <span>{disclosureAnalysis.reportDate}</span>
+          <div className="analysis-one-line">
+            <span>한 줄 결론</span>
             <strong>{disclosureAnalysis.headline}</strong>
-            <p>{disclosureAnalysis.verdict}</p>
-            {primaryReportLink.isNavigable ? (
-              <a href={primaryReportLink.url} target="_blank" rel="noreferrer">
-                {primaryReportLink.label}
-                <ExternalLink size={14} />
-              </a>
-            ) : (
-              <span className="filing-source-pending">
-                {primaryReportLink.label}
-                <FileSearch size={14} />
+            <p>{recentMovementSummary}</p>
+          </div>
+        </section>
+
+        <div className="analysis-detail-stack">
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <CircleDollarSign size={16} />
+                <strong>재무제표 해설 더 보기</strong>
+                <small>기존 해설과 자동 업데이트 숫자를 함께 봅니다.</small>
               </span>
-            )}
-          </div>
-        </section>
-
-        <section className="analysis-card">
-          <div className="section-title">
-            <FileSearch size={16} />
-            <span>원문 확인 루트</span>
-          </div>
-          <div className="disclosure-list">
-            {primaryReportLink.isNavigable ? (
-              <a
-                href={primaryReportLink.url}
-                target="_blank"
-                rel="noreferrer"
-                className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
-              >
-                <strong>{primaryReportLink.label}</strong>
-                <span>{primaryReportLink.note}</span>
-                <ExternalLink size={14} />
-              </a>
-            ) : (
-              <div className="pending-report-link report-status-card">
-                <strong>{primaryReportLink.label}</strong>
-                <span>{primaryReportLink.note}</span>
-                <FileSearch size={14} />
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="section-title">
+                <CircleDollarSign size={16} />
+                <span>재무제표 핵심 숫자</span>
               </div>
-            )}
-            {disclosureLinks.map((link) => (
-              <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
-                <strong>{link.label}</strong>
-                <span>{link.note}</span>
-                <ExternalLink size={14} />
-              </a>
-            ))}
-            <a href={newsSearchUrl(company)} target="_blank" rel="noreferrer">
-              <strong>관련 뉴스 검색</strong>
-              <span>실적, 투자, 수주, 규제 뉴스를 원문 링크로 확인합니다.</span>
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        </section>
+              <div className="statement-metrics">
+                <div>
+                  <span>매출액</span>
+                  <strong>{displayMetrics.revenue}</strong>
+                  <small>{displayMetrics.revenueUnit}</small>
+                </div>
+                <div>
+                  <span>성장률</span>
+                  <strong>{displayMetrics.growth}</strong>
+                  <small>{displayMetrics.growthBasis}</small>
+                </div>
+                <div>
+                  <span>영업이익률</span>
+                  <strong>{displayMetrics.opMargin}</strong>
+                  <small>매출에서 영업비용을 뺀 본업 수익성</small>
+                </div>
+                <div>
+                  <span>부채비율</span>
+                  <strong>{displayMetrics.debtRatio}</strong>
+                  <small>자기자본 대비 빚의 부담</small>
+                </div>
+              </div>
+              <p className="basis-note">{displayMetrics.revenueBasis}</p>
 
-        <section className="analysis-card insight-wide">
-          <div className="section-title">
-            <BarChart3 size={16} />
-            <span>{disclosureAnalysis.isCurated ? '재무제표 해설' : '초보자용 공시 확인 포인트'}</span>
-          </div>
-          <div className="insight-grid">
-            {insights.map((insight) => (
-              <article className="insight-card" key={insight.title}>
-                <span>{insight.kicker}</span>
-                <strong>{insight.title}</strong>
-                <p>{insight.body}</p>
-                <small>{insight.point}</small>
-              </article>
-            ))}
-          </div>
-        </section>
+              <div className="analysis-divider" />
 
-        <section className="analysis-card">
-          <div className="section-title">
-            <ShieldAlert size={16} />
-            <span>{isKorea ? '감사·검토 기록' : 'MD&A / 경영진 해설'}</span>
-          </div>
-          <ul className="plain-list">
-            {disclosureAnalysis.auditNotes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </section>
+              <div className="section-title">
+                <Database size={16} />
+                <span>자동 업데이트 재무 요약</span>
+              </div>
+              <div className="analysis-status-row">
+                <span className={`analysis-status-pill ${financialSummary.isApiData ? 'complete' : 'pending'}`}>
+                  {financialSummary.isApiData ? 'API 데이터 연결됨' : financialSummary.status === 'needs-source' ? '원문 연결 필요' : 'API fallback 표시 중'}
+                </span>
+                <small>{financialSummary.sourceLabel} · {financialSummary.reportType} · {financialSummary.fiscalYear}</small>
+              </div>
+              <p className="api-financial-copy">{financialSummary.beginnerExplanation}</p>
+              <div className="api-metric-grid">
+                {financialSummary.metrics.map((item) => (
+                  <article key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    {item.unit && <em>{item.unit}</em>}
+                    <p>{item.beginnerExplanation}</p>
+                    <small>{item.keyTakeaway}</small>
+                  </article>
+                ))}
+              </div>
+              <p className="basis-note">{financialSummary.keyTakeaway}</p>
 
-        <section className="analysis-card">
-          <div className="section-title">
-            <Target size={16} />
-            <span>미래 반영 포인트</span>
-          </div>
-          <ul className="plain-list">
-            {watchPoints.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        </section>
+              <div className="analysis-divider" />
 
-        <section className="analysis-card related-trades">
-          <div className="section-title">
-            <CircleDollarSign size={16} />
-            <span>매수·매도 참고 정보</span>
-          </div>
-          {companyTrades.length === 0 ? (
-            <div className="trade-empty">관련 분석 준비 중입니다. 공개 자료가 연결되면 내부자, 기관, 펀드 매매를 함께 보여줍니다.</div>
-          ) : (
-            <div className="related-trade-list">
-              {companyTrades.slice(0, 4).map((move) => (
-                <article key={move.id}>
-                  <div>
-                    <strong>{move.investorName}</strong>
-                    <span>{move.investorTypeLabel} · {move.actionLabel}</span>
-                  </div>
-                  <p>{move.beginnerExplanation}</p>
-                  <small>
-                    공개일 {move.disclosedDate}
-                    {move.tradeDateOptional ? ` · 거래일 ${move.tradeDateOptional}` : ' · 거래일 확인 필요'}
-                    {' · '}
-                    {move.sourceLabel}
-                  </small>
-                </article>
-              ))}
+              <div className="section-title">
+                <BarChart3 size={16} />
+                <span>{disclosureAnalysis.isCurated ? '재무제표 해설' : '초보자용 공시 확인 포인트'}</span>
+              </div>
+              <div className="insight-grid">
+                {insights.map((insight) => (
+                  <article className="insight-card" key={insight.title}>
+                    <span>{insight.kicker}</span>
+                    <strong>{insight.title}</strong>
+                    <p>{insight.body}</p>
+                    <small>{insight.point}</small>
+                  </article>
+                ))}
+              </div>
             </div>
-          )}
-          <div className="home-note">
-            <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
-            <p>매수·매도 정보는 투자 권유가 아닌 참고용 데이터입니다.</p>
-          </div>
-        </section>
+          </details>
 
-        <section className="analysis-card related-news">
-          <div className="news-header">
-            <div className="section-title">
-              <Newspaper size={16} />
-              <span>관련 뉴스</span>
-            </div>
-            <button type="button" className="refresh-action" onClick={onRefreshNews} disabled={newsState.status === 'loading'}>
-              <RefreshCw size={14} />
-              새로고침
-            </button>
-          </div>
-          <div className="analysis-news-list">
-            {newsState.status === 'loading' && <div className="news-empty">뉴스 수집 중</div>}
-            {newsState.status === 'empty' && <div className="news-empty">최근 24시간 신뢰 도메인 뉴스가 없습니다.</div>}
-            {newsState.status === 'error' && <div className="news-empty">뉴스 API 확인 필요</div>}
-            {newsState.status === 'success' &&
-              newsState.items.slice(0, 5).map((item) => (
-                <a className="news-item" href={item.url} key={item.url} target="_blank" rel="noreferrer">
-                  <span>
-                    <Newspaper size={14} />
-                    {item.domain || item.source}
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <FileSearch size={16} />
+                <strong>{isKorea ? '공시·감사 분석 더 보기' : 'MD&A / Risk Factors 더 보기'}</strong>
+                <small>{isKorea ? '감사·검토 기록과 미래 반영 포인트를 봅니다.' : '경영진 설명, 위험요인, SEC 해설을 봅니다.'}</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="section-title">
+                <FileSearch size={16} />
+                <span>{disclosureAnalysis.isCurated ? '공시 원문 해석' : '회사별 공시 검증 상태'}</span>
+              </div>
+              <div className="analysis-status-row">
+                <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
+                  {primaryReportLink.statusLabel}
+                </span>
+                <small>{primaryReportLink.statusDetail}</small>
+              </div>
+              <p className="source-status-copy">{sourceStatusCopy}</p>
+              <div className="filing-brief-body">
+                <span>{disclosureAnalysis.reportDate}</span>
+                <strong>{disclosureAnalysis.headline}</strong>
+                <p>{disclosureAnalysis.verdict}</p>
+                {primaryReportLink.isNavigable ? (
+                  <a href={primaryReportLink.url} target="_blank" rel="noreferrer">
+                    {primaryReportLink.label}
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <span className="filing-source-pending">
+                    {primaryReportLink.label}
+                    <FileSearch size={14} />
                   </span>
-                  <strong>이 뉴스가 있었습니다: {item.title}</strong>
-                  <small>
-                    {formatNewsDate(item.seendate)}
-                    <ExternalLink size={12} />
-                  </small>
+                )}
+              </div>
+
+              <div className="analysis-divider" />
+
+              <div className="section-title">
+                <ShieldAlert size={16} />
+                <span>{isKorea ? '감사·검토 기록' : 'MD&A / 경영진 해설'}</span>
+              </div>
+              <ul className="plain-list">
+                {disclosureAnalysis.auditNotes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+
+              <div className="analysis-divider" />
+
+              <div className="section-title">
+                <Target size={16} />
+                <span>{isKorea ? '미래 반영 포인트' : 'Risk Factors / 미래 반영 포인트'}</span>
+              </div>
+              <ul className="plain-list">
+                {watchPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          </details>
+
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <FileSearch size={16} />
+                <strong>원문 보고서 확인</strong>
+                <small>{sourceStatusShort}</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="analysis-status-row">
+                <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
+                  {sourceStatusShort}
+                </span>
+                <small>{primaryReportLink.statusDetail}</small>
+              </div>
+              <div className="disclosure-list">
+                {primaryReportLink.isNavigable ? (
+                  <a
+                    href={primaryReportLink.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
+                  >
+                    <strong>{primaryReportLink.label}</strong>
+                    <span>{primaryReportLink.note}</span>
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <div className="pending-report-link report-status-card">
+                    <strong>{primaryReportLink.label}</strong>
+                    <span>{primaryReportLink.note}</span>
+                    <FileSearch size={14} />
+                  </div>
+                )}
+                {disclosureLinks.map((link) => (
+                  <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
+                    <strong>{link.label}</strong>
+                    <span>{link.note}</span>
+                    <ExternalLink size={14} />
+                  </a>
+                ))}
+                <a href={newsSearchUrl(company)} target="_blank" rel="noreferrer">
+                  <strong>관련 뉴스 검색</strong>
+                  <span>실적, 투자, 수주, 규제 뉴스를 원문 링크로 확인합니다.</span>
+                  <ExternalLink size={14} />
                 </a>
-              ))}
-          </div>
-        </section>
+              </div>
+            </div>
+          </details>
+
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <Network size={16} />
+                <strong>관련 공급망 보기</strong>
+                <small>이 회사가 어느 산업 흐름에 있는지 봅니다.</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="analysis-supply-box">
+                <div>
+                  <span>관련 섹터</span>
+                  <strong>{companySector?.label ?? company.sector}</strong>
+                  <p>{companySector?.description ?? '공급망 지도에서 연결 기업을 확인합니다.'}</p>
+                </div>
+                <div>
+                  <span>공급망 위치</span>
+                  <strong>{tierLabels[company.tier]}</strong>
+                  <p>{company.anchorCustomer} 흐름과 같이 봅니다.</p>
+                </div>
+                <button type="button" onClick={onBack}>
+                  공급망 지도에서 보기
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            </div>
+          </details>
+
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <CircleDollarSign size={16} />
+                <strong>관련 매수·매도 기록</strong>
+                <small>내부자, 기관, 펀드 공개 자료를 참고합니다.</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              {companyTrades.length === 0 ? (
+                <div className="trade-empty">관련 분석 준비 중입니다. 공개 자료가 연결되면 내부자, 기관, 펀드 매매를 함께 보여줍니다.</div>
+              ) : (
+                <div className="related-trade-list">
+                  {companyTrades.slice(0, 4).map((move) => (
+                    <article key={move.id}>
+                      <div>
+                        <strong>{move.investorName}</strong>
+                        <span>{move.investorTypeLabel} · {move.actionLabel}</span>
+                      </div>
+                      <p>{move.beginnerExplanation}</p>
+                      <small>
+                        공개일 {move.disclosedDate}
+                        {move.tradeDateOptional ? ` · 거래일 ${move.tradeDateOptional}` : ' · 거래일 확인 필요'}
+                        {' · '}
+                        {move.sourceLabel}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div className="home-note">
+                <p>공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
+                <p>매수·매도 정보는 투자 권유가 아닌 참고용 데이터입니다.</p>
+              </div>
+            </div>
+          </details>
+
+          <details className="analysis-card analysis-disclosure-section">
+            <summary>
+              <span>
+                <Newspaper size={16} />
+                <strong>관련 뉴스 보기</strong>
+                <small>실적과 공시를 이해할 때 같이 볼 기사입니다.</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="news-header">
+                <div className="section-title">
+                  <Newspaper size={16} />
+                  <span>관련 뉴스</span>
+                </div>
+                <button type="button" className="refresh-action" onClick={onRefreshNews} disabled={newsState.status === 'loading'}>
+                  <RefreshCw size={14} />
+                  새로고침
+                </button>
+              </div>
+              <div className="analysis-news-list">
+                {newsState.status === 'loading' && <div className="news-empty">뉴스 수집 중</div>}
+                {newsState.status === 'empty' && <div className="news-empty">최근 24시간 신뢰 도메인 뉴스가 없습니다.</div>}
+                {newsState.status === 'error' && <div className="news-empty">뉴스 API 확인 필요</div>}
+                {newsState.status === 'success' &&
+                  newsState.items.slice(0, 5).map((item) => (
+                    <a className="news-item" href={item.url} key={item.url} target="_blank" rel="noreferrer">
+                      <span>
+                        <Newspaper size={14} />
+                        {item.domain || item.source}
+                      </span>
+                      <strong>이 뉴스가 있었습니다: {item.title}</strong>
+                      <small>
+                        {formatNewsDate(item.seendate)}
+                        <ExternalLink size={12} />
+                      </small>
+                    </a>
+                  ))}
+              </div>
+            </div>
+          </details>
+        </div>
       </main>
     </div>
   );
@@ -1712,12 +2143,18 @@ function App() {
   const routeParams = new URLSearchParams(routeQuery);
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
+  const routePickMatch =
+    routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) ??
+    routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
+    routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
   const routeAnalysisCompanyId = routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company');
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
+  const routePickId = routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeCompany ?? selectedCompany;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
+  const isPicksRoute = Boolean(routePickMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
   const newsCompany = isAnalysisRoute && analysisCompany ? analysisCompany : selectedCompany;
   const newsSector = isAnalysisRoute && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
@@ -1876,6 +2313,24 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openPicks() {
+    window.history.pushState({}, '', picksPath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function openPick(pick: StockAutopsyPick) {
+    window.history.pushState({}, '', picksPath(pick));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function openSmartMoneyFromPick() {
+    window.history.pushState({}, '', '/ko/');
+    setRoute(`${window.location.pathname}${window.location.search}`);
+    window.setTimeout(() => {
+      document.getElementById('smart-money')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }
+
   function changeCountry(countryId: CountryId) {
     const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
     const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
@@ -1908,6 +2363,20 @@ function App() {
     setRiskFilter('all');
   }
 
+  if (isPicksRoute) {
+    return (
+      <StockAutopsyPicksPage
+        selectedPickId={routePickId}
+        onHome={openHome}
+        onOpenCategory={openCategory}
+        onOpenAnalysis={openAnalysis}
+        onOpenPick={openPick}
+        onOpenPicks={openPicks}
+        onOpenSmartMoney={openSmartMoneyFromPick}
+      />
+    );
+  }
+
   if (isAnalysisRoute && analysisCompany) {
     return (
       <ReactFlowProvider>
@@ -1924,7 +2393,7 @@ function App() {
   }
 
   if (!isCategoryRoute) {
-    return <LandingPage onOpenCategory={openCategory} onOpenAnalysis={openAnalysis} />;
+    return <LandingPage onOpenCategory={openCategory} onOpenAnalysis={openAnalysis} onOpenPicks={openPicks} onOpenPick={openPick} />;
   }
 
   return (

@@ -24,6 +24,22 @@
       "destination": "/"
     },
     {
+      "source": "/picks",
+      "destination": "/"
+    },
+    {
+      "source": "/picks/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/stock-autopsy-picks",
+      "destination": "/"
+    },
+    {
+      "source": "/stock-autopsy-picks/:path*",
+      "destination": "/"
+    },
+    {
       "source": "/ko",
       "destination": "/"
     },

@@ -8,6 +8,15 @@ export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
 export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease';
+export type StockAutopsyDirection = 'up' | 'down';
+export type StockAutopsyValueChainPosition =
+  | 'leader'
+  | 'supplier'
+  | 'materials'
+  | 'equipment'
+  | 'customer'
+  | 'competitor'
+  | 'other';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -190,6 +199,25 @@ export interface SmartMoneyMove {
   isDelayedDisclosure: boolean;
   note: string;
   beginnerExplanation: string;
+}
+
+export interface StockAutopsyPick {
+  id: string;
+  companyName: string;
+  ticker: string;
+  market: CountryId;
+  movementDirection: StockAutopsyDirection;
+  movementLabel: string;
+  reasonSummary: string;
+  beginnerSummary: string;
+  sector: string;
+  valueChainPosition: StockAutopsyValueChainPosition;
+  connectedLeaders: string[];
+  relatedCompanies: string[];
+  relatedSupplyChainId?: string;
+  relatedCompanyId?: string;
+  relatedTradeTags?: string[];
+  publishedAt?: string;
 }
 
 type SupplierSeed = {
@@ -5097,6 +5125,98 @@ export const marketMovers: MarketMover[] = [
     beginnerNote: '미국 기업은 MD&A에서 경영진이 수요를 어떻게 설명했는지 봅니다.',
     sectorId: 'us-semiconductors',
     sectorLabel: 'AI 반도체',
+  },
+];
+
+export const stockAutopsyPicks: StockAutopsyPick[] = [
+  {
+    id: 'pick-nvidia-ai-demand',
+    companyName: 'NVIDIA',
+    ticker: 'NVDA',
+    market: 'US',
+    movementDirection: 'up',
+    movementLabel: '실적 기대감',
+    reasonSummary: 'AI 데이터센터 수요 기대가 다음 분기 실적 눈높이를 높였습니다.',
+    beginnerSummary: 'AI 서버가 늘수록 GPU, 메모리, 장비 기업을 함께 봐야 합니다.',
+    sector: 'AI 반도체',
+    valueChainPosition: 'leader',
+    connectedLeaders: ['TSMC', 'SK하이닉스', 'ASML', 'AMD'],
+    relatedCompanies: ['TSMC', 'SK하이닉스', 'ASML', 'AMD'],
+    relatedSupplyChainId: 'us-semiconductors',
+    relatedCompanyId: 'us-semiconductors-nvidia',
+    relatedTradeTags: ['13F', 'AI 데이터센터', 'GPU'],
+    publishedAt: '2026-05-17',
+  },
+  {
+    id: 'pick-hanmi-packaging-equipment',
+    companyName: '한미반도체',
+    ticker: '042700.KS',
+    market: 'KR',
+    movementDirection: 'up',
+    movementLabel: '후공정 장비 기대',
+    reasonSummary: 'HBM 후공정 투자 기대가 장비 기업 관심으로 이어졌습니다.',
+    beginnerSummary: '장비주는 수주가 매출로 잡히는 시점과 재고 변화를 같이 봐야 합니다.',
+    sector: '반도체 장비',
+    valueChainPosition: 'equipment',
+    connectedLeaders: ['삼성전자', 'SK하이닉스', 'NVIDIA', 'TSMC'],
+    relatedCompanies: ['삼성전자', 'SK하이닉스', '원익IPS', '주성엔지니어링'],
+    relatedSupplyChainId: 'kr-semiconductors',
+    relatedCompanyId: 'kr-semiconductors-samsung-한미반도체',
+    relatedTradeTags: ['DART', 'HBM', '후공정'],
+    publishedAt: '2026-05-17',
+  },
+  {
+    id: 'pick-sk-hynix-hbm',
+    companyName: 'SK하이닉스',
+    ticker: '000660.KS',
+    market: 'KR',
+    movementDirection: 'up',
+    movementLabel: 'AI 메모리 수요',
+    reasonSummary: 'AI 서버용 메모리 수요 기대가 실적 전망에 반영됐습니다.',
+    beginnerSummary: '메모리는 가격과 출하량이 같이 좋아지는지 확인해야 합니다.',
+    sector: 'AI 메모리',
+    valueChainPosition: 'supplier',
+    connectedLeaders: ['NVIDIA', 'AMD', '삼성전자', 'TSMC'],
+    relatedCompanies: ['한미반도체', '원익IPS', '솔브레인', '리노공업'],
+    relatedSupplyChainId: 'kr-semiconductors',
+    relatedCompanyId: 'kr-semiconductors-sk-hynix',
+    relatedTradeTags: ['HBM', '기관 수급', 'DART'],
+    publishedAt: '2026-05-17',
+  },
+  {
+    id: 'pick-ai-server-parts',
+    companyName: 'AI 서버 부품업체',
+    ticker: 'WATCH',
+    market: 'US',
+    movementDirection: 'up',
+    movementLabel: '서버 투자 기대',
+    reasonSummary: 'AI 서버 증설 기대가 전력, 냉각, 부품 기업 관심으로 번졌습니다.',
+    beginnerSummary: '같은 밸류체인에서 함께 봐야 할 대표 기업을 먼저 확인합니다.',
+    sector: 'AI 서버',
+    valueChainPosition: 'supplier',
+    connectedLeaders: ['NVIDIA', 'Dell', 'Super Micro', 'Vertiv'],
+    relatedCompanies: ['Microsoft', 'Amazon', 'Alphabet', 'Eaton'],
+    relatedSupplyChainId: 'us-ai-cloud-datacenter',
+    relatedTradeTags: ['AI 서버', '데이터센터', '전력·냉각'],
+    publishedAt: '2026-05-17',
+  },
+  {
+    id: 'pick-battery-materials-watch',
+    companyName: '배터리 소재업체',
+    ticker: 'WATCH',
+    market: 'KR',
+    movementDirection: 'down',
+    movementLabel: '전기차 수요 부담',
+    reasonSummary: '전기차 수요 둔화와 소재 가격 변동이 투자심리에 부담으로 작용했습니다.',
+    beginnerSummary: '소재 기업은 판매량뿐 아니라 원재료 가격과 고객사 투자 계획도 함께 봅니다.',
+    sector: '2차전지 소재',
+    valueChainPosition: 'materials',
+    connectedLeaders: ['Tesla', 'BYD', 'CATL', 'LG에너지솔루션'],
+    relatedCompanies: ['포스코퓨처엠', '삼성SDI', 'GM', 'Rivian'],
+    relatedSupplyChainId: 'kr-battery-materials',
+    relatedCompanyId: 'kr-battery-materials-posco-futurem',
+    relatedTradeTags: ['배터리', '소재 가격', '전기차'],
+    publishedAt: '2026-05-17',
   },
 ];
 
