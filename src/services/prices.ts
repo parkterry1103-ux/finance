@@ -7,6 +7,16 @@ function normalizeTicker(ticker?: string) {
   return ticker?.trim().toUpperCase();
 }
 
+function tickerAliases(ticker?: string) {
+  const normalized = normalizeTicker(ticker);
+  if (!normalized) return [];
+  const aliases = new Set([normalized]);
+  if (normalized === 'BRK.B') aliases.add('BRK-B');
+  if (normalized === 'BRK-B') aliases.add('BRK.B');
+  if (normalized === 'SQ') aliases.add('XYZ');
+  return Array.from(aliases);
+}
+
 function parseNumeric(value?: string) {
   if (!value) return Number.NaN;
   return Number(String(value).replace(/[^0-9.-]/g, ''));
@@ -25,6 +35,12 @@ function inferPriceLabel(price: MarketPrice): PriceLabel {
   if (price.isDelayed || price.marketStatus === 'delayed') return 'delayed';
   if (price.marketStatus === 'open') return 'latest';
   return 'fallback';
+}
+
+function isRealPrice(price?: MarketPrice | null) {
+  if (!price) return false;
+  const label = inferPriceLabel(price);
+  return label !== 'fallback' && label !== 'unavailable' && Number.isFinite(parseNumeric(price.price));
 }
 
 function priceBasis(price: MarketPrice) {
@@ -155,19 +171,22 @@ function formatPriceAmount(value: string) {
 }
 
 export function findFallbackPrice(ticker?: string, companyId?: string, prices: MarketPrice[] = mockMarketPrices) {
-  const normalized = normalizeTicker(ticker);
+  const aliases = tickerAliases(ticker);
+  const byCompany = (price: MarketPrice) => Boolean(companyId && price.companyId === companyId);
+  const byTicker = (price: MarketPrice) => aliases.includes(normalizeTicker(price.ticker) ?? '');
   return (
-    prices.find((price) => companyId && price.companyId === companyId) ??
-    prices.find((price) => normalizeTicker(price.ticker) === normalized) ??
-    mockMarketPrices.find((price) => companyId && price.companyId === companyId) ??
-    mockMarketPrices.find((price) => normalizeTicker(price.ticker) === normalized) ??
+    prices.find((price) => byCompany(price) && isRealPrice(price)) ??
+    prices.find((price) => byTicker(price) && isRealPrice(price)) ??
+    prices.find((price) => byCompany(price)) ??
+    prices.find((price) => byTicker(price)) ??
+    mockMarketPrices.find((price) => byCompany(price)) ??
+    mockMarketPrices.find((price) => byTicker(price)) ??
     null
   );
 }
 
 export async function fetchPriceByCompany(company: Company): Promise<MarketPrice | null> {
-  // 무료 공식 시세 연동 전까지는 mock/fallback을 사용합니다.
-  // 실제 운영에서는 서버 스크립트가 market_prices 테이블을 갱신하고, 프론트는 안전한 read endpoint를 붙이면 됩니다.
+  // 서버에서 market_prices를 읽은 뒤 실제 시세가 없을 때만 fallback 상태를 씁니다.
   return findFallbackPrice(company.ticker, company.id);
 }
 

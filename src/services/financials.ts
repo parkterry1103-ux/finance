@@ -1,6 +1,7 @@
 import { financialMetricGuides } from '../data.js';
 import type {
   Company,
+  FilingSourceStatus,
   FinancialMetric,
   FinancialMetricKey,
   FinancialStatementSummary,
@@ -74,6 +75,13 @@ function findDartAmount(rows: DartAccountRow[], names: string[]) {
   return row?.thstrm_amount;
 }
 
+function fallbackCashFlowLabel(company: Company, sourceStatus: FilingSourceStatus) {
+  if (sourceStatus === 'private-company') return '비상장 기업으로 공시 의무 없음';
+  if (sourceStatus === 'no-public-filing') return '공식 공시 기준 확인 불가';
+  if (sourceStatus === 'needs-link') return '아직 연결된 원문 보고서가 없습니다';
+  return '원문 보고서 확인 필요';
+}
+
 export function buildFallbackFinancials(company: Company): FinancialStatementSummary {
   const reportUrl =
     company.reportUrl ??
@@ -85,6 +93,8 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
     (company.country === 'KR'
       ? `https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=${encodeURIComponent(company.legalName || company.name)}`
       : `https://www.sec.gov/search-filings?keys=${encodeURIComponent(company.legalName || company.name)}`);
+
+  const sourceStatus = company.sourceStatus ?? (reportUrl ? 'direct' : company.sourceSearchUrl ? 'search-only' : 'needs-link');
 
   return {
     companyId: company.id,
@@ -103,7 +113,7 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
       metric(
         'cashFlow',
         '현금흐름',
-        '상세 해설에서 확인',
+        fallbackCashFlowLabel(company, sourceStatus),
         '이익이 실제 현금으로 들어오는지 확인하는 단계입니다.',
       ),
     ],
@@ -119,7 +129,7 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
     secAccessionNumber: company.secAccessionNumber,
     fiscalPeriod: company.fiscalPeriod,
     filingDate: company.filingDate,
-    sourceStatus: company.sourceStatus ?? (reportUrl ? 'direct' : company.sourceSearchUrl ? 'search-only' : 'needs-link'),
+    sourceStatus,
   };
 }
 

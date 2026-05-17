@@ -34,6 +34,16 @@ function normalizePrice(row) {
   };
 }
 
+function tickerAliases(ticker = '') {
+  const normalized = String(ticker).trim().toUpperCase();
+  if (!normalized) return [];
+  const aliases = new Set([normalized]);
+  if (normalized === 'BRK.B') aliases.add('BRK-B');
+  if (normalized === 'BRK-B') aliases.add('BRK.B');
+  if (normalized === 'SQ') aliases.add('XYZ');
+  return Array.from(aliases);
+}
+
 function unavailablePrice(ticker = '', companyId = '') {
   return {
     companyId: companyId || undefined,
@@ -74,7 +84,11 @@ export default async function handler(req, res) {
     );
     url.searchParams.set('order', 'as_of.desc,created_at.desc');
     url.searchParams.set('limit', String(limit));
-    if (ticker) url.searchParams.set('ticker', `ilike.*${ticker.replaceAll('*', '')}*`);
+    if (ticker) {
+      const aliases = tickerAliases(ticker).map((item) => `ticker.ilike.*${item.replaceAll('*', '')}*`);
+      if (aliases.length > 1) url.searchParams.set('or', `(${aliases.join(',')})`);
+      else url.searchParams.set('ticker', `ilike.*${ticker.replaceAll('*', '')}*`);
+    }
     if (companyId) url.searchParams.set('company_id', `eq.${companyId}`);
 
     const response = await fetch(url, {

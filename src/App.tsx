@@ -235,9 +235,15 @@ const prominentInstitutionFilters = [
   'Soros',
 ];
 
-function marketDisplayLabel(country: CountryId, ticker?: string) {
-  if (country === 'KR') return ticker?.endsWith('.KQ') ? 'KOSDAQ' : 'KOSPI';
-  if (ticker && nyseTickers.has(ticker)) return 'NYSE';
+function marketDisplayLabel(company: Company) {
+  const reportLink = getPrimaryReportLink(company);
+  const ticker = company.ticker?.trim();
+  if (!ticker || ticker === 'WATCH' || ticker === '비상장') return '비상장';
+  if (reportLink.status === 'private-company') return '비상장';
+  if (reportLink.status === 'no-public-filing') return '공개 공시 확인 불가';
+  if (company.sourceStatus === 'needs-link' && company.sourceType === 'seed-model' && company.tier === 'tier2') return '공시 의무 없음';
+  if (company.country === 'KR') return ticker.endsWith('.KQ') ? 'KOSDAQ' : ticker.endsWith('.KS') ? 'KOSPI' : '공개 공시 확인 불가';
+  if (nyseTickers.has(ticker)) return 'NYSE';
   return 'NASDAQ';
 }
 
@@ -305,6 +311,15 @@ function beginnerInterpretation(analysis: FilingAnalysis, company: Company) {
     return '현재 숫자는 빠른 비교용입니다. 실제 투자 판단 전에는 공식 공시에서 매출, 현금흐름, 부채를 다시 확인해야 합니다.';
   }
   return analysis.verdict;
+}
+
+function missingFinancialValueLabel(company: Company, hasDetailedAnalysis: boolean) {
+  if (hasDetailedAnalysis) return '상세 해설에서 확인';
+  const reportLink = getPrimaryReportLink(company);
+  if (reportLink.status === 'private-company') return '비상장 기업으로 공시 의무 없음';
+  if (reportLink.status === 'no-public-filing') return '공식 공시 기준 확인 불가';
+  if (reportLink.status === 'needs-link') return '아직 연결된 원문 보고서가 없습니다';
+  return '원문 보고서 확인 필요';
 }
 
 function dependencySummary(company: Company, currentLinks: typeof links) {
@@ -944,9 +959,21 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
     <span className={`price-badge ${direction} ${compact ? 'compact' : ''}`} title={`${price.source} · ${price.asOf}`}>
       <strong>{display.amount}</strong>
       {display.percent && <em>{display.percent}</em>}
-      <small>{[display.status, display.basis].filter(Boolean).join(' · ')}</small>
+      <small>{[display.status, display.basis, formatPriceAsOf(price.asOf)].filter(Boolean).join(' · ')}</small>
     </span>
   );
+}
+
+function formatPriceAsOf(value?: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function isQuarterlyHoldingReport(move: SmartMoneyMove) {
@@ -1951,6 +1978,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
   const analysisRevenueDisplay = revenueDisplayForCompany(company, displayMetrics);
   const beginnerConclusion = beginnerInterpretation(disclosureAnalysis, company);
   const firstWatchPoint = watchPoints[0] ?? '다음 공시에서 매출, 현금흐름, 부채가 같은 방향으로 개선되는지 확인합니다.';
+  const hasDetailedFinancialAnalysis = Boolean(getCompanyFilingAnalysis(company));
+  const missingFinancialValue = missingFinancialValueLabel(company, hasDetailedFinancialAnalysis);
   const quickMetrics = [
     {
       label: '매출',
@@ -1967,12 +1996,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
     },
     {
       label: '순이익',
-      value: netIncomeMetric?.value ?? '상세 해설에서 확인',
+      value: netIncomeMetric?.value ?? missingFinancialValue,
       note: netIncomeMetric?.beginnerExplanation ?? '세금과 비용까지 반영한 최종 이익입니다. 숫자가 없으면 원문을 실제 금액처럼 꾸미지 않습니다.',
     },
     {
       label: '현금흐름',
-      value: cashFlowMetric?.value ?? '상세 해설에서 확인',
+      value: cashFlowMetric?.value ?? missingFinancialValue,
       note: cashFlowMetric?.beginnerExplanation ?? '실제로 현금이 들어오고 나가는 흐름입니다. 이익과 같이 움직이는지 봅니다.',
     },
     {
@@ -2041,7 +2070,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
         <section className="analysis-card analysis-overview-card">
           <div className="analysis-overview-head">
             <div>
-              <span className="analysis-market-pill">{marketDisplayLabel(company.country, company.ticker)}</span>
+              <span className="analysis-market-pill">{marketDisplayLabel(company)}</span>
               <h2>{company.name}</h2>
               <p>{company.ticker ?? company.legalName}</p>
             </div>
@@ -2572,16 +2601,14 @@ function App() {
     const routeFocusCompany = routeCategoryCompanyId ? companies.find((company) => company.id === routeCategoryCompanyId) : undefined;
     if (!routeSector && !routeFocusCompany) return;
     const nextSectorId = routeFocusCompany?.sectorId ?? routeSector?.id ?? selectedSectorId;
-    const nextAnchorId = routeFocusCompany?.anchorId ?? anchors.find((anchor) => anchor.sectorId === nextSectorId)?.id;
     if (
       nextSectorId === selectedSectorId &&
-      (!nextAnchorId || nextAnchorId === selectedAnchorId) &&
       (!routeFocusCompany || routeFocusCompany.id === selectedCompanyId)
     ) {
       return;
     }
     selectSectorScope(nextSectorId, routeFocusCompany?.id);
-  }, [routeCategoryCompanyId, routeCategoryId, selectedAnchorId, selectedCompanyId, selectedSectorId]);
+  }, [routeCategoryCompanyId, routeCategoryId, selectedCompanyId, selectedSectorId]);
 
   const flowNodes: Node<NodeData>[] = useMemo(
     () =>
@@ -2708,7 +2735,7 @@ function App() {
       (focusCompany ? anchors.find((anchor) => anchor.id === focusCompany.anchorId) : undefined) ??
       anchors.find((anchor) => anchor.sectorId === nextSector.id) ??
       anchors[0];
-    const nextCompany = focusCompany ?? companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
+    const nextCompany = focusCompany ?? companies.find((company) => company.id === nextAnchor.id) ?? companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
     setSelectedCountry(nextSector.country);
     setSelectedSectorId(nextSector.id);
     setSelectedAnchorId(nextAnchor.id);
@@ -2756,11 +2783,10 @@ function App() {
   function changeCountry(countryId: CountryId) {
     const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
     const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
-    const nextCompany = companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
     setSelectedCountry(countryId);
     setSelectedSectorId(nextSector.id);
     setSelectedAnchorId(nextAnchor.id);
-    setSelectedCompanyId(nextCompany.id);
+    setSelectedCompanyId(nextAnchor.id);
     setQuery('');
     setRiskFilter('all');
     if (isCategoryRoute) {
@@ -2770,7 +2796,8 @@ function App() {
   }
 
   function changeSector(sectorId: string) {
-    selectSectorScope(sectorId);
+    const nextAnchor = anchors.find((anchor) => anchor.sectorId === sectorId);
+    selectSectorScope(sectorId, nextAnchor?.id);
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(sectorId));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -2778,9 +2805,8 @@ function App() {
   }
 
   function changeAnchor(anchorId: string) {
-    const nextCompany = companies.find((company) => company.anchorId === anchorId && company.tier !== 'anchor') ?? companies[0];
     setSelectedAnchorId(anchorId);
-    setSelectedCompanyId(nextCompany.id);
+    setSelectedCompanyId(anchorId);
     setQuery('');
     setRiskFilter('all');
   }
