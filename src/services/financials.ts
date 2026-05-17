@@ -103,7 +103,7 @@ export function buildFallbackFinancials(company: Company): FinancialStatementSum
       metric(
         'cashFlow',
         '현금흐름',
-        '원문 보고서 연결 후 금액 표시 예정',
+        '상세 해설에서 확인',
         '이익이 실제 현금으로 들어오는지 확인하는 단계입니다.',
       ),
     ],

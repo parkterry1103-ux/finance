@@ -13,7 +13,14 @@ const REQUIRED_PRICE_TICKERS = [
   'INTC',
   'AAPL',
   'TSLA',
+  'BRK-B',
+  'XYZ',
 ];
+
+const YAHOO_TICKER_ALIASES: Record<string, string> = {
+  'BRK.B': 'BRK-B',
+  SQ: 'XYZ',
+};
 
 function projectFile(path) {
   const runtime = globalThis as typeof globalThis & { process?: { cwd?: () => string } };
@@ -131,12 +138,26 @@ function isPriceTicker(ticker?: string) {
   return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장' && (/\.KS$|\.KQ$|^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker)));
 }
 
+function priceLookupTicker(ticker: string) {
+  const normalized = ticker.trim().toUpperCase();
+  return YAHOO_TICKER_ALIASES[normalized] ?? normalized;
+}
+
 function uniquePriceTargets() {
-  const byTicker = new Map<string, { ticker: string; companyId?: string; market?: string }>();
+  const byLookupTicker = new Map<string, { ticker: string; lookupTicker: string; companyId?: string; market?: string }>();
   const add = (ticker?: string, companyId?: string, market?: string) => {
     if (!isPriceTicker(ticker)) return;
-    const normalizedTicker = String(ticker).trim();
-    if (!byTicker.has(normalizedTicker)) byTicker.set(normalizedTicker, { ticker: normalizedTicker, companyId, market });
+    const normalizedTicker = String(ticker).trim().toUpperCase();
+    const lookupTicker = priceLookupTicker(normalizedTicker);
+    if (!byLookupTicker.has(lookupTicker)) {
+      byLookupTicker.set(lookupTicker, { ticker: normalizedTicker, lookupTicker, companyId, market });
+      return;
+    }
+
+    const previous = byLookupTicker.get(lookupTicker);
+    if (previous && !previous.companyId && companyId) {
+      byLookupTicker.set(lookupTicker, { ...previous, companyId, market: market ?? previous.market });
+    }
   };
 
   REQUIRED_PRICE_TICKERS.forEach((ticker) => add(ticker));
@@ -146,7 +167,20 @@ function uniquePriceTargets() {
   anchors.forEach((anchor) => add(anchor.ticker, anchor.id, anchor.country));
   companies.forEach((company) => add(company.ticker, company.id, company.country));
 
-  return Array.from(byTicker.values());
+  return Array.from(byLookupTicker.values());
+}
+
+function priceTargetSummary() {
+  const listedCompanies = companies.filter((company) => company.tier === 'anchor' || isPriceTicker(company.ticker));
+  const priceTargetCompanies = listedCompanies.filter((company) => isPriceTicker(company.ticker));
+  const excludedCompanies = companies.filter((company) => !isPriceTicker(company.ticker));
+  return {
+    totalCompanyCount: companies.length,
+    listedOrTrackedCompanyCount: listedCompanies.length,
+    priceTargetCompanyCount: priceTargetCompanies.length,
+    excludedPrivateOrUnavailableCompanyCount: excludedCompanies.length,
+    targetTickerCount: uniquePriceTargets().length,
+  };
 }
 
 function chunkArray(items, size) {
@@ -244,7 +278,7 @@ async function fetchYahooFinanceRows() {
   for (const chunk of chunkArray(targets, 8)) {
     await Promise.all(
       chunk.map(async (target) => {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(target.ticker)}?range=5d&interval=1d`;
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(target.lookupTicker)}?range=5d&interval=1d`;
         try {
           const response = await fetch(url, {
             headers: {
@@ -257,6 +291,7 @@ async function fetchYahooFinanceRows() {
           rows.push(row);
           results.push({
             ticker: target.ticker,
+            lookupTicker: target.lookupTicker,
             status: 'success',
             price: row.price,
             priceLabel: row.priceLabel,
@@ -265,8 +300,8 @@ async function fetchYahooFinanceRows() {
           });
         } catch (error) {
           const message = errorMessage(error);
-          results.push({ ticker: target.ticker, status: 'failed', error: message });
-          console.warn(`[sync-prices] Yahoo chart skipped ${target.ticker}: ${message}`);
+          results.push({ ticker: target.ticker, lookupTicker: target.lookupTicker, status: 'failed', error: message });
+          console.warn(`[sync-prices] Yahoo chart skipped ${target.ticker} (${target.lookupTicker}): ${message}`);
         }
       }),
     );
@@ -302,6 +337,7 @@ function mockRowsForReport() {
 
 export async function syncPrices() {
   const startedAt = nowIso();
+  const targetSummary = priceTargetSummary();
   try {
     const { rows, sourceLabel, results = [] } = await loadPriceRows();
     if (!sourceLabel) {
@@ -316,6 +352,11 @@ export async function syncPrices() {
         insertedCount: 0,
         updatedCount: 0,
         mockFallbackCount: mockRowsForReport().length,
+        summary: {
+          ...targetSummary,
+          successTickerCount: 0,
+          failedTickerCount: failedCount,
+        },
         results,
         errors: [message],
       };
@@ -325,7 +366,20 @@ export async function syncPrices() {
     if (!normalizedRows.length) {
       const message = `No price rows in ${sourceLabel}. Frontend keeps mock fallback.`;
       await recordSyncRun({ source: 'market-prices', status: 'skipped', startedAt, errorMessage: message });
-      return { source: 'market-prices', status: 'skipped', insertedCount: 0, updatedCount: 0, mockFallbackCount: mockRowsForReport().length, results, errors: [message] };
+      return {
+        source: 'market-prices',
+        status: 'skipped',
+        insertedCount: 0,
+        updatedCount: 0,
+        mockFallbackCount: mockRowsForReport().length,
+        summary: {
+          ...targetSummary,
+          successTickerCount: 0,
+          failedTickerCount: results.filter((item) => item.status === 'failed').length,
+        },
+        results,
+        errors: [message],
+      };
     }
 
     if (hasSupabaseConfig()) {
@@ -349,6 +403,7 @@ export async function syncPrices() {
 
     const result = await upsertRows('market_prices', normalizedRows, ['ticker', 'source', 'as_of']);
     const failedCount = results.filter((item) => item.status === 'failed').length;
+    const successCount = results.filter((item) => item.status === 'success').length;
     const status = failedCount > 0 ? 'partial' : 'success';
     const summary = status === 'partial' ? `Price sync partial: ${normalizedRows.length} rows saved/prepared, ${failedCount} tickers failed.` : '';
     await recordSyncRun({
@@ -365,6 +420,11 @@ export async function syncPrices() {
       insertedCount: result.inserted ?? normalizedRows.length,
       updatedCount: result.updated ?? 0,
       mockFallbackCount: 0,
+      summary: {
+        ...targetSummary,
+        successTickerCount: successCount,
+        failedTickerCount: failedCount,
+      },
       results,
       errors: results.filter((item) => item.status === 'failed').map((item) => `${item.ticker}: ${item.error}`),
     };

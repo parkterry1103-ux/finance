@@ -111,10 +111,10 @@ export function externalDisclosureLinks(company: Company): FilingSourceLink[] {
         note: '직접 원문 URL이 없을 때 사업보고서, 감사보고서, 수주·증설 공시를 검색합니다.',
       },
       {
-        label: 'OpenDART 재무정보 API',
+        label: '공식 공시 기준',
         url: 'https://opendart.fss.or.kr/guide/main.do?apiGrpCd=DE003',
         sourceType: 'api-docs',
-        note: '서버 스크립트에서 OPENDART_API_KEY를 연결하면 손익계산서·재무상태표·현금흐름표를 자동 수집할 수 있습니다.',
+        note: '자동 수집은 서버 환경변수로 처리하고, 사용자 화면에는 공식 공시 기준으로만 표시합니다.',
       },
     ];
   }

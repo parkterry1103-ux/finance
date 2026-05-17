@@ -27,17 +27,32 @@ function inferPriceLabel(price: MarketPrice): PriceLabel {
   return 'fallback';
 }
 
+function priceBasis(price: MarketPrice) {
+  const open = parseNumeric(price.open);
+  if (Number.isFinite(open) && open !== 0) {
+    return { value: open, label: '시작가 대비' };
+  }
+
+  const previousClose = parseNumeric(price.previousClose);
+  if (Number.isFinite(previousClose) && previousClose !== 0) {
+    return { value: previousClose, label: '전일 종가 대비' };
+  }
+
+  return { value: Number.NaN, label: '기준가 없음' };
+}
+
 function normalizeMarketPrice(price: MarketPrice): MarketPrice {
   const current = parseNumeric(price.price);
-  const basis = parseNumeric(price.open) || parseNumeric(price.previousClose);
+  const basis = priceBasis(price);
   const computedPercent =
-    Number.isFinite(current) && Number.isFinite(basis) && basis !== 0 ? formatPercent(((current - basis) / basis) * 100) : '';
+    Number.isFinite(current) && Number.isFinite(basis.value) && basis.value !== 0 ? formatPercent(((current - basis.value) / basis.value) * 100) : '';
+  const label = inferPriceLabel(price);
 
   return {
     ...price,
-    priceLabel: inferPriceLabel(price),
-    close: price.close ?? (inferPriceLabel(price) === 'close' ? price.price : undefined),
-    changePercent: price.changePercent || computedPercent || '0.00%',
+    priceLabel: label,
+    close: price.close ?? (label === 'close' ? price.price : undefined),
+    changePercent: computedPercent,
   };
 }
 
@@ -71,7 +86,7 @@ export async function fetchMarketPrices(limit = 200): Promise<MarketPrice[]> {
 export function priceDirection(price?: MarketPrice | null): PriceDirection {
   if (!price) return 'pending';
   if (inferPriceLabel(price) === 'fallback' || inferPriceLabel(price) === 'unavailable') return 'pending';
-  const value = parseNumeric(price.changePercent);
+  const value = parseNumeric(normalizeMarketPrice(price).changePercent);
   if (!Number.isFinite(value) || value === 0) return 'flat';
   return value > 0 ? 'up' : 'down';
 }
@@ -83,7 +98,7 @@ export function priceStatusLabel(price?: MarketPrice | null) {
     latest: '최신가',
     close: '종가',
     delayed: '지연 가능',
-    fallback: '참고가',
+    fallback: '가격 확인 필요',
     unavailable: '가격 준비 중',
   };
   const base = baseLabels[label] ?? '가격 준비 중';
@@ -93,9 +108,7 @@ export function priceStatusLabel(price?: MarketPrice | null) {
 
 export function priceBasisLabel(price?: MarketPrice | null) {
   if (!price) return '';
-  if (price.open) return '시작가 대비';
-  if (price.previousClose) return '전일 종가 대비';
-  return '기준가 대비';
+  return priceBasis(price).label;
 }
 
 export function priceDisplay(price?: MarketPrice | null) {
@@ -111,10 +124,10 @@ export function priceDisplay(price?: MarketPrice | null) {
   const normalized = normalizeMarketPrice(price);
   if (normalized.priceLabel === 'fallback') {
     return {
-      amount: '예시 가격',
+      amount: '가격 준비 중',
       percent: '',
-      status: '실제 가격 연결 전',
-      basis: '',
+      status: '가격 확인 필요',
+      basis: '공식 시세 저장 전',
     };
   }
   if (normalized.priceLabel === 'unavailable') {

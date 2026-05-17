@@ -1476,7 +1476,7 @@ export const anchors: AnchorCompany[] = [
     "rank": 3,
     "name": "Block",
     "legalName": "Block, Inc.",
-    "ticker": "SQ",
+    "ticker": "XYZ",
     "exchange": "NYSE",
     "sector": "핀테크·결제",
     "region": "California",
@@ -4779,6 +4779,13 @@ function companySourceNote(tier: CompanyTier) {
   return '실명 기업 기반 검증 후보입니다. 특정 앵커 납품 관계는 공시·IR·계약·뉴스 API로 추가 확인해야 합니다.';
 }
 
+function tierTemplateForAnchor(template: ChainTemplate, anchor: AnchorCompany) {
+  if (template.tier1.length <= 3 || anchor.rank === 1) return template.tier1;
+  const startIndex = (anchor.rank - 1) % template.tier1.length;
+  const rotated = template.tier1.slice(startIndex).concat(template.tier1.slice(0, startIndex));
+  return rotated.slice(0, Math.max(3, template.tier1.length - 1));
+}
+
 function buildCompanies() {
   const generatedCompanies: Company[] = [];
   const generatedLinks: SupplyLink[] = [];
@@ -4842,7 +4849,7 @@ function buildCompanies() {
       },
     );
 
-    template.tier1.forEach((tier1, tier1Index) => {
+    tierTemplateForAnchor(template, anchor).forEach((tier1, tier1Index) => {
       const tier1Id = `${anchor.id}-${slugify(tier1.company.name)}`;
       const trendSeed = anchorIndex + tier1Index + 1;
       const tier1Revenue = metricValue(trendSeed, 2_400, 520);

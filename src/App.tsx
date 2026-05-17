@@ -73,6 +73,7 @@ type NodeData = {
   company: Company;
   isSelected: boolean;
   isDimmed: boolean;
+  onSelect?: (companyId: string) => void;
 };
 
 type NewsItem = {
@@ -110,7 +111,7 @@ const riskClass: Record<RiskLevel, string> = {
 };
 
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
-  const { company, isSelected, isDimmed } = data;
+  const { company, isSelected, isDimmed, onSelect } = data;
   const isAnchor = company.tier === 'anchor';
   const StatusIcon = company.status === 'opportunity' ? Sparkles : company.status === 'watch' ? ShieldAlert : CheckCircle2;
 
@@ -121,9 +122,10 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
         `tier-${company.tier}`,
         isSelected ? 'selected' : '',
         isDimmed ? 'dimmed' : '',
-      ].join(' ')}
-      type="button"
-    >
+    ].join(' ')}
+    type="button"
+    onClick={() => onSelect?.(company.id)}
+  >
       <Handle type="target" position={Position.Left} className="node-handle" />
       <div className="node-topline">
         <span className="node-badge-row">
@@ -216,7 +218,22 @@ function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
 
-const nyseTickers = new Set(['BRK.B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN']);
+const nyseTickers = new Set(['BRK.B', 'BRK-B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN', 'XYZ']);
+const prominentInstitutionFilters = [
+  'Berkshire Hathaway',
+  'ARK',
+  'BlackRock',
+  'Goldman Sachs',
+  'Vanguard',
+  'State Street',
+  'JPMorgan',
+  'Morgan Stanley',
+  'Bridgewater',
+  'Citadel',
+  'Renaissance',
+  'Baupost',
+  'Soros',
+];
 
 function marketDisplayLabel(country: CountryId, ticker?: string) {
   if (country === 'KR') return ticker?.endsWith('.KQ') ? 'KOSDAQ' : 'KOSPI';
@@ -259,6 +276,93 @@ function sourceUnitShort(value: string, country: CountryId) {
     return value || '원문 단위 확인 필요';
   }
   return value || 'Source unit: USD';
+}
+
+function isPublicRevenueUnavailable(company: Company) {
+  const reportLink = getPrimaryReportLink(company);
+  return company.sourceType === 'seed-model' && (reportLink.status === 'private-company' || reportLink.status === 'no-public-filing');
+}
+
+function revenueDisplayForCompany(company: Company, metrics: CompanyDisplayMetrics) {
+  if (isPublicRevenueUnavailable(company)) {
+    return {
+      primary: '공개 공시 기준 매출 확인 불가',
+      sourceUnit: company.sourceStatus === 'private-company' ? '비상장/공시 의무 없음' : '공개 보고서 확인 불가',
+      basis: '매출 정보: 공식 공시 없음. 출처가 확인되기 전에는 금액을 실제 매출처럼 표시하지 않습니다.',
+    };
+  }
+  const formatted = formatDisplayAmount(metrics.revenue, metrics.revenueUnit, company.country);
+  return {
+    ...formatted,
+    basis: metrics.revenueBasis,
+  };
+}
+
+function beginnerInterpretation(analysis: FilingAnalysis, company: Company) {
+  const firstInsight = analysis.insights[1] ?? analysis.insights[0];
+  if (firstInsight) return firstInsight.point;
+  if (company.sourceType === 'seed-model') {
+    return '현재 숫자는 빠른 비교용입니다. 실제 투자 판단 전에는 공식 공시에서 매출, 현금흐름, 부채를 다시 확인해야 합니다.';
+  }
+  return analysis.verdict;
+}
+
+function dependencySummary(company: Company, currentLinks: typeof links) {
+  if (company.tier === 'anchor') {
+    return {
+      level: '섹터 앵커',
+      className: 'anchor',
+      copy: '이 기업은 해당 공급망을 볼 때 기준점이 되는 대형 기업입니다.',
+    };
+  }
+
+  const incoming = currentLinks.find((link) => link.target === company.id);
+  const dependency = incoming?.dependency;
+  const level = dependency === undefined ? '확인 필요' : dependency >= 60 ? '높음' : dependency >= 40 ? '중간' : '낮음';
+  const className = dependency === undefined ? 'unknown' : dependency >= 60 ? 'high' : dependency >= 40 ? 'medium' : 'low';
+  const copy =
+    dependency === undefined
+      ? '아직 특정 앵커기업 의존도 수치가 없습니다. 공시·IR·뉴스 원문으로 고객 비중을 확인해야 합니다.'
+      : dependency >= 60
+        ? '특정 대형 고객사의 수요 변화에 영향을 크게 받을 수 있습니다. 동시에 앵커기업 성장의 수혜 가능성도 함께 봅니다.'
+        : dependency >= 40
+          ? '대형 고객사와 연결되어 있지만 고객 다변화 여부도 함께 봐야 합니다.'
+          : '특정 고객 의존도가 낮은 편으로 표시되지만, 실제 고객 비중은 원문에서 다시 확인해야 합니다.';
+  return {
+    level,
+    className,
+    copy,
+    value: dependency === undefined ? '수치 확인 필요' : `${dependency}%`,
+  };
+}
+
+function classifyAnalystOpinion(opinions: typeof analystOpinions) {
+  const verified = opinions.filter((opinion) => opinion.sourceType !== 'seed-model');
+  if (!verified.length) {
+    return {
+      label: '의견 데이터 없음',
+      ratio: '실제 애널리스트 Buy/Hold/Sell 자료가 아직 연결되지 않았습니다.',
+      className: 'none',
+      sourceCount: 0,
+      riskNotes: opinions,
+    };
+  }
+
+  const counts = { buy: 0, hold: 0, sell: 0 };
+  verified.forEach((opinion) => {
+    const stance = `${opinion.stance} ${opinion.summary}`.toLowerCase();
+    if (stance.includes('sell') || stance.includes('매도') || stance.includes('risk') || stance.includes('리스크')) counts.sell += 1;
+    else if (stance.includes('buy') || stance.includes('매수') || stance.includes('positive') || stance.includes('수혜')) counts.buy += 1;
+    else counts.hold += 1;
+  });
+  const total = verified.length || 1;
+  const buyRatio = (counts.buy / total) * 100;
+  const sellRatio = (counts.sell / total) * 100;
+  if (buyRatio >= 80) return { label: 'Strong Buy', ratio: `Buy 비중 ${buyRatio.toFixed(0)}%`, className: 'buy', sourceCount: verified.length, riskNotes: opinions };
+  if (sellRatio >= 80) return { label: 'Strong Sell', ratio: `Sell 비중 ${sellRatio.toFixed(0)}%`, className: 'sell', sourceCount: verified.length, riskNotes: opinions };
+  if (counts.buy > counts.sell && counts.buy >= counts.hold) return { label: 'Buy', ratio: `Buy 비중 ${buyRatio.toFixed(0)}%`, className: 'buy', sourceCount: verified.length, riskNotes: opinions };
+  if (counts.sell > counts.buy && counts.sell >= counts.hold) return { label: 'Sell', ratio: `Sell 비중 ${sellRatio.toFixed(0)}%`, className: 'sell', sourceCount: verified.length, riskNotes: opinions };
+  return { label: 'Neutral', ratio: '의견이 엇갈림', className: 'hold', sourceCount: verified.length, riskNotes: opinions };
 }
 
 function reportMetaItems(company: Company) {
@@ -888,6 +992,18 @@ function publicReportTypeBadge(move: SmartMoneyMove) {
   return move.investorTypeLabel;
 }
 
+function SourceReportAction({ move }: { move: SmartMoneyMove }) {
+  if (move.sourceUrl) {
+    return (
+      <a href={move.sourceUrl} target="_blank" rel="noreferrer">
+        출처 보기
+      </a>
+    );
+  }
+
+  return <span className="source-pending-action">출처 준비 중</span>;
+}
+
 function parsePercentValue(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ''));
   return Number.isFinite(parsed) ? parsed : undefined;
@@ -948,6 +1064,7 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
 
   const primaryReportLink = getPrimaryReportLink(company);
   const displayMetrics = getDisplayMetrics(company);
+  const revenueDisplay = revenueDisplayForCompany(company, displayMetrics);
   const regulator = company.country === 'KR' ? 'DART' : 'SEC';
   const reportName = company.country === 'KR' ? '사업보고서·분기보고서' : '10-K·10-Q';
   const managementSection = company.country === 'KR' ? '감사보고서와 주석' : 'MD&A와 Notes';
@@ -982,7 +1099,7 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
       {
         title: '손익 흐름',
         kicker: `${displayMetrics.growth} · ${company.sector}`,
-        body: `${company.name}의 표시 매출은 ${displayMetrics.revenue}이고 기준은 ${displayMetrics.revenueUnit}입니다. 성장률은 ${displayMetrics.growthBasis} 기준으로 표시됩니다.`,
+        body: `${company.name}의 표시 매출은 ${revenueDisplay.primary}이고 기준은 ${revenueDisplay.sourceUnit}입니다. 성장률은 ${displayMetrics.growthBasis} 기준으로 표시됩니다.`,
         point: `${company.products.slice(0, 3).join(', ')} 매출이 실제 원문 주석에서 늘었는지 확인해야 합니다. 단순 수주 뉴스보다 공시 매출 인식 시점이 더 중요합니다.`,
       },
       {
@@ -1021,13 +1138,19 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
         ? `${regulator} 원문 연결됨 · 분석 준비 중`
         : primaryReportLink.status === 'search-only'
           ? `${regulator} 검색 링크만 연결됨`
-          : `${regulator} 원문 연결 필요`,
+          : primaryReportLink.status === 'private-company'
+            ? '비상장/공시 의무 없음'
+            : primaryReportLink.status === 'no-public-filing'
+              ? '공개 원문 보고서 없음'
+              : `${regulator} 원문 연결 필요`,
     statusDetail:
       primaryReportLink.status === 'direct'
         ? '직접 원문 버튼은 연결되어 있지만, 아직 실제 원문 숫자를 회사별 해설에 완전히 반영하지 않은 상태입니다.'
         : primaryReportLink.status === 'search-only'
           ? '직접 원문 URL은 아직 없고 검색 링크만 연결되어 있습니다. 원문 확인 후 reportUrl을 추가하면 바로 직접 연결됩니다.'
-          : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
+          : primaryReportLink.status === 'private-company' || primaryReportLink.status === 'no-public-filing'
+            ? '공개 공시 원문이 확인되지 않아 매출 숫자를 공식 매출처럼 표시하지 않습니다.'
+            : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
   };
 }
 
@@ -1190,7 +1313,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           <a href="#supply-chain">공급망</a>
           <a href="#smart-money">보유·거래 보고</a>
 	          <a href="#market-movers">기업분석</a>
-	          <a href="#filing-preview">공시·재무</a>
+	          <a href="#market-movers">공시·재무</a>
 	          <a
 	            href="/ko/picks"
 	            onClick={(event) => {
@@ -1490,13 +1613,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           <div className="home-card-grid smart-money-grid">
             {filteredTradeItems.slice(0, 20).map((move) => {
               const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
-              const reportLink = company ? getPrimaryReportLink(company) : null;
               const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
               return (
                 <article className="smart-card" key={move.id}>
                   <div className="smart-card-primary">
                     <div>
-                      <span>큰손</span>
                       <h3>{move.investorName}</h3>
                     </div>
                     <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
@@ -1527,12 +1648,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                     ) : (
                       <button type="button">관련 분석 준비 중</button>
                     )}
-                    {reportLink && <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />}
-                    {move.sourceUrl && (
-                      <a href={move.sourceUrl} target="_blank" rel="noreferrer">
-                        출처 보기
-                      </a>
-                    )}
+                    <SourceReportAction move={move} />
                   </div>
                 </article>
               );
@@ -1552,29 +1668,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
         </section>
 
-        <section className="home-quick-access" id="filing-preview" aria-label="재무 공시 바로가기">
-          <div>
-            <h2>재무제표 해설이 있는 기업</h2>
-            <p>기존 DART / SEC 분석 텍스트는 그대로 유지하고, 바로 열 수 있게 모았습니다.</p>
-          </div>
-          <div className="quick-access-list">
-            {companies
-              .filter((company) => getCompanyFilingAnalysis(company))
-              .map((company) => {
-                const reportLink = getPrimaryReportLink(company);
-                return (
-                  <article key={company.id}>
-                    <strong>{company.name}</strong>
-                    <span>{company.country === 'KR' ? 'DART 재무제표 해설' : 'SEC MD&A / Filing 해설'}</span>
-                    <div>
-                      <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
-                      <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
-                    </div>
-                  </article>
-                );
-              })}
-          </div>
-        </section>
       </main>
     </div>
   );
@@ -1822,7 +1915,7 @@ function StockAutopsyPicksPage({
 
 function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
-  const disclosureLinks = externalDisclosureLinks(company).filter((link) => !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
+  const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.sourceType !== 'api-docs' && !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
   const displayMetrics = disclosureAnalysis.displayMetrics;
   const insights = disclosureAnalysis.insights;
@@ -1855,15 +1948,17 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
   const cashFlowMetric = metricByKey.get('cashFlow');
   const debtRatioMetric = metricByKey.get('debtRatio');
   const operatingMarginMetric = metricByKey.get('operatingMargin');
-  const formattedRevenue = formatDisplayAmount(displayMetrics.revenue, displayMetrics.revenueUnit, company.country);
+  const analysisRevenueDisplay = revenueDisplayForCompany(company, displayMetrics);
+  const beginnerConclusion = beginnerInterpretation(disclosureAnalysis, company);
+  const firstWatchPoint = watchPoints[0] ?? '다음 공시에서 매출, 현금흐름, 부채가 같은 방향으로 개선되는지 확인합니다.';
   const quickMetrics = [
     {
       label: '매출',
-      value: financialSummary.isApiData && revenueMetric ? revenueMetric.value : formattedRevenue.primary,
+      value: financialSummary.isApiData && revenueMetric ? revenueMetric.value : analysisRevenueDisplay.primary,
       note:
         financialSummary.isApiData && revenueMetric
           ? `${revenueMetric.beginnerExplanation} · ${revenueMetric.unit ?? sourceUnitShort(displayMetrics.revenueUnit, company.country)}`
-          : formattedRevenue.sourceUnit,
+          : analysisRevenueDisplay.sourceUnit,
     },
     {
       label: operatingIncomeMetric ? '영업이익' : '영업마진',
@@ -1872,12 +1967,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
     },
     {
       label: '순이익',
-      value: netIncomeMetric?.value ?? '원문 보고서 확인 필요',
-      note: netIncomeMetric?.beginnerExplanation ?? '세금과 비용까지 반영한 최종 이익입니다. 연결 원문이 보강되면 금액을 표시합니다.',
+      value: netIncomeMetric?.value ?? '상세 해설에서 확인',
+      note: netIncomeMetric?.beginnerExplanation ?? '세금과 비용까지 반영한 최종 이익입니다. 숫자가 없으면 원문을 실제 금액처럼 꾸미지 않습니다.',
     },
     {
       label: '현금흐름',
-      value: cashFlowMetric?.value ?? '원문 보고서 확인 필요',
+      value: cashFlowMetric?.value ?? '상세 해설에서 확인',
       note: cashFlowMetric?.beginnerExplanation ?? '실제로 현금이 들어오고 나가는 흐름입니다. 이익과 같이 움직이는지 봅니다.',
     },
     {
@@ -1968,7 +2063,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
           <div className="analysis-one-line">
             <span>한 줄 결론</span>
             <strong>{disclosureAnalysis.headline}</strong>
-            <p>{recentMovementSummary}</p>
+            <p className="one-line-context">{recentMovementSummary}</p>
+            <div className="beginner-one-line">
+              <p><b>초보자용 해석</b>{beginnerConclusion}</p>
+              <p><b>앞으로 볼 것</b>{firstWatchPoint}</p>
+            </div>
           </div>
         </section>
 
@@ -1978,67 +2077,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
               <span>
                 <CircleDollarSign size={16} />
                 <strong>재무제표 해설 더 보기</strong>
-                <small>기존 해설과 자동 업데이트 숫자를 함께 봅니다.</small>
+                <small>손익계산서, 현금흐름표, 재무상태표 해설을 펼쳐 봅니다.</small>
               </span>
               <ChevronDown size={16} />
             </summary>
             <div className="analysis-detail-content">
-              <div className="section-title">
-                <CircleDollarSign size={16} />
-                <span>재무제표 핵심 숫자</span>
-              </div>
-              <div className="statement-metrics">
-                <div>
-                  <span>매출액</span>
-                  <strong>{formattedRevenue.primary}</strong>
-                  <small>{formattedRevenue.sourceUnit}</small>
-                </div>
-                <div>
-                  <span>성장률</span>
-                  <strong>{displayMetrics.growth}</strong>
-                  <small>{displayMetrics.growthBasis}</small>
-                </div>
-                <div>
-                  <span>영업이익률</span>
-                  <strong>{displayMetrics.opMargin}</strong>
-                  <small>매출에서 영업비용을 뺀 본업 수익성</small>
-                </div>
-                <div>
-                  <span>부채비율</span>
-                  <strong>{displayMetrics.debtRatio}</strong>
-                  <small>자기자본 대비 빚의 부담</small>
-                </div>
-              </div>
-              <p className="basis-note">{displayMetrics.revenueBasis}</p>
-
-              <div className="analysis-divider" />
-
-              <div className="section-title">
-                <Database size={16} />
-                <span>자동 업데이트 재무 요약</span>
-              </div>
-              <div className="analysis-status-row">
-                <span className={`analysis-status-pill ${financialSummary.isApiData ? 'complete' : 'pending'}`}>
-                  {financialSummary.isApiData ? 'API 데이터 연결됨' : financialSummary.status === 'needs-source' ? '원문 연결 필요' : 'API fallback 표시 중'}
-                </span>
-                <small>{financialSummary.sourceLabel} · {financialSummary.reportType} · {financialSummary.fiscalYear}</small>
-              </div>
-              <p className="api-financial-copy">{financialSummary.beginnerExplanation}</p>
-              <div className="api-metric-grid">
-                {financialSummary.metrics.map((item) => (
-                  <article key={item.key}>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
-                    {item.unit && <em>{item.unit}</em>}
-                    <p>{item.beginnerExplanation}</p>
-                    <small>{item.keyTakeaway}</small>
-                  </article>
-                ))}
-              </div>
-              <p className="basis-note">{financialSummary.keyTakeaway}</p>
-
-              <div className="analysis-divider" />
-
               <div className="section-title">
                 <BarChart3 size={16} />
                 <span>{disclosureAnalysis.isCurated ? '재무제표 해설' : '초보자용 공시 확인 포인트'}</span>
@@ -2217,7 +2260,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             </summary>
             <div className="analysis-detail-content">
               {companyTrades.length === 0 ? (
-                <div className="trade-empty">관련 공개 보고 준비 중입니다. 데이터가 연결되면 13F 보유 변화와 공개 거래 보고를 함께 보여줍니다.</div>
+                <div className="trade-empty">아직 확인된 보유·거래 보고가 없습니다. 현재 공개 자료 기준으로 관련 보고가 확인되지 않았습니다.</div>
               ) : (
                 <div className="related-trade-list">
                   {companyTrades.slice(0, 4).map((move) => (
@@ -2315,6 +2358,7 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
+    const hasNarrowFilter = Boolean(investorQuery.trim() || tickerQuery.trim() || sourceFilter !== 'all');
     fetchOwnershipTrades({
       source: sourceFilter,
       investor: investorQuery.trim() || undefined,
@@ -2322,8 +2366,13 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
       limit: 50,
     }).then((rows) => {
       if (cancelled) return;
-      setItems(rows.length ? rows : smartMoneyMoves);
-      setStatus(rows.length ? 'ready' : 'fallback');
+      if (rows.length) {
+        setItems(rows);
+        setStatus('ready');
+        return;
+      }
+      setItems(hasNarrowFilter ? [] : smartMoneyMoves);
+      setStatus(hasNarrowFilter ? 'ready' : 'fallback');
     });
     return () => {
       cancelled = true;
@@ -2375,10 +2424,17 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
             <span>종목명/티커</span>
             <input type="search" placeholder="AAPL, NVDA..." value={tickerQuery} onChange={(event) => setTickerQuery(event.target.value)} />
           </label>
+          <div className="ownership-chip-row" aria-label="주요 기관 빠른 검색">
+            {prominentInstitutionFilters.map((name) => (
+              <button key={name} type="button" onClick={() => setInvestorQuery(name)}>
+                {name}
+              </button>
+            ))}
+          </div>
         </section>
 
         <div className="ownership-status-row">
-          <span>{status === 'loading' ? '불러오는 중' : status === 'ready' ? 'Supabase 최신 공개 기록' : 'mock fallback 표시 중'}</span>
+          <span>{status === 'loading' ? '불러오는 중' : status === 'ready' ? 'Supabase 최신 공개 기록' : '예시 공개 보고 데이터 표시 중'}</span>
           <small>기본 50개 제한 · 화면 과밀 방지</small>
         </div>
 
@@ -2390,7 +2446,6 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
               <article className="smart-card" key={move.id}>
                 <div className="smart-card-primary">
                   <div>
-                    <span>보고자</span>
                     <h3>{move.investorName}</h3>
                   </div>
                   <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
@@ -2410,11 +2465,12 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
                 <div className="card-actions">
                   <button type="button" onClick={() => onOpenCategory(supplyChainId, company?.id ?? move.relatedCompanyId ?? move.companyId)}>공급망 보기</button>
                   {company ? <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button> : <button type="button">관련 분석 준비 중</button>}
-                  {move.sourceUrl && <a href={move.sourceUrl} target="_blank" rel="noreferrer">출처 보기</a>}
+                  <SourceReportAction move={move} />
                 </div>
               </article>
             );
           })}
+          {items.length === 0 && <div className="trade-empty">현재 조건에 맞는 공개 보유·거래 보고가 없습니다.</div>}
         </section>
 
         <div className="home-note">
@@ -2457,15 +2513,16 @@ function App() {
     groupCompanies[0];
   const selectedOpinions = analystOpinions.filter((opinion) => opinion.companyId === selectedCompany?.id);
   const selectedDisplayMetrics = selectedCompany ? getDisplayMetrics(selectedCompany) : null;
-  const selectedFormattedRevenue =
+  const selectedRevenueDisplay =
     selectedCompany && selectedDisplayMetrics
-      ? formatDisplayAmount(selectedDisplayMetrics.revenue, selectedDisplayMetrics.revenueUnit, selectedCompany.country)
+      ? revenueDisplayForCompany(selectedCompany, selectedDisplayMetrics)
       : null;
+  const selectedDependency = selectedCompany ? dependencySummary(selectedCompany, groupLinks) : null;
+  const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const selectedCompanyPrice = selectedCompany ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
-  const opportunityCount = groupCompanies.filter((company) => company.status === 'opportunity').length;
   const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
   const routePath = route.split('?')[0];
   const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
@@ -2540,6 +2597,7 @@ function App() {
             company,
             isSelected: selectedCompany?.id === company.id,
             isDimmed: !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
+            onSelect: setSelectedCompanyId,
           },
         };
       }),
@@ -3004,21 +3062,6 @@ function App() {
           </section>
 
           <section className="bottom-panel intelligence-panel">
-            <div className="signal-strip">
-              <div>
-                <span className="signal-label">고객집중 경고</span>
-                <strong>{groupCompanies.filter((company) => parseInt(company.customerConcentration, 10) >= 60).length}개</strong>
-              </div>
-              <div>
-                <span className="signal-label">기회 기업</span>
-                <strong>{opportunityCount}개</strong>
-              </div>
-              <div>
-                <span className="signal-label">부채 부담</span>
-                <strong>{groupCompanies.filter((company) => parseInt(company.debtRatio, 10) >= 100).length}개</strong>
-              </div>
-            </div>
-
             <div className="live-news-panel">
               <div className="news-header">
                 <div className="section-title">
@@ -3107,8 +3150,8 @@ function App() {
                 <div className="finance-item">
                   <CircleDollarSign size={17} />
                   <span>매출</span>
-                  <strong>{selectedFormattedRevenue?.primary ?? selectedDisplayMetrics.revenue}</strong>
-                  <small>{selectedFormattedRevenue?.sourceUnit ?? selectedDisplayMetrics.revenueUnit}</small>
+                  <strong>{selectedRevenueDisplay?.primary ?? selectedDisplayMetrics.revenue}</strong>
+                  <small>{selectedRevenueDisplay?.sourceUnit ?? selectedDisplayMetrics.revenueUnit}</small>
                 </div>
                 <div className="finance-item">
                   <LineChart size={17} />
@@ -3127,15 +3170,28 @@ function App() {
                   <strong>{selectedDisplayMetrics.debtRatio}</strong>
                 </div>
               </div>
-              <p className="finance-basis">{selectedDisplayMetrics.revenueBasis}</p>
+              <p className="finance-basis">{selectedRevenueDisplay?.basis ?? selectedDisplayMetrics.revenueBasis}</p>
+
+              {selectedDependency && (
+                <div className={`dependency-card ${selectedDependency.className}`}>
+                  <span>앵커기업 의존도</span>
+                  <strong>{selectedDependency.level}</strong>
+                  {selectedDependency.value && <em>{selectedDependency.value}</em>}
+                  <p>{selectedDependency.copy}</p>
+                </div>
+              )}
 
               <div className="detail-card">
                 <div className="section-title">
                   <FileSearch size={16} />
                   <span>애널리스트/리스크 의견</span>
                 </div>
+                <div className={`opinion-summary ${selectedAnalystSummary.className}`}>
+                  <strong>{selectedAnalystSummary.label}</strong>
+                  <span>{selectedAnalystSummary.ratio}</span>
+                </div>
                 <div className="opinion-list">
-                  {selectedOpinions.map((opinion) => (
+                  {selectedAnalystSummary.riskNotes.slice(0, 4).map((opinion) => (
                     <article className="opinion-item" key={opinion.id}>
                       <div>
                         <strong>{opinion.stance}</strong>

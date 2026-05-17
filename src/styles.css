@@ -5085,3 +5085,194 @@ body,
     flex: 1 1 180px;
   }
 }
+
+/* Current UX cleanup: larger map, source-safe prices, clearer ownership cards. */
+.map-panel {
+  grid-template-rows: auto minmax(560px, 68vh) auto;
+}
+
+.graph-wrap {
+  min-height: 560px;
+}
+
+.bottom-panel.intelligence-panel {
+  grid-template-columns: minmax(0, 1fr);
+  padding-block: 12px;
+}
+
+.live-news-panel {
+  min-height: 0;
+}
+
+.beginner-one-line {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.beginner-one-line p {
+  margin: 0;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.beginner-one-line b {
+  display: inline-flex;
+  margin-right: 8px;
+  color: #0057d9;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.one-line-context {
+  color: #667085;
+}
+
+.source-pending-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  color: #667085;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dependency-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.dependency-card span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.dependency-card strong {
+  color: #111827;
+  font-size: 22px;
+}
+
+.dependency-card em {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #0057d9;
+  background: #eef6ff;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.dependency-card p {
+  margin: 0;
+  color: #344054;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.dependency-card.high {
+  border-color: rgba(220, 38, 38, 0.2);
+  background: #fff7f7;
+}
+
+.dependency-card.medium {
+  border-color: rgba(217, 119, 6, 0.24);
+  background: #fffaf0;
+}
+
+.dependency-card.anchor {
+  border-color: rgba(0, 122, 255, 0.2);
+  background: #f5faff;
+}
+
+.opinion-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.opinion-summary strong {
+  color: #111827;
+  font-size: 18px;
+}
+
+.opinion-summary span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.opinion-summary.buy strong {
+  color: #047857;
+}
+
+.opinion-summary.sell strong {
+  color: #dc2626;
+}
+
+.opinion-summary.hold strong,
+.opinion-summary.none strong {
+  color: #344054;
+}
+
+.ownership-chip-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ownership-chip-row button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 122, 255, 0.16);
+  border-radius: 999px;
+  color: #0057d9;
+  background: #eef6ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.smart-card-primary h3 {
+  margin-top: 0;
+}
+
+.price-badge.pending strong,
+.price-badge.pending em {
+  color: #667085;
+}
+
+@media (max-width: 820px) {
+  .map-panel {
+    grid-template-rows: auto minmax(500px, 66vh) auto;
+  }
+
+  .graph-wrap {
+    min-height: 500px;
+  }
+
+  .ownership-chip-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .ownership-chip-row button {
+    flex: 0 0 auto;
+  }
+}

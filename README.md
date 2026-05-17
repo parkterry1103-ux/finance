@@ -396,7 +396,9 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 `/api/sync/prices` 응답에는 ticker별 `results`가 포함됩니다. 일부 ticker만 실패하면 `partial`, 모두 실패하고 import fallback도 없으면 `skipped`가 됩니다.
 
-화면 표기는 `최신가`, `종가`, `지연 가능`, `가격 준비 중`으로 구분합니다. 등락률 기준가는 `open` → `previousClose` → fallback 순서로 사용합니다. 데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 쓰되 실제 숫자처럼 크게 보이지 않게 `예시 가격` 또는 `가격 준비 중`으로 표시합니다.
+화면 표기는 `최신가`, `종가`, `지연 가능`, `가격 준비 중`으로 구분합니다. 등락률은 기본적으로 `close 또는 price - open` 기준으로 계산하고, `open`이 없을 때만 `previousClose`를 사용합니다. 기준가가 없으면 퍼센트를 표시하지 않고 `기준가 없음` 또는 `가격 확인 필요`로 표시합니다. 데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 쓰되 실제 숫자처럼 보이지 않게 `가격 준비 중`으로 표시합니다.
+
+가격 sync는 등록된 상장 티커를 최대한 대상으로 잡고, 비상장·조회불가 기업은 제외합니다. Yahoo Finance 조회용 예외 매핑은 `BRK.B → BRK-B`, `SQ → XYZ`를 사용합니다. Block, Inc.는 현재 `XYZ` 티커 기준으로 관리합니다. `/api/sync/prices` 결과의 `summary`에서 전체 기업 수, 가격 조회 대상 수, 성공/실패 티커 수, 제외 기업 수를 확인하세요.
 
 프론트 공개 조회 endpoint:
 

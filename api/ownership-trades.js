@@ -1,4 +1,22 @@
 const MAX_LIMIT = 100;
+const DEFAULT_PUBLIC_LIMIT = 20;
+const DIVERSIFIED_FETCH_LIMIT = 500;
+
+const PROMINENT_13F_INVESTORS = [
+  'Berkshire Hathaway',
+  'ARK Investment Management',
+  'BlackRock',
+  'Goldman Sachs',
+  'Vanguard',
+  'State Street',
+  'JPMorgan',
+  'Morgan Stanley',
+  'Bridgewater',
+  'Citadel',
+  'Renaissance',
+  'Baupost',
+  'Soros',
+];
 
 const SOURCE_FILTERS = {
   all: '',
@@ -7,8 +25,8 @@ const SOURCE_FILTERS = {
 };
 
 function clampLimit(value) {
-  const parsed = Number.parseInt(String(value ?? '20'), 10);
-  if (!Number.isFinite(parsed)) return 20;
+  const parsed = Number.parseInt(String(value ?? String(DEFAULT_PUBLIC_LIMIT)), 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_PUBLIC_LIMIT;
   return Math.min(Math.max(parsed, 1), MAX_LIMIT);
 }
 
@@ -28,6 +46,9 @@ function companyMap() {
     ['MSFT', ['Microsoft', 'US', 'AI 클라우드']],
     ['AMZN', ['Amazon', 'US', 'AI 클라우드']],
     ['AMD', ['AMD', 'US', 'AI 반도체']],
+    ['BRK.B', ['Berkshire Hathaway', 'US', '보험·투자지주']],
+    ['BRK-B', ['Berkshire Hathaway', 'US', '보험·투자지주']],
+    ['XYZ', ['Block', 'US', '핀테크·결제']],
     ['005930.KS', ['삼성전자', 'KR', '반도체']],
     ['000660.KS', ['SK하이닉스', 'KR', '반도체']],
   ]);
@@ -115,29 +136,69 @@ async function querySupabase({ source, limit, investor, ticker }) {
   return response.json();
 }
 
+function diversifyTrades(trades, limit) {
+  const normalizedLimit = Math.min(Math.max(Number(limit) || DEFAULT_PUBLIC_LIMIT, 1), MAX_LIMIT);
+  const byInvestor = new Map();
+  trades.forEach((trade) => {
+    const key = String(trade.investorName || '기관명 확인 필요').toLowerCase();
+    const bucket = byInvestor.get(key) || [];
+    bucket.push(trade);
+    byInvestor.set(key, bucket);
+  });
+
+  const investorKeys = Array.from(byInvestor.keys());
+  const preferredKeys = PROMINENT_13F_INVESTORS
+    .map((name) => investorKeys.find((key) => key.includes(name.toLowerCase().split(' ')[0]) || key.includes(name.toLowerCase())))
+    .filter(Boolean);
+  const orderedKeys = Array.from(new Set([...preferredKeys, ...investorKeys]));
+  const selected = [];
+  let round = 0;
+
+  while (selected.length < normalizedLimit) {
+    let added = false;
+    orderedKeys.forEach((key) => {
+      if (selected.length >= normalizedLimit) return;
+      const item = byInvestor.get(key)?.[round];
+      if (item) {
+        selected.push(item);
+        added = true;
+      }
+    });
+    if (!added) break;
+    round += 1;
+  }
+
+  return selected;
+}
+
 export default async function handler(req, res) {
   const source = String(req.query?.source || 'all');
   const limit = clampLimit(req.query?.limit);
   const investor = typeof req.query?.investor === 'string' ? req.query.investor.trim() : '';
   const ticker = typeof req.query?.ticker === 'string' ? req.query.ticker.trim() : '';
+  const shouldDiversify = !investor && !ticker && (source === 'all' || source === 'sec-13f');
 
   if (!hasSupabase()) {
-    res.status(200).json({ ok: true, source: 'fallback', trades: [], reason: 'Supabase env missing' });
+    res.status(200).json({ ok: true, source: 'fallback', limit, trades: [], investors: PROMINENT_13F_INVESTORS, reason: 'Supabase env missing' });
     return;
   }
 
   try {
     const rows = await querySupabase({
       source: source === 'sec-13f' || source === 'sec-form4' ? source : 'all',
-      limit,
+      limit: shouldDiversify ? DIVERSIFIED_FETCH_LIMIT : limit,
       investor,
       ticker,
     });
+    const normalizedRows = rows.map(normalizeTrade);
+    const trades = shouldDiversify ? diversifyTrades(normalizedRows, limit) : normalizedRows.slice(0, limit);
     res.status(200).json({
       ok: true,
       source: 'supabase',
       limit,
-      trades: rows.map(normalizeTrade),
+      diversified: shouldDiversify,
+      investors: PROMINENT_13F_INVESTORS,
+      trades,
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error), trades: [] });

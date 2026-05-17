@@ -154,13 +154,18 @@ export async function fetchSmartMoneyTrades(): Promise<SmartMoneyMove[]> {
 }
 
 export async function fetchTradesByCompany(company: Company): Promise<SmartMoneyMove[]> {
-  const apiTrades = await fetchOwnershipTrades({ source: 'all', limit: 20, ticker: company.ticker });
-  const allTrades = apiTrades.length ? apiTrades : await fetchSmartMoneyTrades();
-  const directMatches = allTrades.filter((move) => byCompany(move, company));
-  if (directMatches.length) return directMatches;
+  const apiTrades = await fetchOwnershipTrades({ source: 'all', limit: 50, ticker: company.ticker });
+  const apiMatches = apiTrades.filter((move) => byCompany(move, company));
+  if (apiMatches.length) return apiMatches;
+
+  const mockMatches = smartMoneyMoves.filter((move) => byCompany(move, company));
+  if (mockMatches.length) return mockMatches;
+
+  if (!company.ticker || company.ticker === 'WATCH' || company.ticker === '비상장') return [];
 
   if (company.country === 'KR') {
-    return fetchKoreanInsiderTrades(company.corpCode);
+    const koreanMatches = await fetchKoreanInsiderTrades(company.corpCode);
+    return koreanMatches.filter((move) => byCompany(move, company));
   }
 
   const [insiders, congress, institutions] = await Promise.all([
@@ -168,7 +173,7 @@ export async function fetchTradesByCompany(company: Company): Promise<SmartMoney
     fetchUSCongressTrades(company.ticker),
     fetchInstitutionalHoldings(company.ticker),
   ]);
-  return [...insiders, ...congress, ...institutions];
+  return [...insiders, ...congress, ...institutions].filter((move) => byCompany(move, company));
 }
 
 export async function fetchTradesBySector(sectorId: string): Promise<SmartMoneyMove[]> {
