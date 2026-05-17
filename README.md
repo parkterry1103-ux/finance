@@ -132,6 +132,7 @@ SEC_13F_MANAGER_CIKS=
 CONGRESS_TRADES_IMPORT_URL=
 NPS_IMPORT_URL=
 MARKET_PRICES_IMPORT_URL=
+PRICE_IMPORT_URL=
 PRICE_SYNC_SOURCE=
 ```
 
@@ -334,13 +335,28 @@ sourceStatus
 
 유료 실시간 시세 API는 사용하지 않습니다. 무료·공개 데이터는 지연 시세이거나 장마감 기준일 수 있으므로 UI에 `지연 가능`, `장마감 종가`, `가격 준비 중` 상태를 표시합니다.
 
-가격 import 방법:
+가격 sync 흐름:
 
-1. `data/prices.json` 파일 추가
-2. `MARKET_PRICES_IMPORT_URL` 환경변수에 JSON 또는 CSV URL 추가
-3. 위 두 값이 없으면 `scripts/sync-prices.ts`가 Yahoo Finance 공개 quote endpoint를 서버사이드에서 best-effort로 조회합니다. 이 경로는 무료 공개 데이터라 지연되거나 실패할 수 있습니다.
+1. 기본값은 서버사이드 Yahoo Finance chart endpoint best-effort 조회입니다.
+2. Yahoo 조회가 실패하거나 직접 관리 파일을 쓰고 싶으면 `PRICE_IMPORT_URL`에 JSON/CSV URL을 넣습니다.
+3. 이전 호환 변수 `MARKET_PRICES_IMPORT_URL`도 계속 지원합니다.
+4. 로컬 파일 `data/prices.json`도 fallback import로 지원합니다.
 
-Yahoo 조회를 끄고 수동 import만 쓰려면 `PRICE_SYNC_SOURCE=manual-only`를 설정하세요.
+Yahoo 조회를 끄고 수동 import만 쓰려면 `PRICE_SYNC_SOURCE=import-only`를 설정하세요. 가격 데이터는 무료 공개 소스라 지연될 수 있고, 완전 실시간을 보장하지 않습니다.
+
+필수 ticker 매핑:
+
+- 삼성전자 `005930.KS`
+- SK하이닉스 `000660.KS`
+- LG에너지솔루션 `373220.KS`
+- 현대차 `005380.KS`
+- NAVER `035420.KS`
+- 카카오 `035720.KS`
+- NVIDIA `NVDA`
+- AMD `AMD`
+- Intel `INTC`
+- Apple `AAPL`
+- Tesla `TSLA`
 
 수동 실행:
 
@@ -378,12 +394,15 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 ]
 ```
 
-화면 표기는 `최신가`, `종가`, `지연 가능`, `가격 준비 중`으로 구분합니다. 등락률 기준가는 `open` → `previousClose` → fallback 순서로 사용합니다. 데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 사용합니다. 가격 데이터는 투자 참고용이며 완전한 실시간성을 보장하지 않습니다.
+`/api/sync/prices` 응답에는 ticker별 `results`가 포함됩니다. 일부 ticker만 실패하면 `partial`, 모두 실패하고 import fallback도 없으면 `skipped`가 됩니다.
+
+화면 표기는 `최신가`, `종가`, `지연 가능`, `가격 준비 중`으로 구분합니다. 등락률 기준가는 `open` → `previousClose` → fallback 순서로 사용합니다. 데이터가 없으면 프론트는 `src/data.ts`의 mock price fallback을 쓰되 실제 숫자처럼 크게 보이지 않게 `예시 가격` 또는 `가격 준비 중`으로 표시합니다.
 
 프론트 공개 조회 endpoint:
 
 ```text
 /api/market-prices?limit=200
+/api/market-prices?ticker=000660.KS
 /api/market-prices?ticker=NVDA
 ```
 
@@ -431,7 +450,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CRON_SECRET`
 - `SEC_USER_AGENT`
-- 선택: `SEC_13F_MANAGER_CIKS`, `CONGRESS_TRADES_IMPORT_URL`, `NPS_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`
+- 선택: `SEC_13F_MANAGER_CIKS`, `CONGRESS_TRADES_IMPORT_URL`, `NPS_IMPORT_URL`, `PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`
 
 ## 운영자가 직접 해야 하는 것
 

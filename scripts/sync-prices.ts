@@ -1,5 +1,19 @@
-import { companies, mockMarketPrices } from '../src/data.js';
+import { anchors, companies, marketMovers, mockMarketPrices, stockAutopsyPicks } from '../src/data.js';
 import { envValue, errorMessage, hasSupabaseConfig, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
+
+const REQUIRED_PRICE_TICKERS = [
+  '005930.KS',
+  '000660.KS',
+  '373220.KS',
+  '005380.KS',
+  '035420.KS',
+  '035720.KS',
+  'NVDA',
+  'AMD',
+  'INTC',
+  'AAPL',
+  'TSLA',
+];
 
 function projectFile(path) {
   const runtime = globalThis as typeof globalThis & { process?: { cwd?: () => string } };
@@ -55,33 +69,84 @@ function parseRows(text, label) {
   return parseCsv(trimmed);
 }
 
-async function loadPriceRows() {
-  const importUrl = envValue('MARKET_PRICES_IMPORT_URL');
-  if (importUrl) {
-    const response = await fetch(importUrl);
+function importUrl() {
+  return envValue('PRICE_IMPORT_URL') || envValue('MARKET_PRICES_IMPORT_URL');
+}
+
+async function loadImportRows() {
+  const importUrlValue = importUrl();
+  if (importUrlValue) {
+    const response = await fetch(importUrlValue);
     if (!response.ok) throw new Error(`price import ${response.status}`);
-    return { rows: parseRows(await response.text(), importUrl), sourceLabel: importUrl };
+    const rows = parseRows(await response.text(), importUrlValue);
+    return {
+      rows,
+      sourceLabel: importUrlValue,
+      results: rows.map((row) => ({
+        ticker: row.ticker,
+        status: row.ticker ? 'success' : 'failed',
+        price: row.price,
+        priceLabel: row.priceLabel ?? row.price_label ?? 'delayed',
+        source: row.source ?? 'manual-import',
+        asOf: row.asOf ?? row.as_of,
+      })),
+    };
   }
 
   try {
     const fs = await import('node:fs/promises');
     const raw = await fs.readFile(projectFile('data/prices.json'), 'utf-8');
-    return { rows: parseRows(raw, 'data/prices.json'), sourceLabel: 'data/prices.json' };
+    const rows = parseRows(raw, 'data/prices.json');
+    return {
+      rows,
+      sourceLabel: 'data/prices.json',
+      results: rows.map((row) => ({
+        ticker: row.ticker,
+        status: row.ticker ? 'success' : 'failed',
+        price: row.price,
+        priceLabel: row.priceLabel ?? row.price_label ?? 'delayed',
+        source: row.source ?? 'manual-import',
+        asOf: row.asOf ?? row.as_of,
+      })),
+    };
   } catch {
-    const yahooRows = await fetchYahooFinanceRows();
-    if (yahooRows.length) return { rows: yahooRows, sourceLabel: 'yahoo-finance-public-quote' };
-    return { rows: [], sourceLabel: '' };
+    return { rows: [], sourceLabel: '', results: [] };
   }
 }
 
-function uniqueTickersForPriceSync() {
-  return Array.from(
-    new Set(
-      companies
-        .map((company) => company.ticker)
-        .filter((ticker): ticker is string => Boolean(ticker && ticker !== 'WATCH')),
-    ),
-  );
+async function loadPriceRows() {
+  if (envValue('PRICE_SYNC_SOURCE') === 'import-only') {
+    return loadImportRows();
+  }
+
+  const yahoo = await fetchYahooFinanceRows();
+  if (yahoo.rows.length) return yahoo;
+
+  const imported = await loadImportRows();
+  if (imported.rows.length) return imported;
+
+  return yahoo;
+}
+function isPriceTicker(ticker?: string) {
+  return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장' && (/\.KS$|\.KQ$|^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker)));
+}
+
+function uniquePriceTargets() {
+  const byTicker = new Map<string, { ticker: string; companyId?: string; market?: string }>();
+  const add = (ticker?: string, companyId?: string, market?: string) => {
+    if (!isPriceTicker(ticker)) return;
+    const normalizedTicker = String(ticker).trim();
+    if (!byTicker.has(normalizedTicker)) byTicker.set(normalizedTicker, { ticker: normalizedTicker, companyId, market });
+  };
+
+  REQUIRED_PRICE_TICKERS.forEach((ticker) => add(ticker));
+  mockMarketPrices.forEach((price) => add(price.ticker, price.companyId, price.market));
+  marketMovers.forEach((mover) => add(mover.ticker, mover.companyId, mover.market));
+  stockAutopsyPicks.forEach((pick) => add(pick.ticker, pick.relatedCompanyId, pick.market));
+  anchors.forEach((anchor) => add(anchor.ticker, anchor.id, anchor.country));
+  companies.forEach((company) => add(company.ticker, company.id, company.country));
+
+  return Array.from(byTicker.values());
 }
 
 function chunkArray(items, size) {
@@ -90,17 +155,21 @@ function chunkArray(items, size) {
   return chunks;
 }
 
-function yahooMarketStatus(marketState) {
+function yahooMarketStatus(marketState, tradingPeriod) {
   const normalized = String(marketState ?? '').toUpperCase();
   if (normalized === 'REGULAR') return 'open';
   if (normalized === 'PRE' || normalized === 'PREPRE') return 'premarket';
   if (normalized === 'POST' || normalized === 'POSTPOST') return 'afterhours';
   if (normalized === 'CLOSED') return 'closed';
+  const now = Math.floor(Date.now() / 1000);
+  if (tradingPeriod?.regular?.start && tradingPeriod?.regular?.end && now >= tradingPeriod.regular.start && now <= tradingPeriod.regular.end) {
+    return 'open';
+  }
   return 'unknown';
 }
 
-function yahooPriceLabel(marketState) {
-  const status = yahooMarketStatus(marketState);
+function yahooPriceLabel(marketState, tradingPeriod) {
+  const status = yahooMarketStatus(marketState, tradingPeriod);
   if (status === 'open') return 'latest';
   if (status === 'closed') return 'close';
   return 'delayed';
@@ -112,52 +181,98 @@ function signedPercent(value) {
   return `${parsed > 0 ? '+' : ''}${parsed.toFixed(2)}%`;
 }
 
+function signedNumber(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return `${parsed > 0 ? '+' : ''}${parsed.toFixed(2)}`;
+}
+
 function nullableString(value) {
   return value === undefined || value === null || value === '' ? null : String(value);
 }
 
-async function fetchYahooFinanceRows() {
-  if (envValue('PRICE_SYNC_SOURCE') === 'manual-only') return [];
-  const tickers = uniqueTickersForPriceSync();
-  const rows = [];
-  for (const chunk of chunkArray(tickers, 70)) {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(chunk.join(','))}`;
-    try {
-      const response = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': envValue('SEC_USER_AGENT', 'finance-supply-chain-app contact@example.com'),
-        },
-      });
-      if (!response.ok) throw new Error(`Yahoo quote ${response.status}`);
-      const payload = await response.json();
-      const results = payload?.quoteResponse?.result;
-      if (!Array.isArray(results)) continue;
-      results.forEach((quote) => {
-        const company = companies.find((item) => item.ticker === quote.symbol);
-        rows.push({
-          companyId: company?.id,
-          ticker: quote.symbol,
-          market: company?.country ?? quote.fullExchangeName ?? 'unknown',
-          price: quote.regularMarketPrice,
-          open: quote.regularMarketOpen,
-          previousClose: quote.regularMarketPreviousClose,
-          close: yahooMarketStatus(quote.marketState) === 'closed' ? quote.regularMarketPrice : quote.regularMarketPreviousClose,
-          change: quote.regularMarketChange,
-          changePercent: signedPercent(quote.regularMarketChangePercent),
-          currency: quote.currency,
-          priceLabel: yahooPriceLabel(quote.marketState),
-          marketStatus: yahooMarketStatus(quote.marketState),
-          asOf: quote.regularMarketTime ? new Date(Number(quote.regularMarketTime) * 1000).toISOString() : nowIso(),
-          source: 'yahoo-finance-public-quote',
-          isDelayed: true,
-        });
-      });
-    } catch (error) {
-      console.warn(`[sync-prices] Yahoo chunk skipped: ${errorMessage(error)}`);
-    }
+function lastFinite(values) {
+  if (!Array.isArray(values)) return null;
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    const value = Number(values[index]);
+    if (Number.isFinite(value)) return value;
   }
-  return rows;
+  return null;
+}
+
+function normalizeYahooRow(target, payload) {
+  const result = payload?.chart?.result?.[0];
+  const error = payload?.chart?.error;
+  if (!result || error) throw new Error(error?.description || 'Yahoo chart result missing');
+  const meta = result.meta ?? {};
+  const quote = result.indicators?.quote?.[0] ?? {};
+  const status = yahooMarketStatus(meta.marketState, meta.currentTradingPeriod);
+  const price = Number(meta.regularMarketPrice ?? lastFinite(quote.close));
+  const open = Number(meta.regularMarketOpen ?? lastFinite(quote.open));
+  const previousClose = Number(meta.chartPreviousClose ?? meta.previousClose);
+  const basis = Number.isFinite(open) ? open : previousClose;
+  const change = Number.isFinite(price) && Number.isFinite(basis) ? price - basis : Number.NaN;
+  const changePercent = Number.isFinite(change) && Number.isFinite(basis) && basis !== 0 ? (change / basis) * 100 : Number.NaN;
+
+  if (!Number.isFinite(price)) throw new Error('Yahoo chart price missing');
+
+  return {
+    companyId: target.companyId,
+    ticker: target.ticker,
+    market: target.market ?? meta.exchangeName ?? 'unknown',
+    price,
+    open: Number.isFinite(open) ? open : null,
+    previousClose: Number.isFinite(previousClose) ? previousClose : null,
+    close: status === 'closed' ? price : lastFinite(quote.close) ?? price,
+    change: signedNumber(change),
+    changePercent: signedPercent(changePercent),
+    currency: meta.currency,
+    priceLabel: yahooPriceLabel(meta.marketState, meta.currentTradingPeriod),
+    marketStatus: status,
+    asOf: meta.regularMarketTime ? new Date(Number(meta.regularMarketTime) * 1000).toISOString() : nowIso(),
+    source: 'yahoo-finance-chart',
+    isDelayed: true,
+  };
+}
+
+async function fetchYahooFinanceRows() {
+  if (envValue('PRICE_SYNC_SOURCE') === 'manual-only') return { rows: [], sourceLabel: '', results: [] };
+  const targets = uniquePriceTargets();
+  const rows = [];
+  const results = [];
+
+  for (const chunk of chunkArray(targets, 8)) {
+    await Promise.all(
+      chunk.map(async (target) => {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(target.ticker)}?range=5d&interval=1d`;
+        try {
+          const response = await fetch(url, {
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': envValue('SEC_USER_AGENT', 'Mozilla/5.0 finance-supply-chain-app contact@example.com'),
+            },
+          });
+          if (!response.ok) throw new Error(`Yahoo chart ${response.status}`);
+          const row = normalizeYahooRow(target, await response.json());
+          rows.push(row);
+          results.push({
+            ticker: target.ticker,
+            status: 'success',
+            price: row.price,
+            priceLabel: row.priceLabel,
+            source: row.source,
+            asOf: row.asOf,
+          });
+        } catch (error) {
+          const message = errorMessage(error);
+          results.push({ ticker: target.ticker, status: 'failed', error: message });
+          console.warn(`[sync-prices] Yahoo chart skipped ${target.ticker}: ${message}`);
+        }
+      }),
+    );
+  }
+
+  return { rows, sourceLabel: rows.length ? 'yahoo-finance-chart' : '', results };
 }
 
 function normalizePriceRow(row) {
@@ -188,9 +303,12 @@ function mockRowsForReport() {
 export async function syncPrices() {
   const startedAt = nowIso();
   try {
-    const { rows, sourceLabel } = await loadPriceRows();
+    const { rows, sourceLabel, results = [] } = await loadPriceRows();
     if (!sourceLabel) {
-      const message = 'No price import source. Frontend keeps mock delayed/close price fallback.';
+      const failedCount = results.filter((item) => item.status === 'failed').length;
+      const message = failedCount
+        ? `Yahoo Finance chart failed for ${failedCount} tickers and no PRICE_IMPORT_URL/data/prices.json fallback produced rows.`
+        : 'No price source produced rows. Frontend keeps mock fallback as example/pending prices.';
       await recordSyncRun({ source: 'market-prices', status: 'skipped', startedAt, errorMessage: message });
       return {
         source: 'market-prices',
@@ -198,6 +316,7 @@ export async function syncPrices() {
         insertedCount: 0,
         updatedCount: 0,
         mockFallbackCount: mockRowsForReport().length,
+        results,
         errors: [message],
       };
     }
@@ -206,7 +325,7 @@ export async function syncPrices() {
     if (!normalizedRows.length) {
       const message = `No price rows in ${sourceLabel}. Frontend keeps mock fallback.`;
       await recordSyncRun({ source: 'market-prices', status: 'skipped', startedAt, errorMessage: message });
-      return { source: 'market-prices', status: 'skipped', insertedCount: 0, updatedCount: 0, errors: [message] };
+      return { source: 'market-prices', status: 'skipped', insertedCount: 0, updatedCount: 0, mockFallbackCount: mockRowsForReport().length, results, errors: [message] };
     }
 
     if (hasSupabaseConfig()) {
@@ -229,19 +348,25 @@ export async function syncPrices() {
     }
 
     const result = await upsertRows('market_prices', normalizedRows, ['ticker', 'source', 'as_of']);
+    const failedCount = results.filter((item) => item.status === 'failed').length;
+    const status = failedCount > 0 ? 'partial' : 'success';
+    const summary = status === 'partial' ? `Price sync partial: ${normalizedRows.length} rows saved/prepared, ${failedCount} tickers failed.` : '';
     await recordSyncRun({
       source: 'market-prices',
-      status: 'success',
+      status,
       startedAt,
       insertedCount: result.inserted ?? normalizedRows.length,
       updatedCount: result.updated ?? 0,
+      errorMessage: summary,
     });
     return {
       source: 'market-prices',
-      status: 'success',
+      status,
       insertedCount: result.inserted ?? normalizedRows.length,
       updatedCount: result.updated ?? 0,
-      errors: [],
+      mockFallbackCount: 0,
+      results,
+      errors: results.filter((item) => item.status === 'failed').map((item) => `${item.ticker}: ${item.error}`),
     };
   } catch (error) {
     await recordSyncRun({ source: 'market-prices', status: 'failed', startedAt, errorMessage: errorMessage(error) });

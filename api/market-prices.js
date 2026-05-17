@@ -34,13 +34,35 @@ function normalizePrice(row) {
   };
 }
 
+function unavailablePrice(ticker = '', companyId = '') {
+  return {
+    companyId: companyId || undefined,
+    ticker,
+    market: 'unknown',
+    price: '',
+    change: '',
+    changePercent: '',
+    currency: ticker.includes('.KS') || ticker.includes('.KQ') ? 'KRW' : 'USD',
+    priceLabel: 'unavailable',
+    marketStatus: 'unknown',
+    asOf: '',
+    source: 'fallback-unavailable',
+    isDelayed: true,
+  };
+}
+
 export default async function handler(req, res) {
   const limit = clampLimit(req.query?.limit);
   const ticker = typeof req.query?.ticker === 'string' ? req.query.ticker.trim() : '';
   const companyId = typeof req.query?.companyId === 'string' ? req.query.companyId.trim() : '';
 
   if (!hasSupabase()) {
-    res.status(200).json({ ok: true, source: 'fallback', prices: [], reason: 'Supabase env missing' });
+    res.status(200).json({
+      ok: true,
+      source: 'fallback',
+      prices: ticker || companyId ? [unavailablePrice(ticker, companyId)] : [],
+      reason: 'Supabase env missing',
+    });
     return;
   }
 
@@ -74,12 +96,18 @@ export default async function handler(req, res) {
       if (!deduped.has(key)) deduped.set(key, normalizePrice(row));
     });
 
-    res.status(200).json({ ok: true, source: 'supabase', limit, prices: Array.from(deduped.values()) });
+    const prices = Array.from(deduped.values());
+    res.status(200).json({
+      ok: true,
+      source: prices.length ? 'supabase' : 'fallback',
+      limit,
+      prices: prices.length || (!ticker && !companyId) ? prices : [unavailablePrice(ticker, companyId)],
+    });
   } catch (error) {
     res.status(200).json({
       ok: true,
       source: 'fallback',
-      prices: [],
+      prices: ticker || companyId ? [unavailablePrice(ticker, companyId)] : [],
       error: error instanceof Error ? error.message : String(error),
     });
   }

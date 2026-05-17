@@ -20,6 +20,7 @@ function formatPercent(value: number) {
 
 function inferPriceLabel(price: MarketPrice): PriceLabel {
   if (price.priceLabel) return price.priceLabel;
+  if (/mock|fallback|example/i.test(price.source)) return 'fallback';
   if (price.marketStatus === 'closed') return 'close';
   if (price.isDelayed || price.marketStatus === 'delayed') return 'delayed';
   if (price.marketStatus === 'open') return 'latest';
@@ -69,6 +70,7 @@ export async function fetchMarketPrices(limit = 200): Promise<MarketPrice[]> {
 
 export function priceDirection(price?: MarketPrice | null): PriceDirection {
   if (!price) return 'pending';
+  if (inferPriceLabel(price) === 'fallback' || inferPriceLabel(price) === 'unavailable') return 'pending';
   const value = parseNumeric(price.changePercent);
   if (!Number.isFinite(value) || value === 0) return 'flat';
   return value > 0 ? 'up' : 'down';
@@ -107,12 +109,36 @@ export function priceDisplay(price?: MarketPrice | null) {
   }
 
   const normalized = normalizeMarketPrice(price);
+  if (normalized.priceLabel === 'fallback') {
+    return {
+      amount: '예시 가격',
+      percent: '',
+      status: '실제 가격 연결 전',
+      basis: '',
+    };
+  }
+  if (normalized.priceLabel === 'unavailable') {
+    return {
+      amount: '가격 준비 중',
+      percent: '',
+      status: '데이터 없음',
+      basis: '',
+    };
+  }
   return {
-    amount: normalized.currency === 'KRW' ? `${normalized.price}원` : `$${normalized.price}`,
+    amount: normalized.currency === 'KRW' ? `${formatPriceAmount(normalized.price)}원` : `$${formatPriceAmount(normalized.price)}`,
     percent: normalized.changePercent,
     status: priceStatusLabel(normalized),
     basis: priceBasisLabel(normalized),
   };
+}
+
+function formatPriceAmount(value: string) {
+  const parsed = parseNumeric(value);
+  if (!Number.isFinite(parsed)) return value;
+  return new Intl.NumberFormat('ko-KR', {
+    maximumFractionDigits: parsed >= 1000 ? 0 : 2,
+  }).format(parsed);
 }
 
 export function findFallbackPrice(ticker?: string, companyId?: string, prices: MarketPrice[] = mockMarketPrices) {
