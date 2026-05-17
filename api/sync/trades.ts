@@ -1,7 +1,7 @@
-import { syncCongressTrades } from '../../scripts/sync-congress-trades.js';
-import { syncSec13F } from '../../scripts/sync-sec-13f.js';
-import { syncSecForm4 } from '../../scripts/sync-sec-form4.js';
-import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils.js';
+import { syncCongressTrades } from '../../scripts/sync-congress-trades.ts';
+import { syncSec13F } from '../../scripts/sync-sec-13f.ts';
+import { syncSecForm4 } from '../../scripts/sync-sec-form4.ts';
+import { errorMessage, nowIso, recordSyncRun } from '../../scripts/sync-utils.ts';
 
 function isAuthorized(req) {
   const configured = process.env.CRON_SECRET;
@@ -18,7 +18,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [form4, form13f, congress] = await Promise.all([syncSecForm4(), syncSec13F(), syncCongressTrades()]);
+    const [form4, form13f, congress] = await Promise.all([
+      syncSecForm4(),
+      syncSec13F(),
+      syncCongressTrades()
+    ]);
+
     res.status(200).json({
       ok: true,
       inserted: (form4.insertedCount ?? 0) + (form13f.insertedCount ?? 0) + (congress.insertedCount ?? 0),
