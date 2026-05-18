@@ -460,6 +460,34 @@ function relationshipSourceNote(company: Company) {
   return company.sourceNotes ?? company.sourceNote;
 }
 
+function relationshipRevenueExposureDisplay(link: (typeof links)[number]) {
+  const confidence = linkConfidenceLabel(link);
+  const value = link.revenueExposureStatus ?? link.revenueExposure ?? '고객별 매출 비중 미공개 또는 공식 공시 기준 확인 필요';
+  const hasPercentage = /[%％]/.test(value);
+  if (hasPercentage && !confidence.includes('공식 확인')) {
+    return '추정치 / 출처 확인 필요';
+  }
+  return value;
+}
+
+function sourceReliabilityLabel(value?: string) {
+  if (value === 'high') return '높음';
+  if (value === 'medium') return '중간';
+  if (value === 'low') return '낮음';
+  return '검토 필요';
+}
+
+function evidenceTypeLabel(value?: string) {
+  if (value === 'company-filing') return '회사 공시';
+  if (value === 'annual-report') return '사업보고서';
+  if (value === 'investor-presentation') return 'IR/실적발표';
+  if (value === 'earnings-call') return '실적 컨퍼런스콜';
+  if (value === 'press-release') return '공식 보도자료';
+  if (value === 'credible-news') return '신뢰 뉴스';
+  if (value === 'industry-analysis') return '산업 구조 분석';
+  return '수동 검토 메모';
+}
+
 function linkRelationshipSummary(link: (typeof links)[number]) {
   return {
     type: link.relationshipType ?? link.label,
@@ -467,7 +495,16 @@ function linkRelationshipSummary(link: (typeof links)[number]) {
     description: link.description ?? link.value,
     whatIsSold: link.whatIsSold ?? link.label,
     demandConnection: link.demandConnection ?? '같은 밸류체인에서 함께 봐야 할 기업입니다.',
-    revenueExposure: link.revenueExposure ?? '고객별 매출 비중은 공식 공시 기준 확인 필요',
+    revenueExposure: relationshipRevenueExposureDisplay(link),
+    evidenceSummary: link.evidenceSummary ?? '출처 확인 필요: 공식 공시, IR, 신뢰 가능한 원문으로 관계를 추가 검증해야 합니다.',
+    evidenceType: link.evidenceType ?? 'manual-note',
+    evidenceTypeLabel: evidenceTypeLabel(link.evidenceType),
+    sourceName: link.sourceName ?? '출처 확인 필요',
+    sourceUrl: link.sourceUrl,
+    sourceDate: link.sourceDate ?? '확인 필요',
+    sourceReliability: link.sourceReliability ?? 'needs-review',
+    sourceReliabilityLabel: sourceReliabilityLabel(link.sourceReliability),
+    lastVerifiedAt: link.lastVerifiedAt ?? '확인 필요',
     note: link.sourceNotes ?? '직접 고객 관계는 공시·IR·계약·뉴스 원문으로 검증해야 합니다.',
   };
 }
@@ -2927,6 +2964,7 @@ function App() {
   const [expandedCompanyIds, setExpandedCompanyIds] = useState<Set<string>>(() => new Set());
   const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const [sourcePanelLinkId, setSourcePanelLinkId] = useState<string | null>(null);
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -3040,6 +3078,9 @@ function App() {
   const primaryDirectLinks = selectedDirectLinks.slice(0, 6);
   const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
   const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
+  const activeRelationshipSummary = activeRelationship ? linkRelationshipSummary(activeRelationship) : undefined;
+  const sourcePanelLink = sourcePanelLinkId ? groupLinks.find((link) => link.id === sourcePanelLinkId) : undefined;
+  const sourcePanelSummary = sourcePanelLink ? linkRelationshipSummary(sourcePanelLink) : undefined;
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
   const firstLookCompanies = aiFirstLookIds
@@ -3391,6 +3432,7 @@ function App() {
     setExpandedCompanyIds(new Set());
     setHoveredLinkId(null);
     setSelectedLinkId(null);
+    setSourcePanelLinkId(null);
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -3450,6 +3492,7 @@ function App() {
     setExpandedCompanyIds(new Set());
     setHoveredLinkId(null);
     setSelectedLinkId(null);
+    setSourcePanelLinkId(null);
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(nextSector.id));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -3482,6 +3525,7 @@ function App() {
     setExpandedCompanyIds(new Set());
     setHoveredLinkId(null);
     setSelectedLinkId(null);
+    setSourcePanelLinkId(null);
   }
 
   if (isPicksRoute) {
@@ -3872,7 +3916,7 @@ function App() {
               <div className="sector-flow-copy">
                 <span>이 섹터는 이렇게 움직입니다</span>
                 <strong>AI 서버 수요가 늘면 AI 칩, HBM 메모리, 파운드리, 후공정 장비, 데이터센터 전력·냉각 기업을 함께 봅니다.</strong>
-                <p>직접 납품을 단정하지 않고, 관계 확실성을 확인하면서 상장기업 중심으로 살펴봅니다.</p>
+                <p>기업 관계는 공식 공시, IR, 산업 구조를 함께 참고해 정리했습니다. 직접 납품이 확인되지 않으면 수요 연결이나 산업상 관련으로 표시합니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
                 <button type="button" className={mapViewMode === 'core' ? 'active' : ''} onClick={() => setMapViewMode('core')}>
@@ -3915,7 +3959,7 @@ function App() {
               <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>초기 위치</button>
               {isAiRelationshipMap && <button type="button" onClick={showFullRelationshipMap}>전체 보기</button>}
             </div>
-            {activeRelationship && (
+            {activeRelationship && activeRelationshipSummary && (
               <div className="relationship-popover" role="status" aria-live="polite">
                 <button type="button" className="relationship-popover-close" onClick={() => { setHoveredLinkId(null); setSelectedLinkId(null); }} aria-label="관계 카드 닫기">
                   ×
@@ -3926,14 +3970,32 @@ function App() {
                   {' → '}
                   {companies.find((company) => company.id === activeRelationship.target)?.name}
                 </strong>
-                <p>{linkRelationshipSummary(activeRelationship).description}</p>
+                <p>{activeRelationshipSummary.description}</p>
                 <dl>
-                  <div><dt>관계 유형</dt><dd>{linkRelationshipSummary(activeRelationship).type}</dd></div>
-                  <div><dt>무엇이 연결되나</dt><dd>{linkRelationshipSummary(activeRelationship).whatIsSold}</dd></div>
-                  <div><dt>확실성</dt><dd><span className={`confidence-badge tiny ${confidenceClassName(linkRelationshipSummary(activeRelationship).confidence)}`}>{linkRelationshipSummary(activeRelationship).confidence}</span></dd></div>
-                  <div><dt>매출 비중</dt><dd>{linkRelationshipSummary(activeRelationship).revenueExposure}</dd></div>
+                  <div><dt>관계 유형</dt><dd>{activeRelationshipSummary.type}</dd></div>
+                  <div><dt>무엇이 연결되나</dt><dd>{activeRelationshipSummary.whatIsSold}</dd></div>
+                  <div>
+                    <dt>확실성</dt>
+                    <dd>
+                      <span className={`confidence-badge tiny ${confidenceClassName(activeRelationshipSummary.confidence)}`} title={confidenceHelpText(activeRelationshipSummary.confidence)}>
+                        {activeRelationshipSummary.confidence}
+                      </span>
+                    </dd>
+                  </div>
+                  <div><dt>매출 비중</dt><dd>{activeRelationshipSummary.revenueExposure}</dd></div>
+                  <div><dt>근거</dt><dd>{activeRelationshipSummary.evidenceSummary}</dd></div>
                 </dl>
-                <small>{linkRelationshipSummary(activeRelationship).note}</small>
+                <div className="relationship-popover-actions">
+                  <button type="button" onClick={() => setSourcePanelLinkId(activeRelationship.id)}>출처 보기</button>
+                  {activeRelationshipSummary.sourceUrl ? (
+                    <a href={activeRelationshipSummary.sourceUrl} target="_blank" rel="noreferrer">
+                      원문 열기
+                    </a>
+                  ) : (
+                    <span>출처 확인 필요</span>
+                  )}
+                </div>
+                <small>{activeRelationshipSummary.note}</small>
               </div>
             )}
             <ReactFlow
@@ -3962,6 +4024,59 @@ function App() {
               <Controls position="bottom-left" showInteractive={false} />
             </ReactFlow>
           </section>
+
+          {sourcePanelLink && sourcePanelSummary && (
+            <div className="relationship-source-backdrop" role="presentation" onClick={() => setSourcePanelLinkId(null)}>
+              <aside
+                className="relationship-source-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-label="관계 출처 보기"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button type="button" className="relationship-source-close" onClick={() => setSourcePanelLinkId(null)} aria-label="출처 패널 닫기">
+                  ×
+                </button>
+                <span>관계 출처 보기</span>
+                <h3>
+                  {companies.find((company) => company.id === sourcePanelLink.source)?.name}
+                  {' → '}
+                  {companies.find((company) => company.id === sourcePanelLink.target)?.name}
+                </h3>
+                <p>{sourcePanelSummary.description}</p>
+                <dl>
+                  <div><dt>관계 유형</dt><dd>{sourcePanelSummary.type}</dd></div>
+                  <div>
+                    <dt>관계 확실성</dt>
+                    <dd>
+                      <span className={`confidence-badge ${confidenceClassName(sourcePanelSummary.confidence)}`} title={confidenceHelpText(sourcePanelSummary.confidence)}>
+                        {sourcePanelSummary.confidence}
+                      </span>
+                      <small>{confidenceHelpText(sourcePanelSummary.confidence)}</small>
+                    </dd>
+                  </div>
+                  <div><dt>근거 요약</dt><dd>{sourcePanelSummary.evidenceSummary}</dd></div>
+                  <div><dt>근거 종류</dt><dd>{sourcePanelSummary.evidenceTypeLabel}</dd></div>
+                  <div><dt>매출 비중</dt><dd>{sourcePanelSummary.revenueExposure}</dd></div>
+                  <div><dt>출처 이름</dt><dd>{sourcePanelSummary.sourceName}</dd></div>
+                  <div><dt>출처 날짜</dt><dd>{sourcePanelSummary.sourceDate}</dd></div>
+                  <div><dt>신뢰도</dt><dd>{sourcePanelSummary.sourceReliabilityLabel}</dd></div>
+                  <div><dt>마지막 확인일</dt><dd>{sourcePanelSummary.lastVerifiedAt}</dd></div>
+                </dl>
+                {sourcePanelSummary.sourceUrl ? (
+                  <a className="relationship-source-link" href={sourcePanelSummary.sourceUrl} target="_blank" rel="noreferrer">
+                    출처 원문 열기
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <span className="relationship-source-pending">출처 링크 연결 필요</span>
+                )}
+                <p className="relationship-source-warning">
+                  직접 납품, 독점 공급, 고객별 매출 비중은 공식 공시·IR·계약 원문이 확인될 때만 단정합니다.
+                </p>
+              </aside>
+            </div>
+          )}
 
           <section className="bottom-panel intelligence-panel">
             <div className="live-news-panel">
@@ -4119,11 +4234,16 @@ function App() {
                     const counterpart = companies.find((company) => company.id === counterpartId);
                     const relationship = linkRelationshipSummary(link);
                     return (
-                      <button key={link.id} type="button" onClick={() => { focusCompany(counterpartId); setSelectedLinkId(link.id); }}>
-                        <strong>{counterpart?.name ?? '연결 기업'}</strong>
-                        <span>{shortRelationshipLabel(relationship.type)}</span>
-                        <em className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`}>{relationship.confidence}</em>
-                      </button>
+                      <article key={link.id}>
+                        <button type="button" className="direct-connection-main" onClick={() => { focusCompany(counterpartId); setSelectedLinkId(link.id); }}>
+                          <strong>{counterpart?.name ?? '연결 기업'}</strong>
+                          <span>{shortRelationshipLabel(relationship.type)}</span>
+                          <em className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`}>{relationship.confidence}</em>
+                        </button>
+                        <button type="button" className="direct-source-button" onClick={() => setSourcePanelLinkId(link.id)}>
+                          출처
+                        </button>
+                      </article>
                     );
                   })}
                   {!primaryDirectLinks.length && <p>현재 공개 데이터 기준 직접 연결 관계가 아직 정리되지 않았습니다.</p>}

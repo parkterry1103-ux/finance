@@ -6,6 +6,16 @@ export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 's
 export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
 export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
+export type RelationshipEvidenceType =
+  | 'company-filing'
+  | 'annual-report'
+  | 'investor-presentation'
+  | 'earnings-call'
+  | 'press-release'
+  | 'credible-news'
+  | 'industry-analysis'
+  | 'manual-note';
+export type SourceReliability = 'high' | 'medium' | 'low' | 'needs-review';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
 export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease' | 'holding';
 export type StockAutopsyDirection = 'up' | 'down';
@@ -130,7 +140,15 @@ export interface SupplyLink {
   whatIsSold?: string;
   demandConnection?: string;
   revenueExposure?: string;
+  revenueExposureStatus?: string;
   confidence?: string;
+  evidenceSummary?: string;
+  evidenceType?: RelationshipEvidenceType;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceDate?: string;
+  sourceReliability?: SourceReliability;
+  lastVerifiedAt?: string;
   sourceNotes?: string;
 }
 
@@ -5859,9 +5877,37 @@ function makeAiRelationshipLink(input: {
   demandConnection: string;
   revenueExposure?: string;
   confidence: string;
+  evidenceSummary?: string;
+  evidenceType?: RelationshipEvidenceType;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceDate?: string;
+  sourceReliability?: SourceReliability;
+  revenueExposureStatus?: string;
+  lastVerifiedAt?: string;
   sourceNotes?: string;
   dependency?: number;
 }): SupplyLink {
+  const defaultEvidenceType: RelationshipEvidenceType = input.confidence.includes('공식 확인')
+    ? 'company-filing'
+    : input.confidence.includes('공시') || input.confidence.includes('IR')
+      ? 'investor-presentation'
+      : input.confidence.includes('검증')
+        ? 'manual-note'
+        : 'industry-analysis';
+  const defaultReliability: SourceReliability = input.confidence.includes('공식 확인')
+    ? 'high'
+    : input.confidence.includes('공시') || input.confidence.includes('IR') || input.confidence.includes('산업상')
+      ? 'medium'
+      : 'needs-review';
+  const defaultEvidenceSummary = input.confidence.includes('공식 확인')
+    ? '회사 공시나 공식 발표에서 직접 확인된 관계로 정리했습니다.'
+    : input.confidence.includes('공시') || input.confidence.includes('IR')
+      ? '공시·IR·실적 발표에서 관련성을 확인하거나 추론할 수 있지만, 직접 고객·매출 비중은 원문 확인이 필요합니다.'
+      : input.confidence.includes('검증')
+        ? '관계 이해를 돕기 위한 수동 메모입니다. 공식 자료나 신뢰 가능한 원문으로 추가 확인이 필요합니다.'
+        : '산업 구조상 함께 움직일 수 있는 관계로 정리했습니다. 직접 거래 여부와 고객별 매출 비중은 단정하지 않습니다.';
+
   return {
     id: `ai-v01-${input.source}-${input.target}`,
     anchorId: 'us-semiconductors-nvidia',
@@ -5879,7 +5925,15 @@ function makeAiRelationshipLink(input: {
     whatIsSold: input.whatIsSold,
     demandConnection: input.demandConnection,
     revenueExposure: input.revenueExposure ?? '고객별 매출 비중은 공식 공시 기준 확인 필요',
+    revenueExposureStatus: input.revenueExposureStatus ?? input.revenueExposure ?? '고객별 매출 비중 미공개 또는 공식 공시 기준 확인 필요',
     confidence: input.confidence,
+    evidenceSummary: input.evidenceSummary ?? defaultEvidenceSummary,
+    evidenceType: input.evidenceType ?? defaultEvidenceType,
+    sourceName: input.sourceName ?? (input.sourceUrl ? '관계 근거 원문' : '출처 확인 필요'),
+    sourceUrl: input.sourceUrl,
+    sourceDate: input.sourceDate ?? '확인 필요',
+    sourceReliability: input.sourceReliability ?? defaultReliability,
+    lastVerifiedAt: input.lastVerifiedAt ?? '2026-05-18',
     sourceNotes: input.sourceNotes ?? '직접 납품 관계나 고객별 매출 비중은 공시·IR 원문 확인이 필요합니다.',
   };
 }
