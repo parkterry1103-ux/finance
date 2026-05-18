@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   Controls,
@@ -2932,6 +2932,7 @@ function App() {
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
   const [isMapLocked, setIsMapLocked] = useState(false);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
+  const graphWrapRef = useRef<HTMLElement | null>(null);
 
   const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
   const countrySectors = sectors.filter((sector) => sector.country === selectedCountry);
@@ -3126,11 +3127,16 @@ function App() {
     if (!flowInstance) return;
     window.requestAnimationFrame(() => {
       flowInstance.fitView({
-        padding: isAiRelationshipMap ? 0.18 : 0.2,
+        padding: isAiRelationshipMap ? 0.2 : 0.22,
         duration: 420,
         includeHiddenNodes: false,
       });
     });
+  }
+
+  function scheduleFitVisibleMap(delay = 120) {
+    window.setTimeout(() => fitVisibleMap(), delay);
+    window.setTimeout(() => fitVisibleMap(), delay + 220);
   }
 
   function centerCompanyInMap(companyId: string) {
@@ -3161,7 +3167,7 @@ function App() {
       else next.add(companyId);
       return next;
     });
-    window.setTimeout(() => fitVisibleMap(), 80);
+    scheduleFitVisibleMap(80);
   }
 
   function showFullRelationshipMap() {
@@ -3169,7 +3175,7 @@ function App() {
     setShowReferenceNodes(true);
     setShowNeedsVerification(true);
     setShowDetailedLinks(true);
-    window.setTimeout(() => fitVisibleMap(), 80);
+    scheduleFitVisibleMap(80);
   }
 
   const flowNodes: Node<NodeData>[] = useMemo(
@@ -3246,7 +3252,7 @@ function App() {
     if (!flowInstance || !isCategoryRoute || !flowNodes.length) return;
     const timer = window.setTimeout(() => {
       flowInstance.fitView({
-        padding: isAiRelationshipMap ? 0.18 : 0.2,
+        padding: isAiRelationshipMap ? 0.2 : 0.22,
         duration: 420,
         includeHiddenNodes: false,
       });
@@ -3259,6 +3265,7 @@ function App() {
     flowNodes.length,
     isAiRelationshipMap,
     isCategoryRoute,
+    isDetailCollapsed,
     listingFilter,
     mapViewMode,
     query,
@@ -3270,6 +3277,31 @@ function App() {
     showReferenceNodes,
     stageFilter,
   ]);
+
+  useEffect(() => {
+    if (!flowInstance || !isCategoryRoute) return;
+    const element = graphWrapRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    let resizeTimer: number | undefined;
+
+    const fitAfterResize = () => {
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        flowInstance.fitView({
+          padding: isAiRelationshipMap ? 0.2 : 0.22,
+          duration: 320,
+          includeHiddenNodes: false,
+        });
+      }, 120);
+    };
+
+    const observer = new ResizeObserver(fitAfterResize);
+    observer.observe(element);
+    return () => {
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
+  }, [flowInstance, isAiRelationshipMap, isCategoryRoute]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3870,7 +3902,7 @@ function App() {
             </section>
           )}
 
-          <section className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
+          <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
             {isAiRelationshipMap && (
               <div className="map-stage-ribbon" aria-hidden="true">
                 {aiStageColumns.map((stage) => (
