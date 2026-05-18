@@ -9,6 +9,7 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
+  ReactFlowInstance,
 } from '@xyflow/react';
 import {
   AlertTriangle,
@@ -2900,6 +2901,8 @@ function App() {
   const [showReferenceNodes, setShowReferenceNodes] = useState(false);
   const [showNeedsVerification, setShowNeedsVerification] = useState(false);
   const [showDetailedLinks, setShowDetailedLinks] = useState(false);
+  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<Node<NodeData>, Edge> | null>(null);
+  const [isDetailCollapsed, setIsDetailCollapsed] = useState(false);
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -3079,6 +3082,44 @@ function App() {
     selectSectorScope(nextSectorId, routeFocusCompany?.id);
   }, [routeCategoryCompanyId, routeCategoryId, selectedCompanyId, selectedSectorId]);
 
+  function fitVisibleMap() {
+    if (!flowInstance) return;
+    window.requestAnimationFrame(() => {
+      flowInstance.fitView({
+        padding: isAiRelationshipMap ? 0.18 : 0.2,
+        duration: 420,
+        includeHiddenNodes: false,
+      });
+    });
+  }
+
+  function centerCompanyInMap(companyId: string) {
+    if (!flowInstance) return;
+    const company = groupCompanies.find((item) => item.id === companyId);
+    if (!company) return;
+    const position = getNodePosition(company);
+    window.requestAnimationFrame(() => {
+      flowInstance.setCenter(position.x + 112, position.y + 58, {
+        zoom: isAiRelationshipMap ? 0.72 : Math.max(flowInstance.getZoom(), 0.58),
+        duration: 420,
+      });
+    });
+  }
+
+  function focusCompany(companyId: string) {
+    setSelectedCompanyId(companyId);
+    if (isAiRelationshipMap && !visibleIds.has(companyId)) return;
+    centerCompanyInMap(companyId);
+  }
+
+  function showFullRelationshipMap() {
+    setMapViewMode('all');
+    setShowReferenceNodes(true);
+    setShowNeedsVerification(true);
+    setShowDetailedLinks(true);
+    window.setTimeout(() => fitVisibleMap(), 80);
+  }
+
   const flowNodes: Node<NodeData>[] = useMemo(
     () =>
       (isAiRelationshipMap ? visibleCompanies : groupCompanies).map((company) => {
@@ -3093,7 +3134,7 @@ function App() {
             company,
             isSelected: selectedCompany?.id === company.id,
             isDimmed: !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
-            onSelect: setSelectedCompanyId,
+            onSelect: focusCompany,
           },
         };
       }),
@@ -3142,6 +3183,35 @@ function App() {
       }),
     [groupLinks, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
   );
+
+  useEffect(() => {
+    if (!flowInstance || !isCategoryRoute || !flowNodes.length) return;
+    const timer = window.setTimeout(() => {
+      flowInstance.fitView({
+        padding: isAiRelationshipMap ? 0.18 : 0.2,
+        duration: 420,
+        includeHiddenNodes: false,
+      });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [
+    confidenceFilter,
+    flowEdges.length,
+    flowInstance,
+    flowNodes.length,
+    isAiRelationshipMap,
+    isCategoryRoute,
+    listingFilter,
+    mapViewMode,
+    query,
+    relationshipFilter,
+    roleFilter,
+    selectedAnchorId,
+    showDetailedLinks,
+    showNeedsVerification,
+    showReferenceNodes,
+    stageFilter,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3365,7 +3435,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="app-shell">
+      <div className={`app-shell ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -3423,7 +3493,7 @@ function App() {
                 {firstLookCompanies.map((company, index) => {
                   const role = companyRoleProfile(company);
                   return (
-                    <button key={company.id} type="button" onClick={() => setSelectedCompanyId(company.id)}>
+                    <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
                       <span>{index + 1}</span>
                       <strong>{company.name}</strong>
                       <small>{role.primary} · {role.secondary}</small>
@@ -3603,7 +3673,7 @@ function App() {
                 <div className={`company-row-card ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
                   <button
                     className="company-row"
-                    onClick={() => setSelectedCompanyId(company.id)}
+                    onClick={() => focusCompany(company.id)}
                     type="button"
                   >
                     <span className={`role-badge role-${role.className}`}>{role.primary}</span>
@@ -3672,6 +3742,10 @@ function App() {
                 <Database size={18} />
                 {selectedIsMainListed ? '재무·공시' : '관계 참고용'}
               </button>
+              <button type="button" className="icon-action text-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
+                <PanelRightOpen size={18} />
+                {isDetailCollapsed ? '상세 열기' : '상세 접기'}
+              </button>
               {selectedReportLink && selectedIsMainListed && (
                 <ReportAction
                   reportLink={selectedReportLink}
@@ -3730,14 +3804,28 @@ function App() {
           )}
 
           <section className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
+            {isAiRelationshipMap && (
+              <div className="map-stage-ribbon" aria-hidden="true">
+                {aiStageColumns.map((stage) => (
+                  <span key={stage}>{stage}</span>
+                ))}
+              </div>
+            )}
+            <div className="canvas-toolbar" aria-label="지도 보기 조정">
+              <button type="button" onClick={fitVisibleMap}>화면 맞춤</button>
+              <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>초기 위치</button>
+              {isAiRelationshipMap && <button type="button" onClick={showFullRelationshipMap}>전체 보기</button>}
+            </div>
             <ReactFlow
               nodes={flowNodes}
               edges={flowEdges}
               nodeTypes={nodeTypes}
-              onNodeClick={(_, node) => setSelectedCompanyId(node.id)}
+              onNodeClick={(_, node) => focusCompany(node.id)}
+              onInit={(instance) => setFlowInstance(instance)}
               fitView
-              minZoom={0.32}
-              maxZoom={1.45}
+              fitViewOptions={{ padding: isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
+              minZoom={isAiRelationshipMap ? 0.24 : 0.32}
+              maxZoom={isAiRelationshipMap ? 1.32 : 1.45}
               nodesDraggable={!isMapLocked}
               nodesConnectable={false}
               elementsSelectable={!isMapLocked}
@@ -3747,8 +3835,8 @@ function App() {
               zoomOnDoubleClick={!isMapLocked}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#d1d5db" gap={22} />
-              <Controls position="bottom-left" />
+              <Background color={isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAiRelationshipMap ? 36 : 22} />
+              <Controls position="bottom-left" showInteractive={false} />
             </ReactFlow>
           </section>
 
@@ -4002,7 +4090,7 @@ function App() {
                       const counterpart = companies.find((company) => company.id === counterpartId);
                       const relationship = linkRelationshipSummary(link);
                       return (
-                        <button key={link.id} type="button" onClick={() => setSelectedCompanyId(counterpartId)}>
+                        <button key={link.id} type="button" onClick={() => focusCompany(counterpartId)}>
                           <span>{counterpart?.name}</span>
                           <small>
                             {relationship.type}
