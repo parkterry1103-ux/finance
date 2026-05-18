@@ -1,4 +1,5 @@
 import { anchors, companies, marketMovers, mockMarketPrices, stockAutopsyPicks } from '../src/data.js';
+import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 import { envValue, errorMessage, hasSupabaseConfig, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
 
 const REQUIRED_PRICE_TICKERS = [
@@ -165,15 +166,18 @@ function uniquePriceTargets() {
   marketMovers.forEach((mover) => add(mover.ticker, mover.companyId, mover.market));
   stockAutopsyPicks.forEach((pick) => add(pick.ticker, pick.relatedCompanyId, pick.market));
   anchors.forEach((anchor) => add(anchor.ticker, anchor.id, anchor.country));
-  companies.forEach((company) => add(company.ticker, company.id, company.country));
+  companies.forEach((company) => {
+    const listing = inferCompanyListing(company);
+    if (listing.isPriceSyncTarget) add(company.ticker, company.id, listing.market);
+  });
 
   return Array.from(byLookupTicker.values());
 }
 
 function priceTargetSummary() {
-  const listedCompanies = companies.filter((company) => company.tier === 'anchor' || isPriceTicker(company.ticker));
-  const priceTargetCompanies = listedCompanies.filter((company) => isPriceTicker(company.ticker));
-  const excludedCompanies = companies.filter((company) => !isPriceTicker(company.ticker));
+  const listedCompanies = companies.filter((company) => inferCompanyListing(company).listed);
+  const priceTargetCompanies = listedCompanies.filter((company) => isPriceSyncTarget(company));
+  const excludedCompanies = companies.filter((company) => !isPriceSyncTarget(company));
   return {
     totalCompanyCount: companies.length,
     listedOrTrackedCompanyCount: listedCompanies.length,

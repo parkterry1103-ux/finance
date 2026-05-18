@@ -1,4 +1,5 @@
 import type { Company, FilingSourceLink } from '../data.js';
+import { inferCompanyListing } from './listing.js';
 
 export type FilingLinkStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
 
@@ -51,14 +52,13 @@ function explicitSearchUrl(company: Company) {
 }
 
 export function isLikelyPublicCompany(company: Company) {
-  const ticker = company.ticker?.trim();
-  if (!ticker || ticker === 'WATCH') return false;
-  if (company.sourceStatus === 'private-company' || company.sourceStatus === 'no-public-filing') return false;
-  if (company.country === 'KR') return /\.(KS|KQ)$/i.test(ticker) || /^\d{6}$/.test(ticker) || Boolean(company.corpCode || company.dartRcpNo);
-  return /^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker) || Boolean(company.cik || company.secAccessionNumber);
+  return inferCompanyListing(company).listed;
 }
 
 function nonPublicStatus(company: Company): Extract<FilingLinkStatus, 'private-company' | 'no-public-filing'> {
+  const listing = inferCompanyListing(company);
+  if (listing.listingStatus === 'no-public-filing') return 'no-public-filing';
+  if (listing.listingStatus === 'private') return 'private-company';
   if (company.sourceStatus === 'private-company') return 'private-company';
   if (company.sourceStatus === 'no-public-filing') return 'no-public-filing';
   return company.tier === 'tier2' ? 'private-company' : 'no-public-filing';
@@ -137,6 +137,7 @@ export function externalDisclosureLinks(company: Company): FilingSourceLink[] {
 
 export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?: string): FilingLinkResolution {
   const regulator = company.country === 'KR' ? 'DART' : 'SEC';
+  const listing = inferCompanyListing(company);
   const directUrl = getCompanyDirectReportUrl(company, preferredDirectUrl);
   const secondary = externalDisclosureLinks(company);
   const reportMeta = {
@@ -150,6 +151,7 @@ export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?:
 
   if (
     !hasDirectReport(company, preferredDirectUrl) &&
+    !listing.listed &&
     (company.sourceStatus === 'private-company' ||
       company.sourceStatus === 'no-public-filing' ||
       (!explicitSearchUrl(company) && !isLikelyPublicCompany(company)))

@@ -66,6 +66,7 @@ import {
 } from './services/filings';
 import { fetchOwnershipTrades, fetchSmartMoneyTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
+import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
 
 type NodeData = {
   company: Company;
@@ -324,8 +325,6 @@ function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
 
-const nyseTickers = new Set(['BRK.B', 'BRK-B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN', 'XYZ', 'TSM', 'DELL', 'VRT', 'ANET']);
-const otcTickers = new Set(['SBGSY']);
 const prominentInstitutionFilters = [
   'Berkshire Hathaway',
   'ARK',
@@ -343,40 +342,30 @@ const prominentInstitutionFilters = [
 ];
 
 function marketDisplayLabel(company: Company) {
-  const reportLink = getPrimaryReportLink(company);
-  const ticker = company.ticker?.trim();
-  if (!ticker || ticker === 'WATCH' || ticker === '비상장') return '비상장';
-  if (reportLink.status === 'private-company') return '비상장';
-  if (reportLink.status === 'no-public-filing') return '공개 공시 확인 불가';
-  if (company.sourceStatus === 'needs-link' && company.sourceType === 'seed-model' && company.tier === 'tier2') return '공시 의무 없음';
-  if (company.country === 'KR') return ticker.endsWith('.KQ') ? 'KOSDAQ' : ticker.endsWith('.KS') ? 'KOSPI' : '공개 공시 확인 불가';
-  if (otcTickers.has(ticker)) return 'OTC';
-  if (ticker.includes('.') && !ticker.endsWith('.B')) return '해외 상장';
-  if (nyseTickers.has(ticker)) return 'NYSE';
-  return 'NASDAQ';
+  return inferCompanyListing(company).market;
 }
 
 function hasTradableTicker(company: Company) {
-  const ticker = company.ticker?.trim();
-  return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장');
+  return isPriceSyncTarget(company);
 }
 
 function isMainListedCompany(company: Company) {
-  const reportLink = getPrimaryReportLink(company);
-  return hasTradableTicker(company) || reportLink.status === 'direct' || reportLink.status === 'search-only';
+  return inferCompanyListing(company).isInvestmentAnalyzable;
 }
 
 function companyScopeLabel(company: Company) {
-  if (isMainListedCompany(company)) return '상장기업';
-  const reportLink = getPrimaryReportLink(company);
-  if (reportLink.status === 'private-company') return '비상장 참고 기업';
-  if (reportLink.status === 'no-public-filing') return '공시 확인 어려움';
-  return '관계 참고용';
+  const listing = inferCompanyListing(company);
+  if (listing.listed) return '상장기업';
+  if (listing.listingStatus === 'unknown') return '상장 여부 확인 필요';
+  if (listing.filingStatus === 'no-public-filing') return '공개 공시 확인 불가';
+  return '비상장 참고 기업';
 }
 
 function companyScopeDetail(company: Company) {
-  if (isMainListedCompany(company)) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
-  return '비상장 또는 공시 연결 전 기업입니다. 투자 분석보다 관계 이해용 보조 노드로 봅니다.';
+  const listing = inferCompanyListing(company);
+  if (listing.listed) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
+  if (listing.listingStatus === 'unknown') return '상장 여부와 공시 연결을 먼저 확인해야 합니다. 확인 전에는 관계 이해용으로 봅니다.';
+  return '비상장 또는 공시 확인이 어려운 기업입니다. 투자 분석보다 관계 이해용 보조 노드로 봅니다.';
 }
 
 function productText(company: Company) {
@@ -4018,6 +4007,7 @@ function App() {
               zoomOnScroll={!isMapLocked}
               zoomOnPinch={!isMapLocked}
               zoomOnDoubleClick={!isMapLocked}
+              preventScrolling={!isMapLocked}
               proOptions={{ hideAttribution: true }}
             >
               <Background color={isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAiRelationshipMap ? 36 : 22} />
@@ -4135,7 +4125,8 @@ function App() {
                   <p className="eyebrow">현재 선택한 기업</p>
                   <h2>{selectedCompany.name}</h2>
                   <span>
-                    {selectedCompany.ticker} · {marketDisplayLabel(selectedCompany)}
+                    {hasTradableTicker(selectedCompany) && selectedCompany.ticker ? `${selectedCompany.ticker} · ` : ''}
+                    {marketDisplayLabel(selectedCompany)}
                   </span>
                 </div>
                 <div className="panel-heading-actions">

@@ -16,6 +16,7 @@
     "sync:congress": "npm run sync:compile && node .sync-build/scripts/sync-congress-trades.js",
     "sync:prices": "npm run sync:compile && node .sync-build/scripts/sync-prices.js",
     "audit:filings": "npm run sync:compile && node .sync-build/scripts/audit-filing-links.js",
+    "audit:listings": "npm run sync:compile && node .sync-build/scripts/audit-company-listing-status.js",
     "sync:filing-links": "npm run sync:compile && node .sync-build/scripts/sync-filing-links.js",
     "sync:financials": "npm run sync:opendart && npm run sync:sec-companyfacts",
     "sync:trades": "npm run sync:sec-form4 && npm run sync:sec-13f && npm run sync:congress",

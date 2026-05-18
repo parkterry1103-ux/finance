@@ -178,6 +178,7 @@ npm run sync:financials
 npm run sync:trades
 npm run sync:prices
 npm run audit:filings
+npm run audit:listings
 npm run sync:filing-links
 npm run sync:all
 ```
@@ -283,6 +284,25 @@ https://YOUR_DOMAIN/api/sync/trades?secret=CRON_SECRET값
 - Supabase `ownership_trades`에서 `source = congress-trades`
 
 국회의원 거래는 공개된 거래 보고 기준이며 실제 거래일과 공개일이 다를 수 있습니다. 화면에서는 실시간 매매처럼 표현하지 않고 “공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.” 문구를 유지합니다.
+
+### 상장/비상장 분류 점검
+
+협력기업이나 하청업체라는 이유만으로 비상장 처리하면 안 됩니다. 주식 거래가 가능하거나 DART/SEC 식별자가 있는 기업은 상장·공시 연결 대상으로 관리합니다.
+
+```bash
+npm run audit:listings
+```
+
+출력 항목:
+
+- 전체 기업 수, 상장기업 수, 비상장기업 수, 상장 여부 확인 필요 수
+- ticker가 있는데 private으로 분류된 기업
+- `corpCode` 또는 `cik`가 있는데 private으로 분류된 기업
+- KOSPI/KOSDAQ/NASDAQ/NYSE 등 거래소 시장인데 `listed=false`처럼 보이는 기업
+- 상장기업인데 가격 sync 대상에서 빠진 기업
+- 상장기업인데 filing link 대상에서 빠진 기업
+
+주성엔지니어링, 한미반도체, 리노공업, ISC, 원익IPS, 솔브레인처럼 거래 가능한 협력기업은 `listed`, `ticker`, `market`, `filingSource`를 확인하고 가격/공시/재무제표 연결 대상으로 둡니다. 비상장 또는 공시 확인이 어려운 기업만 “비상장 참고 노드”로 표시합니다.
 
 ### 원문 보고서 링크 점검과 보강
 
@@ -400,6 +420,8 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 가격 sync는 등록된 상장 티커를 최대한 대상으로 잡고, 비상장·조회불가 기업은 제외합니다. Yahoo Finance 조회용 예외 매핑은 `BRK.B → BRK-B`, `SQ → XYZ`를 사용합니다. Block, Inc.는 현재 `XYZ` 티커 기준으로 관리합니다. `/api/sync/prices` 결과의 `summary`에서 전체 기업 수, 가격 조회 대상 수, 성공/실패 티커 수, 제외 기업 수를 확인하세요.
 
+상장 여부 점검은 `npm run audit:listings`로 먼저 확인하세요. 협력기업이라도 ticker, DART `corpCode`, SEC `cik`, 거래소 market이 있으면 가격/공시/재무제표 sync 대상입니다.
+
 프론트 공개 조회 endpoint:
 
 ```text
@@ -491,6 +513,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
    - `npm run sync:trades`
    - `npm run sync:prices`
    - `npm run audit:filings`
+   - `npm run audit:listings`
    - 또는 `/api/sync/financials?secret=CRON_SECRET값`, `/api/sync/trades?secret=CRON_SECRET값` 호출
 
 8. 자동 업데이트 성공 여부 확인

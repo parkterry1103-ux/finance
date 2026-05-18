@@ -18,6 +18,9 @@ export type RelationshipEvidenceType =
 export type SourceReliability = 'high' | 'medium' | 'low' | 'needs-review';
 export type SmartMoneyInvestorType = 'us-politician' | 'insider' | 'institution' | 'fund' | 'nps' | 'kr-politician';
 export type SmartMoneyAction = 'buy' | 'sell' | 'increase' | 'decrease' | 'holding';
+export type ListingStatus = 'listed' | 'private' | 'unknown' | 'delisted' | 'no-public-filing';
+export type ListingMarket = 'KOSPI' | 'KOSDAQ' | 'KONEX' | 'NASDAQ' | 'NYSE' | 'AMEX' | 'OTC' | 'Private' | 'Unknown' | 'KRX' | string;
+export type FilingSourceKind = 'DART' | 'SEC' | 'manual' | 'none';
 export type StockAutopsyDirection = 'up' | 'down';
 export type StockAutopsyValueChainPosition =
   | 'leader'
@@ -68,6 +71,13 @@ export interface Company {
   name: string;
   legalName: string;
   ticker?: string;
+  exchange?: string;
+  listed?: boolean;
+  listingStatus?: ListingStatus;
+  market?: ListingMarket;
+  filingSource?: FilingSourceKind;
+  filingStatus?: FilingSourceStatus;
+  isInvestmentAnalyzable?: boolean;
   tier: CompanyTier;
   sector: string;
   region: string;
@@ -4904,6 +4914,12 @@ function buildCompanies() {
       name: anchor.name,
       legalName: anchor.legalName,
       ticker: anchor.ticker,
+      exchange: anchor.exchange,
+      listed: true,
+      listingStatus: 'listed',
+      market: anchor.country === 'KR' && anchor.ticker.endsWith('.KS') ? 'KOSPI' : anchor.country === 'KR' && anchor.ticker.endsWith('.KQ') ? 'KOSDAQ' : anchor.exchange,
+      filingSource: anchor.country === 'KR' ? 'DART' : 'SEC',
+      isInvestmentAnalyzable: true,
       tier: 'anchor',
       sector: anchor.sector,
       region: anchor.region,
@@ -5231,6 +5247,85 @@ const companyFilingSources: Record<string, CompanyFilingSource> = {
   },
 };
 
+function dartSearchUrl(companyName: string) {
+  return `https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=${encodeURIComponent(companyName)}`;
+}
+
+const listedSupplierOverridesByName: Record<string, Partial<Company>> = {
+  한미반도체: {
+    ticker: '042700.KS',
+    exchange: 'KOSPI',
+    market: 'KOSPI',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('한미반도체'),
+    sourceStatus: 'search-only',
+  },
+  주성엔지니어링: {
+    ticker: '036930.KQ',
+    exchange: 'KOSDAQ',
+    market: 'KOSDAQ',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('주성엔지니어링'),
+    sourceStatus: 'search-only',
+  },
+  리노공업: {
+    ticker: '058470.KQ',
+    exchange: 'KOSDAQ',
+    market: 'KOSDAQ',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('리노공업'),
+    sourceStatus: 'search-only',
+  },
+  ISC: {
+    ticker: '095340.KQ',
+    exchange: 'KOSDAQ',
+    market: 'KOSDAQ',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('ISC'),
+    sourceStatus: 'search-only',
+  },
+  원익IPS: {
+    ticker: '240810.KQ',
+    exchange: 'KOSDAQ',
+    market: 'KOSDAQ',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('원익IPS'),
+    sourceStatus: 'search-only',
+  },
+  솔브레인: {
+    ticker: '357780.KQ',
+    exchange: 'KOSDAQ',
+    market: 'KOSDAQ',
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl('솔브레인'),
+    sourceStatus: 'search-only',
+  },
+};
+
 type AiRelationshipCompanyInput = {
   id: string;
   country: CountryId;
@@ -5278,6 +5373,12 @@ function makeAiRelationshipCompany(input: AiRelationshipCompanyInput): Company {
     name: input.name,
     legalName: input.legalName,
     ticker: input.ticker,
+    exchange: input.exchange,
+    listed: true,
+    listingStatus: 'listed',
+    market: input.country === 'KR' && input.ticker.endsWith('.KS') ? 'KOSPI' : input.country === 'KR' && input.ticker.endsWith('.KQ') ? 'KOSDAQ' : input.exchange,
+    filingSource: input.country === 'KR' ? 'DART' : 'SEC',
+    isInvestmentAnalyzable: true,
     tier: 'tier1',
     sector: input.sector,
     region: input.region,
@@ -6199,9 +6300,11 @@ const companyRelationshipOverrides: Record<string, Partial<Company>> = {
 
 function applyCompanyFilingAndOverrides(company: Company): Company {
   const filingSource = companyFilingSources[company.id] ?? {};
+  const listedSupplierOverride = listedSupplierOverridesByName[company.name] ?? {};
   const override = companyRelationshipOverrides[company.id] ?? {};
   const merged = {
     ...company,
+    ...listedSupplierOverride,
     ...override,
     ...filingSource,
   };
@@ -6211,10 +6314,12 @@ function applyCompanyFilingAndOverrides(company: Company): Company {
       merged.sourceDirectUrl ||
       merged.dartRcpNo,
   );
+  const resolvedSourceStatus = hasDirectSource ? 'direct' : merged.sourceStatus ?? (merged.sourceSearchUrl ? 'search-only' : 'needs-link');
 
   return {
     ...merged,
-    sourceStatus: merged.sourceStatus ?? (hasDirectSource ? 'direct' : merged.sourceSearchUrl ? 'search-only' : 'needs-link'),
+    sourceStatus: resolvedSourceStatus,
+    filingStatus: hasDirectSource ? 'direct' : merged.filingStatus ?? resolvedSourceStatus,
   };
 }
 
