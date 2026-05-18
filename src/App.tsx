@@ -110,16 +110,65 @@ const riskClass: Record<RiskLevel, string> = {
   high: 'risk-high',
 };
 
+const aiRelationshipSectorId = 'us-semiconductors';
+const aiRelationshipAnchorId = 'us-semiconductors-nvidia';
+
+const aiCoreCompanyIds = new Set([
+  'ai-datacenter-google',
+  'ai-datacenter-microsoft',
+  'us-semiconductors-nvidia',
+  'ai-datacenter-broadcom',
+  'ai-datacenter-sk-hynix',
+  'ai-datacenter-samsung',
+  'ai-datacenter-tsmc',
+  'ai-datacenter-asml',
+  'ai-datacenter-supermicro',
+  'ai-datacenter-vertiv',
+]);
+
+const aiFirstLookIds = [
+  'us-semiconductors-nvidia',
+  'ai-datacenter-tsmc',
+  'ai-datacenter-sk-hynix',
+  'ai-datacenter-asml',
+  'ai-datacenter-vertiv',
+];
+
+const aiCoreLinkIds = new Set([
+  'ai-link-google-broadcom',
+  'ai-link-broadcom-tsmc',
+  'ai-link-nvidia-tsmc',
+  'ai-link-nvidia-sk-hynix',
+  'ai-link-nvidia-vertiv',
+  'ai-link-nvidia-supermicro',
+  'ai-link-asml-tsmc',
+  'ai-link-microsoft-nvidia',
+]);
+
+const aiStageColumns = [
+  '최종 수요 / 플랫폼',
+  'AI 칩 / GPU',
+  '맞춤형 반도체 / ASIC',
+  '메모리 / HBM',
+  '파운드리 / 제조',
+  '장비 / 소재 / 후공정',
+  '서버 / 네트워크',
+  '데이터센터 전력·냉각',
+];
+
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   const { company, isSelected, isDimmed, onSelect } = data;
   const isAnchor = company.tier === 'anchor';
   const StatusIcon = company.status === 'opportunity' ? Sparkles : company.status === 'watch' ? ShieldAlert : CheckCircle2;
+  const role = companyRoleProfile(company);
 
   return (
     <button
       className={[
         'supply-node',
         `tier-${company.tier}`,
+        `role-${role.className}`,
+        isMainListedCompany(company) ? 'listed-node' : 'reference-node',
         isSelected ? 'selected' : '',
         isDimmed ? 'dimmed' : '',
     ].join(' ')}
@@ -132,6 +181,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
           <span className="node-tier">{tierLabels[company.tier]}</span>
           {isSelected && <span className="selected-company-badge">선택한 기업</span>}
           {isAnchor && <span className="anchor-company-badge">섹터 중심</span>}
+          <span className={`role-badge role-${role.className}`}>{role.primary}</span>
           <span className={`scope-badge ${isMainListedCompany(company) ? 'listed' : 'reference'}`}>{companyScopeLabel(company)}</span>
         </span>
         <span className={`risk-dot ${riskClass[company.riskLevel]}`} title={`리스크 ${riskLabels[company.riskLevel]}`} />
@@ -154,7 +204,35 @@ const nodeTypes = {
   supplyNode: SupplyNode,
 };
 
+function aiStageColumn(company: Company) {
+  const stage = companyValueChainStage(company);
+  if (stage.includes('최종 수요') || stage.includes('플랫폼') || stage.includes('클라우드')) return 0;
+  if (stage.includes('AI 칩') || stage.includes('GPU')) return 1;
+  if (stage.includes('ASIC') || stage.includes('맞춤형')) return 2;
+  if (stage.includes('메모리') || stage.includes('HBM')) return 3;
+  if (stage.includes('파운드리') || stage.includes('제조')) return 4;
+  if (stage.includes('장비') || stage.includes('소재') || stage.includes('부품') || stage.includes('후공정') || stage.includes('테스트')) return 5;
+  if (stage.includes('서버') || stage.includes('네트워크')) return 6;
+  if (stage.includes('전력') || stage.includes('냉각')) return 7;
+  return 5;
+}
+
+function getAiNodePosition(company: Company) {
+  if (company.sectorId !== aiRelationshipSectorId || company.anchorId !== aiRelationshipAnchorId) return undefined;
+  const stageColumn = aiStageColumn(company);
+  const sameStageCompanies = companies
+    .filter((item) => item.anchorId === aiRelationshipAnchorId)
+    .filter((item) => aiStageColumn(item) === stageColumn)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const row = Math.max(0, sameStageCompanies.findIndex((item) => item.id === company.id));
+  const x = 36 + stageColumn * 286;
+  const y = 54 + row * 128;
+  return { x, y };
+}
+
 function getNodePosition(company: Company) {
+  const aiPosition = getAiNodePosition(company);
+  if (aiPosition) return aiPosition;
   const xByColumn = [34, 382, 742];
   if (company.layout.column === 0) {
     return { x: xByColumn[0], y: 380 };
@@ -372,8 +450,148 @@ function linkRelationshipSummary(link: (typeof links)[number]) {
   };
 }
 
+type MapViewMode = 'core' | 'all';
+type RoleFilter = 'all' | 'leader' | 'bottleneck' | 'beneficiary' | 'listed' | 'reference';
 type MoverRegionFilter = 'all' | 'KR' | 'US';
 type ListingFilter = 'all' | 'listed' | 'reference';
+
+function companyRoleProfile(company: Company) {
+  const stage = companyValueChainStage(company);
+  if (!isMainListedCompany(company)) {
+    return {
+      primary: '비상장 참고',
+      secondary: '관계 참고용',
+      className: 'reference',
+      filterGroup: 'reference' as RoleFilter,
+      explanation: '공시 확인이 어려운 보조 노드입니다.',
+    };
+  }
+  if (company.id === 'us-semiconductors-nvidia') {
+    return {
+      primary: '대장주',
+      secondary: 'AI 칩',
+      className: 'leader',
+      filterGroup: 'leader' as RoleFilter,
+      explanation: 'AI 서버 수요의 중심에 있는 대표 기업입니다.',
+    };
+  }
+  if (['ai-datacenter-google', 'ai-datacenter-microsoft', 'ai-datacenter-amazon'].includes(company.id)) {
+    return {
+      primary: '플랫폼/최종 수요',
+      secondary: 'AI 인프라 투자',
+      className: 'platform',
+      filterGroup: 'leader' as RoleFilter,
+      explanation: '클라우드와 AI 서비스 투자를 통해 하위 기업 수요를 만들 수 있습니다.',
+    };
+  }
+  if (company.id === 'ai-datacenter-broadcom') {
+    return {
+      primary: '대장주',
+      secondary: '맞춤형 반도체',
+      className: 'leader',
+      filterGroup: 'leader' as RoleFilter,
+      explanation: 'AI 맞춤형 칩과 네트워크 반도체 수요와 연결됩니다.',
+    };
+  }
+  if (['ai-datacenter-tsmc', 'ai-datacenter-asml'].includes(company.id)) {
+    return {
+      primary: '핵심 병목 기업',
+      secondary: stage,
+      className: 'bottleneck',
+      filterGroup: 'bottleneck' as RoleFilter,
+      explanation: '없으면 산업 흐름이 막힐 수 있는 핵심 기업으로 볼 수 있습니다.',
+    };
+  }
+  if (stage.includes('메모리') || stage.includes('서버') || stage.includes('네트워크') || stage.includes('전력') || stage.includes('냉각')) {
+    return {
+      primary: '수요 수혜 기업',
+      secondary: stage,
+      className: 'beneficiary',
+      filterGroup: 'beneficiary' as RoleFilter,
+      explanation: 'AI 서버 수요가 늘 때 함께 봐야 할 기업입니다.',
+    };
+  }
+  if (stage.includes('장비') || stage.includes('소재') || stage.includes('부품') || stage.includes('후공정') || stage.includes('테스트')) {
+    return {
+      primary: '장비/소재 기업',
+      secondary: stage,
+      className: 'equipment',
+      filterGroup: 'beneficiary' as RoleFilter,
+      explanation: '설비투자와 생산 확대 국면에서 함께 확인할 기업입니다.',
+    };
+  }
+  if (stage.includes('파운드리') || stage.includes('제조')) {
+    return {
+      primary: '제조/파운드리',
+      secondary: stage,
+      className: 'manufacturing',
+      filterGroup: 'bottleneck' as RoleFilter,
+      explanation: '칩을 실제로 만들거나 제조 역량과 연결된 기업입니다.',
+    };
+  }
+  return {
+    primary: '상장기업',
+    secondary: stage,
+    className: 'listed',
+    filterGroup: 'listed' as RoleFilter,
+    explanation: '상장기업 중심으로 재무·공시·가격을 함께 확인합니다.',
+  };
+}
+
+function matchesRoleFilter(company: Company, roleFilter: RoleFilter) {
+  if (roleFilter === 'all') return true;
+  if (roleFilter === 'listed') return isMainListedCompany(company);
+  if (roleFilter === 'reference') return !isMainListedCompany(company);
+  return companyRoleProfile(company).filterGroup === roleFilter;
+}
+
+function confidenceClassName(value: string) {
+  if (value.includes('공식 확인')) return 'official';
+  if (value.includes('공시') || value.includes('IR')) return 'ir';
+  if (value.includes('검증')) return 'needs';
+  return 'industrial';
+}
+
+function confidenceHelpText(value: string) {
+  if (value.includes('공식 확인')) return '회사 공시나 공식 자료에서 확인된 관계입니다.';
+  if (value.includes('공시') || value.includes('IR')) return '공시/IR에서 관련성이 확인되거나 추론 가능한 관계입니다.';
+  if (value.includes('검증')) return '추가 출처 확인이 필요한 관계입니다.';
+  return '같은 산업 구조에서 함께 봐야 할 관계입니다.';
+}
+
+function relationshipKindClass(value: string) {
+  if (value.includes('위탁생산') || value.includes('파운드리')) return 'foundry';
+  if (value.includes('장비')) return 'equipment';
+  if (value.includes('소재') || value.includes('부품')) return 'material';
+  if (value.includes('메모리') || value.includes('HBM')) return 'memory';
+  if (value.includes('서버') || value.includes('네트워크')) return 'server';
+  if (value.includes('전력') || value.includes('냉각')) return 'power';
+  if (value.includes('검증')) return 'needs';
+  return 'demand';
+}
+
+function relationshipEdgeColor(value: string) {
+  const kind = relationshipKindClass(value);
+  if (kind === 'foundry') return '#7c3aed';
+  if (kind === 'equipment') return '#f59e0b';
+  if (kind === 'material') return '#64748b';
+  if (kind === 'memory') return '#16a34a';
+  if (kind === 'server') return '#0ea5e9';
+  if (kind === 'power') return '#dc2626';
+  return '#2563eb';
+}
+
+function shortRelationshipLabel(value: string) {
+  if (value.includes('위탁생산')) return '위탁생산';
+  if (value.includes('장비')) return '장비';
+  if (value.includes('소재')) return '소재';
+  if (value.includes('부품') || value.includes('테스트')) return '부품/테스트';
+  if (value.includes('메모리') || value.includes('HBM')) return 'HBM';
+  if (value.includes('서버') || value.includes('네트워크')) return '서버/네트워크';
+  if (value.includes('전력') || value.includes('냉각')) return '전력·냉각';
+  if (value.includes('클라우드')) return '클라우드 수요';
+  return '수요 연결';
+}
 
 function marketMoverRegion(market: string): 'KR' | 'US' {
   return market === 'KOSPI' || market === 'KOSDAQ' ? 'KR' : 'US';
@@ -2677,6 +2895,11 @@ function App() {
   const [listingFilter, setListingFilter] = useState<ListingFilter>('all');
   const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
   const [confidenceFilter, setConfidenceFilter] = useState<string>('all');
+  const [mapViewMode, setMapViewMode] = useState<MapViewMode>('core');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [showReferenceNodes, setShowReferenceNodes] = useState(false);
+  const [showNeedsVerification, setShowNeedsVerification] = useState(false);
+  const [showDetailedLinks, setShowDetailedLinks] = useState(false);
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -2690,12 +2913,33 @@ function App() {
   const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId) ?? topAnchors[0];
   const groupCompanies = companies.filter((company) => company.anchorId === selectedAnchor.id);
   const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
+  const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
+  const hasSearchQuery = Boolean(query.trim());
   const baseVisibleCompanies = getVisibleCompanies(selectedAnchor.id, query, riskFilter);
   const visibleCompanies = baseVisibleCompanies.filter((company) => {
     const matchesStage = stageFilter === 'all' || companyValueChainStage(company) === stageFilter;
     const matchesListing =
       listingFilter === 'all' ||
       (listingFilter === 'listed' ? isMainListedCompany(company) : !isMainListedCompany(company));
+    const matchesRole = !isAiRelationshipMap || matchesRoleFilter(company, roleFilter);
+    const matchesCoreMode =
+      !isAiRelationshipMap ||
+      mapViewMode === 'all' ||
+      roleFilter !== 'all' ||
+      hasSearchQuery ||
+      aiCoreCompanyIds.has(company.id) ||
+      company.id === selectedCompanyId;
+    const matchesReferenceVisibility =
+      !isAiRelationshipMap ||
+      showReferenceNodes ||
+      roleFilter === 'reference' ||
+      isMainListedCompany(company) ||
+      company.id === selectedCompanyId;
+    const matchesVerificationVisibility =
+      !isAiRelationshipMap ||
+      showNeedsVerification ||
+      !relationshipConfidenceLabel(company).includes('검증') ||
+      company.id === selectedCompanyId;
     const matchesRelationship =
       relationshipFilter === 'all' ||
       relationshipTypeLabel(company) === relationshipFilter ||
@@ -2704,7 +2948,16 @@ function App() {
       confidenceFilter === 'all' ||
       relationshipConfidenceLabel(company) === confidenceFilter ||
       groupLinks.some((link) => (link.source === company.id || link.target === company.id) && linkConfidenceLabel(link) === confidenceFilter);
-    return matchesStage && matchesListing && matchesRelationship && matchesConfidence;
+    return (
+      matchesStage &&
+      matchesListing &&
+      matchesRole &&
+      matchesCoreMode &&
+      matchesReferenceVisibility &&
+      matchesVerificationVisibility &&
+      matchesRelationship &&
+      matchesConfidence
+    );
   });
   const stageOptions = Array.from(new Set(groupCompanies.map((company) => companyValueChainStage(company))));
   const relationshipOptions = Array.from(
@@ -2715,7 +2968,15 @@ function App() {
   );
   const confidenceOptions = ['공식 확인', '공시·IR 기준', '공시·IR 기준 확인 필요', '산업상 관련', '검증 필요'];
   const visibleIds = new Set(visibleCompanies.map((company) => company.id));
-  const visibleLinks = groupLinks.filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target));
+  const visibleLinks = groupLinks
+    .filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target))
+    .filter((link) => {
+      if (!isAiRelationshipMap) return true;
+      const relationship = linkRelationshipSummary(link);
+      if (!showNeedsVerification && relationship.confidence.includes('검증')) return false;
+      if (mapViewMode === 'core' && roleFilter === 'all' && !hasSearchQuery && !showDetailedLinks) return aiCoreLinkIds.has(link.id);
+      return true;
+    });
   const selectedCompany =
     groupCompanies.find((company) => company.id === selectedCompanyId) ??
     visibleCompanies.find((company) => company.tier !== 'anchor') ??
@@ -2729,6 +2990,7 @@ function App() {
       : null;
   const selectedDependency = selectedCompany ? dependencySummary(selectedCompany, groupLinks) : null;
   const selectedMoat = selectedCompany ? companyMoatSummary(selectedCompany) : null;
+  const selectedRole = selectedCompany ? companyRoleProfile(selectedCompany) : null;
   const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
@@ -2736,6 +2998,30 @@ function App() {
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
+  const firstLookCompanies = aiFirstLookIds
+    .map((id) => groupCompanies.find((company) => company.id === id))
+    .filter((company): company is Company => Boolean(company));
+  const visibleStageColumns = aiStageColumns
+    .map((stage) => ({
+      stage,
+      companies: visibleCompanies.filter((company) => {
+        const companyStage = companyValueChainStage(company);
+        if (stage === '장비 / 소재 / 후공정') {
+          return companyStage.includes('장비') || companyStage.includes('소재') || companyStage.includes('부품') || companyStage.includes('후공정') || companyStage.includes('테스트');
+        }
+        if (stage === '데이터센터 전력·냉각') return companyStage.includes('전력') || companyStage.includes('냉각');
+        return companyStage === stage;
+      }),
+    }))
+    .filter((item) => item.companies.length);
+  const roleFilterOptions: Array<{ value: RoleFilter; label: string; note: string }> = [
+    { value: 'all', label: mapViewMode === 'core' ? '핵심 관계' : '전체', note: '기본 흐름' },
+    { value: 'leader', label: '대장주', note: '먼저 볼 기업' },
+    { value: 'bottleneck', label: '핵심 병목', note: '흐름의 관문' },
+    { value: 'beneficiary', label: '수요 수혜', note: '함께 볼 기업' },
+    { value: 'listed', label: '상장기업', note: '분석 대상' },
+    { value: 'reference', label: '비상장 참고', note: '관계 보조' },
+  ];
   const routePath = route.split('?')[0];
   const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
   const routeParams = new URLSearchParams(routeQuery);
@@ -2795,7 +3081,7 @@ function App() {
 
   const flowNodes: Node<NodeData>[] = useMemo(
     () =>
-      groupCompanies.map((company) => {
+      (isAiRelationshipMap ? visibleCompanies : groupCompanies).map((company) => {
         const isVisible = visibleIds.has(company.id);
         return {
           id: company.id,
@@ -2811,43 +3097,50 @@ function App() {
           },
         };
       }),
-    [connectedIds, groupCompanies, selectedCompany, visibleIds],
+    [connectedIds, groupCompanies, isAiRelationshipMap, selectedCompany, visibleCompanies, visibleIds],
   );
 
   const flowEdges: Edge[] = useMemo(
     () =>
-      groupLinks.map((link) => {
+      (isAiRelationshipMap ? visibleLinks : groupLinks).map((link) => {
         const isVisible = visibleLinks.some((visibleLink) => visibleLink.id === link.id);
         const isConnected = selectedCompany ? link.source === selectedCompany.id || link.target === selectedCompany.id : false;
         const relationship = linkRelationshipSummary(link);
+        const confidenceClass = confidenceClassName(relationship.confidence);
+        const edgeColor = relationshipEdgeColor(relationship.type);
         return {
           id: link.id,
           source: link.source,
           target: link.target,
-          label: relationship.type,
+          label: showDetailedLinks ? relationship.type : shortRelationshipLabel(relationship.type),
           animated: isConnected,
           type: 'smoothstep',
-          className: [isVisible ? '' : 'edge-hidden', isConnected ? 'edge-active' : ''].join(' '),
+          className: [
+            isVisible ? '' : 'edge-hidden',
+            isConnected ? 'edge-active' : '',
+            `edge-confidence-${confidenceClass}`,
+            `edge-kind-${relationshipKindClass(relationship.type)}`,
+          ].join(' '),
           style: {
-            strokeWidth: isConnected ? 3 : 2,
-            stroke: isConnected ? '#2563eb' : '#9ca3af',
+            strokeWidth: isConnected ? 3.2 : 2,
+            stroke: isConnected ? edgeColor : edgeColor,
           },
           labelStyle: {
-            fill: isConnected ? '#0057d9' : '#475569',
+            fill: isConnected ? edgeColor : '#475569',
             fontWeight: isConnected ? 800 : 700,
-            fontSize: 12,
+            fontSize: showDetailedLinks ? 12 : 11,
           },
           labelBgStyle: {
             fill: '#f8fafc',
             fillOpacity: 1,
-            stroke: isConnected ? '#7bb5ff' : '#d8dee8',
+            stroke: isConnected ? edgeColor : '#d8dee8',
             strokeWidth: 1,
           },
           labelBgPadding: [11, 7],
           labelBgBorderRadius: 8,
         };
       }),
-    [groupLinks, selectedCompany, visibleLinks],
+    [groupLinks, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
   );
 
   useEffect(() => {
@@ -2930,6 +3223,11 @@ function App() {
     setListingFilter('all');
     setRelationshipFilter('all');
     setConfidenceFilter('all');
+    setMapViewMode('core');
+    setRoleFilter('all');
+    setShowReferenceNodes(false);
+    setShowNeedsVerification(false);
+    setShowDetailedLinks(false);
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -2981,6 +3279,11 @@ function App() {
     setListingFilter('all');
     setRelationshipFilter('all');
     setConfidenceFilter('all');
+    setMapViewMode('core');
+    setRoleFilter('all');
+    setShowReferenceNodes(false);
+    setShowNeedsVerification(false);
+    setShowDetailedLinks(false);
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(nextSector.id));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -3005,6 +3308,11 @@ function App() {
     setListingFilter('all');
     setRelationshipFilter('all');
     setConfidenceFilter('all');
+    setMapViewMode('core');
+    setRoleFilter('all');
+    setShowReferenceNodes(false);
+    setShowNeedsVerification(false);
+    setShowDetailedLinks(false);
   }
 
   if (isPicksRoute) {
@@ -3105,6 +3413,27 @@ function App() {
             <div><strong>병목 기업</strong><span>없으면 산업 흐름이 막힐 수 있는 핵심 기업</span></div>
           </div>
 
+          {isAiRelationshipMap && (
+            <section className="first-look-card" aria-label="먼저 볼 기업">
+              <div className="section-title">
+                <Target size={16} />
+                <span>먼저 볼 기업</span>
+              </div>
+              <div className="first-look-list">
+                {firstLookCompanies.map((company, index) => {
+                  const role = companyRoleProfile(company);
+                  return (
+                    <button key={company.id} type="button" onClick={() => setSelectedCompanyId(company.id)}>
+                      <span>{index + 1}</span>
+                      <strong>{company.name}</strong>
+                      <small>{role.primary} · {role.secondary}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           <div className="anchor-list">
             <div className="section-title">
               <Target size={16} />
@@ -3142,87 +3471,107 @@ function App() {
             />
           </div>
 
-          <div className="filter-row" aria-label="리스크 필터">
-            <button className={riskFilter === 'all' ? 'active' : ''} onClick={() => setRiskFilter('all')} type="button">
-              전체
-            </button>
-            <button className={riskFilter === 'high' ? 'active danger' : ''} onClick={() => setRiskFilter('high')} type="button">
-              고위험
-            </button>
-            <button className={riskFilter === 'medium' ? 'active warn' : ''} onClick={() => setRiskFilter('medium')} type="button">
-              중간
-            </button>
-            <button className={riskFilter === 'low' ? 'active stable' : ''} onClick={() => setRiskFilter('low')} type="button">
-              낮음
-            </button>
-          </div>
-
-          <div className="stage-filter" aria-label="밸류체인 단계 필터">
-            <span>밸류체인 단계</span>
+          <div className="role-filter-card" aria-label="기본 역할 필터">
+            <span>기본 필터</span>
             <div>
-              <button type="button" className={stageFilter === 'all' ? 'active' : ''} onClick={() => setStageFilter('all')}>
-                전체
-              </button>
-              {stageOptions.map((stage) => (
-                <button key={stage} type="button" className={stageFilter === stage ? 'active' : ''} onClick={() => setStageFilter(stage)}>
-                  {stage}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="stage-filter" aria-label="상장 여부 필터">
-            <span>분석 대상 구분</span>
-            <div>
-              {[
-                { value: 'all', label: '전체' },
-                { value: 'listed', label: '상장기업' },
-                { value: 'reference', label: '비상장/참고' },
-              ].map((filter) => (
+              {roleFilterOptions.map((filter) => (
                 <button
                   key={filter.value}
                   type="button"
-                  className={listingFilter === filter.value ? 'active' : ''}
-                  onClick={() => setListingFilter(filter.value as ListingFilter)}
+                  className={roleFilter === filter.value ? 'active' : ''}
+                  onClick={() => setRoleFilter(filter.value)}
                 >
-                  {filter.label}
+                  <strong>{filter.label}</strong>
+                  <small>{filter.note}</small>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="stage-filter" aria-label="관계 유형 필터">
-            <span>관계 유형</span>
-            <div>
-              <button type="button" className={relationshipFilter === 'all' ? 'active' : ''} onClick={() => setRelationshipFilter('all')}>
+          <details className="advanced-filter-card">
+            <summary>고급 필터 열기</summary>
+            <div className="filter-row" aria-label="리스크 필터">
+              <button className={riskFilter === 'all' ? 'active' : ''} onClick={() => setRiskFilter('all')} type="button">
                 전체
               </button>
-              {relationshipOptions.map((type) => (
-                <button key={type} type="button" className={relationshipFilter === type ? 'active' : ''} onClick={() => setRelationshipFilter(type)}>
-                  {type}
-                </button>
-              ))}
+              <button className={riskFilter === 'high' ? 'active danger' : ''} onClick={() => setRiskFilter('high')} type="button">
+                고위험
+              </button>
+              <button className={riskFilter === 'medium' ? 'active warn' : ''} onClick={() => setRiskFilter('medium')} type="button">
+                중간
+              </button>
+              <button className={riskFilter === 'low' ? 'active stable' : ''} onClick={() => setRiskFilter('low')} type="button">
+                낮음
+              </button>
             </div>
-          </div>
 
-          <div className="stage-filter" aria-label="관계 확실성 필터">
-            <span>관계 확실성</span>
-            <div>
-              <button type="button" className={confidenceFilter === 'all' ? 'active' : ''} onClick={() => setConfidenceFilter('all')}>
-                전체
-              </button>
-              {confidenceOptions.map((confidence) => (
-                <button
-                  key={confidence}
-                  type="button"
-                  className={confidenceFilter === confidence ? 'active' : ''}
-                  onClick={() => setConfidenceFilter(confidence)}
-                >
-                  {confidence}
+            <div className="stage-filter" aria-label="밸류체인 단계 필터">
+              <span>밸류체인 단계</span>
+              <div>
+                <button type="button" className={stageFilter === 'all' ? 'active' : ''} onClick={() => setStageFilter('all')}>
+                  전체
                 </button>
-              ))}
+                {stageOptions.map((stage) => (
+                  <button key={stage} type="button" className={stageFilter === stage ? 'active' : ''} onClick={() => setStageFilter(stage)}>
+                    {stage}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+
+            <div className="stage-filter" aria-label="상장 여부 필터">
+              <span>분석 대상 구분</span>
+              <div>
+                {[
+                  { value: 'all', label: '전체' },
+                  { value: 'listed', label: '상장기업' },
+                  { value: 'reference', label: '비상장/참고' },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    className={listingFilter === filter.value ? 'active' : ''}
+                    onClick={() => setListingFilter(filter.value as ListingFilter)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="stage-filter" aria-label="관계 유형 필터">
+              <span>관계 유형</span>
+              <div>
+                <button type="button" className={relationshipFilter === 'all' ? 'active' : ''} onClick={() => setRelationshipFilter('all')}>
+                  전체
+                </button>
+                {relationshipOptions.map((type) => (
+                  <button key={type} type="button" className={relationshipFilter === type ? 'active' : ''} onClick={() => setRelationshipFilter(type)}>
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="stage-filter" aria-label="관계 확실성 필터">
+              <span>관계 확실성</span>
+              <div>
+                <button type="button" className={confidenceFilter === 'all' ? 'active' : ''} onClick={() => setConfidenceFilter('all')}>
+                  전체
+                </button>
+                {confidenceOptions.map((confidence) => (
+                  <button
+                    key={confidence}
+                    type="button"
+                    className={confidenceFilter === confidence ? 'active' : ''}
+                    onClick={() => setConfidenceFilter(confidence)}
+                  >
+                    {confidence}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </details>
 
           <div className="metric-grid">
             <div className="metric">
@@ -3248,30 +3597,33 @@ function App() {
               <Filter size={16} />
               <span>선택 기업 관계</span>
             </div>
-            {visibleCompanies.map((company) => (
-              <div className={`company-row-card ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
-                <button
-                  className="company-row"
-                  onClick={() => setSelectedCompanyId(company.id)}
-                  type="button"
-                >
-                  <span className={`tier-pill ${company.tier}`}>{tierLabels[company.tier]}</span>
-                  <span className="company-row-main">
-                    <strong>{company.name}</strong>
-                    <small>{companyValueChainStage(company)} · {productText(company)}</small>
-                    <em>{companyScopeLabel(company)}</em>
-                  </span>
-                  <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
-                </button>
-                {isMainListedCompany(company) ? (
-                  <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
-                    재무·공시 보기
+            {visibleCompanies.map((company) => {
+              const role = companyRoleProfile(company);
+              return (
+                <div className={`company-row-card ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
+                  <button
+                    className="company-row"
+                    onClick={() => setSelectedCompanyId(company.id)}
+                    type="button"
+                  >
+                    <span className={`role-badge role-${role.className}`}>{role.primary}</span>
+                    <span className="company-row-main">
+                      <strong>{company.name}</strong>
+                      <small>{role.secondary} · {productText(company)}</small>
+                      <em>{companyScopeLabel(company)}</em>
+                    </span>
+                    <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
                   </button>
-                ) : (
-                  <span className="company-row-disabled">관계 참고용</span>
-                )}
-              </div>
-            ))}
+                  {isMainListedCompany(company) ? (
+                    <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
+                      재무·공시 보기
+                    </button>
+                  ) : (
+                    <span className="company-row-disabled">관계 참고용</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </aside>
 
@@ -3287,7 +3639,7 @@ function App() {
               <p className="eyebrow">
                 {country.label} · {selectedSector.label}
               </p>
-              <h2>{selectedAnchor.name} 기업 관계 지도</h2>
+              <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 기업 관계 지도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">{selectedSector.description}</p>
               {selectedCompany && (
                 <div className="selected-company-context">
@@ -3341,6 +3693,41 @@ function App() {
               {selectedCompany && !selectedIsMainListed && <span className="topbar-reference-note">비상장 / 공시 확인 어려움</span>}
             </div>
           </header>
+
+          {isAiRelationshipMap && (
+            <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
+              <div className="sector-flow-copy">
+                <span>이 섹터는 이렇게 움직입니다</span>
+                <strong>AI 서버 수요가 늘면 AI 칩, HBM 메모리, 파운드리, 후공정 장비, 데이터센터 전력·냉각 기업을 함께 봅니다.</strong>
+                <p>직접 납품을 단정하지 않고, 관계 확실성을 확인하면서 상장기업 중심으로 살펴봅니다.</p>
+              </div>
+              <div className="map-mode-strip" aria-label="지도 표시 모드">
+                <button type="button" className={mapViewMode === 'core' ? 'active' : ''} onClick={() => setMapViewMode('core')}>
+                  핵심 관계
+                </button>
+                <button type="button" className={mapViewMode === 'all' ? 'active' : ''} onClick={() => setMapViewMode('all')}>
+                  전체 관계
+                </button>
+                <button type="button" className={showReferenceNodes ? 'active' : ''} onClick={() => setShowReferenceNodes((current) => !current)}>
+                  비상장 참고
+                </button>
+                <button type="button" className={showNeedsVerification ? 'active' : ''} onClick={() => setShowNeedsVerification((current) => !current)}>
+                  검증 필요 포함
+                </button>
+                <button type="button" className={showDetailedLinks ? 'active' : ''} onClick={() => setShowDetailedLinks((current) => !current)}>
+                  상세 연결선
+                </button>
+              </div>
+              <div className="mobile-stage-cards" aria-label="단계별 기업 요약">
+                {visibleStageColumns.map((stage) => (
+                  <article key={stage.stage}>
+                    <span>{stage.stage}</span>
+                    <strong>{stage.companies.slice(0, 3).map((company) => company.name).join(' · ')}</strong>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
             <ReactFlow
@@ -3437,8 +3824,9 @@ function App() {
 
               <div className="detail-card summary">
                 <div className="summary-main">
-                  <span className={`tier-pill ${selectedCompany.tier}`}>{tierLabels[selectedCompany.tier]}</span>
+                  {selectedRole && <span className={`role-badge large role-${selectedRole.className}`}>{selectedRole.primary}</span>}
                   <span className={`scope-pill ${selectedIsMainListed ? 'listed' : 'reference'}`}>{companyScopeLabel(selectedCompany)}</span>
+                  {selectedRole && <p className="role-explanation">{selectedRole.explanation}</p>}
                   <strong>{companyBusinessSummary(selectedCompany)}</strong>
                   <p>{companyScopeDetail(selectedCompany)}</p>
                   {selectedIsMainListed ? (
@@ -3473,7 +3861,11 @@ function App() {
                 <article>
                   <span>밸류체인 단계 <em>제품이 만들어지고 팔리기까지의 연결 구조</em></span>
                   <strong>{companyValueChainStage(selectedCompany)}</strong>
-                  <p>{relationshipTypeLabel(selectedCompany)} · {relationshipConfidenceLabel(selectedCompany)}</p>
+                  <p>{relationshipTypeLabel(selectedCompany)}</p>
+                  <span className={`confidence-badge ${confidenceClassName(relationshipConfidenceLabel(selectedCompany))}`}>
+                    {relationshipConfidenceLabel(selectedCompany)}
+                    <em>{confidenceHelpText(relationshipConfidenceLabel(selectedCompany))}</em>
+                  </span>
                 </article>
                 <article>
                   <span>경제적 해자 <em>경쟁사가 쉽게 따라오기 어려운 이유</em></span>
@@ -3612,7 +4004,12 @@ function App() {
                       return (
                         <button key={link.id} type="button" onClick={() => setSelectedCompanyId(counterpartId)}>
                           <span>{counterpart?.name}</span>
-                          <small>{relationship.type} · {relationship.confidence}</small>
+                          <small>
+                            {relationship.type}
+                            <span className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`} title={confidenceHelpText(relationship.confidence)}>
+                              {relationship.confidence}
+                            </span>
+                          </small>
                           <em>{relationship.description}</em>
                           <em>무엇을 파는가: {relationship.whatIsSold}</em>
                           <em>수요 연결: {relationship.demandConnection}</em>
