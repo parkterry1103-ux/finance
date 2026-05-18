@@ -132,6 +132,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
           <span className="node-tier">{tierLabels[company.tier]}</span>
           {isSelected && <span className="selected-company-badge">선택한 기업</span>}
           {isAnchor && <span className="anchor-company-badge">섹터 중심</span>}
+          <span className={`scope-badge ${isMainListedCompany(company) ? 'listed' : 'reference'}`}>{companyScopeLabel(company)}</span>
         </span>
         <span className={`risk-dot ${riskClass[company.riskLevel]}`} title={`리스크 ${riskLabels[company.riskLevel]}`} />
       </div>
@@ -252,6 +253,29 @@ function marketDisplayLabel(company: Company) {
   return 'NASDAQ';
 }
 
+function hasTradableTicker(company: Company) {
+  const ticker = company.ticker?.trim();
+  return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장');
+}
+
+function isMainListedCompany(company: Company) {
+  const reportLink = getPrimaryReportLink(company);
+  return hasTradableTicker(company) || reportLink.status === 'direct' || reportLink.status === 'search-only';
+}
+
+function companyScopeLabel(company: Company) {
+  if (isMainListedCompany(company)) return '상장기업';
+  const reportLink = getPrimaryReportLink(company);
+  if (reportLink.status === 'private-company') return '비상장 참고 기업';
+  if (reportLink.status === 'no-public-filing') return '공시 확인 어려움';
+  return '관계 참고용';
+}
+
+function companyScopeDetail(company: Company) {
+  if (isMainListedCompany(company)) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
+  return '비상장 또는 공시 연결 전 기업입니다. 투자 분석보다 관계 이해용 보조 노드로 봅니다.';
+}
+
 function productText(company: Company) {
   return (company.mainProducts?.length ? company.mainProducts : company.products).slice(0, 3).join(', ') || '주요 제품 확인 필요';
 }
@@ -298,6 +322,17 @@ function companyMoatSummary(company: Company) {
   };
 }
 
+function bottleneckSummary(company: Company) {
+  const stage = companyValueChainStage(company);
+  if (stage.includes('장비') || stage.includes('테스트') || stage.includes('후공정') || stage.includes('전력/냉각')) {
+    return '핵심 공정이나 인프라에 가까워 수요가 몰릴 때 병목 기업이 될 수 있습니다. 단, 실제 병목 여부는 수주·CAPA·고객 인증 자료로 확인해야 합니다.';
+  }
+  if (company.tier === 'anchor') {
+    return '섹터 수요를 이끄는 중심 기업입니다. 이 회사의 투자·재고·수요 변화가 주변 기업으로 번질 수 있습니다.';
+  }
+  return '같은 밸류체인에서 함께 볼 기업입니다. 산업 흐름을 막는 핵심 병목인지는 추가 검증이 필요합니다.';
+}
+
 function companyInvestorWatchPoint(company: Company) {
   return company.investorWatchPoint ?? '수요 변화, 원문 공시, 고객 다변화 여부를 함께 확인합니다.';
 }
@@ -326,6 +361,7 @@ function linkRelationshipSummary(link: (typeof links)[number]) {
 }
 
 type MoverRegionFilter = 'all' | 'KR' | 'US';
+type ListingFilter = 'all' | 'listed' | 'reference';
 
 function marketMoverRegion(market: string): 'KR' | 'US' {
   return market === 'KOSPI' || market === 'KOSDAQ' ? 'KR' : 'US';
@@ -2626,6 +2662,8 @@ function App() {
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
   const [stageFilter, setStageFilter] = useState<string>('all');
+  const [listingFilter, setListingFilter] = useState<ListingFilter>('all');
+  const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -2640,8 +2678,16 @@ function App() {
   const groupCompanies = companies.filter((company) => company.anchorId === selectedAnchor.id);
   const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
   const baseVisibleCompanies = getVisibleCompanies(selectedAnchor.id, query, riskFilter);
-  const visibleCompanies = baseVisibleCompanies.filter((company) => stageFilter === 'all' || companyValueChainStage(company) === stageFilter);
+  const visibleCompanies = baseVisibleCompanies.filter((company) => {
+    const matchesStage = stageFilter === 'all' || companyValueChainStage(company) === stageFilter;
+    const matchesListing =
+      listingFilter === 'all' ||
+      (listingFilter === 'listed' ? isMainListedCompany(company) : !isMainListedCompany(company));
+    const matchesRelationship = relationshipFilter === 'all' || relationshipTypeLabel(company) === relationshipFilter;
+    return matchesStage && matchesListing && matchesRelationship;
+  });
   const stageOptions = Array.from(new Set(groupCompanies.map((company) => companyValueChainStage(company)))).slice(0, 8);
+  const relationshipOptions = Array.from(new Set(groupCompanies.map((company) => relationshipTypeLabel(company)))).slice(0, 8);
   const visibleIds = new Set(visibleCompanies.map((company) => company.id));
   const visibleLinks = groupLinks.filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target));
   const selectedCompany =
@@ -2659,7 +2705,8 @@ function App() {
   const selectedMoat = selectedCompany ? companyMoatSummary(selectedCompany) : null;
   const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
-  const selectedCompanyPrice = selectedCompany ? getPriceForCompany(selectedCompany, marketPrices) : null;
+  const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
+  const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
@@ -2854,6 +2901,8 @@ function App() {
     setQuery('');
     setRiskFilter('all');
     setStageFilter('all');
+    setListingFilter('all');
+    setRelationshipFilter('all');
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -2902,6 +2951,8 @@ function App() {
     setQuery('');
     setRiskFilter('all');
     setStageFilter('all');
+    setListingFilter('all');
+    setRelationshipFilter('all');
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(nextSector.id));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -2923,6 +2974,8 @@ function App() {
     setQuery('');
     setRiskFilter('all');
     setStageFilter('all');
+    setListingFilter('all');
+    setRelationshipFilter('all');
   }
 
   if (isPicksRoute) {
@@ -3016,6 +3069,13 @@ function App() {
           </div>
           <p className="context-copy">상장기업을 중심으로 고객사, 공급사, 장비, 소재, 최종 수요 관계를 봅니다.</p>
 
+          <div className="term-guide" aria-label="초보자용 용어 설명">
+            <div><strong>밸류체인</strong><span>제품이 만들어지고 팔리기까지의 연결 구조</span></div>
+            <div><strong>경제적 해자</strong><span>경쟁사가 쉽게 따라오기 어려운 이유</span></div>
+            <div><strong>고객 의존도</strong><span>매출이 특정 고객에게 얼마나 기대는지</span></div>
+            <div><strong>병목 기업</strong><span>없으면 산업 흐름이 막힐 수 있는 핵심 기업</span></div>
+          </div>
+
           <div className="anchor-list">
             <div className="section-title">
               <Target size={16} />
@@ -3082,6 +3142,40 @@ function App() {
             </div>
           </div>
 
+          <div className="stage-filter" aria-label="상장 여부 필터">
+            <span>분석 대상 구분</span>
+            <div>
+              {[
+                { value: 'all', label: '전체' },
+                { value: 'listed', label: '상장기업' },
+                { value: 'reference', label: '비상장/참고' },
+              ].map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  className={listingFilter === filter.value ? 'active' : ''}
+                  onClick={() => setListingFilter(filter.value as ListingFilter)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="stage-filter" aria-label="관계 유형 필터">
+            <span>관계 유형</span>
+            <div>
+              <button type="button" className={relationshipFilter === 'all' ? 'active' : ''} onClick={() => setRelationshipFilter('all')}>
+                전체
+              </button>
+              {relationshipOptions.map((type) => (
+                <button key={type} type="button" className={relationshipFilter === type ? 'active' : ''} onClick={() => setRelationshipFilter(type)}>
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="metric-grid">
             <div className="metric">
               <span>중심 기업</span>
@@ -3117,12 +3211,17 @@ function App() {
                   <span className="company-row-main">
                     <strong>{company.name}</strong>
                     <small>{companyValueChainStage(company)} · {productText(company)}</small>
+                    <em>{companyScopeLabel(company)}</em>
                   </span>
                   <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
                 </button>
-                <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
-                  재무·공시 보기
-                </button>
+                {isMainListedCompany(company) ? (
+                  <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
+                    재무·공시 보기
+                  </button>
+                ) : (
+                  <span className="company-row-disabled">관계 참고용</span>
+                )}
               </div>
             ))}
           </div>
@@ -3167,12 +3266,13 @@ function App() {
               <button
                 type="button"
                 className="icon-action text-action"
+                disabled={!selectedIsMainListed}
                 onClick={() => selectedCompany && openAnalysis(selectedCompany)}
               >
                 <Database size={18} />
-                재무·공시
+                {selectedIsMainListed ? '재무·공시' : '관계 참고용'}
               </button>
-              {selectedReportLink && (
+              {selectedReportLink && selectedIsMainListed && (
                 <ReportAction
                   reportLink={selectedReportLink}
                   className="topbar-report-action"
@@ -3190,6 +3290,7 @@ function App() {
                   }
                 />
               )}
+              {selectedCompany && !selectedIsMainListed && <span className="topbar-reference-note">비상장 / 공시 확인 어려움</span>}
             </div>
           </header>
 
@@ -3275,7 +3376,11 @@ function App() {
                   <span>{selectedCompany.legalName}</span>
                 </div>
                 <div className="panel-heading-actions">
-                  <PriceBadge price={selectedCompanyPrice} compact />
+                  {selectedIsMainListed && hasTradableTicker(selectedCompany) ? (
+                    <PriceBadge price={selectedCompanyPrice} compact />
+                  ) : (
+                    <span className="reference-status-pill">{selectedIsMainListed ? '가격 티커 연결 필요' : companyScopeLabel(selectedCompany)}</span>
+                  )}
                   <span className={`risk-badge ${riskClass[selectedCompany.riskLevel]}`}>
                     리스크 {riskLabels[selectedCompany.riskLevel]}
                   </span>
@@ -3285,14 +3390,19 @@ function App() {
               <div className="detail-card summary">
                 <div className="summary-main">
                   <span className={`tier-pill ${selectedCompany.tier}`}>{tierLabels[selectedCompany.tier]}</span>
+                  <span className={`scope-pill ${selectedIsMainListed ? 'listed' : 'reference'}`}>{companyScopeLabel(selectedCompany)}</span>
                   <strong>{companyBusinessSummary(selectedCompany)}</strong>
-                  <p>초보자는 먼저 이 회사가 무엇을 팔고, 누구의 수요와 연결되는지부터 보면 됩니다.</p>
-                  <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
-                    <FileSearch size={15} />
-                    재무제표 해설 열기
-                  </button>
-                  {selectedReportLink && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
-                  {selectedReportLink && (
+                  <p>{companyScopeDetail(selectedCompany)}</p>
+                  {selectedIsMainListed ? (
+                    <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
+                      <FileSearch size={15} />
+                      재무제표 자세히 보기
+                    </button>
+                  ) : (
+                    <span className="reference-status-card">주가·기관 보유·공식 재무분석은 상장기업 중심으로 제공합니다.</span>
+                  )}
+                  {selectedReportLink && selectedIsMainListed && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
+                  {selectedReportLink && selectedIsMainListed && (
                     <div className={`report-state-note ${selectedReportLink.status}`}>
                       <strong>{selectedReportLink.statusLabel}</strong>
                       <span>{selectedReportLink.statusDetail}</span>
@@ -3308,17 +3418,17 @@ function App() {
                   <p>{companyBusinessSummary(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>누구에게 파는가</span>
+                  <span>누구 수요와 연결되는가</span>
                   <strong>{companyCustomerSummary(selectedCompany)}</strong>
                   <p>{companyCustomerExposure(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>밸류체인 단계</span>
+                  <span>밸류체인 단계 <em>제품이 만들어지고 팔리기까지의 연결 구조</em></span>
                   <strong>{companyValueChainStage(selectedCompany)}</strong>
                   <p>{relationshipTypeLabel(selectedCompany)} · {relationshipConfidenceLabel(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>경제적 해자</span>
+                  <span>경제적 해자 <em>경쟁사가 쉽게 따라오기 어려운 이유</em></span>
                   <strong>{selectedMoat?.title}</strong>
                   <p>{selectedMoat?.explanation}</p>
                 </article>
@@ -3329,35 +3439,44 @@ function App() {
                 </article>
               </div>
 
-              <div className="finance-grid">
-                <div className="finance-item">
-                  <CircleDollarSign size={17} />
-                  <span>매출</span>
-                  <strong>{selectedRevenueDisplay?.primary ?? selectedDisplayMetrics.revenue}</strong>
-                  <small>{selectedRevenueDisplay?.sourceUnit ?? selectedDisplayMetrics.revenueUnit}</small>
+              {selectedIsMainListed ? (
+                <>
+                  <div className="finance-grid">
+                    <div className="finance-item">
+                      <CircleDollarSign size={17} />
+                      <span>매출</span>
+                      <strong>{selectedRevenueDisplay?.primary ?? selectedDisplayMetrics.revenue}</strong>
+                      <small>{selectedRevenueDisplay?.sourceUnit ?? selectedDisplayMetrics.revenueUnit}</small>
+                    </div>
+                    <div className="finance-item">
+                      <LineChart size={17} />
+                      <span>성장률</span>
+                      <strong>{selectedDisplayMetrics.growth}</strong>
+                      <small>{selectedDisplayMetrics.growthBasis}</small>
+                    </div>
+                    <div className="finance-item">
+                      <BarChart3 size={17} />
+                      <span>영업이익률</span>
+                      <strong>{selectedDisplayMetrics.opMargin}</strong>
+                    </div>
+                    <div className="finance-item">
+                      <AlertTriangle size={17} />
+                      <span>부채비율</span>
+                      <strong>{selectedDisplayMetrics.debtRatio}</strong>
+                    </div>
+                  </div>
+                  <p className="finance-basis">{selectedRevenueDisplay?.basis ?? selectedDisplayMetrics.revenueBasis}</p>
+                </>
+              ) : (
+                <div className="reference-finance-note">
+                  <strong>공식 재무정보 확인 어려움</strong>
+                  <p>비상장 또는 공시 연결 전 기업은 출처 없는 매출·영업이익률·부채비율을 표시하지 않습니다.</p>
                 </div>
-                <div className="finance-item">
-                  <LineChart size={17} />
-                  <span>성장률</span>
-                  <strong>{selectedDisplayMetrics.growth}</strong>
-                  <small>{selectedDisplayMetrics.growthBasis}</small>
-                </div>
-                <div className="finance-item">
-                  <BarChart3 size={17} />
-                  <span>영업이익률</span>
-                  <strong>{selectedDisplayMetrics.opMargin}</strong>
-                </div>
-                <div className="finance-item">
-                  <AlertTriangle size={17} />
-                  <span>부채비율</span>
-                  <strong>{selectedDisplayMetrics.debtRatio}</strong>
-                </div>
-              </div>
-              <p className="finance-basis">{selectedRevenueDisplay?.basis ?? selectedDisplayMetrics.revenueBasis}</p>
+              )}
 
               {selectedDependency && (
                 <div className={`dependency-card ${selectedDependency.className}`}>
-                  <span>고객 의존도</span>
+                  <span>고객 의존도 <em>매출이 특정 고객에게 얼마나 기대는지</em></span>
                   <strong>{selectedDependency.level}</strong>
                   {selectedDependency.value && <em>{selectedDependency.value}</em>}
                   <p>{selectedDependency.copy}</p>
@@ -3411,6 +3530,10 @@ function App() {
                     <dt>검증 상태</dt>
                     <dd>{relationshipSourceNote(selectedCompany)}</dd>
                   </div>
+                  <div>
+                    <dt>병목 기업</dt>
+                    <dd>{bottleneckSummary(selectedCompany)}</dd>
+                  </div>
                 </dl>
               </div>
 
@@ -3441,9 +3564,8 @@ function App() {
                       return (
                         <button key={link.id} type="button" onClick={() => setSelectedCompanyId(counterpartId)}>
                           <span>{counterpart?.name}</span>
-                          <small>
-                            {relationship.type} · {relationship.confidence}
-                          </small>
+                          <small>{relationship.type} · {relationship.confidence}</small>
+                          {counterpart && <em>{productText(counterpart)} · {companyCustomerSummary(counterpart)}</em>}
                         </button>
                       );
                     })}

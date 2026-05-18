@@ -537,6 +537,15 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 
 기업 카드의 첫 화면은 `businessSummary`, `mainProducts`, `valueChainStage`, `mainCustomers`, `customerExposure`, `revenueExposure`, `moat`, `moatExplanation`, `investorWatchPoint`, `relationshipType`, `relationshipConfidence`, `sourceNotes`를 우선 사용합니다. 공식 공시·IR로 확인되지 않은 고객별 매출 비중은 숫자로 표시하지 않고 “미공개 / 확인 필요”로 표시합니다.
 
+사용자 화면의 기본 용어는 유지하되 짧은 설명을 같이 붙입니다.
+
+- 경제적 해자: 경쟁사가 쉽게 따라오기 어려운 이유
+- 고객 의존도: 매출이 특정 고객에게 얼마나 기대는지
+- 병목 기업: 없으면 산업 흐름이 막힐 수 있는 핵심 기업
+- 밸류체인: 제품이 만들어지고 팔리기까지의 연결 구조
+
+상장기업은 주가, 재무제표, 공시 원문, 기관 보유 보고를 연결하는 메인 분석 대상으로 표시합니다. 비상장 또는 공시 확인이 어려운 기업은 삭제하지 않고 “비상장 참고 기업 / 관계 참고용” 보조 노드로 유지하며, 출처 없는 매출·영업이익률·부채비율은 공식 숫자처럼 노출하지 않습니다.
+
 ## Vercel Node runtime
 
 `package.json`에서 Vercel 런타임을 Node.js 20.x로 고정했습니다. 로컬도 Node 20.x를 권장합니다. Node 22/24로 실행하면 로컬 검증은 가능하지만, Vercel과 동일 조건을 보려면 Node 20에서 `npm ci && npm run build`를 확인하세요.

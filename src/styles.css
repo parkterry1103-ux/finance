@@ -380,7 +380,8 @@ h2 {
 }
 
 .company-row-main strong,
-.company-row-main small {
+.company-row-main small,
+.company-row-main em {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -396,6 +397,14 @@ h2 {
   margin-top: 3px;
   color: #667085;
   font-size: 12px;
+}
+
+.company-row-main em {
+  margin-top: 2px;
+  color: #8b95a1;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
 }
 
 .tier-pill {
@@ -1015,9 +1024,9 @@ h2 {
 }
 
 .link-list button {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
   width: 100%;
   min-height: 46px;
   padding: 10px;
@@ -1029,7 +1038,8 @@ h2 {
 }
 
 .link-list span,
-.link-list small {
+.link-list small,
+.link-list em {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1043,9 +1053,18 @@ h2 {
 }
 
 .link-list small {
+  text-align: right;
   color: #667085;
   font-size: 12px;
   font-weight: 700;
+}
+
+.link-list em {
+  grid-column: 1 / -1;
+  color: #8b95a1;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 760;
 }
 
 .source-card {
@@ -5266,6 +5285,100 @@ body,
   line-height: 1.45;
 }
 
+.term-guide {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.term-guide div {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.term-guide strong {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.term-guide span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.scope-badge,
+.scope-pill,
+.reference-status-pill,
+.topbar-reference-note,
+.company-row-disabled {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.scope-badge {
+  min-height: 20px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+.scope-badge.listed,
+.scope-pill.listed {
+  color: #0057d9;
+  background: #eef6ff;
+}
+
+.scope-badge.reference,
+.scope-pill.reference,
+.reference-status-pill,
+.topbar-reference-note,
+.company-row-disabled {
+  color: #667085;
+  background: #f2f4f7;
+}
+
+.reference-status-card,
+.reference-finance-note {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  color: #667085;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.reference-finance-note strong {
+  color: #344054;
+  font-size: 14px;
+}
+
+.reference-finance-note p {
+  margin: 0;
+  color: #667085;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .node-business {
   display: block;
   margin-top: 5px;
@@ -5299,9 +5412,20 @@ body,
 }
 
 .relationship-brief-grid span {
+  display: grid;
+  gap: 2px;
   color: #0057d9;
   font-size: 11px;
   font-weight: 950;
+}
+
+.relationship-brief-grid span em,
+.dependency-card span em {
+  color: #667085;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.35;
 }
 
 .relationship-brief-grid strong {
