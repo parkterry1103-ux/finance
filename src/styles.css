@@ -5257,6 +5257,113 @@ body,
   color: #667085;
 }
 
+.topbar-subcopy {
+  margin: 0;
+  max-width: 620px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.node-business {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #475467;
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relationship-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.relationship-brief-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.relationship-brief-grid article.wide {
+  grid-column: 1 / -1;
+}
+
+.relationship-brief-grid span {
+  color: #0057d9;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.relationship-brief-grid strong {
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.relationship-brief-grid p {
+  margin: 0;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.stage-filter {
+  display: grid;
+  gap: 7px;
+}
+
+.stage-filter > span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.stage-filter > div {
+  display: flex;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.stage-filter button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  color: #475467;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.stage-filter button.active {
+  color: #0057d9;
+  border-color: rgba(0, 122, 255, 0.22);
+  background: #eef6ff;
+}
+
+.analysis-supply-box {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analysis-supply-box button {
+  grid-column: 1 / -1;
+  width: fit-content;
+}
+
 @media (max-width: 820px) {
   .map-panel {
     grid-template-rows: auto minmax(500px, 66vh) auto;
@@ -5274,5 +5381,13 @@ body,
 
   .ownership-chip-row button {
     flex: 0 0 auto;
+  }
+
+  .relationship-brief-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-supply-box {
+    grid-template-columns: 1fr;
   }
 }

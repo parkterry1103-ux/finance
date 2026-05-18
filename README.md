@@ -1,14 +1,14 @@
-# 중소형주 공급망 인텔리전스
+# 기업 관계 지도 인텔리전스
 
-한국·미국 산업 섹터별 기준 기업 3곳과 하청·협력 후보 기업을 시각화하는 React Flow 대시보드입니다. 기존 카테고리형 중소기업 노드를 실명 기업 중심으로 확장했고, 특정 원청 납품 관계는 단정하지 않도록 “검증 대상 협력 후보”로 표시합니다.
+한국·미국 산업 섹터별 중심 상장기업과 관계 후보 기업을 시각화하는 React Flow 대시보드입니다. 초보 투자자가 “무엇을 파는 회사인지”, “누구의 수요와 연결되는지”, “관계가 공식 확인됐는지”를 먼저 보고, 특정 고객·납품 관계는 단정하지 않도록 표시합니다.
 
 ## 이번 버전 변경점
 
 - 한국어 UI 중심으로 문구 정리
 - 섹터 9개로 확장: 반도체, 자동차·미래차, 배터리·소재, 디스플레이·OLED, 조선·방산, 바이오·헬스케어, AI·데이터센터, 로봇·자동화, 화장품·소비재
-- 섹터별 기준 기업 3개, 총 27개 앵커 구성
-- 앵커별 1차 협력 기업 4개 + 하청·중소형 기업 12개 배치
-- 총 459개 노드, 432개 협력·하청 기업 노드 생성
+- 섹터별 중심 기업 3개, 총 27개 구성
+- 중심 기업별 1차 관계 기업 4개 + 중소형 보조 관계 기업 12개 배치
+- 총 459개 노드, 432개 관계 후보 기업 노드 생성
 - 뉴스 API 키워드와 신뢰 도메인을 한국 섹터 중심으로 확장
 - 뉴스 조회 기본 기간을 최근 24시간으로 확대
 - 토스 스타일에 가까운 둥근 카드, 흰색 패널, 블루 액션, 부드러운 그림자 디자인 적용
@@ -512,7 +512,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 `주가해부실 Pick`은 운영자가 매주 인스타그램 카드뉴스에 맞춰 `src/data.ts`의 `stockAutopsyPicks` 배열만 수정하면 됩니다.
 
 1. 새 카드 추가: `id`, `companyName`, `ticker`, `movementDirection`, `movementLabel`, `reasonSummary`, `beginnerSummary`, `sector`, `valueChainPosition`, `connectedLeaders`, `relatedCompanies`, `publishedAt`을 입력합니다.
-2. 공급망 연결: 가능한 경우 `relatedSupplyChainId`와 `relatedCompanyId`를 넣습니다. 이 값이 있으면 상세 페이지에서 공급망 지도와 재무제표 해설로 바로 연결됩니다.
+2. 기업 관계 지도 연결: 가능한 경우 `relatedSupplyChainId`와 `relatedCompanyId`를 넣습니다. 이 값이 있으면 상세 페이지에서 기업 관계 지도와 재무제표 해설로 바로 연결됩니다.
 3. 삭제/교체: 이번 주에 노출하지 않을 카드는 배열에서 제거하거나 아래쪽으로 이동합니다.
 4. 표현 주의: 직접 납품 관계가 확인되지 않은 기업은 “직접 납품”, “확정 수혜”라고 쓰지 말고 “같은 밸류체인에서 함께 볼 기업”으로 표현합니다.
 
@@ -523,15 +523,19 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 상승/하락: `movementDirection`
 - 왜 움직였나: `reasonSummary`
 - 관련 섹터: `sector`
-- 공급망 위치: `valueChainPosition`
+- 밸류체인 위치: `valueChainPosition`
 - 연결 대장주: `connectedLeaders`
 - 카드뉴스 발행일: `publishedAt`
 - 상세 설명: `beginnerSummary`
-- 공급망 지도 링크: `relatedSupplyChainId`
+- 기업 관계 지도 링크: `relatedSupplyChainId`
 
 ## 데이터 주의사항
 
-내장 데이터는 투자 검토용 후보군입니다. 기업명은 실제 기업명을 사용했지만, 특정 원청에 대한 납품 관계를 확정한 데이터가 아닙니다. 실제 서비스로 확장할 때는 OpenDART, KRX, SEC EDGAR, 회사 IR, 공급계약 공시, 뉴스 원문처럼 무료 공식·공개 자료로 관계를 검증해야 합니다.
+내장 데이터는 투자 검토용 후보군입니다. 기업명은 실제 기업명을 사용했지만, 특정 고객사에 대한 납품 관계를 확정한 데이터가 아닙니다. 실제 서비스로 확장할 때는 OpenDART, KRX, SEC EDGAR, 회사 IR, 공급계약 공시, 뉴스 원문처럼 무료 공식·공개 자료로 관계를 검증해야 합니다.
+
+## 기업 관계 지도 데이터 필드
+
+기업 카드의 첫 화면은 `businessSummary`, `mainProducts`, `valueChainStage`, `mainCustomers`, `customerExposure`, `revenueExposure`, `moat`, `moatExplanation`, `investorWatchPoint`, `relationshipType`, `relationshipConfidence`, `sourceNotes`를 우선 사용합니다. 공식 공시·IR로 확인되지 않은 고객별 매출 비중은 숫자로 표시하지 않고 “미공개 / 확인 필요”로 표시합니다.
 
 ## Vercel Node runtime
 

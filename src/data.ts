@@ -79,6 +79,18 @@ export interface Company {
   notes: string;
   sourceType: SourceType;
   sourceNote: string;
+  businessSummary?: string;
+  mainProducts?: string[];
+  valueChainStage?: string;
+  mainCustomers?: string[];
+  customerExposure?: string;
+  revenueExposure?: string;
+  moat?: string;
+  moatExplanation?: string;
+  investorWatchPoint?: string;
+  relationshipType?: string;
+  relationshipConfidence?: string;
+  sourceNotes?: string;
   filingSourceUrl?: string;
   reportUrl?: string;
   dartRcpNo?: string;
@@ -106,6 +118,9 @@ export interface SupplyLink {
   label: string;
   dependency: number;
   value: string;
+  relationshipType?: string;
+  relationshipConfidence?: string;
+  sourceNotes?: string;
 }
 
 export interface AnalystOpinion {
@@ -288,7 +303,7 @@ export const sectors: SectorDefinition[] = [
     id: 'kr-semiconductors',
     country: 'KR',
     label: '반도체',
-    description: '메모리, 파운드리, 후공정, 장비·소재·부품 협력망을 함께 봅니다.',
+    description: '메모리, 파운드리, 후공정, 장비·소재·부품 관계망을 함께 봅니다.',
     newsKeywords: ['반도체', 'HBM', '파운드리', '후공정', 'semiconductor', 'foundry'],
   },
   {
@@ -302,7 +317,7 @@ export const sectors: SectorDefinition[] = [
     id: 'kr-battery-materials',
     country: 'KR',
     label: '배터리·소재',
-    description: '셀, 양극재, 음극재, 전해액, 장비, 리사이클까지 확장한 협력망입니다.',
+    description: '셀, 양극재, 음극재, 전해액, 장비, 리사이클까지 확장한 관계망입니다.',
     newsKeywords: ['배터리', '양극재', '전해액', '리튬', 'battery', 'cathode'],
   },
   {
@@ -330,7 +345,7 @@ export const sectors: SectorDefinition[] = [
     id: 'kr-ai-datacenter',
     country: 'KR',
     label: 'AI·데이터센터',
-    description: '클라우드, AI 반도체 설계, PCB, 서버·네트워크·IDC 인프라 협력망입니다.',
+    description: '클라우드, AI 반도체 설계, PCB, 서버·네트워크·IDC 인프라 관계망입니다.',
     newsKeywords: ['AI', '데이터센터', '클라우드', 'PCB', '반도체 설계', 'IDC'],
   },
   {
@@ -382,7 +397,7 @@ export const sectors: SectorDefinition[] = [
     "id": "kr-energy-utilities",
     "country": "KR",
     "label": "에너지·유틸리티",
-    "description": "전력망, 가스, 원전·SMR, 재생에너지 기자재, 전력기기 협력망을 추적합니다.",
+    "description": "전력망, 가스, 원전·SMR, 재생에너지 기자재, 전력기기 관계망을 추적합니다.",
     "newsKeywords": [
       "전력망",
       "유틸리티",
@@ -499,7 +514,7 @@ export const sectors: SectorDefinition[] = [
     "id": "us-aerospace-defense",
     "country": "US",
     "label": "미국 항공우주·방산",
-    "description": "상업항공, 방산 프라임, 우주·드론, 항공 전장·부품 협력망을 함께 봅니다.",
+    "description": "상업항공, 방산 프라임, 우주·드론, 항공 전장·부품 관계망을 함께 봅니다.",
     "newsKeywords": [
       "aerospace",
       "defense",
@@ -4776,7 +4791,65 @@ function formatDisclosureRevenue(country: CountryId, amount: number) {
 
 function companySourceNote(tier: CompanyTier) {
   if (tier === 'anchor') return '공시·IR·거래소·감독기관 데이터 연결 대상';
-  return '실명 기업 기반 검증 후보입니다. 특정 앵커 납품 관계는 공시·IR·계약·뉴스 API로 추가 확인해야 합니다.';
+  return '실명 기업 기반 관계 후보입니다. 특정 고객·납품 관계는 공시·IR·계약·뉴스 API로 추가 확인해야 합니다.';
+}
+
+function simpleProductText(products: string[]) {
+  if (!products.length) return '주요 제품 확인 필요';
+  return products.slice(0, 2).join('·');
+}
+
+function inferValueChainStage(sector: string, products: string[], tier: CompanyTier) {
+  const text = `${sector} ${products.join(' ')}`.toLowerCase();
+  if (text.includes('hbm') || text.includes('dram') || text.includes('nand') || text.includes('memory') || sector.includes('메모리')) return '메모리';
+  if (text.includes('foundry') || sector.includes('파운드리') || sector.includes('제조')) return '제조/파운드리';
+  if (sector.includes('장비') || text.includes('equipment') || text.includes('tool')) return '장비';
+  if (sector.includes('소재') || text.includes('materials') || text.includes('chemical')) return '소재';
+  if (sector.includes('부품') || text.includes('parts') || text.includes('module') || text.includes('component')) return '부품';
+  if (sector.includes('테스트') || text.includes('test') || text.includes('socket')) return '테스트';
+  if (sector.includes('후공정') || text.includes('packaging') || text.includes('패키징')) return '후공정/패키징';
+  if (sector.includes('냉각') || text.includes('cooling')) return '전력/냉각';
+  if (sector.includes('클라우드') || text.includes('cloud')) return '클라우드 고객';
+  if (tier === 'anchor') return '중심 상장기업';
+  return '같은 밸류체인';
+}
+
+function inferRelationshipType(sector: string, products: string[]) {
+  const stage = inferValueChainStage(sector, products, 'tier1');
+  if (stage === '중심 상장기업') return '같은 밸류체인';
+  return stage;
+}
+
+function inferMoat(sector: string, products: string[]) {
+  const text = `${sector} ${products.join(' ')}`.toLowerCase();
+  if (sector.includes('장비') || text.includes('equipment') || text.includes('tool')) {
+    return {
+      moat: '장비 레퍼런스 / 고객 인증',
+      moatExplanation: '장비는 한 번 공정에 들어가면 품질 검증과 교체 비용이 커서 레퍼런스가 진입장벽이 될 수 있습니다.',
+    };
+  }
+  if (sector.includes('소재') || text.includes('materials') || text.includes('chemical')) {
+    return {
+      moat: '품질 안정성 / 공급 안정성',
+      moatExplanation: '소재는 불량이 나면 전체 생산에 영향을 주기 때문에 안정적으로 공급한 기록이 경쟁력으로 볼 수 있습니다.',
+    };
+  }
+  if (sector.includes('테스트') || text.includes('test') || text.includes('socket')) {
+    return {
+      moat: '기술 난이도 / 고객 인증',
+      moatExplanation: '테스트 부품은 정확도와 내구성이 중요해 고객사 인증을 통과하면 바꾸기 어려운 관계가 될 수 있습니다.',
+    };
+  }
+  if (sector.includes('냉각') || sector.includes('전력') || text.includes('cooling') || text.includes('power')) {
+    return {
+      moat: '운영 신뢰도 / 장기 고객 관계',
+      moatExplanation: '데이터센터 인프라는 멈추면 손실이 커서 안정적으로 운영한 경험이 진입장벽이 될 수 있습니다.',
+    };
+  }
+  return {
+    moat: '기술 난이도 / 고객 신뢰',
+    moatExplanation: '품질, 납기, 고객 인증이 쌓이면 새 경쟁자가 쉽게 대체하기 어려운 경쟁력이 될 수 있습니다.',
+  };
 }
 
 function tierTemplateForAnchor(template: ChainTemplate, anchor: AnchorCompany) {
@@ -4793,6 +4866,7 @@ function buildCompanies() {
 
   anchors.forEach((anchor, anchorIndex) => {
     const template = chainTemplates[anchor.sectorId] ?? defaultTemplate;
+    const anchorMoat = inferMoat(anchor.sector, anchor.products);
     const anchorCompany: Company = {
       id: anchor.id,
       anchorId: anchor.id,
@@ -4818,10 +4892,22 @@ function buildCompanies() {
       investmentView: `${anchor.sector} 섹터의 수요·투자 사이클 기준 기업`,
       riskLevel: 'low',
       status: 'core',
-      tags: ['앵커 기업', anchor.exchange, anchor.ticker],
-      notes: '하위 협력 기업을 스크리닝하기 위한 기준 노드입니다. 실제 공급 관계는 연결된 공시·뉴스·계약 데이터로 검증하도록 설계했습니다.',
+      tags: ['중심 기업', anchor.exchange, anchor.ticker],
+      notes: '관계 기업을 이해하기 위한 기준 노드입니다. 실제 고객·공급 관계는 연결된 공시·뉴스·계약 데이터로 검증하도록 설계했습니다.',
       sourceType: 'official',
       sourceNote: companySourceNote('anchor'),
+      businessSummary: `${simpleProductText(anchor.products)} 등을 만드는 ${anchor.sector} 중심 상장기업입니다.`,
+      mainProducts: anchor.products,
+      valueChainStage: inferValueChainStage(anchor.sector, anchor.products, 'anchor'),
+      mainCustomers: ['최종 수요처와 산업 고객', '공식 고객별 비중은 공시·IR에서 확인'],
+      customerExposure: '고객별 매출 비중은 회사가 공개한 원문 기준으로 확인합니다.',
+      revenueExposure: '제품별·지역별 매출 비중은 공시 원문에서 확인합니다.',
+      moat: anchorMoat.moat,
+      moatExplanation: anchorMoat.moatExplanation,
+      investorWatchPoint: `${anchor.sector} 수요, 재고, 투자 계획이 실제 매출과 현금흐름으로 이어지는지 봅니다.`,
+      relationshipType: '중심 기업',
+      relationshipConfidence: '공시·IR 기준',
+      sourceNotes: companySourceNote('anchor'),
       layout: { column: 0, row: 1 },
     };
     generatedCompanies.push(anchorCompany);
@@ -4830,11 +4916,11 @@ function buildCompanies() {
       {
         id: `${anchor.id}-cycle`,
         companyId: anchor.id,
-        firm: '공급망 스코어링 모델',
+        firm: '기업 관계 스코어링 모델',
         stance: anchor.rank === 1 ? '섹터 기준 기업' : anchor.rank === 2 ? '수혜 확산 관찰' : '변곡점 관찰',
         horizon: '6~12개월',
         date: 'seed',
-        summary: `${anchor.name}의 투자·수주·재고 사이클은 하위 협력 기업의 매출 가시성과 밸류에이션에 직접적인 선행 신호가 됩니다.`,
+        summary: `${anchor.name}의 투자·수주·재고 사이클은 관련 기업의 매출 가시성과 밸류에이션에 중요한 선행 신호가 됩니다.`,
         sourceType: 'seed-model',
       },
       {
@@ -4844,7 +4930,7 @@ function buildCompanies() {
         stance: '관계 검증 필요',
         horizon: '상시',
         date: 'seed',
-        summary: '현재 데이터는 실명 기업 기반 후보군이며, 특정 앵커와의 납품 여부는 DART/SEC, IR, 수주 공시, 감독기관 자료, 기사 원문으로 확인해야 합니다.',
+        summary: '현재 데이터는 실명 기업 기반 관계 후보군이며, 특정 고객·납품 여부는 DART/SEC, IR, 수주 공시, 감독기관 자료, 기사 원문으로 확인해야 합니다.',
         sourceType: 'seed-model',
       },
     );
@@ -4853,6 +4939,9 @@ function buildCompanies() {
       const tier1Id = `${anchor.id}-${slugify(tier1.company.name)}`;
       const trendSeed = anchorIndex + tier1Index + 1;
       const tier1Revenue = metricValue(trendSeed, 2_400, 520);
+      const tier1Stage = inferValueChainStage(tier1.company.sector, tier1.company.products, 'tier1');
+      const tier1Moat = inferMoat(tier1.company.sector, tier1.company.products);
+      const tier1RelationType = inferRelationshipType(tier1.company.sector, tier1.company.products);
       const tier1Company: Company = {
         id: tier1Id,
         anchorId: anchor.id,
@@ -4862,7 +4951,7 @@ function buildCompanies() {
         legalName: tier1.company.name,
         tier: 'tier1',
         sector: tier1.company.sector,
-        region: tier1.company.region ?? '국내 주요 협력 기업군',
+        region: tier1.company.region ?? '국내 주요 관계 기업군',
         products: tier1.company.products,
         anchorCustomer: anchor.name,
         revenue: formatDisclosureRevenue(anchor.country, tier1Revenue),
@@ -4873,14 +4962,26 @@ function buildCompanies() {
         opMargin: `${(6.2 + trendSeed * 0.75).toFixed(1)}%`,
         debtRatio: tier1.company.risk === 'high' ? `${metric(trendSeed, 88, 7)}%` : `${metric(trendSeed, 42, 6)}%`,
         customerConcentration: `${metric(trendSeed, 34, 4)}%`,
-        analystSignal: '1차 협력 기업 스코어',
-        investmentView: `${anchor.name} 투자·수요 사이클과 함께 확인할 1차 협력 기업`,
+        analystSignal: '1차 관계 기업 스코어',
+        investmentView: `${anchor.name} 투자·수요 사이클과 함께 확인할 1차 관계 기업`,
         riskLevel: tier1.company.risk,
         status: tier1.company.status,
         tags: tier1.company.tags,
-        notes: '실제 상장·비상장 기업명을 넣은 1차 협력 후보입니다. 관계 확정 전에는 공급 가능 영역과 전방 노출도를 중심으로 해석해야 합니다.',
+        notes: '실제 상장·비상장 기업명을 넣은 1차 관계 후보입니다. 관계 확정 전에는 제품 영역과 전방 수요 노출도를 중심으로 해석해야 합니다.',
         sourceType: 'seed-model',
         sourceNote: companySourceNote('tier1'),
+        businessSummary: `${simpleProductText(tier1.company.products)} 관련 제품·서비스를 제공하는 ${tier1.company.sector} 기업입니다.`,
+        mainProducts: tier1.company.products,
+        valueChainStage: tier1Stage,
+        mainCustomers: [`${anchor.name} 같은 전방 기업의 투자와 함께 볼 기업`, `${anchor.sector} 산업 고객`],
+        customerExposure: '공식 고객사와 고객별 매출 비중은 공시·IR 기준 확인 필요',
+        revenueExposure: '고객별 매출 비중 미공개. 출처 확인 전에는 숫자로 표시하지 않습니다.',
+        moat: tier1Moat.moat,
+        moatExplanation: tier1Moat.moatExplanation,
+        investorWatchPoint: '전방 고객 투자, 수주 공시, 고객 다변화 여부를 함께 확인합니다.',
+        relationshipType: tier1RelationType,
+        relationshipConfidence: '산업상 관련',
+        sourceNotes: companySourceNote('tier1'),
         layout: { column: 1, row: tier1Index },
       };
       generatedCompanies.push(tier1Company);
@@ -4892,12 +4993,15 @@ function buildCompanies() {
         label: tier1.company.sector,
         dependency: 36 + tier1Index * 8 + anchor.rank,
         value: `검증 노출도 ${metric(trendSeed, 41, 5)}점`,
+        relationshipType: tier1RelationType,
+        relationshipConfidence: '산업상 관련',
+        sourceNotes: '직접 납품 관계가 아니라 같은 밸류체인에서 함께 볼 후보입니다.',
       });
 
       generatedOpinions.push({
         id: `${tier1Id}-opinion`,
         companyId: tier1Id,
-        firm: '협력망 후보 모델',
+        firm: '기업 관계 후보 모델',
         stance: tier1.company.status === 'opportunity' ? '우선 검토' : tier1.company.status === 'watch' ? '리스크 확인' : '핵심 관찰',
         horizon: '3~6개월',
         date: 'seed',
@@ -4909,6 +5013,9 @@ function buildCompanies() {
         const childId = `${tier1Id}-${slugify(child.name)}`;
         const childSeed = anchorIndex + tier1Index * 3 + childIndex + 2;
         const childRevenue = metricValue(childSeed, 620, 88);
+        const childStage = inferValueChainStage(child.sector, child.products, 'tier2');
+        const childMoat = inferMoat(child.sector, child.products);
+        const childRelationType = inferRelationshipType(child.sector, child.products);
         const childCompany: Company = {
           id: childId,
           anchorId: anchor.id,
@@ -4918,7 +5025,7 @@ function buildCompanies() {
           legalName: child.name,
           tier: 'tier2',
           sector: child.sector,
-          region: child.region ?? '국내 하청·중소형 협력 기업군',
+          region: child.region ?? '국내 중소형 관계 후보 기업군',
           products: child.products,
           anchorCustomer: tier1.company.name,
           revenue: formatDisclosureRevenue(anchor.country, childRevenue),
@@ -4930,13 +5037,25 @@ function buildCompanies() {
           debtRatio: child.risk === 'high' ? `${metric(childSeed, 92, 6)}%` : `${metric(childSeed, 38, 5)}%`,
           customerConcentration: child.risk === 'high' ? `${metric(childSeed, 57, 3)}%` : `${metric(childSeed, 27, 3)}%`,
           analystSignal: child.status === 'opportunity' ? '수혜 후보' : child.status === 'watch' ? '주의 관찰' : '핵심 추적',
-          investmentView: child.status === 'opportunity' ? '전방 투자 확대 시 탄력 가능한 하청 기업' : child.status === 'watch' ? '재무·고객집중 리스크 확인 필요' : '전방 수요와 함께 꾸준히 추적할 기업',
+          investmentView: child.status === 'opportunity' ? '전방 투자 확대 시 탄력 가능한 관계 후보 기업' : child.status === 'watch' ? '재무·고객집중 리스크 확인 필요' : '전방 수요와 함께 꾸준히 추적할 기업',
           riskLevel: child.risk,
           status: child.status,
           tags: child.tags,
-          notes: '실명 하청·협력 후보 기업입니다. 특정 원청 납품 관계를 단정하지 않고, 공시·수주·IR·감독기관·뉴스 원문으로 검증하는 전제로 배치했습니다.',
+          notes: '실명 관계 후보 기업입니다. 특정 고객 납품 관계를 단정하지 않고, 공시·수주·IR·감독기관·뉴스 원문으로 검증하는 전제로 배치했습니다.',
           sourceType: 'seed-model',
           sourceNote: companySourceNote('tier2'),
+          businessSummary: `${simpleProductText(child.products)} 영역에서 관계를 확인할 ${child.sector} 후보 기업입니다.`,
+          mainProducts: child.products,
+          valueChainStage: childStage,
+          mainCustomers: [`${tier1.company.name} 등 상위 단계 기업과 함께 볼 후보`, '공식 고객사는 원문 확인 필요'],
+          customerExposure: '고객별 매출 비중 미공개. 공식 공시 또는 IR 확인 전에는 의존도 숫자를 표시하지 않습니다.',
+          revenueExposure: '공개 공시 기준 매출 확인 불가 또는 원문 연결 필요',
+          moat: childMoat.moat,
+          moatExplanation: childMoat.moatExplanation,
+          investorWatchPoint: '상장 여부, 공식 공시 유무, 실제 고객 관계가 확인되는지 먼저 봅니다.',
+          relationshipType: childRelationType,
+          relationshipConfidence: '검증 필요',
+          sourceNotes: companySourceNote('tier2'),
           layout: { column: 2, row: tier1Index * 3 + childIndex },
         };
         generatedCompanies.push(childCompany);
@@ -4948,12 +5067,15 @@ function buildCompanies() {
           label: child.sector,
           dependency: 28 + childIndex * 7 + tier1Index * 3,
           value: `검증 노출도 ${metric(childSeed, 28, 4)}점`,
+          relationshipType: childRelationType,
+          relationshipConfidence: '검증 필요',
+          sourceNotes: '관계 이해용 보조 노드입니다. 직접 고객·납품 관계는 원문으로 확인해야 합니다.',
         });
 
         generatedOpinions.push({
           id: `${childId}-opinion`,
           companyId: childId,
-          firm: '하청 기업 스크리너',
+          firm: '관계 후보 스크리너',
           stance: child.status === 'opportunity' ? '수혜 후보' : child.status === 'watch' ? '주의 관찰' : '핵심 추적',
           horizon: '1~3개월',
           date: 'seed',
@@ -5147,8 +5269,8 @@ export const marketMovers: MarketMover[] = [
     move: '+2.8%',
     impactFactor: '후공정 장비 수주 기대',
     additionalFactor: 'HBM 투자 확대 관심',
-    interpretation: '공급망 안에서 장비 기업 관심이 커졌습니다.',
-    reason: '후공정 장비 수주 기대가 공급망 관심을 키웠습니다.',
+    interpretation: '기업 관계 안에서 장비 기업 관심이 커졌습니다.',
+    reason: '후공정 장비 수주 기대가 관련 기업 관심을 키웠습니다.',
     beginnerNote: '수주 뉴스가 매출로 잡히는 시점과 재고 변화를 같이 봅니다.',
     sectorId: 'kr-semiconductors',
     sectorLabel: '반도체 장비',
