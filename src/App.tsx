@@ -224,7 +224,8 @@ function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
 
-const nyseTickers = new Set(['BRK.B', 'BRK-B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN', 'XYZ']);
+const nyseTickers = new Set(['BRK.B', 'BRK-B', 'PGR', 'CB', 'JPM', 'V', 'BA', 'LMT', 'RTX', 'TSLA', 'GM', 'NFE', 'GEV', 'ETN', 'XYZ', 'TSM', 'DELL', 'VRT', 'ANET']);
+const otcTickers = new Set(['SBGSY']);
 const prominentInstitutionFilters = [
   'Berkshire Hathaway',
   'ARK',
@@ -249,6 +250,8 @@ function marketDisplayLabel(company: Company) {
   if (reportLink.status === 'no-public-filing') return '공개 공시 확인 불가';
   if (company.sourceStatus === 'needs-link' && company.sourceType === 'seed-model' && company.tier === 'tier2') return '공시 의무 없음';
   if (company.country === 'KR') return ticker.endsWith('.KQ') ? 'KOSDAQ' : ticker.endsWith('.KS') ? 'KOSPI' : '공개 공시 확인 불가';
+  if (otcTickers.has(ticker)) return 'OTC';
+  if (ticker.includes('.') && !ticker.endsWith('.B')) return '해외 상장';
   if (nyseTickers.has(ticker)) return 'NYSE';
   return 'NASDAQ';
 }
@@ -296,6 +299,7 @@ function companyValueChainStage(company: Company) {
 }
 
 function companyCustomerSummary(company: Company) {
+  if (company.mainCustomersOrDemand?.length) return company.mainCustomersOrDemand.join(', ');
   if (company.mainCustomers?.length) return company.mainCustomers.join(', ');
   if (company.tier === 'anchor') return '최종 수요처와 산업 고객. 고객별 비중은 공시·IR에서 확인합니다.';
   return `${company.anchorCustomer} 등 상위 단계 기업과 함께 봅니다. 직접 고객 관계는 공시·IR 확인 필요.`;
@@ -315,7 +319,7 @@ function companyRevenueExposure(company: Company) {
 
 function companyMoatSummary(company: Company) {
   return {
-    title: company.moat ?? '기술 난이도 / 고객 신뢰',
+    title: company.economicMoat ?? company.moat ?? '기술 난이도 / 고객 신뢰',
     explanation:
       company.moatExplanation ??
       '품질, 납기, 고객 인증이 쌓이면 새 경쟁자가 쉽게 대체하기 어려운 진입장벽이 될 수 있습니다.',
@@ -343,6 +347,10 @@ function relationshipTypeLabel(company: Company) {
   return companyValueChainStage(company);
 }
 
+function linkConfidenceLabel(link: (typeof links)[number]) {
+  return link.confidence ?? link.relationshipConfidence ?? '산업상 관련';
+}
+
 function relationshipConfidenceLabel(company: Company) {
   if (company.relationshipConfidence) return company.relationshipConfidence;
   return company.sourceType === 'official' ? '공시·IR 기준' : '산업상 관련';
@@ -355,7 +363,11 @@ function relationshipSourceNote(company: Company) {
 function linkRelationshipSummary(link: (typeof links)[number]) {
   return {
     type: link.relationshipType ?? link.label,
-    confidence: link.relationshipConfidence ?? '산업상 관련',
+    confidence: linkConfidenceLabel(link),
+    description: link.description ?? link.value,
+    whatIsSold: link.whatIsSold ?? link.label,
+    demandConnection: link.demandConnection ?? '같은 밸류체인에서 함께 봐야 할 기업입니다.',
+    revenueExposure: link.revenueExposure ?? '고객별 매출 비중은 공식 공시 기준 확인 필요',
     note: link.sourceNotes ?? '직접 고객 관계는 공시·IR·계약·뉴스 원문으로 검증해야 합니다.',
   };
 }
@@ -1350,14 +1362,14 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     'kr-ship-defense': '조선·방산 수주가 부품사와 협력사에 어떻게 이어지는지 봅니다.',
     'kr-battery-materials': '배터리 셀, 소재, 장비 회사의 연결 구조를 봅니다.',
     'kr-ai-datacenter': 'AI 서버와 데이터센터 투자가 어떤 기업에 연결되는지 봅니다.',
-    'us-semiconductors': '미국 AI 반도체 기업과 기업 관계 흐름을 함께 봅니다.',
+    'us-semiconductors': 'AI 서버 수요가 반도체, 메모리, 파운드리, 전력·냉각 기업으로 어떻게 이어지는지 봅니다.',
   };
   const issueNotes: Record<string, string> = {
     'kr-semiconductors': 'HBM, 후공정, 파운드리 투자 기대가 관련 기업 관심으로 이어지고 있습니다.',
     'kr-ship-defense': '수주 잔고와 방산 수출 뉴스가 관련 부품사 관심으로 번지고 있습니다.',
     'kr-battery-materials': '전기차 수요와 소재 가격이 실적 변동의 핵심입니다.',
     'kr-ai-datacenter': 'AI 서버 전력·냉각·네트워크 투자 흐름을 같이 봅니다.',
-    'us-semiconductors': '데이터센터 CapEx와 AI 칩 수요가 MD&A의 핵심입니다.',
+    'us-semiconductors': 'AI 서버 투자, HBM, 파운드리, 데이터센터 전력·냉각 수요를 함께 봅니다.',
   };
 
   const companyResults = useMemo(() => {
@@ -2664,6 +2676,7 @@ function App() {
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [listingFilter, setListingFilter] = useState<ListingFilter>('all');
   const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
+  const [confidenceFilter, setConfidenceFilter] = useState<string>('all');
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -2683,11 +2696,24 @@ function App() {
     const matchesListing =
       listingFilter === 'all' ||
       (listingFilter === 'listed' ? isMainListedCompany(company) : !isMainListedCompany(company));
-    const matchesRelationship = relationshipFilter === 'all' || relationshipTypeLabel(company) === relationshipFilter;
-    return matchesStage && matchesListing && matchesRelationship;
+    const matchesRelationship =
+      relationshipFilter === 'all' ||
+      relationshipTypeLabel(company) === relationshipFilter ||
+      groupLinks.some((link) => (link.source === company.id || link.target === company.id) && linkRelationshipSummary(link).type === relationshipFilter);
+    const matchesConfidence =
+      confidenceFilter === 'all' ||
+      relationshipConfidenceLabel(company) === confidenceFilter ||
+      groupLinks.some((link) => (link.source === company.id || link.target === company.id) && linkConfidenceLabel(link) === confidenceFilter);
+    return matchesStage && matchesListing && matchesRelationship && matchesConfidence;
   });
-  const stageOptions = Array.from(new Set(groupCompanies.map((company) => companyValueChainStage(company)))).slice(0, 8);
-  const relationshipOptions = Array.from(new Set(groupCompanies.map((company) => relationshipTypeLabel(company)))).slice(0, 8);
+  const stageOptions = Array.from(new Set(groupCompanies.map((company) => companyValueChainStage(company))));
+  const relationshipOptions = Array.from(
+    new Set([
+      ...groupCompanies.map((company) => relationshipTypeLabel(company)),
+      ...groupLinks.map((link) => linkRelationshipSummary(link).type),
+    ]),
+  );
+  const confidenceOptions = ['공식 확인', '공시·IR 기준', '공시·IR 기준 확인 필요', '산업상 관련', '검증 필요'];
   const visibleIds = new Set(visibleCompanies.map((company) => company.id));
   const visibleLinks = groupLinks.filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target));
   const selectedCompany =
@@ -2903,6 +2929,7 @@ function App() {
     setStageFilter('all');
     setListingFilter('all');
     setRelationshipFilter('all');
+    setConfidenceFilter('all');
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -2953,6 +2980,7 @@ function App() {
     setStageFilter('all');
     setListingFilter('all');
     setRelationshipFilter('all');
+    setConfidenceFilter('all');
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(nextSector.id));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -2976,6 +3004,7 @@ function App() {
     setStageFilter('all');
     setListingFilter('all');
     setRelationshipFilter('all');
+    setConfidenceFilter('all');
   }
 
   if (isPicksRoute) {
@@ -3067,7 +3096,7 @@ function App() {
             </select>
             <ChevronDown size={16} />
           </div>
-          <p className="context-copy">상장기업을 중심으로 고객사, 공급사, 장비, 소재, 최종 수요 관계를 봅니다.</p>
+          <p className="context-copy">{selectedSector.description}</p>
 
           <div className="term-guide" aria-label="초보자용 용어 설명">
             <div><strong>밸류체인</strong><span>제품이 만들어지고 팔리기까지의 연결 구조</span></div>
@@ -3176,6 +3205,25 @@ function App() {
             </div>
           </div>
 
+          <div className="stage-filter" aria-label="관계 확실성 필터">
+            <span>관계 확실성</span>
+            <div>
+              <button type="button" className={confidenceFilter === 'all' ? 'active' : ''} onClick={() => setConfidenceFilter('all')}>
+                전체
+              </button>
+              {confidenceOptions.map((confidence) => (
+                <button
+                  key={confidence}
+                  type="button"
+                  className={confidenceFilter === confidence ? 'active' : ''}
+                  onClick={() => setConfidenceFilter(confidence)}
+                >
+                  {confidence}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="metric-grid">
             <div className="metric">
               <span>중심 기업</span>
@@ -3240,7 +3288,7 @@ function App() {
                 {country.label} · {selectedSector.label}
               </p>
               <h2>{selectedAnchor.name} 기업 관계 지도</h2>
-              <p className="topbar-subcopy">이 기업이 누구에게 팔고, 어떤 기업의 수요에 영향을 받는지 쉽게 확인합니다.</p>
+              <p className="topbar-subcopy">{selectedSector.description}</p>
               {selectedCompany && (
                 <div className="selected-company-context">
                   <span>선택한 기업</span>
@@ -3565,7 +3613,10 @@ function App() {
                         <button key={link.id} type="button" onClick={() => setSelectedCompanyId(counterpartId)}>
                           <span>{counterpart?.name}</span>
                           <small>{relationship.type} · {relationship.confidence}</small>
-                          {counterpart && <em>{productText(counterpart)} · {companyCustomerSummary(counterpart)}</em>}
+                          <em>{relationship.description}</em>
+                          <em>무엇을 파는가: {relationship.whatIsSold}</em>
+                          <em>수요 연결: {relationship.demandConnection}</em>
+                          <em>매출 비중: {relationship.revenueExposure}</em>
                         </button>
                       );
                     })}

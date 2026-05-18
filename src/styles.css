@@ -1065,6 +1065,8 @@ h2 {
   font-size: 11px;
   font-style: normal;
   font-weight: 760;
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .source-card {
