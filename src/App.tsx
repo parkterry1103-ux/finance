@@ -15,8 +15,6 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  Building2,
-  CheckCircle2,
   ChevronDown,
   CircleDollarSign,
   Database,
@@ -34,7 +32,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  Sparkles,
   Target,
   Unlock,
 } from 'lucide-react';
@@ -74,7 +71,11 @@ type NodeData = {
   company: Company;
   isSelected: boolean;
   isDimmed: boolean;
+  isExpanded: boolean;
+  marketLabel: string;
+  price?: MarketPrice | null;
   onSelect?: (companyId: string) => void;
+  onToggleExpand?: (companyId: string) => void;
 };
 
 type NewsItem = {
@@ -158,13 +159,11 @@ const aiStageColumns = [
 ];
 
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
-  const { company, isSelected, isDimmed, onSelect } = data;
-  const isAnchor = company.tier === 'anchor';
-  const StatusIcon = company.status === 'opportunity' ? Sparkles : company.status === 'watch' ? ShieldAlert : CheckCircle2;
+  const { company, isSelected, isDimmed, isExpanded, marketLabel, price, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
 
   return (
-    <button
+    <div
       className={[
         'supply-node',
         `tier-${company.tier}`,
@@ -173,31 +172,53 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
         isSelected ? 'selected' : '',
         isDimmed ? 'dimmed' : '',
     ].join(' ')}
-    type="button"
+    role="button"
+    tabIndex={0}
+    aria-label={`${company.name} 선택. ${role.primary}, ${companyValueChainStage(company)}`}
+    aria-pressed={isSelected}
     onClick={() => onSelect?.(company.id)}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onSelect?.(company.id);
+      }
+    }}
   >
       <Handle type="target" position={Position.Left} className="node-handle" />
       <div className="node-topline">
         <span className="node-badge-row">
-          <span className="node-tier">{tierLabels[company.tier]}</span>
           {isSelected && <span className="selected-company-badge">선택한 기업</span>}
-          {isAnchor && <span className="anchor-company-badge">섹터 중심</span>}
           <span className={`role-badge role-${role.className}`}>{role.primary}</span>
-          <span className={`scope-badge ${isMainListedCompany(company) ? 'listed' : 'reference'}`}>{companyScopeLabel(company)}</span>
         </span>
-        <span className={`risk-dot ${riskClass[company.riskLevel]}`} title={`리스크 ${riskLabels[company.riskLevel]}`} />
+        {onToggleExpand && (
+          <button
+            type="button"
+            className={`node-expand-action ${isExpanded ? 'active' : ''}`}
+            aria-label={`${company.name} 관련 기업 ${isExpanded ? '접기' : '보기'}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleExpand(company.id);
+            }}
+          >
+            {isExpanded ? '접기' : '관련 기업'}
+          </button>
+        )}
       </div>
       <div className="node-main">
-        <span className="node-icon">{isAnchor ? <Building2 size={18} /> : <Factory size={18} />}</span>
         <span className="node-name">{company.name}</span>
       </div>
-      <div className="node-business">{productText(company)}</div>
       <div className="node-meta">
         <span>{companyValueChainStage(company)}</span>
-        <StatusIcon size={14} />
+      </div>
+      <div className="node-market-line">
+        {isMainListedCompany(company) && price ? (
+          <PriceBadge price={price} compact />
+        ) : (
+          <span className={`node-market-pill ${isMainListedCompany(company) ? 'listed' : 'reference'}`}>{marketLabel}</span>
+        )}
       </div>
       <Handle type="source" position={Position.Right} className="node-handle" />
-    </button>
+    </div>
   );
 }
 
@@ -2903,6 +2924,9 @@ function App() {
   const [showDetailedLinks, setShowDetailedLinks] = useState(false);
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<Node<NodeData>, Edge> | null>(null);
   const [isDetailCollapsed, setIsDetailCollapsed] = useState(false);
+  const [expandedCompanyIds, setExpandedCompanyIds] = useState<Set<string>>(() => new Set());
+  const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
@@ -2918,6 +2942,14 @@ function App() {
   const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
   const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
   const hasSearchQuery = Boolean(query.trim());
+  const expandedConnectedIds = new Set<string>();
+  expandedCompanyIds.forEach((companyId) => {
+    expandedConnectedIds.add(companyId);
+    groupLinks.forEach((link) => {
+      if (link.source === companyId) expandedConnectedIds.add(link.target);
+      if (link.target === companyId) expandedConnectedIds.add(link.source);
+    });
+  });
   const baseVisibleCompanies = getVisibleCompanies(selectedAnchor.id, query, riskFilter);
   const visibleCompanies = baseVisibleCompanies.filter((company) => {
     const matchesStage = stageFilter === 'all' || companyValueChainStage(company) === stageFilter;
@@ -2931,6 +2963,7 @@ function App() {
       roleFilter !== 'all' ||
       hasSearchQuery ||
       aiCoreCompanyIds.has(company.id) ||
+      expandedConnectedIds.has(company.id) ||
       company.id === selectedCompanyId;
     const matchesReferenceVisibility =
       !isAiRelationshipMap ||
@@ -2977,7 +3010,8 @@ function App() {
       if (!isAiRelationshipMap) return true;
       const relationship = linkRelationshipSummary(link);
       if (!showNeedsVerification && relationship.confidence.includes('검증')) return false;
-      if (mapViewMode === 'core' && roleFilter === 'all' && !hasSearchQuery && !showDetailedLinks) return aiCoreLinkIds.has(link.id);
+      const isExpandedLink = expandedCompanyIds.has(link.source) || expandedCompanyIds.has(link.target);
+      if (mapViewMode === 'core' && roleFilter === 'all' && !hasSearchQuery && !showDetailedLinks) return aiCoreLinkIds.has(link.id) || isExpandedLink;
       return true;
     });
   const selectedCompany =
@@ -2999,6 +3033,12 @@ function App() {
   const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
   const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
+  const selectedDirectLinks = selectedCompany
+    ? groupLinks.filter((link) => link.source === selectedCompany.id || link.target === selectedCompany.id)
+    : [];
+  const primaryDirectLinks = selectedDirectLinks.slice(0, 6);
+  const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
+  const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
   const filteredOutCount = groupCompanies.length - visibleCompanies.length;
   const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
   const firstLookCompanies = aiFirstLookIds
@@ -3108,8 +3148,20 @@ function App() {
 
   function focusCompany(companyId: string) {
     setSelectedCompanyId(companyId);
-    if (isAiRelationshipMap && !visibleIds.has(companyId)) return;
+    if (isAiRelationshipMap) {
+      setExpandedCompanyIds((current) => new Set([...current, companyId]));
+    }
     centerCompanyInMap(companyId);
+  }
+
+  function toggleCompanyExpansion(companyId: string) {
+    setExpandedCompanyIds((current) => {
+      const next = new Set(current);
+      if (next.has(companyId)) next.delete(companyId);
+      else next.add(companyId);
+      return next;
+    });
+    window.setTimeout(() => fitVisibleMap(), 80);
   }
 
   function showFullRelationshipMap() {
@@ -3134,11 +3186,15 @@ function App() {
             company,
             isSelected: selectedCompany?.id === company.id,
             isDimmed: !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
+            isExpanded: expandedCompanyIds.has(company.id),
+            marketLabel: marketDisplayLabel(company),
+            price: hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null,
             onSelect: focusCompany,
+            onToggleExpand: isAiRelationshipMap ? toggleCompanyExpansion : undefined,
           },
         };
       }),
-    [connectedIds, groupCompanies, isAiRelationshipMap, selectedCompany, visibleCompanies, visibleIds],
+    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, marketPrices, selectedCompany, visibleCompanies, visibleIds],
   );
 
   const flowEdges: Edge[] = useMemo(
@@ -3146,6 +3202,7 @@ function App() {
       (isAiRelationshipMap ? visibleLinks : groupLinks).map((link) => {
         const isVisible = visibleLinks.some((visibleLink) => visibleLink.id === link.id);
         const isConnected = selectedCompany ? link.source === selectedCompany.id || link.target === selectedCompany.id : false;
+        const isActiveRelationship = activeRelationshipId === link.id;
         const relationship = linkRelationshipSummary(link);
         const confidenceClass = confidenceClassName(relationship.confidence);
         const edgeColor = relationshipEdgeColor(relationship.type);
@@ -3154,21 +3211,22 @@ function App() {
           source: link.source,
           target: link.target,
           label: showDetailedLinks ? relationship.type : shortRelationshipLabel(relationship.type),
-          animated: isConnected,
+          animated: isConnected || isActiveRelationship,
           type: 'smoothstep',
           className: [
             isVisible ? '' : 'edge-hidden',
-            isConnected ? 'edge-active' : '',
+            isConnected || isActiveRelationship ? 'edge-active' : '',
+            selectedCompany && !isConnected && !isActiveRelationship ? 'edge-muted' : '',
             `edge-confidence-${confidenceClass}`,
             `edge-kind-${relationshipKindClass(relationship.type)}`,
           ].join(' '),
           style: {
-            strokeWidth: isConnected ? 3.2 : 2,
+            strokeWidth: isConnected || isActiveRelationship ? 3.2 : 2,
             stroke: isConnected ? edgeColor : edgeColor,
           },
           labelStyle: {
-            fill: isConnected ? edgeColor : '#475569',
-            fontWeight: isConnected ? 800 : 700,
+            fill: isConnected || isActiveRelationship ? edgeColor : '#475569',
+            fontWeight: isConnected || isActiveRelationship ? 800 : 700,
             fontSize: showDetailedLinks ? 12 : 11,
           },
           labelBgStyle: {
@@ -3181,7 +3239,7 @@ function App() {
           labelBgBorderRadius: 8,
         };
       }),
-    [groupLinks, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
+    [activeRelationshipId, groupLinks, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
   );
 
   useEffect(() => {
@@ -3298,6 +3356,9 @@ function App() {
     setShowReferenceNodes(false);
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
+    setExpandedCompanyIds(new Set());
+    setHoveredLinkId(null);
+    setSelectedLinkId(null);
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -3354,6 +3415,9 @@ function App() {
     setShowReferenceNodes(false);
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
+    setExpandedCompanyIds(new Set());
+    setHoveredLinkId(null);
+    setSelectedLinkId(null);
     if (isCategoryRoute) {
       window.history.pushState({}, '', categoryPath(nextSector.id));
       setRoute(`${window.location.pathname}${window.location.search}`);
@@ -3383,6 +3447,9 @@ function App() {
     setShowReferenceNodes(false);
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
+    setExpandedCompanyIds(new Set());
+    setHoveredLinkId(null);
+    setSelectedLinkId(null);
   }
 
   if (isPicksRoute) {
@@ -3816,11 +3883,35 @@ function App() {
               <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>초기 위치</button>
               {isAiRelationshipMap && <button type="button" onClick={showFullRelationshipMap}>전체 보기</button>}
             </div>
+            {activeRelationship && (
+              <div className="relationship-popover" role="status" aria-live="polite">
+                <button type="button" className="relationship-popover-close" onClick={() => { setHoveredLinkId(null); setSelectedLinkId(null); }} aria-label="관계 카드 닫기">
+                  ×
+                </button>
+                <span>관계 카드</span>
+                <strong>
+                  {companies.find((company) => company.id === activeRelationship.source)?.name}
+                  {' → '}
+                  {companies.find((company) => company.id === activeRelationship.target)?.name}
+                </strong>
+                <p>{linkRelationshipSummary(activeRelationship).description}</p>
+                <dl>
+                  <div><dt>관계 유형</dt><dd>{linkRelationshipSummary(activeRelationship).type}</dd></div>
+                  <div><dt>무엇이 연결되나</dt><dd>{linkRelationshipSummary(activeRelationship).whatIsSold}</dd></div>
+                  <div><dt>확실성</dt><dd><span className={`confidence-badge tiny ${confidenceClassName(linkRelationshipSummary(activeRelationship).confidence)}`}>{linkRelationshipSummary(activeRelationship).confidence}</span></dd></div>
+                  <div><dt>매출 비중</dt><dd>{linkRelationshipSummary(activeRelationship).revenueExposure}</dd></div>
+                </dl>
+                <small>{linkRelationshipSummary(activeRelationship).note}</small>
+              </div>
+            )}
             <ReactFlow
               nodes={flowNodes}
               edges={flowEdges}
               nodeTypes={nodeTypes}
               onNodeClick={(_, node) => focusCompany(node.id)}
+              onEdgeMouseEnter={(_, edge) => setHoveredLinkId(edge.id)}
+              onEdgeMouseLeave={() => setHoveredLinkId(null)}
+              onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
               onInit={(instance) => setFlowInstance(instance)}
               fitView
               fitViewOptions={{ padding: isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
@@ -3894,9 +3985,11 @@ function App() {
             <>
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">선택한 기업</p>
+                  <p className="eyebrow">현재 선택한 기업</p>
                   <h2>{selectedCompany.name}</h2>
-                  <span>{selectedCompany.legalName}</span>
+                  <span>
+                    {selectedCompany.ticker} · {marketDisplayLabel(selectedCompany)}
+                  </span>
                 </div>
                 <div className="panel-heading-actions">
                   {selectedIsMainListed && hasTradableTicker(selectedCompany) ? (
@@ -3932,6 +4025,22 @@ function App() {
                       <span>{selectedReportLink.statusDetail}</span>
                     </div>
                   )}
+                  <div className="summary-action-row">
+                    {isAiRelationshipMap && (
+                      <button type="button" className="analysis-link-button" onClick={() => toggleCompanyExpansion(selectedCompany.id)}>
+                        <Network size={15} />
+                        {expandedCompanyIds.has(selectedCompany.id) ? '관계 접기' : '관련 기업 보기'}
+                      </button>
+                    )}
+                    <button type="button" className="analysis-link-button" onClick={openOwnershipReports}>
+                      <Database size={15} />
+                      기관 보유 보고 보기
+                    </button>
+                    <button type="button" className="analysis-link-button" onClick={() => setNewsRefreshKey((current) => current + 1)}>
+                      <Newspaper size={15} />
+                      관련 뉴스 보기
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -3965,6 +4074,33 @@ function App() {
                   <strong>{companyInvestorWatchPoint(selectedCompany)}</strong>
                   <p>{companyRevenueExposure(selectedCompany)}</p>
                 </article>
+              </div>
+
+              <div className="detail-card direct-connections-card">
+                <div className="section-title">
+                  <ArrowRight size={16} />
+                  <span>직접 연결된 주요 기업</span>
+                </div>
+                <div className="direct-connection-list">
+                  {primaryDirectLinks.map((link) => {
+                    const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
+                    const counterpart = companies.find((company) => company.id === counterpartId);
+                    const relationship = linkRelationshipSummary(link);
+                    return (
+                      <button key={link.id} type="button" onClick={() => { focusCompany(counterpartId); setSelectedLinkId(link.id); }}>
+                        <strong>{counterpart?.name ?? '연결 기업'}</strong>
+                        <span>{shortRelationshipLabel(relationship.type)}</span>
+                        <em className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`}>{relationship.confidence}</em>
+                      </button>
+                    );
+                  })}
+                  {!primaryDirectLinks.length && <p>현재 공개 데이터 기준 직접 연결 관계가 아직 정리되지 않았습니다.</p>}
+                </div>
+                {selectedDirectLinks.length > primaryDirectLinks.length && (
+                  <button type="button" className="more-connections-button" onClick={() => setShowDetailedLinks(true)}>
+                    연결 {selectedDirectLinks.length - primaryDirectLinks.length}개 더 보기
+                  </button>
+                )}
               </div>
 
               {selectedIsMainListed ? (
