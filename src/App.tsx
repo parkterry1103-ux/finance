@@ -51,8 +51,6 @@ import {
   MarketPrice,
   RiskLevel,
   sectors,
-  SmartMoneyAction,
-  SmartMoneyInvestorType,
   SmartMoneyMove,
   smartMoneyMoves,
   sourcePolicies,
@@ -500,7 +498,6 @@ function linkRelationshipSummary(link: (typeof links)[number]) {
 
 type MapViewMode = 'core' | 'all';
 type RoleFilter = 'all' | 'leader' | 'bottleneck' | 'beneficiary' | 'listed' | 'reference';
-type MoverRegionFilter = 'all' | 'KR' | 'US';
 type ListingFilter = 'all' | 'listed' | 'reference';
 
 function companyRoleProfile(company: Company) {
@@ -639,10 +636,6 @@ function shortRelationshipLabel(value: string) {
   if (value.includes('전력') || value.includes('냉각')) return '전력·냉각';
   if (value.includes('클라우드')) return '클라우드 수요';
   return '수요 연결';
-}
-
-function marketMoverRegion(market: string): 'KR' | 'US' {
-  return market === 'KOSPI' || market === 'KOSDAQ' ? 'KR' : 'US';
 }
 
 function formatDisplayAmount(value: string, sourceUnit: string, country: CountryId) {
@@ -1614,29 +1607,8 @@ type LandingPageProps = {
 
 function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, onOpenOwnership, marketPrices }: LandingPageProps) {
   const [homeQuery, setHomeQuery] = useState('');
-  const [moverRegionFilter, setMoverRegionFilter] = useState<MoverRegionFilter>('all');
   const [tradeItems, setTradeItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
-  const [tradeMarketFilter, setTradeMarketFilter] = useState<'all' | CountryId>('all');
-  const [tradeTypeFilter, setTradeTypeFilter] = useState<'all' | SmartMoneyInvestorType>('all');
-  const [tradeActionFilter, setTradeActionFilter] = useState<'all' | SmartMoneyAction>('all');
-  const [tradeSearch, setTradeSearch] = useState('');
   const queryText = homeQuery.trim().toLowerCase();
-  const tradeSearchText = tradeSearch.trim().toLowerCase();
-  const featuredSectorIds = ['kr-semiconductors', 'kr-ship-defense', 'kr-battery-materials', 'kr-ai-datacenter', 'us-semiconductors'];
-  const beginnerSectorNotes: Record<string, string> = {
-    'kr-semiconductors': 'AI, 메모리, 장비 기업들이 어떻게 연결되는지 봅니다.',
-    'kr-ship-defense': '조선·방산 수주가 부품사와 협력사에 어떻게 이어지는지 봅니다.',
-    'kr-battery-materials': '배터리 셀, 소재, 장비 회사의 연결 구조를 봅니다.',
-    'kr-ai-datacenter': 'AI 서버와 데이터센터 투자가 어떤 기업에 연결되는지 봅니다.',
-    'us-semiconductors': 'AI 서버 수요가 반도체, 메모리, 파운드리, 전력·냉각 기업으로 어떻게 이어지는지 봅니다.',
-  };
-  const issueNotes: Record<string, string> = {
-    'kr-semiconductors': 'HBM, 후공정, 파운드리 투자 기대가 관련 기업 관심으로 이어지고 있습니다.',
-    'kr-ship-defense': '수주 잔고와 방산 수출 뉴스가 관련 부품사 관심으로 번지고 있습니다.',
-    'kr-battery-materials': '전기차 수요와 소재 가격이 실적 변동의 핵심입니다.',
-    'kr-ai-datacenter': 'AI 서버 전력·냉각·네트워크 투자 흐름을 같이 봅니다.',
-    'us-semiconductors': 'AI 서버 투자, HBM, 파운드리, 데이터센터 전력·냉각 수요를 함께 봅니다.',
-  };
 
   const companyResults = useMemo(() => {
     if (!queryText) return [];
@@ -1696,38 +1668,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       .slice(0, 3);
   }, [queryText]);
 
-  const popularSectors = featuredSectorIds
-    .map((sectorId) => sectors.find((sector) => sector.id === sectorId))
-    .filter((sector): sector is (typeof sectors)[number] => Boolean(sector));
-
-  const filteredMarketMovers = useMemo(
-    () => marketMovers.filter((mover) => moverRegionFilter === 'all' || marketMoverRegion(mover.market) === moverRegionFilter),
-    [moverRegionFilter],
-  );
-
-  const tradeTypeOptions = useMemo(() => {
-    const unique = new Map<SmartMoneyInvestorType, string>();
-    tradeItems.forEach((move) => unique.set(move.investorType, move.investorTypeLabel));
-    return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
-  }, [tradeItems]);
-
-  const filteredTradeItems = useMemo(
-    () =>
-      tradeItems.filter((move) => {
-        const matchesMarket = tradeMarketFilter === 'all' || move.market === tradeMarketFilter;
-        const matchesType = tradeTypeFilter === 'all' || move.investorType === tradeTypeFilter;
-        const matchesAction = tradeActionFilter === 'all' || move.action === tradeActionFilter;
-        const matchesSearch =
-          !tradeSearchText ||
-          [move.investorName, move.companyName, move.ticker, move.sectorLabel, move.sourceLabel]
-            .join(' ')
-            .toLowerCase()
-            .includes(tradeSearchText);
-        return matchesMarket && matchesType && matchesAction && matchesSearch;
-      }),
-    [tradeActionFilter, tradeItems, tradeMarketFilter, tradeSearchText, tradeTypeFilter],
-  );
-
   useEffect(() => {
     let cancelled = false;
     fetchSmartMoneyTrades().then((items) => {
@@ -1742,6 +1682,62 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const marketFlowCards = [
+    {
+      title: 'AI 반도체 & 데이터센터',
+      description: 'AI 서버 수요가 반도체, HBM, 전력·냉각 기업으로 이어지는 흐름입니다.',
+      keywords: ['AI 칩', 'HBM', '데이터센터'],
+      sectorId: 'us-semiconductors',
+    },
+    {
+      title: '전력·냉각 인프라',
+      description: '데이터센터가 늘면 전력 장비와 냉각 인프라 수요도 함께 봐야 합니다.',
+      keywords: ['전력망', '냉각', '인프라'],
+      sectorId: 'us-energy-grid',
+    },
+    {
+      title: '2차전지 / 전기차',
+      description: '전기차 수요와 소재 가격이 셀, 소재, 장비 기업 실적에 영향을 줍니다.',
+      keywords: ['배터리', '소재', '전기차'],
+      sectorId: 'kr-battery-materials',
+    },
+    {
+      title: '바이오 / CDMO',
+      description: '신약 개발과 위탁생산 수요가 바이오 생산 기업으로 이어질 수 있습니다.',
+      keywords: ['CDMO', '바이오시밀러', '의료기기'],
+      sectorId: 'kr-bio-healthcare',
+    },
+    {
+      title: '방산 / 우주',
+      description: '수주와 수출 뉴스가 완성품 기업뿐 아니라 부품·장비 기업 관심으로 번집니다.',
+      keywords: ['방산', '수주', '위성'],
+      sectorId: 'kr-ship-defense',
+    },
+    {
+      title: '소비 / 유통',
+      description: '소비 회복과 글로벌 유통 채널 변화가 브랜드와 제조 협력사에 영향을 줍니다.',
+      keywords: ['소비', 'ODM', '유통'],
+      sectorId: 'kr-cosmetics-consumer',
+    },
+  ];
+
+  const aiFlowPreview = [
+    { title: 'AI 서버 수요', companies: ['Microsoft', 'Google', 'Amazon'] },
+    { title: 'AI 칩/GPU', companies: ['NVIDIA', 'AMD'] },
+    { title: 'HBM/메모리', companies: ['SK하이닉스', '삼성전자', 'Micron'] },
+    { title: '파운드리', companies: ['TSMC', '삼성전자'] },
+    { title: '장비/소재', companies: ['ASML', '한미반도체', '원익IPS'] },
+    { title: '서버/네트워크', companies: ['Super Micro', 'Dell', 'Arista'] },
+    { title: '전력·냉각', companies: ['Vertiv', 'Eaton'] },
+  ];
+
+  const firstLookCompanies = ['us-semiconductors-nvidia', 'ai-datacenter-tsmc', 'ai-datacenter-sk-hynix', 'ai-datacenter-asml', 'ai-datacenter-vertiv']
+    .map((companyId) => companies.find((company) => company.id === companyId))
+    .filter((company): company is Company => Boolean(company));
+  const featuredPicks = stockAutopsyPicks.slice(0, 3);
+  const newsSummaryItems = marketMovers.slice(0, 3);
+  const institutionSummaryItems = tradeItems.slice(0, 4);
+
   return (
     <div className="home-shell">
       <header className="home-nav">
@@ -1749,14 +1745,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           <span className="home-logo">
             <Network size={20} />
           </span>
-          <strong>FINANCE</strong>
+          <strong>시장 흐름 투자지도</strong>
         </a>
         <nav>
           <a href="/ko/" onClick={(event) => event.preventDefault()}>홈</a>
-          <a href="#supply-chain">기업 관계</a>
-          <a href="#smart-money">보유·거래 보고</a>
-	          <a href="#market-movers">기업분석</a>
-	          <a href="#market-movers">공시·재무</a>
+          <a href="#market-flows">시장 흐름 지도</a>
 	          <a
 	            href="/ko/picks"
 	            onClick={(event) => {
@@ -1766,15 +1759,25 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
 	          >
 	            주가해부실 Pick
 	          </a>
+	          <a href="#company-explain">기업 해설</a>
+	          <a href="#financial-guide">재무제표 해설</a>
+	          <a href="#disclosure-news">공시·뉴스</a>
+          <a href="#smart-money">기관 동향</a>
+	          <a href="#learning-guide">학습 가이드</a>
 	        </nav>
 	      </header>
 
       <main>
         <section className="home-hero">
           <div className="home-hero-copy">
-            <p className="home-kicker">투자·주식 분석 플랫폼</p>
-            <h1>주식이 움직인 이유를 한눈에.</h1>
-            <p>기업 관계, 공시, 재무제표, 공개 보유·거래 보고까지 쉽게 연결해서 봅니다.</p>
+            <p className="home-kicker">초보 투자자용 시장 흐름 투자지도</p>
+            <h1>초보 투자자가 시장 흐름을 이해하는 투자 지도</h1>
+            <p>뉴스가 어떤 기업들의 수요와 매출로 이어지는지 쉽게 확인하세요.</p>
+            <div className="hero-principle-row" aria-label="사이트 사용 흐름">
+              <span>오늘 흐름</span>
+              <span>먼저 볼 기업</span>
+              <span>재무·공시 확인</span>
+            </div>
             <div className="home-search" role="search">
               <Search size={18} />
               <input
@@ -1822,292 +1825,223 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
         </section>
 
-        <section className="home-feature-grid" aria-label="핵심 기능">
-          <article className="home-feature-card">
-            <div className="feature-icon">
-              <Network size={22} />
-            </div>
+        <section className="market-flow-section" id="market-flows">
+          <div className="home-section-head">
+            <span>1</span>
             <div>
-              <h2>기업 관계 분석</h2>
-              <p>이 기업이 무엇을 팔고, 누구의 수요와 연결되는지 봅니다.</p>
-              <small>기업 관계 지도는 상장기업을 중심으로 고객사, 공급사, 장비, 소재, 최종 수요를 쉽게 연결해 보여줍니다.</small>
+              <h2>오늘 시장 흐름 한눈에 보기</h2>
+              <p>차트보다 먼저, 어떤 뉴스가 어떤 기업 수요로 이어지는지 봅니다.</p>
             </div>
-            <ul>
-              <li>섹터별 기업 관계 지도</li>
-              <li>상장기업 / 비상장 보조 노드</li>
-              <li>재무제표 해설</li>
-              <li>공시 분석</li>
-              <li>원문 보고서</li>
-            </ul>
-            <button type="button" onClick={() => scrollToSection('supply-chain')}>
-              기업 관계 보기
-              <ArrowRight size={16} />
-            </button>
-          </article>
-
-          <article className="home-feature-card accent">
-            <div className="feature-icon">
-              <CircleDollarSign size={22} />
-            </div>
-            <div>
-              <h2>공개 보유·거래 추적</h2>
-              <p>기관 보유 변화와 공개된 거래 보고를 함께 봅니다.</p>
-              <small>13F는 분기 포트폴리오, 국회의원 거래는 공개된 보고 기준으로 참고합니다.</small>
-            </div>
-            <ul>
-              <li>미국 국회의원 공개 거래 보고</li>
-              <li>내부자 Form 4 거래 보고</li>
-              <li>기관·펀드 13F 분기 포트폴리오</li>
-              <li>국민연금 / 한국 공개 보유 변화</li>
-            </ul>
-            <button type="button" onClick={() => scrollToSection('smart-money')}>
-              공개 보고 보기
-              <ArrowRight size={16} />
-            </button>
-          </article>
-        </section>
-
-        <section className="home-section" id="market-movers">
-          <div className="home-section-head with-filter">
-            <div className="section-title-row">
-              <span>1</span>
-              <div>
-                <h2>오늘 움직인 종목</h2>
-                <p>숫자만 보지 않고, 왜 움직였는지 한 줄로 먼저 봅니다.</p>
-              </div>
-            </div>
-            <div className="mover-region-tabs" aria-label="오늘 움직인 종목 시장 필터">
-              {[
-                { value: 'all', label: '전체' },
-                { value: 'KR', label: '국내' },
-                { value: 'US', label: '해외' },
-              ].map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  className={moverRegionFilter === filter.value ? 'active' : ''}
-                  onClick={() => setMoverRegionFilter(filter.value as MoverRegionFilter)}
-                >
-                  {filter.label}
+          </div>
+          <div className="market-flow-grid">
+            {marketFlowCards.map((flow) => (
+              <article className="market-flow-card" key={flow.title}>
+                <div>
+                  <h3>{flow.title}</h3>
+                  <p>{flow.description}</p>
+                </div>
+                <div className="flow-keyword-row">
+                  {flow.keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}
+                </div>
+                <button type="button" onClick={() => onOpenCategory(flow.sectorId)}>
+                  흐름 지도 보기
+                  <ArrowRight size={16} />
                 </button>
-              ))}
-            </div>
-          </div>
-          <div className="home-card-grid">
-            {filteredMarketMovers.map((mover) => {
-              const company = companies.find((item) => item.id === mover.companyId);
-              const reportLink = company ? getPrimaryReportLink(company) : null;
-              const price = getPriceForTicker(mover.ticker, mover.companyId, marketPrices);
-              return (
-                <article className="mover-card" key={mover.id}>
-                  <div className="card-topline">
-                    <span>{mover.market}</span>
-                    <strong className={mover.move.startsWith('-') ? 'down' : 'up'}>{mover.move}</strong>
-                  </div>
-                  <h3>{mover.companyName}</h3>
-                  <p className="ticker">{mover.ticker}</p>
-                  <PriceBadge price={price} compact />
-                  <div className="mover-impact-box">
-                    <div>
-                      <span>영향 요인</span>
-                      <strong>{mover.impactFactor}</strong>
-                    </div>
-                    {mover.additionalFactor && (
-                      <div>
-                        <span>추가 요인</span>
-                        <strong>{mover.additionalFactor}</strong>
-                      </div>
-                    )}
-                    <p>{mover.interpretation}</p>
-                  </div>
-                  <small>{mover.beginnerNote}</small>
-                  <div className="mini-tag-row">
-                    <span>{mover.sectorLabel}</span>
-                  </div>
-                  <div className="card-actions">
-                    {company && (
-                      <>
-                        <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button>
-                        <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
-                        <button type="button" onClick={() => onOpenCategory(company.sectorId, company.id)}>기업 관계 보기</button>
-                      </>
-                    )}
-                    {reportLink && <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />}
-                  </div>
-                </article>
-              );
-            })}
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="home-section" id="supply-chain">
+        <section className="flow-preview-section" id="market-flow-map">
           <div className="home-section-head">
             <span>2</span>
             <div>
-              <h2>인기 기업 관계 지도</h2>
-              <p>기업들이 무엇을 만들고, 누구의 수요에 영향을 받는지 짧게 봅니다.</p>
+              <h2>시장 흐름 지도 미리보기</h2>
+              <p>복잡한 관계를 한 번에 펼치지 않고, 수요가 이어지는 순서부터 봅니다.</p>
             </div>
           </div>
-          <div className="home-card-grid supply-preview-grid">
-            {popularSectors.map((sector) => {
-              const sectorAnchors = anchors.filter((anchor) => anchor.sectorId === sector.id).slice(0, 3);
-              const relatedSmes = companies.filter((company) => company.sectorId === sector.id && company.tier === 'tier2').length;
+          <div className="flow-preview-map" aria-label="AI 반도체와 데이터센터 흐름 미리보기">
+            {aiFlowPreview.map((step, index) => (
+              <article className="flow-step-card" key={step.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <h3>{step.title}</h3>
+                <p>{step.companies.join(' · ')}</p>
+              </article>
+            ))}
+          </div>
+          <div className="flow-preview-copy">
+            <strong>AI 서버 수요가 늘면 AI 칩, HBM 메모리, 파운드리, 장비·소재, 전력·냉각 기업을 같은 흐름에서 함께 봅니다.</strong>
+            <p>직접 납품 관계가 확인되지 않은 기업은 “수요 연결” 또는 “같은 흐름에서 함께 볼 기업”으로 표시합니다.</p>
+            <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+              전체 흐름 보기
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </section>
+
+        <section className="home-section" id="company-explain">
+          <div className="home-section-head">
+            <span>3</span>
+            <div>
+              <h2>이 흐름에서 먼저 볼 기업</h2>
+              <p>주가보다 먼저, 이 회사가 무엇을 팔고 누구의 수요와 연결되는지 확인합니다.</p>
+            </div>
+          </div>
+          <div className="first-company-grid">
+            {firstLookCompanies.map((company) => (
+              <article className="first-company-card" key={company.id}>
+                <div>
+                  <span>{company.valueChainStage ?? company.sector}</span>
+                  <h3>{company.name}</h3>
+                </div>
+                <p>{companyBusinessSummary(company)}</p>
+                <small>{company.investorWatchPoint ?? '수요 변화가 실제 매출과 현금흐름으로 이어지는지 확인합니다.'}</small>
+                <div className="card-actions">
+                  <button type="button" onClick={() => onOpenAnalysis(company)}>기업 해설 보기</button>
+                  <button type="button" onClick={() => onOpenCategory(company.sectorId, company.id)}>흐름 지도에서 보기</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-section pick-home-section" id="picks-preview">
+          <div className="home-section-head">
+            <span>4</span>
+            <div>
+              <h2>이번 주 주가해부실 Pick</h2>
+              <p>종목 하나를 끝까지 파기보다, 왜 움직였고 어떤 흐름과 연결되는지 봅니다.</p>
+            </div>
+          </div>
+          <div className="pick-home-grid">
+            {featuredPicks.map((pick) => (
+              <article className="pick-home-card" key={pick.id}>
+                <div className="card-topline">
+                  <span>{pick.movementLabel}</span>
+                  <em>{pick.publishedAt ?? '이번 주'}</em>
+                </div>
+                <h3>{pick.companyName}</h3>
+                <p>{pick.reasonSummary}</p>
+                <div className="mini-tag-row">
+                  <span>{pick.sector}</span>
+                  <span>{pick.valueChainPosition === 'leader' ? '대장주' : '같이 볼 기업'}</span>
+                </div>
+                <small>같이 볼 기업: {pick.connectedLeaders.slice(0, 5).join(', ')}</small>
+                <button type="button" onClick={() => onOpenPick(pick)}>
+                  해부 보기
+                  <ArrowRight size={16} />
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-section financial-guide-section" id="financial-guide">
+          <div className="home-section-head">
+            <span>5</span>
+            <div>
+              <h2>초보자 재무제표 해설 가이드</h2>
+              <p>재무제표는 숫자를 외우는 게 아니라, 흐름이 실제 실적으로 이어졌는지 해석하는 도구입니다.</p>
+            </div>
+          </div>
+          <div className="financial-guide-card">
+            <strong>이 산업에서 먼저 볼 지표 3개</strong>
+            <div className="financial-guide-grid">
+              <div>
+                <span>매출 성장률</span>
+                <p>수요가 실제 판매 증가로 이어졌는지 봅니다.</p>
+              </div>
+              <div>
+                <span>영업이익률</span>
+                <p>많이 팔아도 비용을 빼고 남는 힘이 좋아지는지 봅니다.</p>
+              </div>
+              <div>
+                <span>영업현금흐름</span>
+                <p>장부상 이익이 실제 현금 유입으로 이어지는지 확인합니다.</p>
+              </div>
+            </div>
+            <p>매출이 늘어도 현금이 실제로 들어오는지, 이익률이 좋아지는지 함께 확인해야 합니다.</p>
+          </div>
+        </section>
+
+        <section className="home-section" id="disclosure-news">
+          <div className="home-section-head">
+            <span>6</span>
+            <div>
+              <h2>공시·뉴스 요약</h2>
+              <p>뉴스 제목만 보지 말고, 어떤 실적·공시 포인트를 확인해야 하는지 연결합니다.</p>
+            </div>
+          </div>
+          <div className="news-summary-grid">
+            {newsSummaryItems.map((mover) => {
+              const company = companies.find((item) => item.id === mover.companyId);
               return (
-                <article className="supply-preview-card" key={sector.id}>
-                  <div className="card-topline">
-                    <span>{sector.country === 'KR' ? '한국' : '미국'}</span>
-                    <em>{categoryPath(sector.id)}</em>
-                  </div>
-                  <h3>{sector.label}</h3>
-                  <p>{beginnerSectorNotes[sector.id] ?? sector.description}</p>
-                  <dl>
-                    <div>
-                      <dt>핵심 기업</dt>
-                      <dd>{sectorAnchors.map((anchor) => anchor.name).join(', ')}</dd>
+                <article className="news-summary-card" key={mover.id}>
+                  <span>{mover.sectorLabel}</span>
+                  <h3>{mover.impactFactor}</h3>
+                  <p>{mover.interpretation}</p>
+                  <small>{mover.companyName} · {mover.market}</small>
+                  {company && (
+                    <div className="card-actions">
+                      <button type="button" onClick={() => onOpenAnalysis(company)}>공시·재무 확인</button>
+                      <button type="button" onClick={() => onOpenCategory(company.sectorId, company.id)}>연결 흐름 보기</button>
                     </div>
-                    <div>
-                      <dt>관련 보조 기업</dt>
-                      <dd>{relatedSmes}개</dd>
-                    </div>
-                    <div>
-                      <dt>최근 이슈</dt>
-                      <dd>{issueNotes[sector.id] ?? sector.newsKeywords.slice(0, 3).join(', ')}</dd>
-                    </div>
-                  </dl>
-                  <button type="button" onClick={() => onOpenCategory(sector.id)}>
-                    기업 관계 보기
-                    <ArrowRight size={16} />
-                  </button>
+                  )}
                 </article>
               );
             })}
           </div>
         </section>
 
-        <section className="home-section" id="smart-money">
+        <section className="home-section institution-summary-section" id="smart-money">
           <div className="home-section-head">
-            <span>3</span>
+            <span>7</span>
             <div>
-              <h2>최근 보유·거래 보고</h2>
-              <p>13F는 분기 보유 보고, 국회의원 거래는 공개된 거래 보고 기준입니다.</p>
+              <h2>기관 동향 요약</h2>
+              <p>13F는 분기 보유 보고, Form 4는 내부자 거래 보고입니다. 즉시 거래 신호처럼 보지 않습니다.</p>
             </div>
           </div>
-          <div className="trade-filter-panel" aria-label="공개 보유 거래 보고 필터">
-            <div className="trade-filter-row">
-              {[
-                { value: 'all', label: '전체 시장' },
-                { value: 'KR', label: '한국' },
-                { value: 'US', label: '미국' },
-              ].map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  className={tradeMarketFilter === filter.value ? 'active' : ''}
-                  onClick={() => setTradeMarketFilter(filter.value as 'all' | CountryId)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-            <div className="trade-filter-row">
-              <button className={tradeTypeFilter === 'all' ? 'active' : ''} type="button" onClick={() => setTradeTypeFilter('all')}>
-                전체 유형
-              </button>
-              {tradeTypeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={tradeTypeFilter === option.value ? 'active' : ''}
-                  onClick={() => setTradeTypeFilter(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="trade-filter-row">
-              {[
-                { value: 'all', label: '전체 방향' },
-                { value: 'buy', label: '매수' },
-                { value: 'sell', label: '매도' },
-                { value: 'increase', label: '비중확대' },
-                { value: 'decrease', label: '비중축소' },
-                { value: 'holding', label: '보유 변화' },
-              ].map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  className={tradeActionFilter === filter.value ? 'active' : ''}
-                  onClick={() => setTradeActionFilter(filter.value as 'all' | SmartMoneyAction)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-            <div className="trade-search">
-              <Search size={15} />
-              <input
-                type="search"
-                placeholder="종목, 섹터, 투자자 검색"
-                value={tradeSearch}
-                onChange={(event) => setTradeSearch(event.target.value)}
-              />
-            </div>
-          </div>
-          <div className="home-card-grid smart-money-grid">
-            {filteredTradeItems.slice(0, 20).map((move) => {
+          <div className="institution-summary-grid">
+            {institutionSummaryItems.map((move) => {
               const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
-              const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
               return (
-                <article className="smart-card" key={move.id}>
-                  <div className="smart-card-primary">
-                    <div>
-                      <h3>{move.investorName}</h3>
-                    </div>
-                    <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
-                  </div>
-                  <div className="smart-company-focus">
-                    <strong>{move.companyName}</strong>
-                    <small>{move.ticker}</small>
-                  </div>
-                  <span className="trade-type-badge">{publicReportTypeBadge(move)}</span>
-                  <p>{move.beginnerExplanation}</p>
-                  <dl className="smart-meta-list">
-                    <div><dt>시장</dt><dd>{move.market === 'KR' ? '한국' : '미국'}</dd></div>
-                    <div><dt>공개일</dt><dd>{move.disclosedDate}</dd></div>
-                    <div><dt>{publicReportDateLabel(move)}</dt><dd>{move.tradeDateOptional ?? publicReportDateFallback(move)}</dd></div>
-                    <div><dt>섹터</dt><dd>{move.sectorLabel}</dd></div>
-                    <div><dt>출처</dt><dd>{move.sourceLabel}</dd></div>
-                  </dl>
-                  <small className="trade-delay-note">
-                    {publicReportDelayNote(move)}
-                  </small>
+                <article className="institution-summary-card" key={move.id}>
+                  <span>{publicReportTypeBadge(move)}</span>
+                  <h3>{move.investorName}</h3>
+                  <p>{move.companyName} · {publicReportActionLabel(move)}</p>
+                  <small>공개일 {move.disclosedDate}</small>
                   <div className="card-actions">
-                    <button type="button" onClick={() => onOpenCategory(supplyChainId, company?.id ?? move.relatedCompanyId ?? move.companyId)}>기업 관계 보기</button>
-                    {company ? (
-                      <>
-                        <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button>
-                        <button type="button" onClick={() => onOpenAnalysis(company)}>재무제표 해설 보기</button>
-                      </>
-                    ) : (
-                      <button type="button">관련 분석 준비 중</button>
-                    )}
+                    {company && <button type="button" onClick={() => onOpenAnalysis(company)}>기업 해설 보기</button>}
                     <SourceReportAction move={move} />
                   </div>
                 </article>
               );
             })}
-            {filteredTradeItems.length === 0 && <div className="trade-empty">조건에 맞는 공개 보유·거래 보고가 아직 없습니다.</div>}
           </div>
           <div className="section-more-row">
             <button type="button" onClick={onOpenOwnership}>
-              기관 보유 보고 더 보기
+              기관 동향 더 보기
               <ArrowRight size={16} />
             </button>
           </div>
           <div className="home-note">
-            <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
-            <p>국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.</p>
+            <p>13F는 분기 보고 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.</p>
             <p>투자 권유가 아닌 참고용 데이터입니다.</p>
+          </div>
+        </section>
+
+        <section className="home-section learning-guide-section" id="learning-guide">
+          <div className="home-section-head">
+            <span>8</span>
+            <div>
+              <h2>학습 가이드</h2>
+              <p>첫 화면은 핵심만 보고, 자세한 정보는 더보기에서 확인하는 방식으로 읽습니다.</p>
+            </div>
+          </div>
+          <div className="learning-guide-grid">
+            <div><strong>1. 흐름부터 보기</strong><p>뉴스가 어떤 산업 수요로 이어지는지 먼저 봅니다.</p></div>
+            <div><strong>2. 같이 볼 기업 고르기</strong><p>대장주, 병목 기업, 수요 수혜 기업을 구분합니다.</p></div>
+            <div><strong>3. 재무·공시로 확인</strong><p>매출, 이익률, 현금흐름이 실제로 따라오는지 확인합니다.</p></div>
           </div>
         </section>
 
