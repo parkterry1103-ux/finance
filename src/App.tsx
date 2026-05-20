@@ -118,13 +118,18 @@ const aiRelationshipAnchorId = 'us-semiconductors-nvidia';
 const aiCoreCompanyIds = new Set([
   'ai-datacenter-google',
   'ai-datacenter-microsoft',
+  'ai-datacenter-amazon',
   'us-semiconductors-nvidia',
+  'ai-datacenter-amd',
   'ai-datacenter-broadcom',
   'ai-datacenter-sk-hynix',
   'ai-datacenter-samsung',
+  'ai-datacenter-micron',
   'ai-datacenter-tsmc',
   'ai-datacenter-asml',
+  'ai-datacenter-hanmi',
   'ai-datacenter-supermicro',
+  'ai-datacenter-dell',
   'ai-datacenter-vertiv',
 ]);
 
@@ -137,14 +142,18 @@ const aiFirstLookIds = [
 ];
 
 const aiCoreLinkIds = new Set([
-  'ai-link-google-broadcom',
-  'ai-link-broadcom-tsmc',
-  'ai-link-nvidia-tsmc',
-  'ai-link-nvidia-sk-hynix',
-  'ai-link-nvidia-vertiv',
-  'ai-link-nvidia-supermicro',
-  'ai-link-asml-tsmc',
-  'ai-link-microsoft-nvidia',
+  'ai-v01-ai-datacenter-google-ai-datacenter-broadcom',
+  'ai-v01-ai-datacenter-broadcom-ai-datacenter-tsmc',
+  'ai-v01-ai-datacenter-microsoft-us-semiconductors-nvidia',
+  'ai-v01-ai-datacenter-amazon-us-semiconductors-nvidia',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-tsmc',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-sk-hynix',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-micron',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-vertiv',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-supermicro',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-dell',
+  'ai-v01-ai-datacenter-asml-ai-datacenter-tsmc',
+  'ai-v01-ai-datacenter-hanmi-ai-datacenter-sk-hynix',
 ]);
 
 const aiStageColumns = [
@@ -161,19 +170,19 @@ const aiFlowStages = [
   {
     stage: 'AI 서버 수요',
     symbol: '수요',
-    summary: 'AI 서비스와 클라우드 투자가 서버 수요를 만듭니다.',
+    summary: '클라우드 기업과 AI 서비스 기업이 더 많은 계산 능력을 필요로 하는 출발점입니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google', 'ai-datacenter-amazon'],
   },
   {
     stage: 'AI 칩 / GPU',
     symbol: 'GPU',
-    summary: 'AI 연산을 처리하는 칩과 가속기가 흐름의 중심입니다.',
+    summary: 'AI 계산을 빠르게 처리하는 핵심 칩입니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-amd', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM / 메모리',
     symbol: 'HBM',
-    summary: 'AI 서버에는 고성능 메모리 수요가 함께 따라옵니다.',
+    summary: 'AI 칩이 데이터를 빠르게 처리하기 위해 필요한 고성능 메모리입니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung', 'ai-datacenter-micron'],
   },
   {
@@ -185,20 +194,56 @@ const aiFlowStages = [
   {
     stage: '장비 / 소재 / 후공정',
     symbol: '장비',
-    summary: '칩 생산과 패키징 확대에 필요한 장비·소재 기업입니다.',
+    summary: '반도체를 만들고 패키징하고 테스트하는 데 필요한 장비와 소재입니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-hanmi', 'ai-datacenter-wonikips'],
   },
   {
     stage: '서버 / 네트워크',
     symbol: '서버',
-    summary: 'AI 칩이 들어가는 서버와 데이터센터 네트워크 단계입니다.',
+    summary: 'AI 칩을 장착한 서버와 데이터 이동 인프라입니다.',
     companyIds: ['ai-datacenter-supermicro', 'ai-datacenter-dell', 'ai-datacenter-arista'],
   },
   {
     stage: '전력·냉각',
     symbol: '전력',
-    summary: '데이터센터가 커질수록 전력과 냉각 인프라가 중요해집니다.',
+    summary: '데이터센터가 커질수록 전기와 열 관리가 중요해집니다.',
     companyIds: ['ai-datacenter-vertiv', 'ai-datacenter-eaton', 'ai-datacenter-schneider'],
+  },
+];
+
+const aiKoreaListedPriorityNames = [
+  'SK하이닉스',
+  '삼성전자',
+  '한미반도체',
+  '리노공업',
+  'ISC',
+  '원익IPS',
+  '솔브레인',
+  '주성엔지니어링',
+  'DB하이텍',
+  '하나마이크론',
+];
+
+const aiFinancialFocusCards = [
+  {
+    label: 'AI 칩 기업',
+    metrics: ['데이터센터 매출 성장률', '영업이익률', '잉여현금흐름 / R&D 투자'],
+    note: '성장률과 마진이 유지되는지, 기술 우위를 위한 투자가 이어지는지 봅니다.',
+  },
+  {
+    label: '메모리 / HBM',
+    metrics: ['영업이익률', '재고자산', '영업현금흐름'],
+    note: '메모리는 사이클이 커서 이익률, 재고, 실제 현금 유입을 같이 봐야 합니다.',
+  },
+  {
+    label: '파운드리',
+    metrics: ['매출 성장률', '영업이익률', 'CAPEX / 가동률'],
+    note: '큰 설비투자가 실제 수요로 채워지는지 확인하는 것이 중요합니다.',
+  },
+  {
+    label: '장비·인프라',
+    metrics: ['수주잔고 / 백로그', '매출 성장률', '잉여현금흐름'],
+    note: '고객 투자 사이클이 수주와 현금흐름으로 이어지는지 봅니다.',
   },
 ];
 
@@ -3662,6 +3707,14 @@ function App() {
       hiddenCount,
     };
   });
+  const aiKoreaListedCompanies = aiKoreaListedPriorityNames
+    .map((name) =>
+      groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
+      companies.find((company) => company.name === name && isMainListedCompany(company)),
+    )
+    .filter((company): company is Company => Boolean(company))
+    .filter((company, index, list) => list.findIndex((item) => item.name === company.name) === index);
+  const aiKoreaListedPreview = aiKoreaListedCompanies.slice(0, 8);
   const roleFilterOptions: Array<{ value: RoleFilter; label: string; note: string }> = [
     { value: 'all', label: mapViewMode === 'core' ? '핵심 관계' : '전체', note: '기본 흐름' },
     { value: 'leader', label: '대장주', note: '먼저 볼 기업' },
@@ -4018,6 +4071,16 @@ function App() {
   function openAnalysis(company: Company) {
     window.history.pushState({}, '', analysisPath(company));
     setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function openCompanyMap(company: Company) {
+    if (groupCompanies.some((item) => item.id === company.id)) {
+      focusCompany(company.id);
+      return;
+    }
+    window.history.pushState({}, '', categoryPath(company.sectorId, company.id));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+    selectSectorScope(company.sectorId, company.id);
   }
 
   function closeAnalysis(company?: Company) {
@@ -4480,7 +4543,7 @@ function App() {
               <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 흐름도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">
                 {isAiRelationshipMap
-                  ? 'AI 서버 수요가 AI 칩, HBM, 파운드리, 장비, 서버, 전력·냉각 기업으로 이어지는 흐름을 단계별로 볼 수 있습니다.'
+                  ? 'AI 서버 수요가 늘면 AI 칩, HBM 메모리, 파운드리, 장비, 서버, 전력·냉각 기업으로 관심이 이어질 수 있습니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -4546,7 +4609,7 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>시장 흐름 지도</span>
-                <strong>AI 서버 수요가 늘 때 같이 볼 기업을 단계별로 정리했습니다.</strong>
+                <strong>AI 서버 수요가 어떤 기업으로 이어지는지 단계별로 정리했습니다.</strong>
                 <p>직접 납품 관계가 확인되지 않은 경우에는 “수요 연결” 또는 “산업상 관련”으로 표시합니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
@@ -4597,6 +4660,59 @@ function App() {
                     )}
                   </article>
                 ))}
+              </div>
+              <div className="ai-sector-support-grid">
+                <section className="ai-korea-listed-card" aria-label="AI 반도체 흐름과 연결된 한국 상장기업">
+                  <div className="support-card-head">
+                    <span>한국 관련 상장기업</span>
+                    <strong>이 흐름과 연결된 한국 기업</strong>
+                    <p>상장기업만 추려서 시장, 원문 보고서 상태, 기업 해설 이동 경로를 먼저 보여줍니다.</p>
+                  </div>
+                  <div className="korea-listed-grid">
+                    {aiKoreaListedPreview.map((company) => {
+                      const reportLink = getPrimaryReportLink(company);
+                      return (
+                        <article key={company.id} className="korea-listed-item">
+                          <div>
+                            <strong>{company.name}</strong>
+                            <small>{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</small>
+                          </div>
+                          <p>{companyBusinessSummary(company)}</p>
+                          <span>{company.relationshipSummary ?? companyCustomerSummary(company)}</span>
+                          <div className="korea-listed-actions">
+                            <button type="button" onClick={() => openAnalysis(company)}>기업 해설 보기</button>
+                            <button type="button" onClick={() => openCompanyMap(company)}>지도에서 보기</button>
+                            <ReportAction reportLink={reportLink} className="mini-report-action" iconSize={13} />
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  {aiKoreaListedCompanies.length > aiKoreaListedPreview.length && (
+                    <button type="button" className="support-more-button" onClick={() => applyFlowViewMode('kr')}>
+                      한국 관련주 더 보기
+                    </button>
+                  )}
+                </section>
+
+                <section className="ai-finance-focus-card" aria-label="AI 반도체와 데이터센터에서 먼저 볼 재무지표">
+                  <div className="support-card-head">
+                    <span>먼저 볼 재무지표</span>
+                    <strong>기업 종류마다 먼저 볼 숫자가 다릅니다</strong>
+                    <p>값이 없으면 가짜 숫자를 만들지 않고, 지표 이름과 해석 기준만 안내합니다.</p>
+                  </div>
+                  <div className="ai-finance-focus-grid">
+                    {aiFinancialFocusCards.map((item) => (
+                      <article key={item.label}>
+                        <strong>{item.label}</strong>
+                        <div>
+                          {item.metrics.map((metric) => <span key={metric}>{metric}</span>)}
+                        </div>
+                        <p>{item.note}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
               </div>
             </section>
           )}
