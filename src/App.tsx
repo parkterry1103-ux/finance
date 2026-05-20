@@ -4,6 +4,7 @@ import {
   Controls,
   Edge,
   Handle,
+  MarkerType,
   Node,
   NodeProps,
   Position,
@@ -159,44 +160,89 @@ const aiStageColumns = [
 const aiFlowStages = [
   {
     stage: 'AI 서버 수요',
+    symbol: '수요',
     summary: 'AI 서비스와 클라우드 투자가 서버 수요를 만듭니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google', 'ai-datacenter-amazon'],
   },
   {
     stage: 'AI 칩 / GPU',
+    symbol: 'GPU',
     summary: 'AI 연산을 처리하는 칩과 가속기가 흐름의 중심입니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-amd', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM / 메모리',
+    symbol: 'HBM',
     summary: 'AI 서버에는 고성능 메모리 수요가 함께 따라옵니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung', 'ai-datacenter-micron'],
   },
   {
     stage: '파운드리',
+    symbol: 'FAB',
     summary: '설계된 칩을 실제로 생산하는 제조 단계입니다.',
     companyIds: ['ai-datacenter-tsmc', 'ai-datacenter-samsung', 'ai-datacenter-intel'],
   },
   {
     stage: '장비 / 소재 / 후공정',
+    symbol: '장비',
     summary: '칩 생산과 패키징 확대에 필요한 장비·소재 기업입니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-hanmi', 'ai-datacenter-wonikips'],
   },
   {
     stage: '서버 / 네트워크',
+    symbol: '서버',
     summary: 'AI 칩이 들어가는 서버와 데이터센터 네트워크 단계입니다.',
     companyIds: ['ai-datacenter-supermicro', 'ai-datacenter-dell', 'ai-datacenter-arista'],
   },
   {
     stage: '전력·냉각',
+    symbol: '전력',
     summary: '데이터센터가 커질수록 전력과 냉각 인프라가 중요해집니다.',
     companyIds: ['ai-datacenter-vertiv', 'ai-datacenter-eaton', 'ai-datacenter-schneider'],
   },
 ];
 
+const companyVisualSymbols: Record<string, { label: string; tone: string }> = {
+  'us-semiconductors-nvidia': { label: 'NV', tone: 'nvidia' },
+  'ai-datacenter-microsoft': { label: 'MS', tone: 'microsoft' },
+  'ai-datacenter-google': { label: 'G', tone: 'google' },
+  'ai-datacenter-amazon': { label: 'AWS', tone: 'amazon' },
+  'ai-datacenter-broadcom': { label: 'AV', tone: 'broadcom' },
+  'ai-datacenter-tsmc': { label: 'TSM', tone: 'tsmc' },
+  'ai-datacenter-sk-hynix': { label: 'SK', tone: 'hynix' },
+  'ai-datacenter-samsung': { label: 'SEC', tone: 'samsung' },
+  'ai-datacenter-asml': { label: 'ASML', tone: 'asml' },
+  'ai-datacenter-vertiv': { label: 'VRT', tone: 'vertiv' },
+  'ai-datacenter-amd': { label: 'AMD', tone: 'amd' },
+  'ai-datacenter-supermicro': { label: 'SMCI', tone: 'supermicro' },
+  'ai-datacenter-dell': { label: 'DELL', tone: 'dell' },
+  'ai-datacenter-arista': { label: 'ANET', tone: 'arista' },
+  'ai-datacenter-hanmi': { label: 'HMI', tone: 'kr' },
+  'ai-datacenter-leeno': { label: 'LNO', tone: 'kr' },
+  'ai-datacenter-isc': { label: 'ISC', tone: 'kr' },
+  'ai-datacenter-wonikips': { label: 'WON', tone: 'kr' },
+  'ai-datacenter-soulbrain': { label: 'SOL', tone: 'kr' },
+};
+
+function companySymbol(company: Company) {
+  const mapped = companyVisualSymbols[company.id];
+  if (mapped) return mapped;
+  const source = company.ticker && !company.ticker.includes('비상장') ? company.ticker : company.name;
+  const label = source
+    .replace(/\.(KS|KQ|US)$/i, '')
+    .replace(/[^a-zA-Z0-9가-힣]/g, '')
+    .slice(0, 4)
+    .toUpperCase();
+  return {
+    label: label || company.name.slice(0, 2),
+    tone: isMainListedCompany(company) ? 'default' : 'reference',
+  };
+}
+
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   const { company, isSelected, isDimmed, isExpanded, marketLabel, price, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
+  const symbol = companySymbol(company);
 
   return (
     <div
@@ -222,6 +268,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   >
       <Handle type="target" position={Position.Left} className="node-handle" />
       <div className="node-topline">
+        <span className={`company-symbol symbol-${symbol.tone}`} aria-hidden="true">{symbol.label}</span>
         <span className="node-badge-row">
           {isSelected && <span className="selected-company-badge">선택한 기업</span>}
           <span className={`role-badge role-${role.className}`}>{role.primary}</span>
@@ -3285,7 +3332,7 @@ function App() {
           target: link.target,
           label: showDetailedLinks || flowViewMode === 'sources' ? relationship.type : shortRelationshipLabel(relationship.type),
           animated: isConnected || isActiveRelationship,
-          type: 'smoothstep',
+          type: isAiRelationshipMap ? 'default' : 'smoothstep',
           className: [
             isVisible ? '' : 'edge-hidden',
             isConnected || isActiveRelationship ? 'edge-active' : '',
@@ -3297,6 +3344,14 @@ function App() {
             strokeWidth: isConnected || isActiveRelationship ? 3.2 : 2,
             stroke: isConnected ? edgeColor : edgeColor,
           },
+          markerEnd: isAiRelationshipMap
+            ? {
+                type: MarkerType.ArrowClosed,
+                width: 14,
+                height: 14,
+                color: isConnected || isActiveRelationship ? edgeColor : '#b9c4d4',
+              }
+            : undefined,
           labelStyle: {
             fill: isConnected || isActiveRelationship ? edgeColor : '#475569',
             fontWeight: isConnected || isActiveRelationship ? 800 : 700,
@@ -3965,18 +4020,30 @@ function App() {
                   </button>
                 ))}
               </div>
+              <div className="flow-help-pills" aria-label="지도 사용 팁">
+                <span>진한 선: 선택 기업 직접 관계</span>
+                <span>연한 선: 보조 관계</span>
+                <span>회사를 클릭하면 오른쪽에서 핵심 정보 확인</span>
+              </div>
               <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 단계형 흐름">
                 {flowStageCards.map((stage) => (
                   <article key={stage.stage} className="market-flow-stage-card">
-                    <span>{stage.stage}</span>
+                    <div className="stage-heading">
+                      <span>{stage.symbol}</span>
+                      <strong>{stage.stage}</strong>
+                    </div>
                     <p>{stage.summary}</p>
                     <div>
                       {stage.companies.map((company) => {
                         const role = companyRoleProfile(company);
+                        const symbol = companySymbol(company);
                         return (
                           <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
-                            <strong>{company.name}</strong>
-                            <small>{role.primary}</small>
+                            <span className={`company-symbol small symbol-${symbol.tone}`} aria-hidden="true">{symbol.label}</span>
+                            <span>
+                              <strong>{company.name}</strong>
+                              <small>{role.primary}</small>
+                            </span>
                           </button>
                         );
                       })}
@@ -4178,13 +4245,18 @@ function App() {
           {selectedCompany && selectedDisplayMetrics && (
             <>
               <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">현재 선택한 기업</p>
-                  <h2>{selectedCompany.name}</h2>
-                  <span>
-                    {hasTradableTicker(selectedCompany) && selectedCompany.ticker ? `${selectedCompany.ticker} · ` : ''}
-                    {marketDisplayLabel(selectedCompany)}
+                <div className="panel-title-row">
+                  <span className={`company-symbol large symbol-${companySymbol(selectedCompany).tone}`} aria-hidden="true">
+                    {companySymbol(selectedCompany).label}
                   </span>
+                  <div>
+                    <p className="eyebrow">현재 선택한 기업</p>
+                    <h2>{selectedCompany.name}</h2>
+                    <span>
+                      {hasTradableTicker(selectedCompany) && selectedCompany.ticker ? `${selectedCompany.ticker} · ` : ''}
+                      {marketDisplayLabel(selectedCompany)}
+                    </span>
+                  </div>
                 </div>
                 <div className="panel-heading-actions">
                   {selectedIsMainListed && hasTradableTicker(selectedCompany) ? (

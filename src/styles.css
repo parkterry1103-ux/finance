@@ -7296,3 +7296,337 @@ button:disabled {
     margin-top: 8px;
   }
 }
+
+/* Market flow visual polish: make the map feel like a readable learning board. */
+.sector-flow-card {
+  border-color: rgba(214, 224, 242, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 255, 0.94)),
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.08), transparent 32%);
+  box-shadow: 0 18px 44px rgba(25, 31, 40, 0.07);
+}
+
+.flow-help-pills {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.flow-help-pills span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(214, 224, 242, 0.82);
+  border-radius: 999px;
+  color: #475467;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.market-flow-board {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.46) transparent;
+}
+
+.market-flow-stage-card {
+  border-color: rgba(205, 217, 238, 0.88);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.94)),
+    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.1), transparent 36%);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.07);
+}
+
+.stage-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-heading > span {
+  display: grid;
+  place-items: center;
+  min-width: 35px;
+  height: 35px;
+  padding: 0 7px;
+  border-radius: 13px;
+  color: #0057d9;
+  background: linear-gradient(135deg, #eef6ff, #f5f0ff);
+  font-size: 10px;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.1);
+}
+
+.stage-heading > strong {
+  min-width: 0;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.market-flow-stage-card > div button {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  border-color: rgba(226, 232, 240, 0.92);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.company-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #334155, #0f172a);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.company-symbol.small {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+.company-symbol.large {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.symbol-nvidia {
+  background: linear-gradient(135deg, #76b900, #2f7a00);
+}
+
+.symbol-microsoft {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.symbol-google {
+  background: linear-gradient(135deg, #4285f4, #34a853);
+}
+
+.symbol-amazon {
+  background: linear-gradient(135deg, #ff9900, #232f3e);
+}
+
+.symbol-broadcom {
+  background: linear-gradient(135deg, #dc2626, #7f1d1d);
+}
+
+.symbol-tsmc,
+.symbol-asml {
+  background: linear-gradient(135deg, #7c3aed, #1d4ed8);
+}
+
+.symbol-hynix,
+.symbol-samsung,
+.symbol-kr {
+  background: linear-gradient(135deg, #0f5fd7, #00a3ff);
+}
+
+.symbol-vertiv,
+.symbol-eaton,
+.symbol-schneider {
+  background: linear-gradient(135deg, #059669, #0f766e);
+}
+
+.symbol-amd,
+.symbol-supermicro,
+.symbol-dell,
+.symbol-arista {
+  background: linear-gradient(135deg, #0ea5e9, #1d4ed8);
+}
+
+.symbol-reference {
+  color: #667085;
+  background: linear-gradient(135deg, #e5e7eb, #f8fafc);
+}
+
+.supply-node {
+  width: 202px;
+  min-height: 124px;
+  padding: 13px;
+  border-color: rgba(214, 224, 242, 0.92);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.96)),
+    radial-gradient(circle at 10% 0%, rgba(37, 99, 235, 0.08), transparent 34%);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.09);
+}
+
+.supply-node.role-leader,
+.supply-node.role-platform {
+  box-shadow: 0 22px 42px rgba(37, 99, 235, 0.16);
+}
+
+.supply-node.role-bottleneck {
+  box-shadow: 0 22px 42px rgba(245, 158, 11, 0.15);
+}
+
+.supply-node.selected {
+  border-color: rgba(37, 99, 235, 0.9);
+  outline: 5px solid rgba(37, 99, 235, 0.16);
+  box-shadow: 0 26px 54px rgba(37, 99, 235, 0.2);
+}
+
+.supply-node.dimmed {
+  opacity: 0.26;
+}
+
+.node-topline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.node-badge-row {
+  display: flex;
+  min-width: 0;
+  gap: 5px;
+}
+
+.node-main {
+  margin-top: 2px;
+}
+
+.node-name {
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.node-meta {
+  color: #667085;
+  font-size: 10px;
+}
+
+.node-market-line .price-badge,
+.node-market-pill {
+  box-shadow: inset 0 0 0 1px rgba(214, 224, 242, 0.74);
+}
+
+.graph-wrap {
+  background:
+    radial-gradient(circle at 22px 22px, rgba(37, 99, 235, 0.04) 0 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  background-size: 40px 40px, auto;
+}
+
+.map-stage-ribbon span {
+  justify-content: center;
+  min-height: 30px;
+  border-color: rgba(214, 224, 242, 0.72);
+  color: #475467;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(10px);
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.08));
+}
+
+.react-flow__edge:not(.edge-active) .react-flow__edge-path {
+  stroke-width: 1.8px;
+  opacity: 0.48;
+}
+
+.react-flow__edge.edge-muted .react-flow__edge-path {
+  opacity: 0.14;
+}
+
+.react-flow__edge.edge-active .react-flow__edge-path {
+  stroke-width: 4px !important;
+  opacity: 1;
+  filter: drop-shadow(0 8px 14px rgba(37, 99, 235, 0.22));
+}
+
+.react-flow__edge-textbg {
+  rx: 9px;
+  fill: rgba(255, 255, 255, 0.94) !important;
+  stroke: rgba(214, 224, 242, 0.9);
+}
+
+.panel-heading {
+  border-color: rgba(205, 217, 238, 0.86);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(247, 251, 255, 0.98), rgba(255, 255, 255, 0.96)),
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.08), transparent 36%);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+}
+
+.panel-title-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.relationship-brief-grid article,
+.detail-card,
+.direct-connections-card {
+  border-color: rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.relationship-brief-grid article {
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+}
+
+.relationship-brief-grid span {
+  color: #0057d9;
+}
+
+.summary-action-row .analysis-link-button,
+.analysis-link-button {
+  border-radius: 999px;
+}
+
+@media (max-width: 1180px) {
+  .market-flow-stage-card {
+    min-width: 158px;
+  }
+}
+
+@media (max-width: 820px) {
+  .flow-help-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .flow-help-pills span {
+    flex: 0 0 auto;
+  }
+
+  .market-flow-stage-card > div button {
+    min-height: 50px;
+  }
+
+  .supply-node {
+    width: 192px;
+  }
+
+  .company-symbol.large {
+    width: 50px;
+    height: 50px;
+    border-radius: 17px;
+  }
+}
