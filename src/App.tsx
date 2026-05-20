@@ -809,6 +809,19 @@ function beginnerCompanyConclusion(company: Company) {
   return `${company.name}${topicParticle(company.name)} ${productText(company)} 중심 기업입니다. ${companyCustomerSummary(company)} 흐름과 연결되며, ${companyInvestorWatchPoint(company)}를 먼저 확인합니다.`;
 }
 
+function financialOneLineConclusion(company: Company, analysis: FilingAnalysis) {
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') {
+    return '매출과 영업이익은 회복되고 있지만, 재고와 매출채권이 실제 현금 회수로 이어지는지 확인해야 합니다.';
+  }
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
+    return 'HBM 수요로 실적 회복 기대가 커졌지만, 메모리 업황과 재고 흐름이 현금흐름을 좌우합니다.';
+  }
+  if (company.id === 'us-semiconductors-nvidia') {
+    return '데이터센터 매출이 성장을 이끌고 있지만, 높은 기대를 유지하려면 매출 성장률과 마진 방어가 중요합니다.';
+  }
+  return analysis.headline;
+}
+
 function beginnerIndustryMetrics(company: Company, displayMetrics: CompanyDisplayMetrics) {
   const stage = companyValueChainStage(company);
   if (company.id === 'us-semiconductors-nvidia' || stage.includes('AI 칩') || stage.includes('GPU')) {
@@ -883,6 +896,197 @@ function beginnerSignalSet(company: Company) {
     good: ['관련 수요가 매출로 연결', '마진 유지', '현금흐름 개선'],
     caution: ['수요 둔화', '비용 증가', '매출은 늘었지만 현금흐름 약화'],
   };
+}
+
+function buildMetricBranchGroups({
+  company,
+  displayMetrics,
+  quickMetrics,
+}: {
+  company: Company;
+  displayMetrics: CompanyDisplayMetrics;
+  quickMetrics: Array<{ label: string; value: string; note: string }>;
+}) {
+  const revenueValue = quickMetrics.find((metric) => metric.label === '매출')?.value ?? displayMetrics.revenue;
+  const cashFlowValue = quickMetrics.find((metric) => metric.label === '현금흐름')?.value ?? '원문 확인';
+  const stage = companyValueChainStage(company);
+  const industryMetric =
+    stage.includes('메모리') || stage.includes('HBM')
+      ? 'HBM 수요 / 재고자산'
+      : stage.includes('장비') || stage.includes('소재') || stage.includes('후공정')
+        ? '수주잔고'
+        : stage.includes('파운드리') || stage.includes('제조')
+          ? 'CAPEX / 가동률'
+          : stage.includes('전력') || stage.includes('냉각') || stage.includes('서버')
+            ? '데이터센터 수주 / CAPEX'
+            : '산업별 핵심 지표';
+
+  return [
+    {
+      title: '수익성',
+      summary: '본업에서 돈을 얼마나 남기는지 봅니다.',
+      items: [
+        {
+          name: '영업이익률',
+          value: displayMetrics.opMargin,
+          benchmark: '산업 평균 데이터 연결 필요',
+          interpretation: '본업 수익성이 유지되는지 보는 첫 지표입니다.',
+          why: '매출이 늘어도 비용이 더 빨리 늘면 주주에게 남는 이익은 줄 수 있습니다.',
+          caution: '일회성 이익이나 업황 정점에서는 평소보다 좋아 보일 수 있습니다.',
+        },
+        {
+          name: '순이익률',
+          value: quickMetrics.find((metric) => metric.label === '순이익')?.value ?? '원문 확인',
+          benchmark: '경쟁사 비교 데이터 연결 필요',
+          interpretation: '세금과 비용까지 반영한 최종 이익률입니다.',
+          why: '영업 외 손익, 세금, 금융비용까지 반영된 실제 이익 체력을 봅니다.',
+          caution: '일회성 매각이익이나 환율 효과가 섞였는지 확인해야 합니다.',
+        },
+        {
+          name: 'ROE',
+          value: '데이터 연결 필요',
+          benchmark: '산업 평균 데이터 연결 필요',
+          interpretation: '자기자본으로 얼마나 효율적으로 이익을 냈는지 봅니다.',
+          why: '자본을 얼마나 잘 굴리는지 보여주지만 산업마다 적정 수준이 다릅니다.',
+          caution: '부채를 많이 써서 ROE가 높아질 수 있어 부채비율과 같이 봐야 합니다.',
+        },
+      ],
+    },
+    {
+      title: '성장성',
+      summary: '뉴스와 수요가 실제 매출 성장으로 이어졌는지 봅니다.',
+      items: [
+        {
+          name: '매출 성장률',
+          value: displayMetrics.growth,
+          benchmark: '전년 대비 기준',
+          interpretation: '회사가 얼마나 더 많이 팔았는지 보는 지표입니다.',
+          why: '성장 산업에서는 매출 증가가 먼저 나타나고 이익은 나중에 따라올 수 있습니다.',
+          caution: '매출채권이 같이 늘면 아직 현금으로 못 받은 매출일 수 있습니다.',
+        },
+        {
+          name: 'EPS 성장률',
+          value: '데이터 연결 필요',
+          benchmark: '경쟁사 비교 데이터 연결 필요',
+          interpretation: '주당순이익이 늘었는지 확인합니다.',
+          why: '전체 이익보다 주식 한 주당 이익이 늘었는지가 주주에게 중요합니다.',
+          caution: '자사주 매입이나 일회성 이익으로 좋아 보일 수 있습니다.',
+        },
+        {
+          name: 'CAPEX 증가율',
+          value: '원문 확인',
+          benchmark: '원문 현금흐름표 기준',
+          interpretation: '미래 생산능력을 위해 투자하는 돈의 흐름입니다.',
+          why: '단기 현금 유출이지만 수요가 따라오면 미래 매출 기반이 될 수 있습니다.',
+          caution: '수요가 확인되지 않은 CAPEX는 감가상각 부담으로 돌아올 수 있습니다.',
+        },
+      ],
+    },
+    {
+      title: '안정성',
+      summary: '빚 부담과 버틸 수 있는 체력을 확인합니다.',
+      items: [
+        {
+          name: '부채비율',
+          value: displayMetrics.debtRatio,
+          benchmark: '산업 평균 데이터 연결 필요',
+          interpretation: '자본 대비 빚 부담이 얼마나 큰지 봅니다.',
+          why: '업황이 꺾일 때 빚 부담이 큰 회사는 선택지가 줄어들 수 있습니다.',
+          caution: '금융업은 일반 제조업과 부채 구조가 달라 같은 기준으로 보면 안 됩니다.',
+        },
+        {
+          name: '유동비율',
+          value: '데이터 연결 필요',
+          benchmark: '원문 재무상태표 기준',
+          interpretation: '단기적으로 갚아야 할 돈을 감당할 수 있는지 봅니다.',
+          why: '현금과 단기자산이 충분해야 투자와 운영을 이어갈 수 있습니다.',
+          caution: '재고가 많아 유동비율이 좋아 보여도 실제 현금화가 늦을 수 있습니다.',
+        },
+        {
+          name: '이자보상배율',
+          value: '데이터 연결 필요',
+          benchmark: '경쟁사 비교 데이터 연결 필요',
+          interpretation: '영업이익으로 이자를 얼마나 감당할 수 있는지 봅니다.',
+          why: '금리가 높거나 차입금이 많을 때 중요한 안정성 지표입니다.',
+          caution: '일시적으로 영업이익이 줄면 급격히 나빠질 수 있습니다.',
+        },
+      ],
+    },
+    {
+      title: '현금흐름',
+      summary: '장부상 이익이 실제 현금으로 들어오는지 봅니다.',
+      items: [
+        {
+          name: '영업활동현금흐름',
+          value: cashFlowValue,
+          benchmark: '순이익과 비교',
+          interpretation: '본업에서 실제 현금이 들어오는지 보는 지표입니다.',
+          why: '이익이 좋아 보여도 현금이 안 들어오면 지속성이 약할 수 있습니다.',
+          caution: '매출채권과 재고 증가가 현금흐름을 눌렀는지 확인해야 합니다.',
+        },
+        {
+          name: 'FCF',
+          value: '데이터 연결 필요',
+          benchmark: '영업현금흐름 - CAPEX',
+          interpretation: '투자와 운영을 하고도 남는 현금입니다.',
+          why: '배당, 자사주, 부채 상환, 재투자 여력을 보여줍니다.',
+          caution: '성장기 CAPEX가 큰 산업은 단기 FCF가 낮아도 무조건 나쁜 것은 아닙니다.',
+        },
+        {
+          name: '감가상각비',
+          value: '원문 확인',
+          benchmark: '원문 주석 기준',
+          interpretation: '과거 설비투자가 비용으로 나뉘어 반영되는 금액입니다.',
+          why: '대규모 투자 산업에서는 미래 이익률과 세금 효과에 영향을 줍니다.',
+          caution: '현금 유출은 아니지만 이익률을 낮춰 보이게 할 수 있습니다.',
+        },
+      ],
+    },
+    {
+      title: '밸류에이션',
+      summary: '주가가 이익과 자산 대비 어느 정도 평가받는지 봅니다.',
+      items: [
+        {
+          name: 'PER',
+          value: '데이터 연결 필요',
+          benchmark: '산업 평균 데이터 연결 필요',
+          interpretation: '이익 대비 주가가 비싼지 보는 지표입니다.',
+          why: '같은 이익을 내는 회사라도 성장 기대가 다르면 PER이 달라집니다.',
+          caution: '반도체처럼 이익 변동이 큰 산업은 바닥에서 PER이 높아 보여 오해할 수 있습니다.',
+        },
+        {
+          name: 'EPS',
+          value: '데이터 연결 필요',
+          benchmark: '전년 대비 / 경쟁사 비교 필요',
+          interpretation: '회사 이익을 주식 한 주당으로 나눈 값입니다.',
+          why: '주주 입장에서 한 주당 이익이 늘어나는지 확인합니다.',
+          caution: '일회성 이익이 포함되었는지, 주식 수가 줄었는지도 봐야 합니다.',
+        },
+        {
+          name: 'PBR',
+          value: '데이터 연결 필요',
+          benchmark: '산업 평균 데이터 연결 필요',
+          interpretation: '자산가치 대비 주가 수준을 보는 지표입니다.',
+          why: '금융주나 자산 많은 기업은 PER보다 PBR과 ROE를 같이 보는 경우가 많습니다.',
+          caution: '자산의 질이 낮거나 수익성이 약하면 낮은 PBR도 싸다고 단정할 수 없습니다.',
+        },
+      ],
+    },
+    {
+      title: '산업별 핵심 지표',
+      summary: '이 회사가 속한 산업에서 특히 먼저 봐야 하는 지표입니다.',
+      items: [
+        {
+          name: industryMetric,
+          value: revenueValue,
+          benchmark: '출처 있는 산업 데이터 연결 필요',
+          interpretation: `${companyValueChainStage(company)} 기업은 같은 지표라도 산업 맥락과 함께 봐야 합니다.`,
+          why: '산업마다 돈을 버는 구조가 달라서 먼저 볼 지표도 달라집니다.',
+          caution: '출처 없는 산업 평균이나 고객 비중 숫자는 표시하지 않습니다.',
+        },
+      ],
+    },
+  ];
 }
 
 function dependencySummary(company: Company, currentLinks: typeof links) {
@@ -2581,6 +2785,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const scrollToAnalysisSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
+  const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics });
 
   return (
     <div className="analysis-shell">
@@ -2733,40 +2939,132 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </div>
         </section>
 
-        <section className="analysis-card analysis-overview-card">
-          <div className="analysis-overview-head">
+        <section className="analysis-card analysis-overview-card financial-learning-card">
+          <div className="analysis-overview-head financial-learning-head">
             <div>
-              <span className="analysis-market-pill">{marketDisplayLabel(company)}</span>
-              <h2>{company.name}</h2>
-              <p>{company.ticker ?? company.legalName}</p>
+              <span className="analysis-market-pill">재무제표 해설 · {marketDisplayLabel(company)}</span>
+              <h2>재무제표는 숫자를 외우는 것이 아니라, 회사의 상태를 해석하는 도구입니다.</h2>
+              <p>이 산업에서 먼저 볼 지표부터 확인하고, 더 깊은 지표는 단계적으로 열어보세요.</p>
             </div>
             <div className="analysis-overview-side">
-              <PriceBadge price={companyPrice} />
+              <PriceBadge price={companyPrice} compact />
               <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
               <small className="analysis-report-meta">{primaryReportLink.statusDetail}</small>
             </div>
           </div>
-          <div className="analysis-quick-metrics">
-            {quickMetrics.map((metric) => (
-              <article key={metric.label}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-                <small>{metric.note}</small>
-              </article>
-            ))}
-          </div>
-          <div className="analysis-one-line">
+
+          <div className="financial-one-line-panel">
             <span>한 줄 결론</span>
-            <strong>{disclosureAnalysis.headline}</strong>
-            <p className="one-line-context">{recentMovementSummary}</p>
-            <div className="beginner-one-line">
-              <p><b>초보자용 해석</b>{beginnerConclusion}</p>
-              <p><b>앞으로 볼 것</b>{firstWatchPoint}</p>
+            <strong>{financialConclusion}</strong>
+            <div className="financial-beginner-grid">
+              <article>
+                <span>쉽게 말하면</span>
+                <p>{beginnerConclusion}</p>
+              </article>
+              <article>
+                <span>그래서 뭘 봐야 하나요?</span>
+                <p>{firstWatchPoint}</p>
+              </article>
             </div>
+          </div>
+
+          <section className="financial-priority-card">
+            <div className="section-title">
+              <BarChart3 size={16} />
+              <span>이 산업에서 먼저 볼 지표 3개</span>
+            </div>
+            <p>모든 기업에 같은 지표를 억지로 적용하지 않고, {companyValueChainStage(company)} 맥락에서 먼저 확인할 숫자만 보여줍니다.</p>
+            <div className="financial-priority-grid">
+              {explainerMetrics.map((metric) => (
+                <article key={metric.label}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <p>{metric.note}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <div className="financial-signal-grid">
+            <section>
+              <strong>좋은 신호</strong>
+              {explainerSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
+            </section>
+            <section>
+              <strong>조심할 신호</strong>
+              {explainerSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
+            </section>
+          </div>
+
+          <div className="financial-next-watch">
+            <strong>다음 분기에 확인할 것</strong>
+            <div>
+              {(watchPoints.length ? watchPoints : [firstWatchPoint]).slice(0, 3).map((point) => (
+                <span key={point}>{point}</span>
+              ))}
+            </div>
+            <small>{recentMovementSummary}</small>
+          </div>
+
+          <div className="financial-more-actions" aria-label="재무제표 상세 보기">
+            <button type="button" onClick={() => scrollToAnalysisSection('financial-metric-branches')}>
+              지표 더 깊게 보기
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
+              손익·현금흐름 해설
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
+              MD&A / 공시 해설
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('source-report-details')}>
+              원문 보고서 확인
+            </button>
           </div>
         </section>
 
         <div className="analysis-detail-stack">
+          <details className="analysis-card analysis-disclosure-section financial-branch-section" id="financial-metric-branches">
+            <summary>
+              <span>
+                <BarChart3 size={16} />
+                <strong>지표 더 깊게 보기</strong>
+                <small>수익성, 성장성, 안정성, 현금흐름, 밸류에이션을 단계적으로 펼쳐 봅니다.</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div className="analysis-detail-content">
+              <div className="metric-branch-grid">
+                {financialMetricBranches.map((group) => (
+                  <details className="metric-branch-card" key={group.title}>
+                    <summary>
+                      <span>
+                        <strong>{group.title}</strong>
+                        <small>{group.summary}</small>
+                      </span>
+                      <ChevronDown size={15} />
+                    </summary>
+                    <div className="metric-branch-items">
+                      {group.items.map((metric) => (
+                        <article className="metric-detail-card" key={metric.name}>
+                          <div>
+                            <span>{metric.name}</span>
+                            <strong>{metric.value}</strong>
+                          </div>
+                          <div className="metric-detail-grid">
+                            <p><b>비교 기준</b>{metric.benchmark}</p>
+                            <p><b>한 줄 해석</b>{metric.interpretation}</p>
+                            <p><b>왜 보는지</b>{metric.why}</p>
+                            <p><b>주의할 점</b>{metric.caution}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </details>
+
           <details className="analysis-card analysis-disclosure-section" id="financial-analysis-details">
             <summary>
               <span>
