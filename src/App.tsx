@@ -795,6 +795,96 @@ function missingFinancialValueLabel(company: Company, hasDetailedAnalysis: boole
   return '원문 보고서 확인 필요';
 }
 
+function beginnerCompanyConclusion(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') {
+    return 'NVIDIA는 AI 서버 수요의 중심에 있는 AI 칩 기업으로, GPU와 CUDA 생태계가 핵심 경쟁력입니다.';
+  }
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
+    return 'SK하이닉스는 AI 서버에 필요한 HBM 수요와 연결된 메모리 기업으로, HBM 경쟁력과 현금흐름 회복이 핵심입니다.';
+  }
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') {
+    return '삼성전자는 메모리와 파운드리를 모두 가진 반도체 기업으로, 업황 회복과 HBM 경쟁력 확보가 중요합니다.';
+  }
+
+  return `${company.name}${topicParticle(company.name)} ${productText(company)} 중심 기업입니다. ${companyCustomerSummary(company)} 흐름과 연결되며, ${companyInvestorWatchPoint(company)}를 먼저 확인합니다.`;
+}
+
+function beginnerIndustryMetrics(company: Company, displayMetrics: CompanyDisplayMetrics) {
+  const stage = companyValueChainStage(company);
+  if (company.id === 'us-semiconductors-nvidia' || stage.includes('AI 칩') || stage.includes('GPU')) {
+    return [
+      { label: '데이터센터 매출 성장률', value: 'MD&A 확인', note: 'AI 서버 수요가 실제 매출로 이어지는지 보는 첫 지표입니다.' },
+      { label: '영업이익률', value: displayMetrics.opMargin, note: '고성능 칩 경쟁력이 이익으로 남는지 확인합니다.' },
+      { label: '현금흐름 / R&D 투자', value: '원문 확인', note: '성장 투자가 지속 가능한지 현금창출과 연구개발을 같이 봅니다.' },
+    ];
+  }
+  if (stage.includes('메모리') || stage.includes('HBM')) {
+    return [
+      { label: 'HBM / 메모리 수요', value: '공시·IR 확인', note: 'AI 서버 수요가 고부가 메모리 판매로 이어지는지 봅니다.' },
+      { label: '영업이익률', value: displayMetrics.opMargin, note: '메모리 가격과 제품 믹스가 이익률에 반영됩니다.' },
+      { label: '재고 / 영업현금흐름', value: '원문 확인', note: '팔릴 제품과 실제 현금 회수가 같이 좋아지는지 확인합니다.' },
+    ];
+  }
+  if (stage.includes('파운드리') || stage.includes('제조')) {
+    return [
+      { label: '매출 성장률', value: displayMetrics.growth, note: '고객 칩 생산 수요가 실제 매출로 늘어나는지 봅니다.' },
+      { label: '영업이익률', value: displayMetrics.opMargin, note: '가동률과 제품 믹스가 수익성에 직접 영향을 줍니다.' },
+      { label: 'CAPEX / 가동률', value: '원문 확인', note: '대규모 투자가 미래 생산능력과 부담으로 어떻게 반영되는지 봅니다.' },
+    ];
+  }
+  if (stage.includes('장비') || stage.includes('소재') || stage.includes('후공정') || stage.includes('테스트')) {
+    return [
+      { label: '수주잔고', value: '공시·IR 확인', note: '앞으로 납품될 장비와 부품 수요를 미리 보는 지표입니다.' },
+      { label: '매출 성장률', value: displayMetrics.growth, note: '설비투자 흐름이 실제 매출로 이어졌는지 봅니다.' },
+      { label: '영업이익률', value: displayMetrics.opMargin, note: '기술 난이도와 고객 인증이 수익성으로 남는지 확인합니다.' },
+    ];
+  }
+  if (stage.includes('서버') || stage.includes('네트워크') || stage.includes('전력') || stage.includes('냉각')) {
+    return [
+      { label: '데이터센터 매출 / 수주', value: '원문 확인', note: 'AI 인프라 투자가 실제 주문과 매출로 이어지는지 봅니다.' },
+      { label: '영업이익률', value: displayMetrics.opMargin, note: '장비·인프라 수요가 늘어도 비용이 함께 늘 수 있습니다.' },
+      { label: '현금흐름', value: '원문 확인', note: '프로젝트 매출이 실제 현금 회수로 이어지는지 확인합니다.' },
+    ];
+  }
+  return [
+    { label: '매출 성장률', value: displayMetrics.growth, note: '뉴스 흐름이 실제 매출 증가로 이어졌는지 봅니다.' },
+    { label: '영업이익률', value: displayMetrics.opMargin, note: '본업에서 돈을 얼마나 남기는지 확인합니다.' },
+    { label: '영업현금흐름', value: '원문 확인', note: '장부상 이익이 실제 현금으로 들어오는지 봅니다.' },
+  ];
+}
+
+function beginnerSignalSet(company: Company) {
+  const stage = companyValueChainStage(company);
+  if (stage.includes('메모리') || stage.includes('HBM')) {
+    return {
+      good: ['HBM 수요와 고객 인증 확대', '영업이익률 유지', '재고 회전과 현금흐름 개선'],
+      caution: ['재고 증가', '매출채권 회수 지연', '메모리 가격 둔화'],
+    };
+  }
+  if (stage.includes('AI 칩') || stage.includes('GPU') || company.id === 'us-semiconductors-nvidia') {
+    return {
+      good: ['데이터센터 매출 성장 지속', '높은 영업이익률 유지', '현금흐름과 생태계 투자 확대'],
+      caution: ['고객 투자 둔화', 'ASIC·AMD와 경쟁 심화', '규제나 제품 전환에 따른 재고 부담'],
+    };
+  }
+  if (stage.includes('파운드리') || stage.includes('제조')) {
+    return {
+      good: ['첨단 공정 수요 증가', '가동률 개선', 'CAPEX가 매출 성장으로 연결'],
+      caution: ['가동률 하락', '대규모 투자 부담', '고객 주문 변동성'],
+    };
+  }
+  if (stage.includes('장비') || stage.includes('소재') || stage.includes('후공정') || stage.includes('테스트')) {
+    return {
+      good: ['수주잔고 증가', '고객 인증 확대', '설비투자가 매출로 전환'],
+      caution: ['고객 투자 지연', '특정 고객 의존도 확대', '수주가 매출로 늦게 반영'],
+    };
+  }
+  return {
+    good: ['관련 수요가 매출로 연결', '마진 유지', '현금흐름 개선'],
+    caution: ['수요 둔화', '비용 증가', '매출은 늘었지만 현금흐름 약화'],
+  };
+}
+
 function dependencySummary(company: Company, currentLinks: typeof links) {
   if (company.tier === 'anchor') {
     return {
@@ -1680,6 +1770,7 @@ type AnalysisPageProps = {
   newsState: NewsState;
   onHome: () => void;
   onBack: (company?: Company) => void;
+  onOpenAnalysis: (company: Company) => void;
   onRefreshNews: () => void;
   marketPrices: MarketPrice[];
 };
@@ -2378,7 +2469,7 @@ function StockAutopsyPicksPage({
   );
 }
 
-function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNews, marketPrices }: AnalysisPageProps) {
+function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.sourceType !== 'api-docs' && !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
@@ -2469,15 +2560,36 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
         : primaryReportLink.status === 'private-company' || primaryReportLink.status === 'no-public-filing'
           ? '상장 공시 원문 확인 대상과 구분해 표시합니다. 공개 보고서가 확인되면 원문 링크를 보강합니다.'
           : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
+  const explainerSymbol = companySymbol(company);
+  const explainerMoat = companyMoatSummary(company);
+  const explainerMetrics = beginnerIndustryMetrics(company, displayMetrics);
+  const explainerSignals = beginnerSignalSet(company);
+  const relatedLinks = links.filter((link) => link.source === company.id || link.target === company.id);
+  const relatedCompanies = relatedLinks
+    .map((link) => {
+      const counterpartId = link.source === company.id ? link.target : link.source;
+      const counterpart = companies.find((item) => item.id === counterpartId);
+      return counterpart
+        ? {
+            company: counterpart,
+            relationship: linkRelationshipSummary(link),
+          }
+        : undefined;
+    })
+    .filter((item): item is { company: Company; relationship: ReturnType<typeof linkRelationshipSummary> } => Boolean(item))
+    .slice(0, 5);
+  const scrollToAnalysisSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="analysis-shell">
       <header className="analysis-hero">
         <nav className="breadcrumb" aria-label="현재 위치">
           <button type="button" onClick={onHome}>홈</button>
-          <span>기업분석</span>
+          <span>기업 해설</span>
           <span>{company.name}</span>
-          <strong>{isKorea ? '재무제표 해설' : 'SEC Filing / MD&A'}</strong>
+          <strong>{company.name} 기업 해설</strong>
         </nav>
         <div className="analysis-nav-actions">
           <button type="button" className="ghost-action" onClick={onHome}>
@@ -2490,13 +2602,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
           </button>
         </div>
         <div>
-          <p className="eyebrow">{disclosureAnalysis.isCurated ? (isKorea ? 'DART 원문 기반 재무제표 해석' : 'SEC 원문 기반 재무제표 해석') : `${isKorea ? 'DART' : 'SEC'} 회사별 공시 검증 화면`}</p>
-          <h1>{company.name} 재무분석</h1>
-          <p>
-            {disclosureAnalysis.isCurated
-              ? `${disclosureAnalysis.reportTitle} 숫자를 기준으로 손익, 현금흐름, 감사기록을 초보 투자자도 판단할 수 있게 해석합니다.`
-              : `${company.sector} · ${anchor?.name ?? company.anchorCustomer} 후보를 공시 원문으로 검증할 수 있게 회사별 체크포인트로 정리합니다.`}
-          </p>
+          <p className="eyebrow">초보자용 기업 설명서</p>
+          <h1>{company.name} 기업 해설</h1>
+          <p>이 회사가 무엇을 팔고, 누구의 수요와 연결되는지 쉽게 정리했습니다. 숫자는 재무제표와 공시 해석으로 더 깊게 확인할 수 있습니다.</p>
         </div>
         <div className="analysis-actions">
           <ReportAction reportLink={primaryReportLink} />
@@ -2504,6 +2612,127 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
       </header>
 
       <main className="analysis-detail-flow">
+        <section className="analysis-card company-explainer-card">
+          <div className="company-explainer-top">
+            <span className={`company-symbol large symbol-${explainerSymbol.tone}`} aria-hidden="true">
+              {explainerSymbol.label}
+            </span>
+            <div>
+              <span className="analysis-market-pill">{companyScopeLabel(company)} · {marketDisplayLabel(company)}</span>
+              <h2>{beginnerCompanyConclusion(company)}</h2>
+              <p>{isMainListedCompany(company) ? companyScopeDetail(company) : '공식 공시가 제한적인 기업은 관계 이해용으로 보고, 출처 없는 재무 숫자는 표시하지 않습니다.'}</p>
+            </div>
+            <div className="company-explainer-price">
+              {hasTradableTicker(company) ? <PriceBadge price={companyPrice} compact /> : <span className="reference-status-pill">{companyScopeLabel(company)}</span>}
+            </div>
+          </div>
+
+          <div className="explainer-card-grid">
+            <article>
+              <Factory size={18} />
+              <span>무엇을 파는 회사인가</span>
+              <strong>{productText(company)}</strong>
+              <p>{companyBusinessSummary(company)}</p>
+            </article>
+            <article>
+              <Network size={18} />
+              <span>누구의 수요와 연결되는가</span>
+              <strong>{companyCustomerSummary(company)}</strong>
+              <p>{companyCustomerExposure(company)}</p>
+            </article>
+            <article>
+              <ShieldAlert size={18} />
+              <span>경제적 해자</span>
+              <strong>{explainerMoat.title}</strong>
+              <p>{explainerMoat.explanation}</p>
+            </article>
+            <article>
+              <Target size={18} />
+              <span>투자자가 볼 포인트</span>
+              <strong>{companyInvestorWatchPoint(company)}</strong>
+              <p>{companyRevenueExposure(company)}</p>
+            </article>
+          </div>
+
+          <div className="explainer-lower-grid">
+            <section className="explainer-metric-card">
+              <div className="section-title">
+                <BarChart3 size={16} />
+                <span>이 산업에서 먼저 볼 지표 3개</span>
+              </div>
+              <div>
+                {explainerMetrics.map((metric) => (
+                  <article key={metric.label}>
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                    <p>{metric.note}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="explainer-signal-card">
+              <div className="section-title">
+                <AlertTriangle size={16} />
+                <span>좋은 신호 / 조심할 신호</span>
+              </div>
+              <div className="signal-columns">
+                <div>
+                  <strong>좋은 신호</strong>
+                  {explainerSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
+                </div>
+                <div>
+                  <strong>조심할 신호</strong>
+                  {explainerSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section className="explainer-related-card" id="related-companies">
+            <div className="section-title">
+              <ArrowRight size={16} />
+              <span>{company.name}와 함께 볼 기업</span>
+            </div>
+            {relatedCompanies.length ? (
+              <div className="explainer-related-list">
+                {relatedCompanies.map((item) => (
+                  <button key={item.company.id} type="button" onClick={() => onOpenAnalysis(item.company)}>
+                    <strong>{item.company.name}</strong>
+                    <span>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="explainer-empty-copy">현재 공개 데이터 기준 정리된 관련 기업이 아직 없습니다.</p>
+            )}
+          </section>
+
+          <div className="explainer-action-row">
+            <button type="button" onClick={() => onBack(company)}>
+              <Network size={15} />
+              시장 흐름 지도에서 보기
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
+              <CircleDollarSign size={15} />
+              재무제표 해설 보기
+            </button>
+            <ReportAction reportLink={primaryReportLink} className="explainer-report-action" iconSize={15} label="공시 원문 보기" />
+            <button type="button" onClick={() => scrollToAnalysisSection('relationship-details')}>
+              <FileSearch size={15} />
+              관계 출처 보기
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('related-companies')}>
+              <ArrowRight size={15} />
+              관련 기업 보기
+            </button>
+            <button type="button" onClick={() => scrollToAnalysisSection('trade-report-details')}>
+              <Database size={15} />
+              기관 동향 보기
+            </button>
+          </div>
+        </section>
+
         <section className="analysis-card analysis-overview-card">
           <div className="analysis-overview-head">
             <div>
@@ -2538,7 +2767,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
         </section>
 
         <div className="analysis-detail-stack">
-          <details className="analysis-card analysis-disclosure-section">
+          <details className="analysis-card analysis-disclosure-section" id="financial-analysis-details">
             <summary>
               <span>
                 <CircleDollarSign size={16} />
@@ -2568,7 +2797,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             </div>
           </details>
 
-          <details className="analysis-card analysis-disclosure-section">
+          <details className="analysis-card analysis-disclosure-section" id="disclosure-analysis-details">
             <summary>
               <span>
                 <FileSearch size={16} />
@@ -2632,7 +2861,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             </div>
           </details>
 
-          <details className="analysis-card analysis-disclosure-section">
+          <details className="analysis-card analysis-disclosure-section" id="source-report-details">
             <summary>
               <span>
                 <FileSearch size={16} />
@@ -2686,7 +2915,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             </div>
           </details>
 
-          <details className="analysis-card analysis-disclosure-section">
+          <details className="analysis-card analysis-disclosure-section" id="relationship-details">
             <summary>
               <span>
                 <Network size={16} />
@@ -2720,7 +2949,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onRefreshNew
             </div>
           </details>
 
-          <details className="analysis-card analysis-disclosure-section">
+          <details className="analysis-card analysis-disclosure-section" id="trade-report-details">
             <summary>
               <span>
                 <CircleDollarSign size={16} />
@@ -3641,6 +3870,7 @@ function App() {
           newsState={newsState}
           onHome={openHome}
           onBack={closeAnalysis}
+          onOpenAnalysis={openAnalysis}
           onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
           marketPrices={marketPrices}
         />
