@@ -70,13 +70,14 @@ function inferFilingSource(company: Company, market: string): FilingSourceKind {
   return 'none';
 }
 
-function inferFilingStatus(company: Company, listed: boolean): FilingSourceStatus {
+function inferFilingStatus(company: Company, listed: boolean, listingStatus: ListingStatus): FilingSourceStatus {
   const withFields = company as CompanyWithListingFields;
   const status = withFields.filingStatus ?? company.sourceStatus;
   if (listed && (status === 'private-company' || status === 'no-public-filing')) return 'needs-link';
   if (status) return status;
   if (company.reportUrl || company.filingSourceUrl || company.sourceDirectUrl || company.dartRcpNo || company.secAccessionNumber) return 'direct';
   if (company.sourceSearchUrl) return 'search-only';
+  if (!listed && listingStatus === 'unknown') return 'listing-unknown';
   return listed ? 'needs-link' : 'private-company';
 }
 
@@ -101,7 +102,7 @@ export function inferCompanyListing(company: Company): CompanyListing {
   const listingStatus: ListingStatus =
     explicitStatus ??
     (listed ? 'listed' : ticker || market ? 'unknown' : 'private');
-  const filingStatus = inferFilingStatus(company, listed);
+  const filingStatus = inferFilingStatus(company, listed, listingStatus);
   const filingSource = inferFilingSource(company, market);
   const priceTicker = hasTicker ? ticker.toUpperCase() : '';
   const isInvestmentAnalyzable = withFields.isInvestmentAnalyzable ?? listed;

@@ -442,6 +442,7 @@ function companyScopeLabel(company: Company) {
   const listing = inferCompanyListing(company);
   if (listing.listed) return '상장기업';
   if (listing.listingStatus === 'unknown') return '상장 여부 확인 필요';
+  if (listing.filingStatus === 'listing-unknown') return '상장 정보 확인 필요';
   if (listing.filingStatus === 'no-public-filing') return '공개 공시 확인 불가';
   return '비상장 참고 기업';
 }
@@ -759,14 +760,15 @@ function sourceUnitShort(value: string, country: CountryId) {
 
 function isPublicRevenueUnavailable(company: Company) {
   const reportLink = getPrimaryReportLink(company);
-  return company.sourceType === 'seed-model' && (reportLink.status === 'private-company' || reportLink.status === 'no-public-filing');
+  return company.sourceType === 'seed-model' && (reportLink.status === 'private-company' || reportLink.status === 'no-public-filing' || reportLink.status === 'listing-unknown');
 }
 
 function revenueDisplayForCompany(company: Company, metrics: CompanyDisplayMetrics) {
   if (isPublicRevenueUnavailable(company)) {
+    const reportLink = getPrimaryReportLink(company);
     return {
       primary: '공개 공시 기준 매출 확인 불가',
-      sourceUnit: company.sourceStatus === 'private-company' ? '비상장/공시 의무 없음' : '공개 보고서 확인 불가',
+      sourceUnit: reportLink.status === 'private-company' ? '비상장/공시 의무 없음' : reportLink.status === 'listing-unknown' ? '상장 정보 확인 필요' : '공개 보고서 확인 불가',
       basis: '매출 정보: 공식 공시 없음. 출처가 확인되기 전에는 금액을 실제 매출처럼 표시하지 않습니다.',
     };
   }
@@ -791,6 +793,7 @@ function missingFinancialValueLabel(company: Company, hasDetailedAnalysis: boole
   const reportLink = getPrimaryReportLink(company);
   if (reportLink.status === 'private-company') return '비상장 기업으로 공시 의무 없음';
   if (reportLink.status === 'no-public-filing') return '공식 공시 기준 확인 불가';
+  if (reportLink.status === 'listing-unknown') return '상장 정보 확인 필요';
   if (reportLink.status === 'needs-link') return '아직 연결된 원문 보고서가 없습니다';
   return '원문 보고서 확인 필요';
 }
@@ -1687,6 +1690,7 @@ function reportLinkClass(reportLink: ReportLink) {
   if (reportLink.status === 'direct') return 'direct';
   if (reportLink.status === 'search-only') return 'search-only';
   if (reportLink.status === 'private-company' || reportLink.status === 'no-public-filing') return 'no-public-filing';
+  if (reportLink.status === 'listing-unknown') return 'pending';
   return 'pending';
 }
 
@@ -1956,7 +1960,9 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
             ? '비상장/공시 의무 없음'
             : primaryReportLink.status === 'no-public-filing'
               ? '공개 원문 보고서 없음'
-              : `${regulator} 원문 연결 필요`,
+              : primaryReportLink.status === 'listing-unknown'
+                ? '상장 정보 확인 필요'
+                : `${regulator} 원문 연결 필요`,
     statusDetail:
       primaryReportLink.status === 'direct'
         ? '직접 원문 버튼은 연결되어 있지만, 아직 실제 원문 숫자를 회사별 해설에 완전히 반영하지 않은 상태입니다.'
@@ -1964,7 +1970,9 @@ function buildCompanyDisclosureAnalysis(company: Company, anchor?: AnchorCompany
           ? '직접 원문 URL은 아직 없고 검색 링크만 연결되어 있습니다. 원문 확인 후 reportUrl을 추가하면 바로 직접 연결됩니다.'
           : primaryReportLink.status === 'private-company' || primaryReportLink.status === 'no-public-filing'
             ? '공개 공시 원문이 확인되지 않아 매출 숫자를 공식 매출처럼 표시하지 않습니다.'
-            : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
+            : primaryReportLink.status === 'listing-unknown'
+              ? '상장 여부와 공시 식별자가 불완전해 원문 보고서를 연결하지 않았습니다.'
+              : '아직 실제 원문 숫자를 직접 반영하지 않은 기업입니다. 화면의 스크리닝 값을 공시 원문으로 검증하도록 표시했습니다.',
   };
 }
 
@@ -2755,7 +2763,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           ? '비상장/공시 의무 없음'
           : primaryReportLink.status === 'no-public-filing'
             ? '공개 원문 보고서 없음'
-            : '원문 연결 준비 중';
+            : primaryReportLink.status === 'listing-unknown'
+              ? '상장 정보 확인 필요'
+              : '원문 연결 준비 중';
   const sourceStatusCopy =
     primaryReportLink.status === 'direct'
       ? '이 해설은 연결된 원문 보고서에서 확인할 수 있습니다.'
@@ -2763,7 +2773,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
         ? '직접 원문 URL은 아직 없고 검색 링크로 확인할 수 있습니다.'
         : primaryReportLink.status === 'private-company' || primaryReportLink.status === 'no-public-filing'
           ? '상장 공시 원문 확인 대상과 구분해 표시합니다. 공개 보고서가 확인되면 원문 링크를 보강합니다.'
-          : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
+          : primaryReportLink.status === 'listing-unknown'
+            ? '상장 여부와 공시 식별자가 아직 불완전합니다. 확인 전에는 원문 링크를 만들지 않습니다.'
+            : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
   const explainerSymbol = companySymbol(company);
   const explainerMoat = companyMoatSummary(company);
   const explainerMetrics = beginnerIndustryMetrics(company, displayMetrics);
@@ -4520,7 +4532,9 @@ function App() {
                           ? '비상장/공시 없음'
                           : selectedReportLink.status === 'no-public-filing'
                             ? '공개 보고서 없음'
-                            : '원문 연결 필요'
+                            : selectedReportLink.status === 'listing-unknown'
+                              ? '상장 정보 확인'
+                              : '원문 연결 필요'
                   }
                 />
               )}

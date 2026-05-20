@@ -4,7 +4,7 @@ export type RiskLevel = 'low' | 'medium' | 'high';
 export type CompanyStatus = 'core' | 'watch' | 'opportunity';
 export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 'seed-model';
 export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
-export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
+export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing' | 'listing-unknown';
 export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
 export type RelationshipEvidenceType =
   | 'company-filing'
@@ -4898,6 +4898,11 @@ function tierTemplateForAnchor(template: ChainTemplate, anchor: AnchorCompany) {
   return rotated.slice(0, Math.max(3, template.tier1.length - 1));
 }
 
+function hasListedAnchorTicker(anchor: AnchorCompany) {
+  const ticker = anchor.ticker.trim().toUpperCase();
+  return Boolean(ticker && !['비상장', 'PRIVATE', 'N/A', '-', 'WATCH'].includes(ticker));
+}
+
 function buildCompanies() {
   const generatedCompanies: Company[] = [];
   const generatedLinks: SupplyLink[] = [];
@@ -4906,6 +4911,7 @@ function buildCompanies() {
   anchors.forEach((anchor, anchorIndex) => {
     const template = chainTemplates[anchor.sectorId] ?? defaultTemplate;
     const anchorMoat = inferMoat(anchor.sector, anchor.products);
+    const anchorListed = hasListedAnchorTicker(anchor);
     const anchorCompany: Company = {
       id: anchor.id,
       anchorId: anchor.id,
@@ -4915,33 +4921,34 @@ function buildCompanies() {
       legalName: anchor.legalName,
       ticker: anchor.ticker,
       exchange: anchor.exchange,
-      listed: true,
-      listingStatus: 'listed',
-      market: anchor.country === 'KR' && anchor.ticker.endsWith('.KS') ? 'KOSPI' : anchor.country === 'KR' && anchor.ticker.endsWith('.KQ') ? 'KOSDAQ' : anchor.exchange,
-      filingSource: anchor.country === 'KR' ? 'DART' : 'SEC',
-      isInvestmentAnalyzable: true,
+      listed: anchorListed,
+      listingStatus: anchorListed ? 'listed' : 'private',
+      market: anchorListed ? (anchor.country === 'KR' && anchor.ticker.endsWith('.KS') ? 'KOSPI' : anchor.country === 'KR' && anchor.ticker.endsWith('.KQ') ? 'KOSDAQ' : anchor.exchange) : 'Private',
+      filingSource: anchorListed ? (anchor.country === 'KR' ? 'DART' : 'SEC') : 'none',
+      filingStatus: anchorListed ? undefined : 'private-company',
+      isInvestmentAnalyzable: anchorListed,
       tier: 'anchor',
       sector: anchor.sector,
       region: anchor.region,
       products: anchor.products,
       anchorCustomer: '기준 기업',
-      revenue: anchor.country === 'KR' ? 'DART 원문 확인' : 'SEC 원문 확인',
-      revenueUnit: revenueUnit(anchor.country),
-      revenueBasis: revenueBasis(anchor.country, 'official'),
+      revenue: anchorListed ? (anchor.country === 'KR' ? 'DART 원문 확인' : 'SEC 원문 확인') : '공개 재무정보 제한',
+      revenueUnit: anchorListed ? revenueUnit(anchor.country) : '공개 재무정보 제한',
+      revenueBasis: anchorListed ? revenueBasis(anchor.country, 'official') : '비상장 또는 공시 확인이 어려운 기업은 출처 없는 재무 숫자를 표시하지 않습니다.',
       revenueTrend: 4.8 + anchor.rank * 1.4,
       growthBasis: growthBasis(anchor.country),
-      opMargin: '공시 연결',
-      debtRatio: '공시 연결',
+      opMargin: anchorListed ? '공시 연결' : '공식 공시 확인 불가',
+      debtRatio: anchorListed ? '공시 연결' : '공식 공시 확인 불가',
       customerConcentration: 'N/A',
-      analystSignal: '컨센서스·공시 API 연결 대상',
+      analystSignal: anchorListed ? '컨센서스·공시 API 연결 대상' : '관계 이해용 참고 기업',
       investmentView: `${anchor.sector} 섹터의 수요·투자 사이클 기준 기업`,
       riskLevel: 'low',
       status: 'core',
       tags: ['중심 기업', anchor.exchange, anchor.ticker],
       notes: '관계 기업을 이해하기 위한 기준 노드입니다. 실제 고객·공급 관계는 연결된 공시·뉴스·계약 데이터로 검증하도록 설계했습니다.',
-      sourceType: 'official',
-      sourceNote: companySourceNote('anchor'),
-      businessSummary: `${simpleProductText(anchor.products)} 등을 만드는 ${anchor.sector} 중심 상장기업입니다.`,
+      sourceType: anchorListed ? 'official' : 'seed-model',
+      sourceNote: anchorListed ? companySourceNote('anchor') : '비상장 또는 공시 확인이 어려운 기업은 관계 이해용으로만 표시합니다.',
+      businessSummary: `${simpleProductText(anchor.products)} 등을 만드는 ${anchor.sector} ${anchorListed ? '중심 상장기업' : '관계 참고 기업'}입니다.`,
       mainProducts: anchor.products,
       valueChainStage: inferValueChainStage(anchor.sector, anchor.products, 'anchor'),
       mainCustomers: ['최종 수요처와 산업 고객', '공식 고객별 비중은 공시·IR에서 확인'],
@@ -4952,7 +4959,8 @@ function buildCompanies() {
       investorWatchPoint: `${anchor.sector} 수요, 재고, 투자 계획이 실제 매출과 현금흐름으로 이어지는지 봅니다.`,
       relationshipType: '중심 기업',
       relationshipConfidence: '공시·IR 기준',
-      sourceNotes: companySourceNote('anchor'),
+      sourceNotes: anchorListed ? companySourceNote('anchor') : '비상장 또는 공시 확인이 어려운 기업은 관계 이해용으로만 표시합니다.',
+      sourceStatus: anchorListed ? undefined : 'private-company',
       layout: { column: 0, row: 1 },
     };
     generatedCompanies.push(anchorCompany);
@@ -5251,79 +5259,36 @@ function dartSearchUrl(companyName: string) {
   return `https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=${encodeURIComponent(companyName)}`;
 }
 
+function listedDartSupplier(ticker: string, market: 'KOSPI' | 'KOSDAQ' | 'KONEX', searchName: string): Partial<Company> {
+  return {
+    ticker,
+    exchange: market,
+    market,
+    listed: true,
+    listingStatus: 'listed',
+    filingSource: 'DART',
+    filingStatus: 'search-only',
+    isInvestmentAnalyzable: true,
+    sourceSearchUrl: dartSearchUrl(searchName),
+    sourceStatus: 'search-only',
+  };
+}
+
 const listedSupplierOverridesByName: Record<string, Partial<Company>> = {
-  한미반도체: {
-    ticker: '042700.KS',
-    exchange: 'KOSPI',
-    market: 'KOSPI',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('한미반도체'),
-    sourceStatus: 'search-only',
-  },
-  주성엔지니어링: {
-    ticker: '036930.KQ',
-    exchange: 'KOSDAQ',
-    market: 'KOSDAQ',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('주성엔지니어링'),
-    sourceStatus: 'search-only',
-  },
-  리노공업: {
-    ticker: '058470.KQ',
-    exchange: 'KOSDAQ',
-    market: 'KOSDAQ',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('리노공업'),
-    sourceStatus: 'search-only',
-  },
-  ISC: {
-    ticker: '095340.KQ',
-    exchange: 'KOSDAQ',
-    market: 'KOSDAQ',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('ISC'),
-    sourceStatus: 'search-only',
-  },
-  원익IPS: {
-    ticker: '240810.KQ',
-    exchange: 'KOSDAQ',
-    market: 'KOSDAQ',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('원익IPS'),
-    sourceStatus: 'search-only',
-  },
-  솔브레인: {
-    ticker: '357780.KQ',
-    exchange: 'KOSDAQ',
-    market: 'KOSDAQ',
-    listed: true,
-    listingStatus: 'listed',
-    filingSource: 'DART',
-    filingStatus: 'search-only',
-    isInvestmentAnalyzable: true,
-    sourceSearchUrl: dartSearchUrl('솔브레인'),
-    sourceStatus: 'search-only',
-  },
+  한미반도체: listedDartSupplier('042700.KS', 'KOSPI', '한미반도체'),
+  주성엔지니어링: listedDartSupplier('036930.KQ', 'KOSDAQ', '주성엔지니어링'),
+  리노공업: listedDartSupplier('058470.KQ', 'KOSDAQ', '리노공업'),
+  ISC: listedDartSupplier('095340.KQ', 'KOSDAQ', 'ISC'),
+  원익IPS: listedDartSupplier('240810.KQ', 'KOSDAQ', '원익IPS'),
+  솔브레인: listedDartSupplier('357780.KQ', 'KOSDAQ', '솔브레인'),
+  이오테크닉스: listedDartSupplier('039030.KQ', 'KOSDAQ', '이오테크닉스'),
+  DB하이텍: listedDartSupplier('000990.KS', 'KOSPI', 'DB하이텍'),
+  하나마이크론: listedDartSupplier('067310.KQ', 'KOSDAQ', '하나마이크론'),
+  심텍: listedDartSupplier('222800.KQ', 'KOSDAQ', '심텍'),
+  덕산네오룩스: listedDartSupplier('213420.KQ', 'KOSDAQ', '덕산네오룩스'),
+  피에스케이: listedDartSupplier('319660.KQ', 'KOSDAQ', '피에스케이'),
+  테스: listedDartSupplier('095610.KQ', 'KOSDAQ', '테스'),
+  에스앤에스텍: listedDartSupplier('101490.KQ', 'KOSDAQ', '에스앤에스텍'),
 };
 
 type AiRelationshipCompanyInput = {

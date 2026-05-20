@@ -1,5 +1,6 @@
 import { companies } from '../src/data.js';
 import { resolveCompanyFilingLinks } from '../src/services/filings.js';
+import { inferCompanyListing } from '../src/services/listing.js';
 import { envValue, errorMessage, hasSupabaseConfig, isDirectRun, normalizeDate, nowIso, recordSyncRun, secHeaders, upsertRows } from './sync-utils.js';
 
 const reportNames = ['분기보고서', '반기보고서', '사업보고서'];
@@ -136,12 +137,17 @@ export async function syncFilingLinks() {
 
   for (const company of companies) {
     const current = resolveCompanyFilingLinks(company);
+    const listing = inferCompanyListing(company);
     if (current.status === 'direct') {
       skipped.push({ companyId: company.id, companyName: company.name, status: 'direct-exists' });
       continue;
     }
-    if (current.status === 'private-company' || current.status === 'no-public-filing') {
+    if (current.status === 'private-company' || current.status === 'no-public-filing' || current.status === 'listing-unknown') {
       skipped.push({ companyId: company.id, companyName: company.name, status: current.status, detail: current.statusDetail });
+      continue;
+    }
+    if (!listing.isFilingSyncTarget) {
+      skipped.push({ companyId: company.id, companyName: company.name, status: 'not-filing-target', detail: '상장 또는 DART/SEC 연결 대상이 아닙니다.' });
       continue;
     }
 
@@ -202,6 +208,15 @@ export async function syncFilingLinks() {
     status,
     insertedCount: dbResult.inserted ?? 0,
     updatedCount: dbResult.updated ?? 0,
+    summary: {
+      totalCompanies: companies.length,
+      filingTargets: companies.filter((company) => inferCompanyListing(company).isFilingSyncTarget).length,
+      linkedCount: linked.length,
+      skippedCount: skipped.length,
+      errorCount: errors.length,
+      directExistingCount: skipped.filter((item) => item.status === 'direct-exists').length,
+      listingUnknownCount: skipped.filter((item) => item.status === 'listing-unknown').length,
+    },
     linked,
     skipped,
     errors,

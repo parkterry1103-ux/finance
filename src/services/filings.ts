@@ -1,7 +1,7 @@
 import type { Company, FilingSourceLink } from '../data.js';
 import { inferCompanyListing } from './listing.js';
 
-export type FilingLinkStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing';
+export type FilingLinkStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing' | 'listing-unknown';
 
 export type ResolvedFilingAction = FilingSourceLink & {
   isDirect: boolean;
@@ -55,8 +55,9 @@ export function isLikelyPublicCompany(company: Company) {
   return inferCompanyListing(company).listed;
 }
 
-function nonPublicStatus(company: Company): Extract<FilingLinkStatus, 'private-company' | 'no-public-filing'> {
+function nonPublicStatus(company: Company): Extract<FilingLinkStatus, 'private-company' | 'no-public-filing' | 'listing-unknown'> {
   const listing = inferCompanyListing(company);
+  if (listing.listingStatus === 'unknown' || listing.filingStatus === 'listing-unknown') return 'listing-unknown';
   if (listing.listingStatus === 'no-public-filing') return 'no-public-filing';
   if (listing.listingStatus === 'private') return 'private-company';
   if (company.sourceStatus === 'private-company') return 'private-company';
@@ -66,6 +67,13 @@ function nonPublicStatus(company: Company): Extract<FilingLinkStatus, 'private-c
 
 function nonPublicStatusLabels(company: Company) {
   const status = nonPublicStatus(company);
+  if (status === 'listing-unknown') {
+    return {
+      status,
+      label: '상장 정보 확인 필요',
+      detail: 'ticker, market, DART corpCode, SEC CIK 정보가 불완전합니다. 확인 전에는 원문 보고서를 직접 연결하지 않습니다.',
+    };
+  }
   if (status === 'private-company') {
     return {
       status,
@@ -152,7 +160,9 @@ export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?:
   if (
     !hasDirectReport(company, preferredDirectUrl) &&
     !listing.listed &&
-    (company.sourceStatus === 'private-company' ||
+    (listing.listingStatus === 'unknown' ||
+      listing.filingStatus === 'listing-unknown' ||
+      company.sourceStatus === 'private-company' ||
       company.sourceStatus === 'no-public-filing' ||
       (!explicitSearchUrl(company) && !isLikelyPublicCompany(company)))
   ) {
@@ -201,7 +211,7 @@ export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?:
   }
 
   const explicitSearch = explicitSearchUrl(company);
-  if (company.sourceStatus === 'search-only' || explicitSearch) {
+  if (company.sourceStatus === 'search-only' || explicitSearch || listing.listed) {
     const searchLink =
       secondary.find((link) => link.url === explicitSearch) ??
       secondary[0] ??
@@ -213,7 +223,7 @@ export function resolveCompanyFilingLinks(company: Company, preferredDirectUrl?:
       primary: {
         ...searchLink,
         label: company.country === 'KR' ? 'DART 검색으로 확인' : 'SEC 검색으로 확인',
-        note: '직접 원문 보고서 URL은 아직 없고, 검색 링크만 연결된 상태입니다. 원문을 확인하면 reportUrl 또는 rcpNo/accessionNumber로 보강할 수 있습니다.',
+        note: '직접 원문 보고서 URL은 아직 없고, 검색 링크로 최신 원문을 확인하는 상태입니다. 원문을 확인하면 reportUrl 또는 rcpNo/accessionNumber로 보강할 수 있습니다.',
         isPrimary: true,
         isDirect: false,
         isNavigable: true,

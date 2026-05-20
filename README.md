@@ -163,6 +163,7 @@ PRICE_SYNC_SOURCE=
 - `sourceStatus: 'needs-link'`: 원문 URL을 추가해야 하는 상태
 - `sourceStatus: 'private-company'`: 비상장 또는 공시 의무가 없는 협력사
 - `sourceStatus: 'no-public-filing'`: 공개 원문 보고서를 확인할 수 없는 기업
+- `sourceStatus: 'listing-unknown'`: ticker, market, DART corpCode, SEC CIK가 불완전해 상장 정보 확인이 필요한 기업
 
 직접 링크가 없는 기업도 화면에서는 “원문 연결 필요”, “검색으로 확인”, “비상장/공시 의무 없음” 상태가 보이며, 기존 재무제표 해설과 MD&A/SEC 분석 텍스트는 삭제하지 않습니다.
 
@@ -197,6 +198,7 @@ npm run sync:compile
 npm run sync:financials
 npm run sync:trades
 npm run sync:prices
+npm run audit:companies
 npm run audit:filings
 npm run audit:listings
 npm run sync:filing-links
@@ -322,7 +324,7 @@ npm run audit:listings
 - 상장기업인데 가격 sync 대상에서 빠진 기업
 - 상장기업인데 filing link 대상에서 빠진 기업
 
-주성엔지니어링, 한미반도체, 리노공업, ISC, 원익IPS, 솔브레인처럼 거래 가능한 협력기업은 `listed`, `ticker`, `market`, `filingSource`를 확인하고 가격/공시/재무제표 연결 대상으로 둡니다. 비상장 또는 공시 확인이 어려운 기업만 “비상장 참고 노드”로 표시합니다.
+주성엔지니어링, 한미반도체, 리노공업, ISC, 원익IPS, 솔브레인, 이오테크닉스, DB하이텍, 하나마이크론, 심텍, 덕산네오룩스, 피에스케이, 테스, 에스앤에스텍처럼 거래 가능한 협력기업은 `listed`, `ticker`, `market`, `filingSource`를 확인하고 가격/공시/재무제표 연결 대상으로 둡니다. 비상장 또는 공시 확인이 어려운 기업만 “비상장 참고 노드”로 표시합니다.
 
 ### 원문 보고서 링크 점검과 보강
 
@@ -336,6 +338,7 @@ npm run audit:filings
 
 - 전체 기업 수
 - `direct`, `search-only`, `needs-link`, `private-company`, `no-public-filing` 기업 수
+- `listing-unknown` 기업 수
 - `needs-link` 기업 목록
 - `companyId`, `companyName`, `market`, `ticker`
 - 필요한 식별자: `dartCorpCode` 또는 `secCik`
@@ -369,7 +372,7 @@ filingDate
 sourceStatus
 ```
 
-가짜 원문 링크는 넣지 않습니다. 상장 기업인데 링크가 없으면 `needs-link`, 비상장 또는 공개 보고 의무가 없으면 `private-company`/`no-public-filing`으로 구분합니다.
+가짜 원문 링크는 넣지 않습니다. 상장 기업인데 직접 링크가 없지만 DART/SEC 검색 링크가 있으면 `search-only`, 검색 정보도 부족하면 `needs-link`, 비상장 또는 공개 보고 의무가 없으면 `private-company`/`no-public-filing`, 상장 정보가 불완전하면 `listing-unknown`으로 구분합니다.
 
 ### 가격 데이터
 

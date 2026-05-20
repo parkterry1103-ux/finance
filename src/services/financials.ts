@@ -6,6 +6,7 @@ import type {
   FinancialMetricKey,
   FinancialStatementSummary,
 } from '../data.js';
+import { resolveCompanyFilingLinks } from './filings.js';
 
 type DartAccountRow = {
   account_nm?: string;
@@ -78,23 +79,26 @@ function findDartAmount(rows: DartAccountRow[], names: string[]) {
 function fallbackCashFlowLabel(company: Company, sourceStatus: FilingSourceStatus) {
   if (sourceStatus === 'private-company') return '비상장 기업으로 공시 의무 없음';
   if (sourceStatus === 'no-public-filing') return '공식 공시 기준 확인 불가';
+  if (sourceStatus === 'listing-unknown') return '상장 정보 확인 필요';
   if (sourceStatus === 'needs-link') return '아직 연결된 원문 보고서가 없습니다';
   return '원문 보고서 확인 필요';
 }
 
 export function buildFallbackFinancials(company: Company): FinancialStatementSummary {
+  const filingResolution = resolveCompanyFilingLinks(company);
   const reportUrl =
     company.reportUrl ??
     company.filingSourceUrl ??
     company.sourceDirectUrl ??
     (company.dartRcpNo ? `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${company.dartRcpNo}` : undefined);
   const sourceSearchUrl =
+    (filingResolution.status === 'search-only' ? filingResolution.primary.url : undefined) ??
     company.sourceSearchUrl ??
     (company.country === 'KR'
       ? `https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=${encodeURIComponent(company.legalName || company.name)}`
       : `https://www.sec.gov/search-filings?keys=${encodeURIComponent(company.legalName || company.name)}`);
 
-  const sourceStatus = company.sourceStatus ?? (reportUrl ? 'direct' : company.sourceSearchUrl ? 'search-only' : 'needs-link');
+  const sourceStatus = filingResolution.status;
 
   return {
     companyId: company.id,
