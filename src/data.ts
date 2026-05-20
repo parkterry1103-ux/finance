@@ -262,7 +262,10 @@ export interface SmartMoneyMove {
 
 export interface StockAutopsyPick {
   id: string;
+  pickId?: string;
   companyName: string;
+  companyId?: string;
+  title?: string;
   ticker: string;
   market: CountryId;
   movementDirection: StockAutopsyDirection;
@@ -270,13 +273,24 @@ export interface StockAutopsyPick {
   reasonSummary: string;
   beginnerSummary: string;
   sector: string;
+  flowId?: string;
+  flowLabel?: string;
+  flowStage?: string;
   valueChainPosition: StockAutopsyValueChainPosition;
   connectedLeaders: string[];
   relatedCompanies: string[];
+  relatedCompanyIds?: string[];
   relatedSupplyChainId?: string;
   relatedCompanyId?: string;
   relatedTradeTags?: string[];
+  oneLineConclusion?: string;
+  beginnerExplanation?: string;
+  watchMetrics?: Array<{ label: string; note: string }>;
+  goodSignals?: string[];
+  cautionSignals?: string[];
+  sourceLinks?: Array<{ label: string; url?: string; note?: string }>;
   publishedAt?: string;
+  status?: 'draft' | 'published' | 'archived';
 }
 
 export interface MarketPrice {
@@ -6593,6 +6607,9 @@ export const mockMarketPrices: MarketPrice[] = [
 export const stockAutopsyPicks: StockAutopsyPick[] = [
   {
     id: 'pick-nvidia-ai-demand',
+    pickId: 'pick-nvidia-ai-demand',
+    companyId: 'us-semiconductors-nvidia',
+    title: 'NVIDIA AI 서버 수요 해부',
     companyName: 'NVIDIA',
     ticker: 'NVDA',
     market: 'US',
@@ -6601,16 +6618,34 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     reasonSummary: 'AI 데이터센터 수요 기대가 다음 분기 실적 눈높이를 높였습니다.',
     beginnerSummary: 'AI 서버가 늘수록 GPU, 메모리, 장비 기업을 함께 봐야 합니다.',
     sector: 'AI 반도체',
+    flowId: 'us-semiconductors',
+    flowLabel: 'AI 반도체 & 데이터센터',
+    flowStage: 'AI 칩 / GPU',
     valueChainPosition: 'leader',
     connectedLeaders: ['TSMC', 'SK하이닉스', 'ASML', 'AMD'],
     relatedCompanies: ['TSMC', 'SK하이닉스', 'ASML', 'AMD'],
+    relatedCompanyIds: ['ai-datacenter-tsmc', 'ai-datacenter-sk-hynix', 'ai-datacenter-asml', 'ai-datacenter-amd', 'ai-datacenter-vertiv'],
     relatedSupplyChainId: 'us-semiconductors',
     relatedCompanyId: 'us-semiconductors-nvidia',
     relatedTradeTags: ['13F', 'AI 데이터센터', 'GPU'],
+    oneLineConclusion: 'NVIDIA는 AI 서버 수요의 중심에 있는 AI 칩 기업으로, GPU와 CUDA 생태계가 핵심 경쟁력입니다.',
+    beginnerExplanation: 'AI 서버 투자가 늘면 NVIDIA의 GPU 수요가 커질 수 있습니다. GPU 수요가 커지면 HBM, 파운드리, 서버, 전력·냉각 기업도 함께 관심을 받을 수 있습니다.',
+    watchMetrics: [
+      { label: '데이터센터 매출 성장률', note: 'AI 서버 수요가 실제 매출로 이어지는지 봅니다.' },
+      { label: '영업이익률', note: '고성능 칩 경쟁력이 이익으로 남는지 확인합니다.' },
+      { label: '잉여현금흐름 / R&D 투자', note: '생태계와 기술 우위를 유지할 현금과 투자를 같이 봅니다.' },
+    ],
+    goodSignals: ['데이터센터 매출 성장 지속', '높은 영업이익률 유지', '현금흐름과 생태계 투자 확대'],
+    cautionSignals: ['고객 투자 둔화', 'ASIC·AMD와 경쟁 심화', '규제나 제품 전환에 따른 재고 부담'],
+    sourceLinks: [{ label: 'SEC 원문 보고서', url: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm', note: '실적과 MD&A는 원문 기준으로 확인합니다.' }],
     publishedAt: '2026-05-17',
+    status: 'published',
   },
   {
     id: 'pick-hanmi-packaging-equipment',
+    pickId: 'pick-hanmi-packaging-equipment',
+    companyId: 'ai-datacenter-hanmi',
+    title: '한미반도체 HBM 후공정 장비 해부',
     companyName: '한미반도체',
     ticker: '042700.KS',
     market: 'KR',
@@ -6619,16 +6654,34 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     reasonSummary: 'HBM 후공정 투자 기대가 장비 기업 관심으로 이어졌습니다.',
     beginnerSummary: '장비주는 수주가 매출로 잡히는 시점과 재고 변화를 같이 봐야 합니다.',
     sector: '반도체 장비',
+    flowId: 'us-semiconductors',
+    flowLabel: 'AI 반도체 & 데이터센터',
+    flowStage: '장비 / 소재 / 후공정',
     valueChainPosition: 'equipment',
     connectedLeaders: ['삼성전자', 'SK하이닉스', 'NVIDIA', 'TSMC'],
     relatedCompanies: ['삼성전자', 'SK하이닉스', '원익IPS', '주성엔지니어링'],
-    relatedSupplyChainId: 'kr-semiconductors',
-    relatedCompanyId: 'kr-semiconductors-samsung-한미반도체',
+    relatedCompanyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung', 'us-semiconductors-nvidia', 'ai-datacenter-asml', 'ai-datacenter-wonikips'],
+    relatedSupplyChainId: 'us-semiconductors',
+    relatedCompanyId: 'ai-datacenter-hanmi',
     relatedTradeTags: ['DART', 'HBM', '후공정'],
+    oneLineConclusion: '한미반도체는 HBM 후공정 장비 기대와 연결되는 한국 장비 기업입니다.',
+    beginnerExplanation: 'HBM 생산이 늘면 후공정 장비 수요도 커질 수 있습니다. 다만 직접 고객별 매출 비중은 공시와 IR에서 확인해야 합니다.',
+    watchMetrics: [
+      { label: '수주 / 매출 성장률', note: '장비 주문이 실제 매출로 잡히는지 봅니다.' },
+      { label: '영업이익률', note: '고부가 장비 경쟁력이 이익률로 남는지 확인합니다.' },
+      { label: '영업현금흐름', note: '수주와 매출이 실제 현금 회수로 이어지는지 봅니다.' },
+    ],
+    goodSignals: ['수주잔고 증가', '고객 인증 확대', '설비투자가 매출로 전환'],
+    cautionSignals: ['고객 투자 지연', '특정 고객 의존도 확대', '수주가 매출로 늦게 반영'],
+    sourceLinks: [{ label: 'DART 원문 보고서', url: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572', note: '분기보고서 원문 기준으로 확인합니다.' }],
     publishedAt: '2026-05-17',
+    status: 'published',
   },
   {
     id: 'pick-sk-hynix-hbm',
+    pickId: 'pick-sk-hynix-hbm',
+    companyId: 'ai-datacenter-sk-hynix',
+    title: 'SK하이닉스 HBM 수요 해부',
     companyName: 'SK하이닉스',
     ticker: '000660.KS',
     market: 'KR',
@@ -6637,16 +6690,33 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     reasonSummary: 'AI 서버용 메모리 수요 기대가 실적 전망에 반영됐습니다.',
     beginnerSummary: '메모리는 가격과 출하량이 같이 좋아지는지 확인해야 합니다.',
     sector: 'AI 메모리',
+    flowId: 'us-semiconductors',
+    flowLabel: 'AI 반도체 & 데이터센터',
+    flowStage: 'HBM / 메모리',
     valueChainPosition: 'supplier',
     connectedLeaders: ['NVIDIA', 'AMD', '삼성전자', 'TSMC'],
     relatedCompanies: ['한미반도체', '원익IPS', '솔브레인', '리노공업'],
-    relatedSupplyChainId: 'kr-semiconductors',
-    relatedCompanyId: 'kr-semiconductors-sk-hynix',
+    relatedCompanyIds: ['us-semiconductors-nvidia', 'ai-datacenter-hanmi', 'ai-datacenter-samsung', 'ai-datacenter-tsmc', 'ai-datacenter-micron'],
+    relatedSupplyChainId: 'us-semiconductors',
+    relatedCompanyId: 'ai-datacenter-sk-hynix',
     relatedTradeTags: ['HBM', '기관 수급', 'DART'],
+    oneLineConclusion: 'SK하이닉스는 AI 서버에 필요한 HBM 수요와 연결된 메모리 기업입니다.',
+    beginnerExplanation: 'AI GPU가 더 많이 쓰이면 함께 붙는 고성능 메모리 수요도 커질 수 있습니다. 메모리는 업황 사이클이 커서 재고와 현금흐름을 같이 봐야 합니다.',
+    watchMetrics: [
+      { label: '영업이익률', note: '메모리 가격과 제품 믹스가 이익으로 남는지 봅니다.' },
+      { label: '재고자산', note: '팔릴 제품이 쌓이는지, 수요 회복과 맞는지 확인합니다.' },
+      { label: '영업현금흐름', note: '장부상 이익이 실제 현금으로 들어오는지 봅니다.' },
+    ],
+    goodSignals: ['HBM 수요와 고객 인증 확대', '영업이익률 유지', '재고 회전과 현금흐름 개선'],
+    cautionSignals: ['재고 증가', '매출채권 회수 지연', '메모리 가격 둔화'],
+    sourceLinks: [{ label: 'DART 원문 보고서', url: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287', note: '분기보고서 원문 기준으로 확인합니다.' }],
     publishedAt: '2026-05-17',
+    status: 'published',
   },
   {
     id: 'pick-ai-server-parts',
+    pickId: 'pick-ai-server-parts',
+    title: 'AI 서버 인프라 흐름 해부',
     companyName: 'AI 서버 부품업체',
     ticker: 'WATCH',
     market: 'US',
@@ -6655,15 +6725,31 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     reasonSummary: 'AI 서버 증설 기대가 전력, 냉각, 부품 기업 관심으로 번졌습니다.',
     beginnerSummary: '같은 밸류체인에서 함께 봐야 할 대표 기업을 먼저 확인합니다.',
     sector: 'AI 서버',
+    flowId: 'us-semiconductors',
+    flowLabel: 'AI 반도체 & 데이터센터',
+    flowStage: '서버 / 네트워크 · 전력·냉각',
     valueChainPosition: 'supplier',
     connectedLeaders: ['NVIDIA', 'Dell', 'Super Micro', 'Vertiv'],
     relatedCompanies: ['Microsoft', 'Amazon', 'Alphabet', 'Eaton'],
-    relatedSupplyChainId: 'us-ai-cloud-datacenter',
+    relatedCompanyIds: ['ai-datacenter-supermicro', 'ai-datacenter-dell', 'ai-datacenter-vertiv', 'ai-datacenter-eaton', 'ai-datacenter-microsoft'],
+    relatedSupplyChainId: 'us-semiconductors',
     relatedTradeTags: ['AI 서버', '데이터센터', '전력·냉각'],
+    oneLineConclusion: 'AI 서버 투자는 서버, 네트워크, 전력·냉각 기업까지 함께 확인해야 하는 흐름입니다.',
+    beginnerExplanation: 'AI 서버가 늘면 GPU뿐 아니라 서버 조립, 네트워크, 전력 공급, 냉각 인프라 수요도 커질 수 있습니다. 직접 납품 관계는 기업별 공시와 계약 자료로 확인해야 합니다.',
+    watchMetrics: [
+      { label: '데이터센터 수주 / 백로그', note: 'AI 인프라 투자가 실제 주문으로 이어지는지 봅니다.' },
+      { label: '매출 성장률', note: '관심이 실제 판매 증가로 이어지는지 확인합니다.' },
+      { label: '잉여현금흐름', note: '프로젝트 매출이 현금으로 남는지 봅니다.' },
+    ],
+    goodSignals: ['데이터센터 수주 증가', '마진 유지', '현금흐름 개선'],
+    cautionSignals: ['고객 투자 지연', '재고 증가', '매출 증가 대비 낮은 현금흐름'],
     publishedAt: '2026-05-17',
+    status: 'published',
   },
   {
     id: 'pick-battery-materials-watch',
+    pickId: 'pick-battery-materials-watch',
+    title: '배터리 소재 수요 부담 해부',
     companyName: '배터리 소재업체',
     ticker: 'WATCH',
     market: 'KR',
@@ -6672,13 +6758,27 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     reasonSummary: '전기차 수요 둔화와 소재 가격 변동이 투자심리에 부담으로 작용했습니다.',
     beginnerSummary: '소재 기업은 판매량뿐 아니라 원재료 가격과 고객사 투자 계획도 함께 봅니다.',
     sector: '2차전지 소재',
+    flowId: 'kr-battery-materials',
+    flowLabel: '2차전지 / 전기차',
+    flowStage: '소재',
     valueChainPosition: 'materials',
     connectedLeaders: ['Tesla', 'BYD', 'CATL', 'LG에너지솔루션'],
     relatedCompanies: ['포스코퓨처엠', '삼성SDI', 'GM', 'Rivian'],
+    relatedCompanyIds: ['kr-battery-materials-posco-futurem'],
     relatedSupplyChainId: 'kr-battery-materials',
     relatedCompanyId: 'kr-battery-materials-posco-futurem',
     relatedTradeTags: ['배터리', '소재 가격', '전기차'],
+    oneLineConclusion: '배터리 소재 기업은 전기차 수요와 원재료 가격 변화가 실적 기대에 함께 영향을 줍니다.',
+    beginnerExplanation: '전기차 판매가 둔화되면 소재 주문과 가격 기대가 낮아질 수 있습니다. 많이 파는지뿐 아니라 원가와 고객사 투자 계획을 함께 확인해야 합니다.',
+    watchMetrics: [
+      { label: '매출 성장률', note: '전기차 수요가 실제 판매 증가로 이어졌는지 봅니다.' },
+      { label: '영업이익률', note: '원재료 가격 변화가 이익률을 누르는지 확인합니다.' },
+      { label: '재고 / 현금흐름', note: '재고 부담과 실제 현금 회수를 함께 봅니다.' },
+    ],
+    goodSignals: ['고객사 투자 재개', '원재료 가격 안정', '영업현금흐름 개선'],
+    cautionSignals: ['전기차 수요 둔화', '소재 가격 하락', '재고 부담 증가'],
     publishedAt: '2026-05-17',
+    status: 'published',
   },
 ];
 

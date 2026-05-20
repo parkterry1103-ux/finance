@@ -2170,7 +2170,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
   const firstLookCompanies = ['us-semiconductors-nvidia', 'ai-datacenter-tsmc', 'ai-datacenter-sk-hynix', 'ai-datacenter-asml', 'ai-datacenter-vertiv']
     .map((companyId) => companies.find((company) => company.id === companyId))
     .filter((company): company is Company => Boolean(company));
-  const featuredPicks = stockAutopsyPicks.slice(0, 3);
+  const featuredPicks = stockAutopsyPicks.filter((pick) => pick.status !== 'archived').slice(0, 3);
   const newsSummaryItems = marketMovers.slice(0, 3);
   const institutionSummaryItems = tradeItems.slice(0, 4);
 
@@ -2359,10 +2359,10 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                 <h3>{pick.companyName}</h3>
                 <p>{pick.reasonSummary}</p>
                 <div className="mini-tag-row">
-                  <span>{pick.sector}</span>
-                  <span>{pick.valueChainPosition === 'leader' ? '대장주' : '같이 볼 기업'}</span>
+                  <span>{pickFlowLabel(pick)}</span>
+                  <span>{pickFlowStage(pick)}</span>
                 </div>
-                <small>같이 볼 기업: {pick.connectedLeaders.slice(0, 5).join(', ')}</small>
+                <small>같이 볼 기업: {pick.connectedLeaders.slice(0, 3).join(', ')}</small>
                 <button type="button" onClick={() => onOpenPick(pick)}>
                   해부 보기
                   <ArrowRight size={16} />
@@ -2519,6 +2519,68 @@ const valueChainStepByPosition: Record<StockAutopsyPick['valueChainPosition'], s
   other: '제조',
 };
 
+function pickMarketLabel(pick: StockAutopsyPick) {
+  return pick.market === 'KR' ? '한국' : '미국';
+}
+
+function pickFlowLabel(pick: StockAutopsyPick) {
+  return pick.flowLabel ?? pick.sector;
+}
+
+function pickFlowStage(pick: StockAutopsyPick) {
+  return pick.flowStage ?? valueChainPositionLabel[pick.valueChainPosition];
+}
+
+function pickMainCompany(pick: StockAutopsyPick) {
+  return (
+    companies.find((company) => company.id === pick.companyId) ??
+    companies.find((company) => company.id === pick.relatedCompanyId) ??
+    companies.find((company) => company.ticker === pick.ticker)
+  );
+}
+
+function pickRelatedCompanyList(pick: StockAutopsyPick) {
+  const byIds = (pick.relatedCompanyIds ?? [])
+    .map((id) => companies.find((company) => company.id === id))
+    .filter((company): company is Company => Boolean(company));
+  const byNames = [...pick.connectedLeaders, ...pick.relatedCompanies]
+    .map((name) =>
+      companies.find((company) => company.name === name || company.legalName === name || company.ticker === name),
+    )
+    .filter((company): company is Company => Boolean(company));
+  return [...byIds, ...byNames].filter(
+    (company, index, list) => list.findIndex((item) => item.id === company.id || item.name === company.name) === index,
+  );
+}
+
+function pickWatchMetricCards(pick: StockAutopsyPick, company?: Company) {
+  if (pick.watchMetrics?.length) return pick.watchMetrics.map((metric) => ({ ...metric, value: '값은 재무제표 해설에서 확인' }));
+  if (!company) {
+    return [
+      { label: '매출 성장률', note: '이슈가 실제 판매 증가로 이어졌는지 봅니다.', value: '데이터 연결 필요' },
+      { label: '영업이익률', note: '많이 팔아도 비용을 빼고 남는 힘이 있는지 봅니다.', value: '데이터 연결 필요' },
+      { label: '영업현금흐름', note: '장부상 이익이 실제 현금으로 들어오는지 확인합니다.', value: '데이터 연결 필요' },
+    ];
+  }
+  return beginnerIndustryMetrics(company, getDisplayMetrics(company));
+}
+
+function pickSignalSet(pick: StockAutopsyPick, company?: Company) {
+  if (pick.goodSignals?.length || pick.cautionSignals?.length) {
+    return {
+      good: pick.goodSignals?.length ? pick.goodSignals : ['관련 수요가 매출로 연결', '마진 유지', '현금흐름 개선'],
+      caution: pick.cautionSignals?.length ? pick.cautionSignals : ['수요 둔화', '비용 증가', '현금흐름 약화'],
+    };
+  }
+  return company ? beginnerSignalSet(company) : beginnerSignalSet({ valueChainStage: pickFlowStage(pick) } as Company);
+}
+
+function pickRelationCopy(company: Company, pick: StockAutopsyPick) {
+  if (company.id === pick.relatedCompanyId || company.id === pick.companyId) return '이번 Pick의 중심 기업입니다.';
+  if (company.relationshipSummary) return company.relationshipSummary;
+  return `${companyValueChainStage(company)} 흐름에서 같이 볼 기업입니다. 직접 거래 여부는 공시·IR로 확인합니다.`;
+}
+
 function StockAutopsyPicksPage({
   selectedPickId,
   onHome,
@@ -2549,17 +2611,20 @@ function StockAutopsyPicksPage({
   }
 
   if (detailPick) {
-    const relatedCompany = companies.find(
-      (company) => company.id === detailPick.relatedCompanyId || company.ticker === detailPick.ticker,
-    );
+    const relatedCompany = pickMainCompany(detailPick);
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
     const price = getPriceForPick(detailPick, marketPrices);
     const highlightedStep = valueChainStepByPosition[detailPick.valueChainPosition];
-    const reasonLines = [
-      detailPick.reasonSummary,
-      '시장은 이 흐름을 수요 변화 신호로 해석할 수 있습니다.',
-      '같은 밸류체인에 있는 대표 기업들도 함께 확인해야 합니다.',
-    ];
+    const reasonLines = (detailPick.beginnerExplanation ?? detailPick.beginnerSummary)
+      .split(/(?<=\.)\s+/)
+      .filter(Boolean)
+      .slice(0, 3);
+    const relatedPickCompanies = pickRelatedCompanyList(detailPick).slice(0, 5);
+    const watchMetricCards = pickWatchMetricCards(detailPick, relatedCompany).slice(0, 3);
+    const signalSet = pickSignalSet(detailPick, relatedCompany);
+    const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
+    const flowLabel = pickFlowLabel(detailPick);
+    const flowStage = pickFlowStage(detailPick);
 
     return (
       <div className="pick-shell">
@@ -2581,24 +2646,25 @@ function StockAutopsyPicksPage({
               <span className={`pick-move ${detailPick.movementDirection}`}>
                 {detailPick.movementDirection === 'up' ? '상승' : '하락'} · {detailPick.movementLabel}
               </span>
-              <h1>{detailPick.companyName} 해부</h1>
-              <p>{detailPick.ticker} · {detailPick.market === 'KR' ? '한국' : '미국'} · {detailPick.sector}</p>
+              <h1>{detailPick.title ?? `${detailPick.companyName} 해부`}</h1>
+              <p>{detailPick.ticker} · {pickMarketLabel(detailPick)} · {flowLabel}</p>
             </div>
             <div className="pick-hero-side">
               <PriceBadge price={price} />
-              <strong>{detailPick.beginnerSummary}</strong>
+              <strong>{conclusion}</strong>
             </div>
           </section>
 
           <section className="pick-detail-card">
             <span className="pick-section-kicker">한 줄 결론</span>
-            <h2>{detailPick.reasonSummary}</h2>
-            <p>이 종목은 {detailPick.sector} 흐름 안에서 {valueChainPositionLabel[detailPick.valueChainPosition]} 위치로 함께 봅니다.</p>
+            <h2>{conclusion}</h2>
+            <p>이 종목은 {flowLabel} 흐름 안에서 {flowStage} 단계로 함께 봅니다.</p>
           </section>
 
           <section className="pick-detail-card">
             <span className="pick-section-kicker">왜 움직였나</span>
             <div className="pick-reason-list">
+              <p>{detailPick.reasonSummary}</p>
               {reasonLines.map((line) => (
                 <p key={line}>{line}</p>
               ))}
@@ -2606,7 +2672,9 @@ function StockAutopsyPicksPage({
           </section>
 
           <section className="pick-detail-card">
-            <span className="pick-section-kicker">밸류체인 위치</span>
+            <span className="pick-section-kicker">어떤 시장 흐름인가</span>
+            <h2>{flowLabel}</h2>
+            <p>{detailPick.beginnerSummary}</p>
             <div className="value-chain-steps" aria-label="밸류체인 단계">
               {valueChainSteps.map((step) => (
                 <span key={step} className={step === highlightedStep ? 'active' : ''}>
@@ -2620,34 +2688,78 @@ function StockAutopsyPicksPage({
           </section>
 
           <section className="pick-detail-card">
-            <span className="pick-section-kicker">연결 대장주</span>
-            <div className="pick-chip-row">
-              {detailPick.connectedLeaders.map((leader) => (
-                <span key={leader}>{leader}</span>
+            <span className="pick-section-kicker">같이 볼 기업</span>
+            <div className="pick-related-company-grid">
+              {relatedPickCompanies.map((company) => (
+                <article key={company.id}>
+                  <div>
+                    <strong>{company.name}</strong>
+                    <small>{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</small>
+                  </div>
+                  <p>{pickRelationCopy(company, detailPick)}</p>
+                  <button type="button" onClick={() => onOpenAnalysis(company)}>기업 해설 보기</button>
+                </article>
               ))}
             </div>
-            <p className="pick-helper-copy">수요 영향을 받을 수 있는 대표 기업입니다. 실제 매출 연결은 공시와 뉴스로 확인해야 합니다.</p>
+            {relatedPickCompanies.length === 0 && (
+              <p className="pick-helper-copy">아직 연결 기업 데이터가 충분하지 않습니다. 시장 흐름 지도에서 관련 기업을 확인해주세요.</p>
+            )}
+            <p className="pick-helper-copy">직접 납품이나 확정 수혜가 아니라, 같은 시장 흐름에서 같이 볼 기업입니다.</p>
           </section>
 
           <section className="pick-detail-card">
-            <span className="pick-section-kicker">같이 볼 기업</span>
+            <span className="pick-section-kicker">이 회사는 무엇을 파나</span>
+            <h2>{relatedCompany ? relatedCompany.name : detailPick.companyName}</h2>
+            <p>{relatedCompany ? companyBusinessSummary(relatedCompany) : detailPick.beginnerSummary}</p>
             <div className="pick-chip-row soft">
-              {detailPick.relatedCompanies.map((companyName) => (
-                <span key={companyName}>{companyName}</span>
+              {(relatedCompany?.mainProducts ?? relatedCompany?.products ?? [detailPick.sector]).slice(0, 4).map((item) => (
+                <span key={item}>{item}</span>
               ))}
+            </div>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">먼저 볼 재무지표 3개</span>
+            <div className="pick-metric-grid">
+              {watchMetricCards.map((metric) => (
+                <article key={metric.label}>
+                  <strong>{metric.label}</strong>
+                  <small>{metric.value}</small>
+                  <p>{metric.note}</p>
+                </article>
+              ))}
+            </div>
+            <p className="pick-helper-copy">실제 값이 연결되지 않은 지표는 가짜 숫자 대신 재무제표 해설에서 원문 기준으로 확인합니다.</p>
+          </section>
+
+          <section className="pick-detail-card">
+            <span className="pick-section-kicker">좋은 신호 / 조심할 신호</span>
+            <div className="pick-signal-grid">
+              <article>
+                <strong>좋은 신호</strong>
+                {signalSet.good.slice(0, 3).map((item) => <p key={item}>{item}</p>)}
+              </article>
+              <article>
+                <strong>조심할 신호</strong>
+                {signalSet.caution.slice(0, 3).map((item) => <p key={item}>{item}</p>)}
+              </article>
             </div>
           </section>
 
           <section className="pick-detail-card pick-detail-actions">
             <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-              기업 관계 지도 보기
-            </button>
-            <button type="button" onClick={onOpenSmartMoney}>
-              보유·거래 보고 보기
+              시장 흐름 지도에서 보기
             </button>
             {relatedCompany ? (
               <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                재무제표 핵심 숫자 보기
+                기업 해설 보기
+              </button>
+            ) : (
+              <span className="pick-disabled-action">기업 해설 연결 준비 중</span>
+            )}
+            {relatedCompany ? (
+              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                재무제표 해설 보기
               </button>
             ) : (
               <span className="pick-disabled-action">재무제표 연결 준비 중</span>
@@ -2656,6 +2768,28 @@ function StockAutopsyPicksPage({
               <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
             ) : (
               <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
+            )}
+            <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
+              관계 출처 보기
+            </button>
+            {relatedCompany ? (
+              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                관련 뉴스 보기
+              </button>
+            ) : (
+              <span className="pick-disabled-action">관련 뉴스 연결 준비 중</span>
+            )}
+            <button type="button" onClick={onOpenSmartMoney}>
+              기관 동향 보기
+            </button>
+            {detailPick.sourceLinks?.map((source) =>
+              source.url ? (
+                <a key={source.label} href={source.url} target="_blank" rel="noreferrer">
+                  {source.label}
+                </a>
+              ) : (
+                <span key={source.label} className="pick-disabled-action">{source.label} 준비 중</span>
+              ),
             )}
           </section>
         </main>
@@ -2682,34 +2816,39 @@ function StockAutopsyPicksPage({
         <section className="pick-hero">
           <p className="home-kicker">주가해부실 Pick</p>
           <h1>이번 주 해부 종목</h1>
-          <p>급등·급락한 이유를 쉽게 정리했습니다.</p>
-          <small>인스타그램에서 다룬 종목을 밸류체인과 함께 확인하세요.</small>
+          <p>급등·급락한 이유를 시장 흐름과 함께 쉽게 정리했습니다.</p>
+          <small>인스타그램에서 다룬 종목이 어떤 기업들과 연결되는지 확인해보세요.</small>
         </section>
 
         <section className="pick-grid" aria-label="주가해부실 Pick 목록">
-          {stockAutopsyPicks.map((pick) => (
+          {stockAutopsyPicks.filter((pick) => pick.status !== 'archived').map((pick) => (
             <article className="pick-card" key={pick.id}>
               <div className="card-topline">
-                <span>{pick.market === 'KR' ? '한국' : '미국'} · {pick.ticker}</span>
+                <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
                 <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
                   {pick.movementDirection === 'up' ? '상승' : '하락'}
                 </strong>
               </div>
               <h2>{pick.companyName}</h2>
               <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
+              <div className="pick-movement-line">
+                <span>움직임</span>
+                <strong>{pick.movementLabel}</strong>
+              </div>
               <p>{pick.reasonSummary}</p>
               <div className="pick-meta-grid">
                 <div>
-                  <span>관련 섹터</span>
-                  <strong>{pick.sector}</strong>
+                  <span>연결된 시장 흐름</span>
+                  <strong>{pickFlowLabel(pick)}</strong>
                 </div>
                 <div>
-                  <span>밸류체인 위치</span>
-                  <strong>{valueChainPositionLabel[pick.valueChainPosition]}</strong>
+                  <span>흐름 단계</span>
+                  <strong>{pickFlowStage(pick)}</strong>
                 </div>
               </div>
+              <span className="pick-section-kicker inline">같이 볼 기업</span>
               <div className="pick-chip-row">
-                {pick.connectedLeaders.slice(0, 4).map((leader) => (
+                {pick.connectedLeaders.slice(0, 5).map((leader) => (
                   <span key={leader}>{leader}</span>
                 ))}
               </div>

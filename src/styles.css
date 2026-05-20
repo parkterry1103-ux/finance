@@ -5595,6 +5595,33 @@ body,
   background: #eef6ff;
 }
 
+.pick-section-kicker.inline {
+  width: fit-content;
+}
+
+.pick-movement-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eef6ff, #f7f3ff);
+}
+
+.pick-movement-line span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.pick-movement-line strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: right;
+}
+
 .pick-reason-list {
   display: grid;
   gap: 8px;
@@ -5630,6 +5657,85 @@ body,
   color: #0057d9;
   border-color: rgba(0, 122, 255, 0.24);
   background: #eef6ff;
+}
+
+.pick-related-company-grid,
+.pick-metric-grid,
+.pick-signal-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.pick-related-company-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pick-related-company-grid article,
+.pick-metric-grid article,
+.pick-signal-grid article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.pick-related-company-grid article div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pick-related-company-grid strong,
+.pick-metric-grid strong,
+.pick-signal-grid strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.pick-related-company-grid small,
+.pick-metric-grid small {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.pick-related-company-grid p,
+.pick-metric-grid p,
+.pick-signal-grid p {
+  margin: 0;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.48;
+}
+
+.pick-related-company-grid button {
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 999px;
+  color: #0057d9;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.pick-metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pick-metric-grid small {
+  white-space: normal;
+}
+
+.pick-signal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .pick-detail-actions {
@@ -5727,6 +5833,18 @@ body,
 
   .value-chain-steps {
     grid-template-columns: 1fr;
+  }
+
+  .pick-related-company-grid,
+  .pick-metric-grid,
+  .pick-signal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pick-related-company-grid article div,
+  .pick-movement-line {
+    display: grid;
+    justify-content: start;
   }
 
   .ownership-filter-panel {

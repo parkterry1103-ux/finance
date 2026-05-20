@@ -555,12 +555,15 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 
 ## 이번 주 해부 종목 업데이트 방법
 
-`주가해부실 Pick`은 운영자가 매주 인스타그램 카드뉴스에 맞춰 `src/data.ts`의 `stockAutopsyPicks` 배열만 수정하면 됩니다.
+`주가해부실 Pick`은 투자 추천이 아니라 인스타그램 카드뉴스에서 다룬 이슈를 시장 흐름과 기업 관계로 풀어주는 입구입니다. 운영자는 매주 `src/data.ts`의 `stockAutopsyPicks` 배열을 수정해서 수동/반자동으로 운영합니다.
 
-1. 새 카드 추가: `id`, `companyName`, `ticker`, `movementDirection`, `movementLabel`, `reasonSummary`, `beginnerSummary`, `sector`, `valueChainPosition`, `connectedLeaders`, `relatedCompanies`, `publishedAt`을 입력합니다.
-2. 기업 관계 지도 연결: 가능한 경우 `relatedSupplyChainId`와 `relatedCompanyId`를 넣습니다. 이 값이 있으면 상세 페이지에서 기업 관계 지도와 재무제표 해설로 바로 연결됩니다.
-3. 삭제/교체: 이번 주에 노출하지 않을 카드는 배열에서 제거하거나 아래쪽으로 이동합니다.
-4. 표현 주의: 직접 납품 관계가 확인되지 않은 기업은 “직접 납품”, “확정 수혜”라고 쓰지 말고 “같은 밸류체인에서 함께 볼 기업”으로 표현합니다.
+1. 새 카드 추가: `id`, `pickId`, `companyId`, `companyName`, `title`, `ticker`, `market`, `movementDirection`, `movementLabel`, `reasonSummary`, `beginnerSummary`, `publishedAt`, `status`를 입력합니다.
+2. 시장 흐름 연결: `flowId`, `flowLabel`, `flowStage`, `relatedSupplyChainId`, `relatedCompanyId`를 넣습니다. 이 값이 있으면 Pick 상세에서 시장 흐름 지도, 기업 해설, 재무제표 해설로 바로 이동합니다.
+3. 같이 볼 기업: `connectedLeaders`와 `relatedCompanyIds`에는 3~5개 대표 기업만 먼저 넣습니다. 너무 많은 기업은 Pick 상세가 아니라 시장 흐름 지도에서 보게 합니다.
+4. 재무제표 연결: `watchMetrics`, `goodSignals`, `cautionSignals`를 넣습니다. 실제 값이 없으면 숫자를 만들지 말고 지표명과 “왜 보는지”만 씁니다.
+5. 출처 연결: `sourceLinks`에는 DART/SEC/공식 자료처럼 확인 가능한 링크만 넣습니다. 확실하지 않으면 빈 링크를 만들지 않습니다.
+6. 삭제/교체: 홈에는 `status !== 'archived'`인 최신 Pick 1~3개만 보여줍니다. 숨길 Pick은 `archived`로 바꾸거나 배열 아래로 이동합니다.
+7. 표현 주의: “매수 추천”, “확정 수혜”, “무조건 오른다” 같은 표현은 금지합니다. 직접 납품 관계가 확인되지 않은 기업은 “수요 연결”, “같은 흐름에서 함께 볼 기업”으로 표현합니다.
 
 필드 기준:
 
@@ -568,12 +571,16 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 티커: `ticker`
 - 상승/하락: `movementDirection`
 - 왜 움직였나: `reasonSummary`
-- 관련 섹터: `sector`
-- 밸류체인 위치: `valueChainPosition`
-- 연결 대장주: `connectedLeaders`
+- 연결된 시장 흐름: `flowLabel`
+- 흐름 단계: `flowStage`
+- 같이 볼 기업: `connectedLeaders`, `relatedCompanyIds`
+- 한 줄 결론: `oneLineConclusion`
+- 초보자용 설명: `beginnerExplanation`
+- 먼저 볼 재무지표: `watchMetrics`
+- 좋은 신호 / 조심할 신호: `goodSignals`, `cautionSignals`
+- 출처: `sourceLinks`
 - 카드뉴스 발행일: `publishedAt`
-- 상세 설명: `beginnerSummary`
-- 기업 관계 지도 링크: `relatedSupplyChainId`
+- 노출 상태: `status`
 
 ## 데이터 주의사항
 
