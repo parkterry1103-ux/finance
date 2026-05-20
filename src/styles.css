@@ -5919,6 +5919,126 @@ button:disabled {
   background: #eef6ff;
 }
 
+.market-flow-board {
+  grid-column: 1 / -1;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+  gap: 12px;
+  padding-top: 4px;
+  overflow-x: auto;
+}
+
+.market-flow-stage-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-height: 178px;
+  padding: 14px;
+  border: 1px solid rgba(209, 217, 230, 0.78);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.92)),
+    radial-gradient(circle at 20% 0%, rgba(124, 58, 237, 0.08), transparent 34%);
+  box-shadow: 0 10px 24px rgba(25, 31, 40, 0.05);
+}
+
+.market-flow-stage-card:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -13px;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.22), rgba(124, 58, 237, 0.36));
+  transform: translateY(-50%);
+}
+
+.market-flow-stage-card:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid rgba(124, 58, 237, 0.36);
+  border-right: 2px solid rgba(124, 58, 237, 0.36);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.market-flow-stage-card > span {
+  width: fit-content;
+  min-height: 25px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #0057d9;
+  background: #eef6ff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.market-flow-stage-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.42;
+}
+
+.market-flow-stage-card > div {
+  display: grid;
+  gap: 7px;
+}
+
+.market-flow-stage-card > div button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 10px;
+  border: 1px solid rgba(229, 233, 240, 0.92);
+  border-radius: 13px;
+  text-align: left;
+  color: #111827;
+  background: #ffffff;
+}
+
+.market-flow-stage-card > div button:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: #f5f9ff;
+}
+
+.market-flow-stage-card button strong,
+.market-flow-stage-card button small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-flow-stage-card button strong {
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.market-flow-stage-card button small {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.stage-more-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  color: #0057d9;
+  background: #eef6ff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
 .mobile-stage-cards {
   grid-column: 1 / -1;
   display: grid;
@@ -6209,6 +6329,12 @@ button:disabled {
     justify-content: flex-start;
   }
 
+  .market-flow-board {
+    grid-template-columns: repeat(7, minmax(150px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
   .mobile-stage-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -6239,6 +6365,20 @@ button:disabled {
 
   .map-mode-strip button {
     flex: 0 0 auto;
+  }
+
+  .market-flow-board {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .market-flow-stage-card {
+    min-height: 0;
+  }
+
+  .market-flow-stage-card:not(:last-child)::after,
+  .market-flow-stage-card:not(:last-child)::before {
+    display: none;
   }
 
   .mobile-stage-cards,
@@ -6390,7 +6530,7 @@ button:disabled {
   left: 18px;
   right: 18px;
   display: grid;
-  grid-template-columns: repeat(8, minmax(110px, 1fr));
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
   gap: 8px;
   overflow: hidden;
 }
