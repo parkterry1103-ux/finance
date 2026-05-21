@@ -118,18 +118,12 @@ const aiRelationshipAnchorId = 'us-semiconductors-nvidia';
 const aiCoreCompanyIds = new Set([
   'ai-datacenter-google',
   'ai-datacenter-microsoft',
-  'ai-datacenter-amazon',
   'us-semiconductors-nvidia',
-  'ai-datacenter-amd',
   'ai-datacenter-broadcom',
   'ai-datacenter-sk-hynix',
   'ai-datacenter-samsung',
-  'ai-datacenter-micron',
   'ai-datacenter-tsmc',
   'ai-datacenter-asml',
-  'ai-datacenter-hanmi',
-  'ai-datacenter-supermicro',
-  'ai-datacenter-dell',
   'ai-datacenter-vertiv',
 ]);
 
@@ -148,66 +142,49 @@ const aiCoreLinkIds = new Set([
   'ai-v01-ai-datacenter-amazon-us-semiconductors-nvidia',
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-tsmc',
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-sk-hynix',
-  'ai-v01-us-semiconductors-nvidia-ai-datacenter-micron',
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-vertiv',
-  'ai-v01-us-semiconductors-nvidia-ai-datacenter-supermicro',
-  'ai-v01-us-semiconductors-nvidia-ai-datacenter-dell',
   'ai-v01-ai-datacenter-asml-ai-datacenter-tsmc',
-  'ai-v01-ai-datacenter-hanmi-ai-datacenter-sk-hynix',
+  'ai-v01-ai-datacenter-asml-ai-datacenter-samsung',
 ]);
 
 const aiStageColumns = [
-  'AI 서버 수요',
-  'AI 칩 / GPU',
-  'HBM / 메모리',
+  'AI 수요',
+  'AI 칩',
+  'HBM',
   '파운드리',
-  '장비 / 소재 / 후공정',
-  '서버 / 네트워크',
-  '전력·냉각',
+  '장비/전력',
 ];
 
 const aiFlowStages = [
   {
-    stage: 'AI 서버 수요',
+    stage: 'AI 수요',
     symbol: '수요',
-    summary: '클라우드 기업과 AI 서비스 기업이 더 많은 계산 능력을 필요로 하는 출발점입니다.',
-    companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google', 'ai-datacenter-amazon'],
+    summary: '클라우드와 AI 서비스가 더 많은 계산 능력을 필요로 하는 출발점입니다.',
+    companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
-    stage: 'AI 칩 / GPU',
+    stage: 'AI 칩',
     symbol: 'GPU',
     summary: 'AI 계산을 빠르게 처리하는 핵심 칩입니다.',
-    companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-amd', 'ai-datacenter-broadcom'],
+    companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
-    stage: 'HBM / 메모리',
+    stage: 'HBM',
     symbol: 'HBM',
     summary: 'AI 칩이 데이터를 빠르게 처리하기 위해 필요한 고성능 메모리입니다.',
-    companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung', 'ai-datacenter-micron'],
+    companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
   },
   {
     stage: '파운드리',
     symbol: 'FAB',
     summary: '설계된 칩을 실제로 생산하는 제조 단계입니다.',
-    companyIds: ['ai-datacenter-tsmc', 'ai-datacenter-samsung', 'ai-datacenter-intel'],
+    companyIds: ['ai-datacenter-tsmc'],
   },
   {
-    stage: '장비 / 소재 / 후공정',
-    symbol: '장비',
-    summary: '반도체를 만들고 패키징하고 테스트하는 데 필요한 장비와 소재입니다.',
-    companyIds: ['ai-datacenter-asml', 'ai-datacenter-hanmi', 'ai-datacenter-wonikips'],
-  },
-  {
-    stage: '서버 / 네트워크',
-    symbol: '서버',
-    summary: 'AI 칩을 장착한 서버와 데이터 이동 인프라입니다.',
-    companyIds: ['ai-datacenter-supermicro', 'ai-datacenter-dell', 'ai-datacenter-arista'],
-  },
-  {
-    stage: '전력·냉각',
-    symbol: '전력',
-    summary: '데이터센터가 커질수록 전기와 열 관리가 중요해집니다.',
-    companyIds: ['ai-datacenter-vertiv', 'ai-datacenter-eaton', 'ai-datacenter-schneider'],
+    stage: '장비/전력',
+    symbol: '인프라',
+    summary: '반도체 생산 장비와 데이터센터 전력·냉각 인프라를 함께 봅니다.',
+    companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
   },
 ];
 
@@ -285,9 +262,13 @@ function companySymbol(company: Company) {
 }
 
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
-  const { company, isSelected, isDimmed, isExpanded, marketLabel, price, onSelect, onToggleExpand } = data;
+  const { company, isSelected, isDimmed, isExpanded, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
   const symbol = companySymbol(company);
+  const compactStage =
+    company.sectorId === aiRelationshipSectorId && company.anchorId === aiRelationshipAnchorId
+      ? aiStageColumns[aiStageColumn(company)] ?? companyValueChainStage(company)
+      : companyValueChainStage(company);
 
   return (
     <div
@@ -336,14 +317,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
         <span className="node-name">{company.name}</span>
       </div>
       <div className="node-meta">
-        <span>{companyValueChainStage(company)}</span>
-      </div>
-      <div className="node-market-line">
-        {isMainListedCompany(company) && price ? (
-          <PriceBadge price={price} compact />
-        ) : (
-          <span className={`node-market-pill ${isMainListedCompany(company) ? 'listed' : 'reference'}`}>{marketLabel}</span>
-        )}
+        <span>{compactStage}</span>
       </div>
       <Handle type="source" position={Position.Right} className="node-handle" />
     </div>
@@ -361,8 +335,8 @@ function aiStageColumn(company: Company) {
   if (stage.includes('메모리') || stage.includes('HBM')) return 2;
   if (stage.includes('파운드리') || stage.includes('제조')) return 3;
   if (stage.includes('장비') || stage.includes('소재') || stage.includes('부품') || stage.includes('후공정') || stage.includes('테스트')) return 4;
-  if (stage.includes('서버') || stage.includes('네트워크')) return 5;
-  if (stage.includes('전력') || stage.includes('냉각')) return 6;
+  if (stage.includes('서버') || stage.includes('네트워크')) return 4;
+  if (stage.includes('전력') || stage.includes('냉각')) return 4;
   return 4;
 }
 
@@ -374,8 +348,8 @@ function getAiNodePosition(company: Company) {
     .filter((item) => aiStageColumn(item) === stageColumn)
     .sort((a, b) => a.name.localeCompare(b.name));
   const row = Math.max(0, sameStageCompanies.findIndex((item) => item.id === company.id));
-  const x = 34 + stageColumn * 304;
-  const y = 64 + row * 126;
+  const x = 42 + stageColumn * 330;
+  const y = 78 + row * 116;
   return { x, y };
 }
 
@@ -3581,6 +3555,8 @@ function App() {
   const selectedDependency = selectedCompany ? dependencySummary(selectedCompany, groupLinks) : null;
   const selectedMoat = selectedCompany ? companyMoatSummary(selectedCompany) : null;
   const selectedRole = selectedCompany ? companyRoleProfile(selectedCompany) : null;
+  const selectedBeginnerMetrics =
+    selectedCompany && selectedDisplayMetrics ? beginnerIndustryMetrics(selectedCompany, selectedDisplayMetrics).slice(0, 3) : [];
   const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
@@ -3630,13 +3606,12 @@ function App() {
     { value: 'listed', label: '상장기업', note: '분석 대상' },
     { value: 'reference', label: '비상장 참고', note: '관계 보조' },
   ];
-  const flowModeOptions: Array<{ value: FlowViewMode; label: string; note: string }> = [
-    { value: 'core', label: '핵심 관계', note: '대표 흐름' },
-    { value: 'all', label: '전체 관계', note: '상장기업 전체' },
-    { value: 'kr', label: '한국 관련주', note: '한국 상장기업' },
-    { value: 'us', label: '미국 기업', note: '미국 상장기업' },
-    { value: 'reference', label: '공급망 참고', note: '비상장/보조' },
-    { value: 'sources', label: '관계 출처', note: '근거 확인' },
+  const flowModeOptions: Array<{ value: FlowViewMode; label: string; note: string; tone?: 'primary' | 'secondary' }> = [
+    { value: 'core', label: '핵심 흐름', note: '대표 기업 8~10개', tone: 'primary' },
+    { value: 'kr', label: '한국 관련주', note: '한국 상장기업', tone: 'primary' },
+    { value: 'all', label: '전체 관계', note: '상장기업 전체', tone: 'primary' },
+    { value: 'sources', label: '출처 보기', note: '관계 근거 확인', tone: 'secondary' },
+    { value: 'reference', label: '공급망 참고', note: '비상장/보조', tone: 'secondary' },
   ];
   const routePath = route.split('?')[0];
   const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
@@ -4172,7 +4147,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -4449,7 +4424,7 @@ function App() {
               <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 흐름도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">
                 {isAiRelationshipMap
-                  ? 'AI 서버 수요가 늘면 AI 칩, HBM 메모리, 파운드리, 장비, 서버, 전력·냉각 기업으로 관심이 이어질 수 있습니다.'
+                  ? 'AI 수요가 AI 칩, HBM, 파운드리, 장비·전력 기업으로 이어지는 흐름을 핵심만 먼저 봅니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -4515,28 +4490,47 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>시장 흐름 지도</span>
-                <strong>AI 서버 수요가 어떤 기업으로 이어지는지 단계별로 정리했습니다.</strong>
-                <p>직접 납품 관계가 확인되지 않은 경우에는 “수요 연결” 또는 “산업상 관련”으로 표시합니다.</p>
+                <strong>AI 수요가 어떤 기업 단계로 이어지는지 5단계로 압축했습니다.</strong>
+                <p>기본 화면은 핵심 흐름만 보여주고, 자세한 기업과 출처는 더 깊게 볼 수 있게 분리했습니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
-                {flowModeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={flowViewMode === option.value ? 'active' : ''}
-                    onClick={() => applyFlowViewMode(option.value)}
-                    title={option.note}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+                <div>
+                  {flowModeOptions
+                    .filter((option) => option.tone !== 'secondary')
+                    .map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={flowViewMode === option.value ? 'active' : ''}
+                        onClick={() => applyFlowViewMode(option.value)}
+                        title={option.note}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                </div>
+                <div className="map-mode-secondary">
+                  {flowModeOptions
+                    .filter((option) => option.tone === 'secondary')
+                    .map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={flowViewMode === option.value ? 'active' : ''}
+                        onClick={() => applyFlowViewMode(option.value)}
+                        title={option.note}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                </div>
               </div>
               <div className="flow-help-pills" aria-label="지도 사용 팁">
-                <span>진한 선: 선택 기업 직접 관계</span>
-                <span>연한 선: 보조 관계</span>
-                <span>회사를 클릭하면 오른쪽에서 핵심 정보 확인</span>
+                <span>기본: 5단계 핵심 흐름</span>
+                <span>회사를 클릭하면 오른쪽에서 핵심 요약</span>
+                <span>출처와 공급망은 보조 보기</span>
               </div>
-              <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 단계형 흐름">
+              <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 5단계 흐름">
                 {flowStageCards.map((stage) => (
                   <article key={stage.stage} className="market-flow-stage-card">
                     <div className="stage-heading">
@@ -4567,6 +4561,7 @@ function App() {
                   </article>
                 ))}
               </div>
+              {flowViewMode !== 'core' && (
               <div className="ai-sector-support-grid">
                 <section className="ai-korea-listed-card" aria-label="AI 반도체 흐름과 연결된 한국 상장기업">
                   <div className="support-card-head">
@@ -4620,6 +4615,7 @@ function App() {
                   </div>
                 </section>
               </div>
+              )}
             </section>
           )}
 
@@ -4918,6 +4914,24 @@ function App() {
                   <p>{companyRevenueExposure(selectedCompany)}</p>
                 </article>
               </div>
+
+              {selectedBeginnerMetrics.length > 0 && (
+                <div className="detail-card beginner-metrics-compact">
+                  <div className="section-title">
+                    <BarChart3 size={16} />
+                    <span>먼저 볼 지표 3개</span>
+                  </div>
+                  <div>
+                    {selectedBeginnerMetrics.map((metric) => (
+                      <article key={metric.label}>
+                        <strong>{metric.label}</strong>
+                        <span>{metric.value}</span>
+                        <p>{metric.note}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="detail-card direct-connections-card">
                 <div className="section-title">
