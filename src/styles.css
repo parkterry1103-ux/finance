@@ -10133,3 +10133,259 @@ body {
     min-height: auto;
   }
 }
+
+/* MVP 5: click-through stage board before the advanced graph. */
+.app-shell.ai-board-default .sector-flow-card {
+  min-height: auto;
+}
+
+.stage-card-trigger {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stage-card-trigger:focus-visible,
+.market-flow-stage-card button:focus-visible,
+.flow-selection-panel button:focus-visible {
+  outline: 3px solid rgba(31, 111, 235, 0.28);
+  outline-offset: 3px;
+}
+
+.stage-card-trigger p {
+  margin: 0;
+  color: var(--jg-text-secondary);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.48;
+}
+
+.app-shell.ai-board-default .market-flow-board {
+  min-height: 0;
+  align-items: start;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card {
+  min-height: 238px;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card.active-stage {
+  transform: translateY(-8px);
+  border-color: rgba(31, 111, 235, 0.36);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%),
+    radial-gradient(circle at 10% 0%, rgba(31, 111, 235, 0.14), transparent 34%);
+  box-shadow: 0 26px 54px rgba(31, 111, 235, 0.15);
+}
+
+.app-shell.ai-board-default .market-flow-stage-card.muted-stage {
+  opacity: 0.48;
+  transform: scale(0.985);
+}
+
+.app-shell.ai-board-default .stage-company-list,
+.app-shell.ai-board-default .stage-extra-company-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.app-shell.ai-board-default .stage-extra-company-list {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(145, 158, 171, 0.32);
+}
+
+.app-shell.ai-board-default .stage-extra-company-list button {
+  min-height: 58px;
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.stage-more-button {
+  margin-top: 10px;
+  min-height: 38px !important;
+  justify-content: center !important;
+  color: var(--jg-primary-blue);
+  background: var(--jg-secondary-blue) !important;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.flow-selection-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(280px, 1.25fr) auto;
+  gap: 14px;
+  align-items: stretch;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid rgba(213, 222, 235, 0.86);
+  border-radius: 26px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 255, 0.94)),
+    radial-gradient(circle at 0% 0%, rgba(91, 124, 250, 0.08), transparent 36%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.06);
+}
+
+.flow-selection-main,
+.flow-selection-links {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.flow-selection-main {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.flow-selection-main span,
+.flow-selection-links > span {
+  color: var(--jg-primary-blue);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.flow-active-stage-label {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  margin-left: 8px;
+  padding: 0 9px;
+  align-items: center;
+  border-radius: 999px;
+  color: #475467;
+  background: rgba(248, 250, 252, 0.92);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.flow-selection-main strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--jg-text-primary);
+  font-size: 21px;
+  line-height: 1.18;
+}
+
+.flow-selection-main p,
+.flow-selection-links p {
+  margin: 6px 0 0;
+  color: var(--jg-text-secondary);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.flow-selection-links > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.flow-selection-links button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 68px;
+  padding: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: left;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.045);
+}
+
+.flow-selection-links button strong,
+.flow-selection-links button small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-selection-links button strong {
+  color: var(--jg-text-primary);
+  font-size: 13px;
+}
+
+.flow-selection-links button small {
+  margin-top: 3px;
+  color: var(--jg-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.flow-selection-actions {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.flow-selection-actions button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(31, 111, 235, 0.16);
+  border-radius: 999px;
+  color: var(--jg-primary-blue);
+  background: var(--jg-secondary-blue);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.flow-selection-actions button:last-child {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--jg-primary-blue), #5b7cfa);
+}
+
+.app-shell.ai-mvp-map:not(.ai-board-default) .graph-wrap {
+  min-height: clamp(560px, 68vh, 780px);
+}
+
+.app-shell.ai-mvp-map:not(.ai-board-default) .supply-node {
+  width: 206px;
+  min-height: 118px;
+}
+
+.app-shell.ai-mvp-map:not(.ai-board-default) .node-name {
+  font-size: 17px;
+}
+
+@media (max-width: 1180px) {
+  .flow-selection-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-selection-links > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .flow-selection-panel {
+    margin: 8px 0 0;
+    padding: 14px;
+  }
+
+  .flow-selection-links > div {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.ai-board-default .market-flow-stage-card.muted-stage {
+    opacity: 0.74;
+    transform: none;
+  }
+}

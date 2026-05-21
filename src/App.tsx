@@ -279,6 +279,11 @@ const companyLogoSources: Array<{ match: string[]; url: string }> = [
   { match: ['arista', 'anet'], url: 'https://logo.clearbit.com/arista.com' },
   { match: ['eaton'], url: 'https://logo.clearbit.com/eaton.com' },
   { match: ['schneider'], url: 'https://logo.clearbit.com/se.com' },
+  { match: ['한미반도체', 'hanmi', '042700'], url: 'https://logo.clearbit.com/hanmisemi.com' },
+  { match: ['리노공업', 'leeno', '058470'], url: 'https://logo.clearbit.com/leeno.com' },
+  { match: ['isc', '095340'], url: 'https://logo.clearbit.com/isc21.kr' },
+  { match: ['원익ips', 'wonik', '240810'], url: 'https://logo.clearbit.com/wonikips.co.kr' },
+  { match: ['솔브레인', 'soulbrain', '357780'], url: 'https://logo.clearbit.com/soulbrain.co.kr' },
 ];
 
 function getCompanyLogoUrl(company: Company) {
@@ -3520,6 +3525,8 @@ function App() {
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
   const [isMapLocked, setIsMapLocked] = useState(false);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
+  const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
+  const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
   const graphWrapRef = useRef<HTMLElement | null>(null);
 
   const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
@@ -3654,15 +3661,21 @@ function App() {
       .map((id) => groupCompanies.find((company) => company.id === id))
       .filter((company): company is Company => Boolean(company))
       .filter((company) => visibleIds.has(company.id) || flowViewMode === 'core');
-    const stageCompanies = visibleCompanies.filter((company) => matchesAiFlowStage(stage.stage, company));
-    const displayCompanies = (representativeCompanies.length ? representativeCompanies : stageCompanies).slice(0, 3);
-    const hiddenCount = Math.max(0, stageCompanies.length - displayCompanies.filter((company) => stageCompanies.some((item) => item.id === company.id)).length);
+    const stageCompanies = groupCompanies.filter((company) => matchesAiFlowStage(stage.stage, company));
+    const stagePool = [...representativeCompanies, ...stageCompanies].filter(
+      (company, index, list) => list.findIndex((item) => item.id === company.id) === index,
+    );
+    const displayCompanies = (representativeCompanies.length ? representativeCompanies : stageCompanies).slice(0, 2);
+    const extraCompanies = stagePool.filter((company) => !displayCompanies.some((item) => item.id === company.id)).slice(0, 4);
+    const hiddenCount = Math.max(0, stagePool.length - displayCompanies.length);
     return {
       ...stage,
       companies: displayCompanies,
+      extraCompanies,
       hiddenCount,
     };
   });
+  const activeFlowStageCard = flowStageCards.find((stage) => stage.stage === selectedFlowStage) ?? null;
   const aiKoreaListedCompanies = aiKoreaListedPriorityNames
     .map((name) =>
       groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
@@ -3670,7 +3683,7 @@ function App() {
     )
     .filter((company): company is Company => Boolean(company))
     .filter((company, index, list) => list.findIndex((item) => item.name === company.name) === index);
-  const aiKoreaListedPreview = aiKoreaListedCompanies.slice(0, 8);
+  const aiKoreaListedPreview = showAllKoreaRelated ? aiKoreaListedCompanies : aiKoreaListedCompanies.slice(0, 5);
   const roleFilterOptions: Array<{ value: RoleFilter; label: string; note: string }> = [
     { value: 'all', label: mapViewMode === 'core' ? '핵심 관계' : '전체', note: '기본 흐름' },
     { value: 'leader', label: '대장주', note: '먼저 볼 기업' },
@@ -3749,16 +3762,35 @@ function App() {
     if (!flowInstance) return;
     window.requestAnimationFrame(() => {
       flowInstance.fitView({
-        padding: isAiRelationshipMap ? 0.2 : 0.22,
+        padding: isAiRelationshipMap ? 0.14 : 0.22,
         duration: 420,
         includeHiddenNodes: false,
       });
+      if (isAiRelationshipMap && selectedCompany) {
+        window.setTimeout(() => {
+          if (flowInstance.getZoom() < 0.5) centerCompanyInMap(selectedCompany.id);
+        }, 460);
+      }
     });
   }
 
   function scheduleFitVisibleMap(delay = 120) {
     window.setTimeout(() => fitVisibleMap(), delay);
     window.setTimeout(() => fitVisibleMap(), delay + 220);
+  }
+
+  function fitEntireRelationshipMap() {
+    if (!flowInstance) return;
+    flowInstance.fitView({
+      padding: isAiRelationshipMap ? 0.28 : 0.24,
+      duration: 420,
+      includeHiddenNodes: false,
+    });
+  }
+
+  function scheduleCenterCompany(companyId: string, delay = 160) {
+    window.setTimeout(() => centerCompanyInMap(companyId), delay);
+    window.setTimeout(() => centerCompanyInMap(companyId), delay + 380);
   }
 
   function centerCompanyInMap(companyId: string) {
@@ -3768,7 +3800,7 @@ function App() {
     const position = getNodePosition(company);
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
-        zoom: isAiRelationshipMap ? 0.72 : Math.max(flowInstance.getZoom(), 0.58),
+        zoom: isAiRelationshipMap ? 0.82 : Math.max(flowInstance.getZoom(), 0.58),
         duration: 420,
       });
     });
@@ -3778,8 +3810,23 @@ function App() {
     setSelectedCompanyId(companyId);
     if (isAiRelationshipMap) {
       setExpandedCompanyIds((current) => new Set([...current, companyId]));
+      const nextCompany = groupCompanies.find((company) => company.id === companyId);
+      if (nextCompany) setSelectedFlowStage(aiFlowStages.find((stage) => matchesAiFlowStage(stage.stage, nextCompany))?.stage ?? null);
     }
     centerCompanyInMap(companyId);
+  }
+
+  function selectFlowStage(stageName: string) {
+    const nextStage = selectedFlowStage === stageName ? null : stageName;
+    setSelectedFlowStage(nextStage);
+    if (!nextStage) return;
+    const focusCandidate =
+      aiFlowStages
+        .find((stage) => stage.stage === stageName)
+        ?.companyIds.map((id) => groupCompanies.find((company) => company.id === id))
+        .find((company): company is Company => Boolean(company)) ??
+      visibleCompanies.find((company) => matchesAiFlowStage(stageName, company));
+    if (focusCandidate) setSelectedCompanyId(focusCandidate.id);
   }
 
   function toggleCompanyExpansion(companyId: string) {
@@ -3792,17 +3839,9 @@ function App() {
     scheduleFitVisibleMap(80);
   }
 
-  function showFullRelationshipMap() {
-    setFlowViewMode('all');
-    setMapViewMode('all');
-    setShowReferenceNodes(true);
-    setShowNeedsVerification(true);
-    setShowDetailedLinks(true);
-    scheduleFitVisibleMap(80);
-  }
-
   function applyFlowViewMode(mode: FlowViewMode) {
     setFlowViewMode(mode);
+    if (mode !== 'kr') setShowAllKoreaRelated(false);
     setRoleFilter('all');
     setStageFilter('all');
     setListingFilter('all');
@@ -3832,13 +3871,18 @@ function App() {
     }
 
     const nextFocus = groupCompanies.find((company) => {
+      if (mode === 'all') return company.id === selectedCompanyId;
       if (mode === 'kr') return company.country === 'KR' && isMainListedCompany(company);
       if (mode === 'us') return company.country === 'US' && isMainListedCompany(company);
       if (mode === 'reference') return !isMainListedCompany(company);
       return aiCoreCompanyIds.has(company.id);
     });
     if (nextFocus) setSelectedCompanyId(nextFocus.id);
-    scheduleFitVisibleMap(80);
+    if (mode === 'all' || mode === 'sources' || mode === 'reference') {
+      scheduleCenterCompany(nextFocus?.id ?? selectedCompanyId, 220);
+    } else {
+      scheduleFitVisibleMap(80);
+    }
   }
 
   const flowNodes: Node<NodeData>[] = useMemo(
@@ -4025,6 +4069,11 @@ function App() {
     };
   }, [newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
 
+  useEffect(() => {
+    if (!shouldShowRelationshipCanvas || !isAiRelationshipMap || !selectedCompany) return;
+    scheduleCenterCompany(selectedCompany.id, 240);
+  }, [flowViewMode, isAiRelationshipMap, selectedCompany?.id, shouldShowRelationshipCanvas]);
+
   function openAnalysis(company: Company) {
     window.history.pushState({}, '', analysisPath(company));
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -4072,6 +4121,7 @@ function App() {
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
     setExpandedCompanyIds(new Set());
+    setSelectedFlowStage(null);
     setHoveredLinkId(null);
     setSelectedLinkId(null);
     setSourcePanelLinkId(null);
@@ -4133,6 +4183,7 @@ function App() {
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
     setExpandedCompanyIds(new Set());
+    setSelectedFlowStage(null);
     setHoveredLinkId(null);
     setSelectedLinkId(null);
     setSourcePanelLinkId(null);
@@ -4167,6 +4218,7 @@ function App() {
     setShowNeedsVerification(false);
     setShowDetailedLinks(false);
     setExpandedCompanyIds(new Set());
+    setSelectedFlowStage(null);
     setHoveredLinkId(null);
     setSelectedLinkId(null);
     setSourcePanelLinkId(null);
@@ -4607,17 +4659,34 @@ function App() {
               </div>
               <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 5단계 흐름">
                 {flowStageCards.map((stage) => (
-                  <article key={stage.stage} className="market-flow-stage-card">
-                    <div className="stage-heading">
-                      <span>{stage.symbol}</span>
-                      <strong>{stage.stage}</strong>
-                    </div>
-                    <p>{stage.summary}</p>
-                    <div>
+                  <article
+                    key={stage.stage}
+                    className={`market-flow-stage-card ${selectedFlowStage === stage.stage ? 'active-stage' : ''} ${selectedFlowStage && selectedFlowStage !== stage.stage ? 'muted-stage' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="stage-card-trigger"
+                      onClick={() => selectFlowStage(stage.stage)}
+                      aria-expanded={selectedFlowStage === stage.stage}
+                    >
+                      <span className="stage-heading">
+                        <span>{stage.symbol}</span>
+                        <strong>{stage.stage}</strong>
+                      </span>
+                      <p>{stage.summary}</p>
+                    </button>
+                    <div className="stage-company-list">
                       {stage.companies.map((company) => {
                         const role = companyRoleProfile(company);
                         return (
-                          <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
+                          <button
+                            key={company.id}
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              focusCompany(company.id);
+                            }}
+                          >
                             <CompanyLogo company={company} size="small" />
                             <span>
                               <strong>{company.name}</strong>
@@ -4627,15 +4696,83 @@ function App() {
                         );
                       })}
                     </div>
-                    {stage.hiddenCount > 0 && (
-                      <button type="button" className="stage-more-button" onClick={() => applyFlowViewMode('all')}>
-                        {stage.hiddenCount}개 더보기
+                    {selectedFlowStage === stage.stage && stage.extraCompanies.length > 0 && (
+                      <div className="stage-extra-company-list" aria-label={`${stage.stage} 관련 기업 더보기`}>
+                        {stage.extraCompanies.map((company) => (
+                          <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
+                            <CompanyLogo company={company} size="small" />
+                            <span>
+                              <strong>{company.name}</strong>
+                              <small>{companyRoleProfile(company).primary}</small>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {stage.hiddenCount > 0 && selectedFlowStage !== stage.stage && (
+                      <button type="button" className="stage-more-button" onClick={() => selectFlowStage(stage.stage)}>
+                        관련 기업 더보기
                       </button>
                     )}
                   </article>
                 ))}
               </div>
-              {flowViewMode !== 'core' && (
+
+              {selectedCompany && (
+                <section className="flow-selection-panel" aria-label="선택 기업 중심 탐색">
+                  <div className="flow-selection-main">
+                    <CompanyLogo company={selectedCompany} size="large" />
+                    <div>
+                      <span>선택한 기업</span>
+                      {activeFlowStageCard && <em className="flow-active-stage-label">확대 단계: {activeFlowStageCard.stage}</em>}
+                      <strong>{selectedCompany.name}</strong>
+                      <p>{companyBusinessSummary(selectedCompany)}</p>
+                    </div>
+                  </div>
+                  <div className="flow-selection-links">
+                    <span>바로 옆에서 같이 볼 기업</span>
+                    {primaryDirectLinks.length > 0 ? (
+                      <div>
+                        {primaryDirectLinks.slice(0, 3).map((link) => {
+                          const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
+                          const counterpart = companies.find((company) => company.id === counterpartId);
+                          const summary = linkRelationshipSummary(link);
+                          if (!counterpart) return null;
+                          return (
+                            <button key={link.id} type="button" onClick={() => focusCompany(counterpart.id)}>
+                              <CompanyLogo company={counterpart} size="small" />
+                              <span>
+                                <strong>{counterpart.name}</strong>
+                                <small>{shortRelationshipLabel(summary.type)} · {summary.confidence}</small>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p>현재 선택한 기업의 직접 연결 관계가 아직 정리되지 않았습니다.</p>
+                    )}
+                  </div>
+                  <div className="flow-selection-actions">
+                    {primaryDirectLinks[0] && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextId = primaryDirectLinks[0].source === selectedCompany.id ? primaryDirectLinks[0].target : primaryDirectLinks[0].source;
+                          focusCompany(nextId);
+                        }}
+                      >
+                        다음 연결 보기
+                      </button>
+                    )}
+                    <button type="button" onClick={() => applyFlowViewMode('all')}>
+                      전체 관계 보기
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {flowViewMode === 'kr' && (
               <div className="ai-sector-support-grid">
                 <section className="ai-korea-listed-card" aria-label="AI 반도체 흐름과 연결된 한국 상장기업">
                   <div className="support-card-head">
@@ -4664,29 +4801,10 @@ function App() {
                     })}
                   </div>
                   {aiKoreaListedCompanies.length > aiKoreaListedPreview.length && (
-                    <button type="button" className="support-more-button" onClick={() => applyFlowViewMode('kr')}>
+                    <button type="button" className="support-more-button" onClick={() => setShowAllKoreaRelated(true)}>
                       한국 관련주 더 보기
                     </button>
                   )}
-                </section>
-
-                <section className="ai-finance-focus-card" aria-label="AI 반도체와 데이터센터에서 먼저 볼 재무지표">
-                  <div className="support-card-head">
-                    <span>먼저 볼 재무지표</span>
-                    <strong>기업 종류마다 먼저 볼 숫자가 다릅니다</strong>
-                    <p>값이 없으면 가짜 숫자를 만들지 않고, 지표 이름과 해석 기준만 안내합니다.</p>
-                  </div>
-                  <div className="ai-finance-focus-grid">
-                    {aiFinancialFocusCards.map((item) => (
-                      <article key={item.label}>
-                        <strong>{item.label}</strong>
-                        <div>
-                          {item.metrics.map((metric) => <span key={metric}>{metric}</span>)}
-                        </div>
-                        <p>{item.note}</p>
-                      </article>
-                    ))}
-                  </div>
                 </section>
               </div>
               )}
@@ -4704,9 +4822,9 @@ function App() {
               </div>
             )}
             <div className="canvas-toolbar" aria-label="지도 보기 조정">
+              <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>선택 기업 중심</button>
               <button type="button" onClick={fitVisibleMap}>화면 맞춤</button>
-              <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>초기 위치</button>
-              {isAiRelationshipMap && <button type="button" onClick={showFullRelationshipMap}>전체 보기</button>}
+              {isAiRelationshipMap && <button type="button" onClick={fitEntireRelationshipMap}>전체 축소 보기</button>}
             </div>
             {activeRelationship && activeRelationshipSummary && (
               <div className="relationship-popover" role="status" aria-live="polite">
