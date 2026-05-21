@@ -159,31 +159,31 @@ const aiFlowStages = [
   {
     stage: 'AI 수요',
     symbol: '수요',
-    summary: '클라우드와 AI 서비스가 더 많은 계산 능력을 필요로 하는 출발점입니다.',
+    summary: '클라우드가 AI 서버를 더 필요로 합니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
     stage: 'AI 칩',
     symbol: 'GPU',
-    summary: 'AI 계산을 빠르게 처리하는 핵심 칩입니다.',
+    summary: 'AI 계산을 처리하는 핵심 칩입니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM',
     symbol: 'HBM',
-    summary: 'AI 칩이 데이터를 빠르게 처리하기 위해 필요한 고성능 메모리입니다.',
+    summary: 'AI 칩 옆에서 데이터를 빠르게 넘깁니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
   },
   {
     stage: '파운드리',
     symbol: 'FAB',
-    summary: '설계된 칩을 실제로 생산하는 제조 단계입니다.',
+    summary: '설계된 칩을 실제로 만듭니다.',
     companyIds: ['ai-datacenter-tsmc'],
   },
   {
     stage: '장비/전력',
     symbol: '인프라',
-    summary: '반도체 생산 장비와 데이터센터 전력·냉각 인프라를 함께 봅니다.',
+    summary: '반도체 장비와 데이터센터 인프라입니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
   },
 ];
@@ -3676,6 +3676,7 @@ function App() {
     };
   });
   const activeFlowStageCard = flowStageCards.find((stage) => stage.stage === selectedFlowStage) ?? null;
+  const selectedFlowStageIndex = selectedFlowStage ? flowStageCards.findIndex((stage) => stage.stage === selectedFlowStage) : -1;
   const aiKoreaListedCompanies = aiKoreaListedPriorityNames
     .map((name) =>
       groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
@@ -4658,10 +4659,13 @@ function App() {
                 <span>출처와 공급망은 보조 보기</span>
               </div>
               <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 5단계 흐름">
-                {flowStageCards.map((stage) => (
+                {flowStageCards.map((stage, stageIndex) => {
+                  const isActiveStage = selectedFlowStage === stage.stage;
+                  const isAdjacentStage = selectedFlowStageIndex >= 0 && Math.abs(stageIndex - selectedFlowStageIndex) === 1;
+                  return (
                   <article
                     key={stage.stage}
-                    className={`market-flow-stage-card ${selectedFlowStage === stage.stage ? 'active-stage' : ''} ${selectedFlowStage && selectedFlowStage !== stage.stage ? 'muted-stage' : ''}`}
+                    className={`market-flow-stage-card ${isActiveStage ? 'active-stage' : ''} ${isAdjacentStage ? 'adjacent-stage' : ''} ${selectedFlowStage && !isActiveStage && !isAdjacentStage ? 'muted-stage' : ''}`}
                   >
                     <button
                       type="button"
@@ -4682,6 +4686,7 @@ function App() {
                           <button
                             key={company.id}
                             type="button"
+                            className={`${selectedCompanyId === company.id ? 'active-company' : ''} ${connectedIds.has(company.id) ? 'connected-company' : ''}`}
                             onClick={(event) => {
                               event.stopPropagation();
                               focusCompany(company.id);
@@ -4699,7 +4704,12 @@ function App() {
                     {selectedFlowStage === stage.stage && stage.extraCompanies.length > 0 && (
                       <div className="stage-extra-company-list" aria-label={`${stage.stage} 관련 기업 더보기`}>
                         {stage.extraCompanies.map((company) => (
-                          <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
+                          <button
+                            key={company.id}
+                            type="button"
+                            className={`${selectedCompanyId === company.id ? 'active-company' : ''} ${connectedIds.has(company.id) ? 'connected-company' : ''}`}
+                            onClick={() => focusCompany(company.id)}
+                          >
                             <CompanyLogo company={company} size="small" />
                             <span>
                               <strong>{company.name}</strong>
@@ -4715,7 +4725,8 @@ function App() {
                       </button>
                     )}
                   </article>
-                ))}
+                  );
+                })}
               </div>
 
               {selectedCompany && (
@@ -4765,7 +4776,7 @@ function App() {
                         다음 연결 보기
                       </button>
                     )}
-                    <button type="button" onClick={() => applyFlowViewMode('all')}>
+                    <button type="button" className="advanced-map-button" onClick={() => applyFlowViewMode('all')}>
                       전체 관계 보기
                     </button>
                   </div>
@@ -4813,6 +4824,11 @@ function App() {
 
           {shouldShowRelationshipCanvas && (
           <>
+          {isAiRelationshipMap && (
+            <div className="advanced-map-note">
+              전체 관계 보기는 고급 탐색용입니다. 처음에는 선택 기업 중심으로 크게 보여줍니다.
+            </div>
+          )}
           <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
             {isAiRelationshipMap && (
               <div className="map-stage-ribbon" aria-hidden="true">
