@@ -3173,6 +3173,13 @@ body {
   padding: 58px 0 30px;
 }
 
+.home-hero.mvp-hero {
+  display: flex;
+  align-items: center;
+  min-height: clamp(430px, 64vh, 620px);
+  padding: 72px 0 42px;
+}
+
 .home-hero-copy {
   max-width: 820px;
 }
@@ -3201,6 +3208,45 @@ body {
   font-size: 18px;
   line-height: 1.65;
   word-break: keep-all;
+}
+
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.home-hero-actions button,
+.beginner-guide-grid button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid rgba(0, 87, 217, 0.2);
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0057d9;
+  box-shadow: 0 14px 28px rgba(0, 87, 217, 0.18);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.home-hero-actions button.secondary,
+.beginner-guide-grid button {
+  color: #0057d9;
+  background: #eef6ff;
+  box-shadow: none;
+}
+
+.home-mvp-note {
+  max-width: 520px !important;
+  margin-top: 16px !important;
+  color: #667085 !important;
+  font-size: 13px !important;
+  font-weight: 800;
 }
 
 .home-search {
@@ -3498,6 +3544,10 @@ body {
     rgba(255, 255, 255, 0.94);
 }
 
+.flow-preview-section.mvp-flow-preview {
+  margin-top: 42px;
+}
+
 .flow-preview-map {
   display: grid;
   grid-template-columns: repeat(7, minmax(126px, 1fr));
@@ -3506,6 +3556,10 @@ body {
   margin-top: 18px;
   overflow-x: auto;
   padding: 6px 4px 18px;
+}
+
+.flow-preview-map.compact-flow-map {
+  grid-template-columns: repeat(6, minmax(132px, 1fr));
 }
 
 .flow-step-card {
@@ -3575,6 +3629,13 @@ body {
   margin: 0;
   color: #667085;
   font-size: 13px;
+  line-height: 1.55;
+}
+
+.flow-preview-copy small {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 850;
   line-height: 1.55;
 }
 
@@ -3663,6 +3724,78 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.beginner-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.beginner-guide-grid article,
+.advanced-reference-note,
+.data-freshness-card {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+}
+
+.beginner-guide-grid article {
+  display: grid;
+  gap: 10px;
+  min-height: 220px;
+  padding: 20px;
+}
+
+.beginner-guide-grid article > span {
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #0057d9;
+  background: #eaf4ff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 28px;
+}
+
+.beginner-guide-grid h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  line-height: 1.28;
+}
+
+.beginner-guide-grid p,
+.advanced-reference-note p {
+  margin: 0;
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.58;
+  word-break: keep-all;
+}
+
+.beginner-guide-grid button {
+  width: fit-content;
+  min-height: 40px;
+  margin-top: auto;
+  padding-inline: 14px;
+  border-radius: 8px;
+}
+
+.advanced-reference-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.advanced-reference-note strong {
+  color: #111827;
+  font-size: 15px;
+}
+
 .learning-guide-grid > div {
   padding: 18px;
 }
@@ -3676,6 +3809,40 @@ body {
 
 .institution-summary-section {
   opacity: 0.98;
+}
+
+.data-freshness-card {
+  display: grid;
+  gap: 4px;
+  width: min(100%, 320px);
+  padding: 10px 12px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.data-freshness-card strong,
+.data-freshness-card span,
+.data-freshness-card em {
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.data-freshness-card strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.data-freshness-card span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.data-freshness-card em {
+  color: #0057d9;
+  font-size: 12px;
+  font-weight: 950;
 }
 
 .home-section-head {
@@ -4367,6 +4534,7 @@ body {
   .pick-home-grid,
   .news-summary-grid,
   .institution-summary-grid,
+  .beginner-guide-grid,
   .learning-guide-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4412,6 +4580,7 @@ body {
   .pick-home-grid,
   .news-summary-grid,
   .institution-summary-grid,
+  .beginner-guide-grid,
   .financial-guide-grid,
   .learning-guide-grid {
     grid-template-columns: 1fr;
@@ -4431,8 +4600,21 @@ body {
     overflow: visible;
   }
 
+  .flow-preview-map.compact-flow-map {
+    grid-template-columns: 1fr;
+  }
+
   .flow-step-card {
     min-height: 0;
+  }
+
+  .home-hero.mvp-hero {
+    min-height: 0;
+    padding-top: 38px;
+  }
+
+  .home-hero-actions button {
+    width: 100%;
   }
 
   .flow-step-card:not(:last-child)::after {
