@@ -261,6 +261,61 @@ function companySymbol(company: Company) {
   };
 }
 
+const companyLogoSources: Array<{ match: string[]; url: string }> = [
+  { match: ['nvidia', 'nvda'], url: 'https://upload.wikimedia.org/wikipedia/commons/2/21/Nvidia_logo.svg' },
+  { match: ['microsoft', 'msft'], url: 'https://logo.clearbit.com/microsoft.com' },
+  { match: ['google', 'alphabet', 'googl'], url: 'https://logo.clearbit.com/google.com' },
+  { match: ['amazon', 'amzn', 'aws'], url: 'https://logo.clearbit.com/amazon.com' },
+  { match: ['broadcom', 'avgo'], url: 'https://logo.clearbit.com/broadcom.com' },
+  { match: ['sk하이닉스', 'sk hynix', '000660'], url: 'https://upload.wikimedia.org/wikipedia/commons/2/24/SK_Hynix.svg' },
+  { match: ['삼성전자', 'samsung', '005930'], url: 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Samsung_logo.svg' },
+  { match: ['tsmc', 'taiwan semiconductor', 'tsm'], url: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Tsmc-text.svg' },
+  { match: ['asml'], url: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/ASML_Logo.svg' },
+  { match: ['vertiv', 'vrt'], url: 'https://logo.clearbit.com/vertiv.com' },
+  { match: ['amd'], url: 'https://logo.clearbit.com/amd.com' },
+  { match: ['micron', 'mu'], url: 'https://logo.clearbit.com/micron.com' },
+  { match: ['dell'], url: 'https://logo.clearbit.com/dell.com' },
+  { match: ['super micro', 'supermicro', 'smci'], url: 'https://logo.clearbit.com/supermicro.com' },
+  { match: ['arista', 'anet'], url: 'https://logo.clearbit.com/arista.com' },
+  { match: ['eaton'], url: 'https://logo.clearbit.com/eaton.com' },
+  { match: ['schneider'], url: 'https://logo.clearbit.com/se.com' },
+];
+
+function getCompanyLogoUrl(company: Company) {
+  const searchText = [
+    company.id,
+    company.name,
+    company.legalName,
+    company.ticker,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return companyLogoSources.find((source) => source.match.some((token) => searchText.includes(token.toLowerCase())))?.url;
+}
+
+function CompanyLogo({ company, size = 'medium', className = '' }: { company: Company; size?: 'small' | 'medium' | 'large' | 'hero'; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const symbol = companySymbol(company);
+  const logoUrl = getCompanyLogoUrl(company);
+  const classes = `company-logo ${logoUrl && !failed ? 'has-image' : `fallback symbol-${symbol.tone}`} size-${size} ${className}`.trim();
+
+  if (!logoUrl || failed) {
+    return (
+      <span className={classes} aria-hidden="true">
+        {symbol.label}
+      </span>
+    );
+  }
+
+  return (
+    <span className={classes} aria-hidden="true">
+      <img src={logoUrl} alt="" loading="lazy" onError={() => setFailed(true)} />
+    </span>
+  );
+}
+
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   const { company, isSelected, isDimmed, isExpanded, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
@@ -2133,7 +2188,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               return (
                 <article className="pick-home-card" key={pick.id}>
                   <div className="pick-card-identity">
-                    <span className={`company-symbol small symbol-${pickSymbol.tone}`} aria-hidden="true">{pickSymbol.label}</span>
+                    {pickCompany ? (
+                      <CompanyLogo company={pickCompany} size="small" />
+                    ) : (
+                      <span className={`company-symbol small symbol-${pickSymbol.tone}`} aria-hidden="true">{pickSymbol.label}</span>
+                    )}
                     <div>
                       <strong>{pick.companyName}</strong>
                       <small>{pick.ticker} · {pickMarketLabel(pick)}</small>
@@ -2540,7 +2599,7 @@ function StockAutopsyPicksPage({
           <span className="home-logo">
             <Network size={20} />
           </span>
-          <strong>FINANCE</strong>
+          <strong>주가해부실</strong>
         </a>
         <nav>
           <button type="button" onClick={onHome}>홈</button>
@@ -2697,7 +2756,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           : primaryReportLink.status === 'listing-unknown'
             ? '상장 여부와 공시 식별자가 아직 불완전합니다. 확인 전에는 원문 링크를 만들지 않습니다.'
             : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
-  const explainerSymbol = companySymbol(company);
   const explainerMoat = companyMoatSummary(company);
   const explainerMetrics = beginnerIndustryMetrics(company, displayMetrics);
   const explainerSignals = beginnerSignalSet(company);
@@ -2753,17 +2811,36 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
       <main className="analysis-detail-flow">
         <section className="analysis-card company-explainer-card">
           <div className="company-explainer-top">
-            <span className={`company-symbol large symbol-${explainerSymbol.tone}`} aria-hidden="true">
-              {explainerSymbol.label}
-            </span>
+            <CompanyLogo company={company} size="hero" className="company-explainer-logo" />
             <div>
-              <span className="analysis-market-pill">{companyScopeLabel(company)} · {marketDisplayLabel(company)}</span>
-              <h2>{beginnerCompanyConclusion(company)}</h2>
-              <p>{isMainListedCompany(company) ? companyScopeDetail(company) : '공식 공시가 제한적인 기업은 관계 이해용으로 보고, 출처 없는 재무 숫자는 표시하지 않습니다.'}</p>
+              <div className="company-explainer-meta">
+                <span className="analysis-market-pill">{companyScopeLabel(company)}</span>
+                <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
+              </div>
+              <h2>{company.name} 기업 해설</h2>
+              <p>이 회사가 무엇을 팔고, 누구의 수요와 연결되는지 먼저 이해하고 숫자는 재무 해설에서 단계적으로 봅니다.</p>
             </div>
             <div className="company-explainer-price">
               {hasTradableTicker(company) ? <PriceBadge price={companyPrice} compact /> : <span className="reference-status-pill">{companyScopeLabel(company)}</span>}
             </div>
+          </div>
+
+          <div className="explainer-highlight-grid">
+            <article className="explainer-highlight-card primary">
+              <span>한 줄 결론</span>
+              <strong>{beginnerCompanyConclusion(company)}</strong>
+              <p>{isMainListedCompany(company) ? companyScopeDetail(company) : '공식 공시가 제한적인 기업은 관계 이해용으로 보고, 출처 없는 재무 숫자는 표시하지 않습니다.'}</p>
+            </article>
+            <article className="explainer-highlight-card">
+              <span>쉽게 말하면</span>
+              <strong>{companyBusinessSummary(company)}</strong>
+              <p>{companyCustomerSummary(company)}</p>
+            </article>
+            <article className="explainer-highlight-card">
+              <span>그래서 뭘 볼까?</span>
+              <strong>{companyInvestorWatchPoint(company)}</strong>
+              <p>{firstWatchPoint}</p>
+            </article>
           </div>
 
           <div className="explainer-card-grid">
@@ -2864,10 +2941,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <button type="button" onClick={() => scrollToAnalysisSection('related-companies')}>
               <ArrowRight size={15} />
               관련 기업 보기
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('trade-report-details')}>
-              <Database size={15} />
-              기관 동향 보기
             </button>
           </div>
         </section>
@@ -3613,6 +3686,8 @@ function App() {
     { value: 'sources', label: '출처 보기', note: '관계 근거 확인', tone: 'secondary' },
     { value: 'reference', label: '공급망 참고', note: '비상장/보조', tone: 'secondary' },
   ];
+  const shouldShowRelationshipCanvas =
+    !isAiRelationshipMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
   const routePath = route.split('?')[0];
   const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
   const routeParams = new URLSearchParams(routeQuery);
@@ -4147,7 +4222,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -4541,10 +4616,9 @@ function App() {
                     <div>
                       {stage.companies.map((company) => {
                         const role = companyRoleProfile(company);
-                        const symbol = companySymbol(company);
                         return (
                           <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
-                            <span className={`company-symbol small symbol-${symbol.tone}`} aria-hidden="true">{symbol.label}</span>
+                            <CompanyLogo company={company} size="small" />
                             <span>
                               <strong>{company.name}</strong>
                               <small>{role.primary}</small>
@@ -4619,6 +4693,8 @@ function App() {
             </section>
           )}
 
+          {shouldShowRelationshipCanvas && (
+          <>
           <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
             {isAiRelationshipMap && (
               <div className="map-stage-ribbon" aria-hidden="true">
@@ -4799,6 +4875,8 @@ function App() {
               </div>
             </div>
           </section>
+          </>
+          )}
         </main>
 
         <aside className="right-panel">
@@ -4806,9 +4884,7 @@ function App() {
             <>
               <div className="panel-heading">
                 <div className="panel-title-row">
-                  <span className={`company-symbol large symbol-${companySymbol(selectedCompany).tone}`} aria-hidden="true">
-                    {companySymbol(selectedCompany).label}
-                  </span>
+                  <CompanyLogo company={selectedCompany} size="large" />
                   <div>
                     <p className="eyebrow">현재 선택한 기업</p>
                     <h2>{selectedCompany.name}</h2>

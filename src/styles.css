@@ -9850,3 +9850,286 @@ body {
     margin: 0 12px 18px;
   }
 }
+
+/* Prototype-inspired MVP polish: larger cards, clear logos, and board-first map. */
+.company-logo {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(213, 222, 235, 0.86);
+  border-radius: 18px;
+  background: #ffffff;
+  color: var(--jg-primary-blue);
+  font-weight: 950;
+  letter-spacing: 0;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.company-logo img {
+  max-width: 74%;
+  max-height: 74%;
+  object-fit: contain;
+}
+
+.company-logo.size-small {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.company-logo.size-medium {
+  width: 54px;
+  height: 54px;
+  font-size: 14px;
+}
+
+.company-logo.size-large {
+  width: 66px;
+  height: 66px;
+  border-radius: 22px;
+  font-size: 15px;
+}
+
+.company-logo.size-hero {
+  width: clamp(84px, 10vw, 118px);
+  height: clamp(84px, 10vw, 118px);
+  border-radius: 30px;
+  font-size: 20px;
+}
+
+.company-logo.fallback {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--jg-primary-blue), #5b7cfa);
+}
+
+.pick-card-identity .company-logo {
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.company-explainer-card {
+  gap: 20px;
+  padding: clamp(20px, 3vw, 34px);
+}
+
+.company-explainer-top {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(16px, 3vw, 28px);
+}
+
+.company-explainer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-market-pill.soft {
+  color: #475467;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.company-explainer-top h2 {
+  margin: 12px 0 8px;
+  font-size: clamp(30px, 4vw, 50px);
+  line-height: 1.05;
+}
+
+.company-explainer-top p {
+  max-width: 700px;
+  font-size: 15px;
+}
+
+.explainer-highlight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.explainer-highlight-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 176px;
+  padding: 20px;
+  border: 1px solid rgba(213, 222, 235, 0.9);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+}
+
+.explainer-highlight-card.primary {
+  color: #ffffff;
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, rgba(31, 111, 235, 0.98), rgba(91, 124, 250, 0.94)),
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.24), transparent 28%);
+  box-shadow: 0 22px 44px rgba(31, 111, 235, 0.22);
+}
+
+.explainer-highlight-card span {
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--jg-primary-blue);
+  background: var(--jg-secondary-blue);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.explainer-highlight-card.primary span {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.explainer-highlight-card strong {
+  color: var(--jg-text-primary);
+  font-size: clamp(18px, 2.2vw, 25px);
+  line-height: 1.32;
+}
+
+.explainer-highlight-card.primary strong,
+.explainer-highlight-card.primary p {
+  color: #ffffff;
+}
+
+.explainer-highlight-card p {
+  margin: 0;
+  color: var(--jg-text-secondary);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.6;
+}
+
+.company-explainer-card .explainer-action-row {
+  justify-content: flex-start;
+}
+
+.app-shell.ai-board-default {
+  grid-template-columns: minmax(236px, 17vw) minmax(0, 1fr) minmax(292px, 22vw);
+}
+
+.app-shell.ai-board-default .map-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: auto;
+}
+
+.app-shell.ai-board-default .sector-flow-card {
+  min-height: min(760px, calc(100vh - 118px));
+  align-content: start;
+}
+
+.app-shell.ai-board-default .sector-flow-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.app-shell.ai-board-default .market-flow-board {
+  align-items: stretch;
+  min-height: min(510px, 56vh);
+  padding: 10px 4px 16px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  min-height: 280px;
+  padding: 18px;
+  border-color: rgba(213, 222, 235, 0.92);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.07);
+}
+
+.app-shell.ai-board-default .stage-heading {
+  gap: 10px;
+}
+
+.app-shell.ai-board-default .stage-heading > span {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--jg-primary-blue), #5b7cfa);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.app-shell.ai-board-default .stage-heading strong {
+  font-size: 19px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card > p {
+  min-height: 0;
+  margin: 10px 0 14px;
+  font-size: 13px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card > div:last-of-type {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card > div button {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 70px;
+  padding: 12px;
+  border-radius: 20px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card > div button strong {
+  font-size: 15px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card > div button small {
+  color: var(--jg-text-secondary);
+  font-size: 12px;
+}
+
+.app-shell.ai-board-default .market-flow-stage-card:not(:last-child)::after {
+  top: 52%;
+  right: -17px;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(31, 111, 235, 0.18), rgba(91, 124, 250, 0.58));
+}
+
+.app-shell.ai-board-default .market-flow-stage-card:not(:last-child)::before {
+  top: calc(52% - 4px);
+}
+
+@media (max-width: 1180px) {
+  .explainer-highlight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.ai-board-default .sector-flow-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 820px) {
+  .company-explainer-top {
+    grid-template-columns: 1fr;
+  }
+
+  .company-explainer-price {
+    justify-content: flex-start;
+  }
+
+  .company-logo.size-hero {
+    width: 84px;
+    height: 84px;
+    border-radius: 24px;
+  }
+
+  .app-shell.ai-board-default .market-flow-board {
+    min-height: auto;
+  }
+
+  .app-shell.ai-board-default .market-flow-stage-card {
+    min-height: auto;
+  }
+}
