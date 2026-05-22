@@ -2515,7 +2515,7 @@ function StockAutopsyPicksPage({
             {relatedPickCompanies.length === 0 && (
               <p className="pick-helper-copy">아직 연결 기업 데이터가 충분하지 않습니다. 시장 흐름 지도에서 관련 기업을 확인해주세요.</p>
             )}
-            <p className="pick-helper-copy">직접 납품이나 확정 수혜가 아니라, 같은 시장 흐름에서 같이 볼 기업입니다.</p>
+            <p className="pick-helper-copy">직접 거래나 결과를 단정하지 않고, 같은 시장 흐름에서 같이 볼 기업입니다.</p>
           </section>
 
           <section className="pick-detail-card">
