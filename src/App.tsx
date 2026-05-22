@@ -16,8 +16,11 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  BookOpen,
   ChevronDown,
   CircleDollarSign,
+  Cloud,
+  Cpu,
   Database,
   ExternalLink,
   Factory,
@@ -35,6 +38,8 @@ import {
   ShieldAlert,
   Target,
   Unlock,
+  Zap,
+  CheckCircle,
 } from 'lucide-react';
 import {
   analystOpinions,
@@ -2115,17 +2120,17 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     {
       title: 'AI 반도체',
       note: 'AI 칩 수요 강세',
-      icon: <Radio size={18} />,
+      icon: <Cpu size={18} />,
     },
     {
       title: '전력 인프라',
       note: '전력 수요 확대',
-      icon: <Factory size={18} />,
+      icon: <Zap size={18} />,
     },
     {
       title: '클라우드 수요',
       note: '기업 IT 투자 증가',
-      icon: <Globe2 size={18} />,
+      icon: <Cloud size={18} />,
     },
   ];
   const issueCards = [
@@ -2133,16 +2138,19 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       title: 'AI 반도체 랠리 지속',
       note: '엔비디아 실적 기대가 반도체 밸류체인 전반 관심으로 이어졌습니다.',
       tags: ['엔비디아', 'SK하이닉스'],
+      icon: <Cpu size={18} />,
     },
     {
       title: '전력 인프라 주목',
       note: 'AI 데이터센터 전력 수요 증가로 인프라 기업을 같이 보는 흐름입니다.',
       tags: ['HD현대일렉트릭', 'LS일렉트릭'],
+      icon: <Zap size={18} />,
     },
     {
       title: '클라우드 전환 가속',
       note: '빅테크의 데이터센터 투자 확대가 서버와 반도체 수요 확인 포인트입니다.',
       tags: ['Microsoft', 'Amazon'],
+      icon: <Cloud size={18} />,
     },
   ];
   const featuredPickPriority = ['NVIDIA', '삼성전자', 'SK하이닉스'];
@@ -2227,7 +2235,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           <div className="home-issue-grid">
             {issueCards.map((issue) => (
               <article className="home-issue-card" key={issue.title}>
-                <Newspaper size={18} />
+                {issue.icon}
                 <div>
                   <h3>{issue.title}</h3>
                   <p>{issue.note}</p>
@@ -2930,17 +2938,17 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
           <div className="explainer-highlight-grid">
             <article className="explainer-highlight-card primary">
-              <span>한 줄 결론</span>
+              <span><Target size={14} />한 줄 결론</span>
               <strong>{beginnerCompanyConclusion(company)}</strong>
               <p>기준: {dataFreshness.reportName} · {dataFreshness.status}</p>
             </article>
             <article className="explainer-highlight-card">
-              <span>쉽게 말하면</span>
+              <span><BookOpen size={14} />쉽게 말하면</span>
               <strong>{companyBusinessSummary(company)}</strong>
               <p>{companyCustomerSummary(company)}</p>
             </article>
             <article className="explainer-highlight-card">
-              <span>그래서 뭘 볼까?</span>
+              <span><BarChart3 size={14} />그래서 뭘 볼까?</span>
               <strong>{companyInvestorWatchPoint(company)}</strong>
               <ul className="explainer-watch-list">
                 {explainerMetrics.map((metric) => <li key={metric.label}>{metric.label}</li>)}
@@ -2982,12 +2990,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span>이 산업에서 먼저 볼 지표 3개</span>
               </div>
               <div>
-                {explainerMetrics.map((metric) => (
-                  <article key={metric.label}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                    <p>{metric.note}</p>
-                  </article>
+              {explainerMetrics.map((metric) => (
+                <article key={metric.label}>
+                  <span><BarChart3 size={14} />{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <p>{metric.note}</p>
+                </article>
                 ))}
               </div>
             </section>
@@ -3115,7 +3123,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <div className="financial-priority-grid">
               {explainerMetrics.map((metric) => (
                 <article key={metric.label}>
-                  <span>{metric.label}</span>
+                  <span><BarChart3 size={14} />{metric.label}</span>
                   <strong>{beginnerMetricValueLabel(metric.value)}</strong>
                   <p>{metric.note}</p>
                   <small>{beginnerMetricStatusLabel(metric.value)}</small>
@@ -3126,11 +3134,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
           <div className="financial-signal-grid">
             <section>
-              <strong>좋은 신호</strong>
+              <strong><CheckCircle size={15} />좋은 신호</strong>
               {explainerSignals.good.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
             </section>
             <section>
-              <strong>조심할 신호</strong>
+              <strong><AlertTriangle size={15} />조심할 신호</strong>
               {explainerSignals.caution.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
             </section>
           </div>
