@@ -476,8 +476,9 @@ function formatNewsDate(value: string) {
   return value;
 }
 
-function analysisPath(company: Company) {
-  return `/ko/analysis/${encodeURIComponent(company.id)}`;
+function analysisPath(company: Company, anchor?: string) {
+  const basePath = `/ko/analysis/${encodeURIComponent(company.id)}`;
+  return anchor ? `${basePath}#${encodeURIComponent(anchor)}` : basePath;
 }
 
 function categoryPath(sectorId: string, selectedCompanyId?: string) {
@@ -2089,14 +2090,14 @@ type AnalysisPageProps = {
   newsState: NewsState;
   onHome: () => void;
   onBack: (company?: Company) => void;
-  onOpenAnalysis: (company: Company) => void;
+  onOpenAnalysis: (company: Company, anchor?: string) => void;
   onRefreshNews: () => void;
   marketPrices: MarketPrice[];
 };
 
 type LandingPageProps = {
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
-  onOpenAnalysis: (company: Company) => void;
+  onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
@@ -2276,7 +2277,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>재무 쉽게 보기</span>
               <h3>먼저 볼 숫자 3개만 보기</h3>
               <p>매출, 이익률, 현금흐름을 왜 봐야 하는지 짧게 해석합니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix)}>재무 쉽게 보기</button>
+              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>재무 쉽게 보기</button>
             </article>
             <article>
               <span>뉴스 요약</span>
@@ -2300,7 +2301,7 @@ type StockAutopsyPicksPageProps = {
   selectedPickId?: string;
   onHome: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
-  onOpenAnalysis: (company: Company) => void;
+  onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
   onOpenSmartMoney: () => void;
@@ -2558,7 +2559,7 @@ function StockAutopsyPicksPage({
 
           <section className="pick-detail-card pick-detail-actions">
             <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-              시장 흐름 지도에서 보기
+              지도에서 보기
             </button>
             {relatedCompany ? (
               <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
@@ -2568,39 +2569,47 @@ function StockAutopsyPicksPage({
               <span className="pick-disabled-action">기업 해설 연결 준비 중</span>
             )}
             {relatedCompany ? (
-              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                재무제표 해설 보기
+              <button type="button" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
+                재무 쉽게 보기
               </button>
             ) : (
               <span className="pick-disabled-action">재무제표 연결 준비 중</span>
             )}
-            {reportLink ? (
-              <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
-            ) : (
-              <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
-            )}
-            <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-              관계 출처 보기
-            </button>
-            {relatedCompany ? (
-              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                관련 뉴스 보기
-              </button>
-            ) : (
-              <span className="pick-disabled-action">관련 뉴스 연결 준비 중</span>
-            )}
-            <button type="button" onClick={onOpenSmartMoney}>
-              기관 동향 보기
-            </button>
-            {detailPick.sourceLinks?.map((source) =>
-              source.url ? (
-                <a key={source.label} href={source.url} target="_blank" rel="noreferrer">
-                  {source.label}
-                </a>
-              ) : (
-                <span key={source.label} className="pick-disabled-action">{source.label} 준비 중</span>
-              ),
-            )}
+            <details className="pick-advanced-actions">
+              <summary>
+                <span>더 깊게 보기</span>
+                <ChevronDown size={15} />
+              </summary>
+              <div>
+                {reportLink ? (
+                  <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
+                ) : (
+                  <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
+                )}
+                <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
+                  관계 출처 보기
+                </button>
+                {relatedCompany ? (
+                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                    관련 뉴스 보기
+                  </button>
+                ) : (
+                  <span className="pick-disabled-action">관련 뉴스 연결 준비 중</span>
+                )}
+                <button type="button" onClick={onOpenSmartMoney}>
+                  기관 동향 보기
+                </button>
+                {detailPick.sourceLinks?.map((source) =>
+                  source.url ? (
+                    <a key={source.label} href={source.url} target="_blank" rel="noreferrer">
+                      {source.label}
+                    </a>
+                  ) : (
+                    <span key={source.label} className="pick-disabled-action">{source.label} 준비 중</span>
+                  ),
+                )}
+              </div>
+            </details>
           </section>
         </main>
       </div>
@@ -2829,7 +2838,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </button>
         </div>
         <div>
-          <p className="eyebrow">초보자용 기업 설명서</p>
+          <p className="eyebrow">주가해부실 · 초보자용 기업 설명서</p>
           <h1>{company.name} 기업 해설</h1>
           <p>이 회사가 뭘 파는지, 누구의 수요와 연결되는지, 먼저 볼 숫자 3개만 빠르게 봅니다.</p>
         </div>
@@ -2958,9 +2967,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="explainer-primary-actions">
             <button type="button" onClick={() => onBack(company)}>
               <Network size={15} />
-              시장 흐름 지도에서 보기
+              지도에서 보기
             </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
+            <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
               <CircleDollarSign size={15} />
               재무 쉽게 보기
             </button>
@@ -3011,7 +3020,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </details>
         </section>
 
-        <section className="analysis-card analysis-overview-card financial-learning-card">
+        <section className="analysis-card analysis-overview-card financial-learning-card" id="financial-easy-view">
           <div className="analysis-overview-head financial-learning-head">
             <div>
               <span className="analysis-market-pill">재무 쉽게 보기 · {marketDisplayLabel(company)}</span>
@@ -3428,7 +3437,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
 type OwnershipReportsPageProps = {
   onHome: () => void;
-  onOpenAnalysis: (company: Company) => void;
+  onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
 };
 
@@ -3592,7 +3601,7 @@ function App() {
   const [sourcePanelLinkId, setSourcePanelLinkId] = useState<string | null>(null);
   const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
   const [newsRefreshKey, setNewsRefreshKey] = useState(0);
-  const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
+  const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}${window.location.hash}`);
   const [isMapLocked, setIsMapLocked] = useState(false);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
   const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
@@ -3809,8 +3818,11 @@ function App() {
   ];
   const shouldShowRelationshipCanvas =
     !isAiRelationshipMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
-  const routePath = route.split('?')[0];
-  const routeQuery = route.includes('?') ? route.slice(route.indexOf('?')) : '';
+  const routeHashIndex = route.indexOf('#');
+  const routeWithoutHash = routeHashIndex >= 0 ? route.slice(0, routeHashIndex) : route;
+  const routeHash = routeHashIndex >= 0 ? decodeURIComponent(route.slice(routeHashIndex + 1)) : '';
+  const routePath = routeWithoutHash.split('?')[0];
+  const routeQuery = routeWithoutHash.includes('?') ? routeWithoutHash.slice(routeWithoutHash.indexOf('?')) : '';
   const routeParams = new URLSearchParams(routeQuery);
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
@@ -3836,10 +3848,18 @@ function App() {
   const newsCountry = isAnalysisRoute && analysisCompany ? analysisCompany.country : selectedCountry;
 
   useEffect(() => {
-    const syncRoute = () => setRoute(`${window.location.pathname}${window.location.search}`);
+    const syncRoute = () => setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
   }, []);
+
+  useEffect(() => {
+    if (!isAnalysisRoute || !routeHash) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [analysisCompany?.id, isAnalysisRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4196,9 +4216,14 @@ function App() {
     scheduleCenterCompany(selectedCompany.id, 240);
   }, [flowViewMode, isAiRelationshipMap, selectedCompany?.id, shouldShowRelationshipCanvas]);
 
-  function openAnalysis(company: Company) {
-    window.history.pushState({}, '', analysisPath(company));
-    setRoute(`${window.location.pathname}${window.location.search}`);
+  function openAnalysis(company: Company, anchor?: string) {
+    window.history.pushState({}, '', analysisPath(company, anchor));
+    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+    if (anchor) {
+      window.setTimeout(() => {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 140);
+    }
   }
 
   function openCompanyMap(company: Company) {
@@ -4403,7 +4428,7 @@ function App() {
               <Network size={22} />
             </div>
             <div>
-              <p className="eyebrow">초보 투자자용 흐름 학습</p>
+              <p className="eyebrow">주가해부실 · 초보 투자자용 흐름 학습</p>
               <h1>시장 흐름 지도</h1>
             </div>
           </div>
@@ -4663,6 +4688,7 @@ function App() {
             <div className="topbar-copy">
               <nav className="breadcrumb" aria-label="현재 위치">
                 <button type="button" onClick={openHome}>홈</button>
+                <span>주가해부실</span>
                 <span>기업 관계</span>
                 <span>{selectedSector.label}</span>
                 <strong>{selectedAnchor.name}</strong>
@@ -4702,10 +4728,10 @@ function App() {
                 type="button"
                 className="icon-action text-action"
                 disabled={!selectedIsMainListed}
-                onClick={() => selectedCompany && openAnalysis(selectedCompany)}
+                onClick={() => selectedCompany && openAnalysis(selectedCompany, 'financial-easy-view')}
               >
                 <Database size={18} />
-                {selectedIsMainListed ? '재무·공시' : '관계 참고용'}
+                {selectedIsMainListed ? '재무 쉽게' : '관계 참고용'}
               </button>
               <button type="button" className="icon-action text-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
                 <PanelRightOpen size={18} />
@@ -4738,7 +4764,7 @@ function App() {
           {isAiRelationshipMap && (
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
-                <span>시장 흐름 지도</span>
+                <span>주가해부실 · 시장 흐름 지도</span>
                 <strong>AI 수요가 어떤 기업 단계로 이어지는지 5단계로 압축했습니다.</strong>
                 <p>기본 화면은 핵심 흐름만 보여주고, 자세한 기업과 출처는 더 깊게 볼 수 있게 분리했습니다.</p>
               </div>
@@ -4828,7 +4854,7 @@ function App() {
                         <button type="button" onClick={() => openAnalysis(selectedCompany)}>
                           기업 해설 보기
                         </button>
-                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                        <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
                           재무 쉽게 보기
                         </button>
                       </div>
@@ -5138,18 +5164,11 @@ function App() {
                   ) : (
                     <span className="reference-status-card">주가·기관 보유·공식 재무분석은 상장기업 중심으로 제공합니다.</span>
                   )}
-                  {selectedReportLink && selectedIsMainListed && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
-                  {selectedReportLink && selectedIsMainListed && (
-                    <div className={`report-state-note ${selectedReportLink.status}`}>
-                      <strong>{selectedReportLink.statusLabel}</strong>
-                      <span>{selectedReportLink.statusDetail}</span>
-                    </div>
-                  )}
                   <div className="summary-action-row">
                     {selectedIsMainListed && (
-                      <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
+                      <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
                         <Database size={15} />
-                        재무제표 해설 보기
+                        재무 쉽게 보기
                       </button>
                     )}
                     {isAiRelationshipMap && (
@@ -5158,21 +5177,36 @@ function App() {
                         {expandedCompanyIds.has(selectedCompany.id) ? '관계 접기' : '관련 기업 보기'}
                       </button>
                     )}
-                    {primaryDirectLinks[0] && (
-                      <button type="button" className="analysis-link-button" onClick={() => setSourcePanelLinkId(primaryDirectLinks[0].id)}>
-                        <FileSearch size={15} />
-                        관계 출처 보기
-                      </button>
-                    )}
-                    <button type="button" className="analysis-link-button" onClick={openOwnershipReports}>
-                      <Database size={15} />
-                      기관 보유 보고 보기
-                    </button>
-                    <button type="button" className="analysis-link-button" onClick={() => setNewsRefreshKey((current) => current + 1)}>
-                      <Newspaper size={15} />
-                      관련 뉴스 보기
-                    </button>
                   </div>
+                  <details className="map-advanced-actions">
+                    <summary>
+                      <span>고급 참고자료</span>
+                      <ChevronDown size={14} />
+                    </summary>
+                    <div>
+                      {selectedReportLink && selectedIsMainListed && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
+                      {selectedReportLink && selectedIsMainListed && (
+                        <div className={`report-state-note ${selectedReportLink.status}`}>
+                          <strong>{selectedReportLink.statusLabel}</strong>
+                          <span>{selectedReportLink.statusDetail}</span>
+                        </div>
+                      )}
+                      {primaryDirectLinks[0] && (
+                        <button type="button" className="analysis-link-button" onClick={() => setSourcePanelLinkId(primaryDirectLinks[0].id)}>
+                          <FileSearch size={15} />
+                          관계 출처 보기
+                        </button>
+                      )}
+                      <button type="button" className="analysis-link-button" onClick={openOwnershipReports}>
+                        <Database size={15} />
+                        기관 보유 보고 보기
+                      </button>
+                      <button type="button" className="analysis-link-button" onClick={() => setNewsRefreshKey((current) => current + 1)}>
+                        <Newspaper size={15} />
+                        관련 뉴스 보기
+                      </button>
+                    </div>
+                  </details>
                 </div>
               </div>
 

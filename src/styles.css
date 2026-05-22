@@ -5946,12 +5946,54 @@ body,
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 10px;
 }
 
 .pick-disabled-action {
   color: #667085;
   border-color: rgba(148, 163, 184, 0.22);
   background: #f8fafc;
+}
+
+.pick-advanced-actions,
+.map-advanced-actions {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.pick-advanced-actions summary,
+.map-advanced-actions summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pick-advanced-actions summary::-webkit-details-marker,
+.map-advanced-actions summary::-webkit-details-marker {
+  display: none;
+}
+
+.pick-advanced-actions[open] summary,
+.map-advanced-actions[open] summary {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  color: var(--jg-primary-blue);
+}
+
+.pick-advanced-actions > div,
+.map-advanced-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
 }
 
 .pick-empty {
