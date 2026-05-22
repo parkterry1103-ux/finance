@@ -2105,15 +2105,54 @@ type LandingPageProps = {
 
 function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
   const aiFlowPreview = [
-    { title: 'AI 수요', companies: ['Microsoft', 'Google'] },
-    { title: 'AI 칩', companies: ['NVIDIA', 'AMD'] },
-    { title: 'HBM', companies: ['SK하이닉스', '삼성전자'] },
-    { title: '파운드리', companies: ['TSMC'] },
-    { title: '장비/전력', companies: ['ASML', 'Vertiv'] },
+    { title: '수요', summary: '클라우드/AI', icon: <Globe2 size={18} />, companies: ['Microsoft', 'Google'] },
+    { title: 'AI 칩', summary: '설계 및 가속', icon: <Radio size={18} />, companies: ['NVIDIA'] },
+    { title: '메모리', summary: 'HBM 공급', icon: <Database size={18} />, companies: ['SK하이닉스', '삼성전자'] },
+    { title: '파운드리', summary: '위탁 생산', icon: <Factory size={18} />, companies: ['TSMC'] },
+    { title: '전력', summary: '인프라 확대', icon: <LineChart size={18} />, companies: ['ASML', 'Vertiv'] },
   ];
-  const featuredPicks = stockAutopsyPicks.filter((pick) => pick.status !== 'archived').slice(0, 3);
-  const guideNvidia = companies.find((company) => company.id === 'us-semiconductors-nvidia') ?? companies[0];
-  const guideSkHynix = companies.find((company) => company.id === 'ai-datacenter-sk-hynix') ?? guideNvidia;
+  const trendCards = [
+    {
+      title: 'AI 반도체',
+      note: 'AI 칩 수요 강세',
+      icon: <Radio size={18} />,
+    },
+    {
+      title: '전력 인프라',
+      note: '전력 수요 확대',
+      icon: <Factory size={18} />,
+    },
+    {
+      title: '클라우드 수요',
+      note: '기업 IT 투자 증가',
+      icon: <Globe2 size={18} />,
+    },
+  ];
+  const issueCards = [
+    {
+      title: 'AI 반도체 랠리 지속',
+      note: '엔비디아 실적 기대가 반도체 밸류체인 전반 관심으로 이어졌습니다.',
+      tags: ['엔비디아', 'SK하이닉스'],
+    },
+    {
+      title: '전력 인프라 주목',
+      note: 'AI 데이터센터 전력 수요 증가로 인프라 기업을 같이 보는 흐름입니다.',
+      tags: ['HD현대일렉트릭', 'LS일렉트릭'],
+    },
+    {
+      title: '클라우드 전환 가속',
+      note: '빅테크의 데이터센터 투자 확대가 서버와 반도체 수요 확인 포인트입니다.',
+      tags: ['Microsoft', 'Amazon'],
+    },
+  ];
+  const featuredPickPriority = ['NVIDIA', '삼성전자', 'SK하이닉스'];
+  const featuredPicks = featuredPickPriority
+    .map((name) => stockAutopsyPicks.find((pick) => pick.companyName === name && pick.status !== 'archived'))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+  const guideSkHynix =
+    companies.find((company) => company.id === 'ai-datacenter-sk-hynix') ??
+    companies.find((company) => company.id === 'us-semiconductors-nvidia') ??
+    companies[0];
 
   return (
     <div className="home-shell">
@@ -2144,57 +2183,99 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       <main>
         <section className="home-hero mvp-hero">
           <div className="home-hero-copy">
-            <p className="home-kicker">주가해부실</p>
-            <h1>어려운 시장 흐름을 쉽게.</h1>
-            <p>오늘의 이슈가 어떤 기업으로 이어지는지 한눈에 봅니다.</p>
+            <p className="home-kicker">주가해부실 · 시장 흐름 지도</p>
+            <h1>오늘 시장 흐름, 한눈에.</h1>
+            <p>핵심만 쉽고 빠르게 파악하세요. 오늘의 이슈가 어떤 기업으로 이어지는지 카드 흐름으로 봅니다.</p>
             <div className="hero-principle-row" aria-label="사이트 사용 흐름">
-              <span>왜 움직였나</span>
+              <span>오늘 시장 흐름</span>
               <span>같이 볼 기업</span>
-              <span>먼저 볼 지표</span>
+              <span>먼저 볼 숫자</span>
             </div>
             <div className="home-hero-actions">
-              <button type="button" onClick={onOpenPicks}>
-                이번 주 Pick 보기
+              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+                관계지도 보기
                 <ArrowRight size={16} />
               </button>
-              <button type="button" className="secondary" onClick={() => onOpenCategory('us-semiconductors')}>
-                AI 반도체 흐름 보기
+              <button type="button" className="secondary" onClick={onOpenPicks}>
+                이번 주 Pick
                 <ArrowRight size={16} />
               </button>
             </div>
             <p className="home-mvp-note">투자 추천이 아니라, 뉴스와 종목을 이해하기 위한 해설형 포트폴리오 사이트입니다.</p>
           </div>
-          <div className="home-hero-card-stack" aria-label="주가해부실 핵심 기능">
-            <article>
-              <Newspaper size={18} />
-              <div>
-                <strong>오늘의 이슈</strong>
-                <p>왜 움직였는지 쉽게</p>
-              </div>
-            </article>
-            <article>
-              <Network size={18} />
-              <div>
-                <strong>시장 흐름</strong>
-                <p>기업 관계를 한눈에</p>
-              </div>
-            </article>
-            <article>
-              <BarChart3 size={18} />
-              <div>
-                <strong>재무 핵심</strong>
-                <p>먼저 볼 숫자 3개만</p>
-              </div>
-            </article>
+          <div className="home-hero-card-stack market-trend-stack" aria-label="지금 주목할 시장 흐름">
+            {trendCards.map((card) => (
+              <article key={card.title}>
+                {card.icon}
+                <div>
+                  <strong>{card.title}</strong>
+                  <p>{card.note}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-section market-issue-section" id="today-flow">
+          <div className="home-section-head">
+            <span>1</span>
+            <div>
+              <h2>오늘 주목할 핵심 이슈</h2>
+              <p>가격보다 먼저, 어떤 이슈가 어떤 기업 흐름으로 번지는지 봅니다.</p>
+            </div>
+          </div>
+          <div className="home-issue-grid">
+            {issueCards.map((issue) => (
+              <article className="home-issue-card" key={issue.title}>
+                <Newspaper size={18} />
+                <div>
+                  <h3>{issue.title}</h3>
+                  <p>{issue.note}</p>
+                </div>
+                <div className="mini-tag-row">
+                  {issue.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="flow-preview-section mvp-flow-preview" id="market-flow-map">
+          <div className="home-section-head">
+            <span>2</span>
+            <div>
+              <h2>오늘의 핵심 흐름</h2>
+              <p>홈에서는 복잡한 그래프 대신 5단계 카드 흐름만 봅니다.</p>
+            </div>
+          </div>
+          <div className="flow-preview-map compact-flow-map" aria-label="오늘의 AI 반도체 핵심 흐름">
+            {aiFlowPreview.map((step, index) => (
+              <article className="flow-step-card" key={step.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div className="flow-step-icon">{step.icon}</div>
+                <h3>{step.title}</h3>
+                <p>{step.summary}</p>
+                <small>{step.companies.join(' · ')}</small>
+              </article>
+            ))}
+          </div>
+          <div className="flow-preview-copy">
+            <strong>수요 → AI 칩 → 메모리 → 파운드리 → 전력 흐름만 먼저 봅니다.</strong>
+            <p>직접 납품 관계가 확인되지 않은 기업은 “수요 연결” 또는 “같이 볼 기업”으로 표시합니다.</p>
+            <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+              시장 흐름 지도 보기
+              <ArrowRight size={16} />
+            </button>
+            <small>다음에 추가할 흐름: 전력·냉각, 2차전지, 바이오/CDMO</small>
           </div>
         </section>
 
         <section className="home-section pick-home-section" id="picks-preview">
           <div className="home-section-head">
-            <span>1</span>
+            <span>3</span>
             <div>
-              <h2>이번 주 Pick</h2>
-              <p>인스타그램에서 다룬 종목을 “왜 움직였나”와 “같이 볼 기업” 중심으로 봅니다.</p>
+              <h2>이번 주 해부 종목</h2>
+              <p>종목을 “왜 움직였나”와 “같이 볼 기업” 중심으로 짧게 봅니다.</p>
             </div>
           </div>
           <div className="pick-home-grid">
@@ -2230,37 +2311,9 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
         </section>
 
-        <section className="flow-preview-section mvp-flow-preview" id="market-flow-map">
-          <div className="home-section-head">
-            <span>2</span>
-            <div>
-              <h2>AI 반도체 & 데이터센터 흐름 미리보기</h2>
-              <p>지금은 이 대표 흐름 하나를 가장 완성도 있게 보여줍니다.</p>
-            </div>
-          </div>
-          <div className="flow-preview-map compact-flow-map" aria-label="AI 반도체와 데이터센터 흐름 미리보기">
-            {aiFlowPreview.map((step, index) => (
-              <article className="flow-step-card" key={step.title}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <h3>{step.title}</h3>
-                <p>{step.companies.join(' · ')}</p>
-              </article>
-            ))}
-          </div>
-          <div className="flow-preview-copy">
-            <strong>AI 수요 → AI 칩 → HBM → 파운드리 → 장비/전력 흐름만 먼저 봅니다.</strong>
-            <p>직접 납품 관계가 확인되지 않은 기업은 “수요 연결” 또는 “같은 흐름에서 함께 볼 기업”으로 표시합니다.</p>
-            <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
-              시장 흐름 지도 보기
-              <ArrowRight size={16} />
-            </button>
-            <small>다음에 추가할 흐름: 전력·냉각, 2차전지, 바이오/CDMO, 방산·우주, 소비·유통</small>
-          </div>
-        </section>
-
         <section className="home-section beginner-guide-section" id="beginner-guide">
           <div className="home-section-head">
-            <span>3</span>
+            <span>4</span>
             <div>
               <h2>처음 오신 분은 여기부터</h2>
               <p>한 번에 많은 금융 데이터를 보지 않고, 회사와 숫자를 읽는 순서만 잡습니다.</p>
@@ -2268,22 +2321,22 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
           <div className="beginner-guide-grid">
             <article>
-              <span>기업 해설</span>
-              <h3>이 회사가 뭘 파는지 쉽게 보기</h3>
-              <p>사업보고서식 문장보다 제품, 고객, 경제적 해자부터 봅니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideNvidia)}>기업 해설 보기</button>
+              <span>반도체 용어 사전</span>
+              <h3>어려운 용어, 쉽게 풀었어요</h3>
+              <p>HBM, 파운드리, 후공정처럼 낯선 단어를 흐름 안에서 이해합니다.</p>
+              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>지도에서 보기</button>
+            </article>
+            <article>
+              <span>최근 산업 주요 뉴스</span>
+              <h3>최근 관련 이슈만 보기</h3>
+              <p>뉴스가 어떤 기업 수요와 연결되는지 Pick에서 빠르게 확인합니다.</p>
+              <button type="button" onClick={onOpenPicks}>Pick 목록 보기</button>
             </article>
             <article>
               <span>재무 쉽게 보기</span>
-              <h3>먼저 볼 숫자 3개만 보기</h3>
+              <h3>먼저 볼 숫자 3개만</h3>
               <p>매출, 이익률, 현금흐름을 왜 봐야 하는지 짧게 해석합니다.</p>
               <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>재무 쉽게 보기</button>
-            </article>
-            <article>
-              <span>뉴스 요약</span>
-              <h3>오늘의 핵심 이슈만 보기</h3>
-              <p>뉴스가 어떤 기업 수요와 연결되는지 Pick에서 빠르게 확인합니다.</p>
-              <button type="button" onClick={onOpenPicks}>Pick 목록 보기</button>
             </article>
           </div>
           <div className="advanced-reference-note">
