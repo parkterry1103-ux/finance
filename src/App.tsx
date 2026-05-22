@@ -2777,6 +2777,21 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
         : undefined;
     })
     .filter((item): item is { company: Company; relationship: ReturnType<typeof linkRelationshipSummary> } => Boolean(item))
+    .sort((a, b) => {
+      const linkA = relatedLinks.find((link) => link.source === a.company.id || link.target === a.company.id);
+      const linkB = relatedLinks.find((link) => link.source === b.company.id || link.target === b.company.id);
+      const firstLookA = aiFirstLookIds.indexOf(a.company.id);
+      const firstLookB = aiFirstLookIds.indexOf(b.company.id);
+      const priorityA =
+        (linkA && aiCoreLinkIds.has(linkA.id) ? 0 : 20) +
+        (firstLookA >= 0 ? firstLookA : 10) +
+        (isMainListedCompany(a.company) ? 0 : 6);
+      const priorityB =
+        (linkB && aiCoreLinkIds.has(linkB.id) ? 0 : 20) +
+        (firstLookB >= 0 ? firstLookB : 10) +
+        (isMainListedCompany(b.company) ? 0 : 6);
+      return priorityA - priorityB;
+    })
     .slice(0, 3);
   const scrollToAnalysisSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2786,7 +2801,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
   return (
     <div className="analysis-shell">
-      <header className="analysis-hero">
+      <header className="analysis-hero company-explainer-hero">
         <nav className="breadcrumb" aria-label="현재 위치">
           <button type="button" onClick={onHome}>홈</button>
           <span>기업 해설</span>
@@ -2806,7 +2821,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
         <div>
           <p className="eyebrow">초보자용 기업 설명서</p>
           <h1>{company.name} 기업 해설</h1>
-          <p>이 회사가 무엇을 팔고, 누구의 수요와 연결되는지 쉽게 정리했습니다. 숫자는 재무제표와 공시 해석으로 더 깊게 확인할 수 있습니다.</p>
+          <p>이 회사가 뭘 파는지, 누구의 수요와 연결되는지, 먼저 볼 숫자 3개만 빠르게 봅니다.</p>
         </div>
         <div className="analysis-actions">
           <div className="data-freshness-card compact" aria-label="데이터 기준">
@@ -2827,10 +2842,16 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
               </div>
               <h2>{company.name}</h2>
-              <p>10초 안에 회사의 본질, 수요 연결, 먼저 볼 숫자만 확인합니다.</p>
+              <p>한 줄 결론, 쉽게 말하면, 그래서 뭘 볼까만 먼저 확인합니다.</p>
             </div>
             <div className="company-explainer-price">
-              {hasTradableTicker(company) ? <PriceBadge price={companyPrice} compact /> : <span className="reference-status-pill">{companyScopeLabel(company)}</span>}
+              {hasTradableTicker(company) && companyPrice && priceDirection(companyPrice) !== 'pending' ? (
+                <PriceBadge price={companyPrice} compact />
+              ) : hasTradableTicker(company) ? (
+                <span className="reference-status-pill">가격 확인 필요</span>
+              ) : (
+                <span className="reference-status-pill">{companyScopeLabel(company)}</span>
+              )}
               <small>{dataFreshness.reportName} · {dataFreshness.status}</small>
             </div>
           </div>
@@ -2839,7 +2860,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <article className="explainer-highlight-card primary">
               <span>한 줄 결론</span>
               <strong>{beginnerCompanyConclusion(company)}</strong>
-              <p>{isMainListedCompany(company) ? companyScopeDetail(company) : '공식 공시가 제한적인 기업은 관계 이해용으로 보고, 출처 없는 재무 숫자는 표시하지 않습니다.'}</p>
+              <p>기준: {dataFreshness.reportName} · {dataFreshness.status}</p>
             </article>
             <article className="explainer-highlight-card">
               <span>쉽게 말하면</span>
@@ -2909,8 +2930,13 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
               <div className="explainer-related-list">
                 {relatedCompanies.map((item) => (
                   <button key={item.company.id} type="button" onClick={() => onOpenAnalysis(item.company)}>
-                    <strong>{item.company.name}</strong>
-                    <span>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</span>
+                    <CompanyLogo company={item.company} size="small" />
+                    <span>
+                      <strong>{item.company.name}</strong>
+                      <small>{marketDisplayLabel(item.company)} · {item.company.ticker ?? '티커 확인 필요'}</small>
+                      <em>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</em>
+                    </span>
+                    <b>보기</b>
                   </button>
                 ))}
               </div>
