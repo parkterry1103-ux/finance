@@ -2777,7 +2777,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
         : undefined;
     })
     .filter((item): item is { company: Company; relationship: ReturnType<typeof linkRelationshipSummary> } => Boolean(item))
-    .slice(0, 5);
+    .slice(0, 3);
   const scrollToAnalysisSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -2809,7 +2809,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <p>이 회사가 무엇을 팔고, 누구의 수요와 연결되는지 쉽게 정리했습니다. 숫자는 재무제표와 공시 해석으로 더 깊게 확인할 수 있습니다.</p>
         </div>
         <div className="analysis-actions">
-          <ReportAction reportLink={primaryReportLink} />
+          <div className="data-freshness-card compact" aria-label="데이터 기준">
+            <strong>{dataFreshness.reportName}</strong>
+            <span>{dataFreshness.filingDate}</span>
+            <em>{dataFreshness.status}</em>
+          </div>
         </div>
       </header>
 
@@ -2822,11 +2826,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span className="analysis-market-pill">{companyScopeLabel(company)}</span>
                 <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
               </div>
-              <h2>{company.name} 기업 해설</h2>
-              <p>이 회사가 무엇을 팔고, 누구의 수요와 연결되는지 먼저 이해하고 숫자는 재무 해설에서 단계적으로 봅니다.</p>
+              <h2>{company.name}</h2>
+              <p>10초 안에 회사의 본질, 수요 연결, 먼저 볼 숫자만 확인합니다.</p>
             </div>
             <div className="company-explainer-price">
               {hasTradableTicker(company) ? <PriceBadge price={companyPrice} compact /> : <span className="reference-status-pill">{companyScopeLabel(company)}</span>}
+              <small>{dataFreshness.reportName} · {dataFreshness.status}</small>
             </div>
           </div>
 
@@ -2844,7 +2849,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <article className="explainer-highlight-card">
               <span>그래서 뭘 볼까?</span>
               <strong>{companyInvestorWatchPoint(company)}</strong>
-              <p>{firstWatchPoint}</p>
+              <ul className="explainer-watch-list">
+                {explainerMetrics.map((metric) => <li key={metric.label}>{metric.label}</li>)}
+              </ul>
             </article>
           </div>
 
@@ -2891,23 +2898,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 ))}
               </div>
             </section>
-
-            <section className="explainer-signal-card">
-              <div className="section-title">
-                <AlertTriangle size={16} />
-                <span>좋은 신호 / 조심할 신호</span>
-              </div>
-              <div className="signal-columns">
-                <div>
-                  <strong>좋은 신호</strong>
-                  {explainerSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
-                </div>
-                <div>
-                  <strong>조심할 신호</strong>
-                  {explainerSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
-                </div>
-              </div>
-            </section>
           </div>
 
           <section className="explainer-related-card" id="related-companies">
@@ -2929,25 +2919,60 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             )}
           </section>
 
-          <div className="explainer-action-row">
+          <div className="explainer-primary-actions">
             <button type="button" onClick={() => onBack(company)}>
               <Network size={15} />
               시장 흐름 지도에서 보기
             </button>
             <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
               <CircleDollarSign size={15} />
-              재무제표 해설 보기
-            </button>
-            <ReportAction reportLink={primaryReportLink} className="explainer-report-action" iconSize={15} label="공시 원문 보기" />
-            <button type="button" onClick={() => scrollToAnalysisSection('relationship-details')}>
-              <FileSearch size={15} />
-              관계 출처 보기
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('related-companies')}>
-              <ArrowRight size={15} />
-              관련 기업 보기
+              재무 쉽게 보기
             </button>
           </div>
+
+          <details className="explainer-advanced-card">
+            <summary>
+              <span>
+                <FileSearch size={16} />
+                <strong>고급 참고자료</strong>
+                <small>원문, 관계 출처, 기관 동향은 필요할 때만 펼쳐 봅니다.</small>
+              </span>
+              <ChevronDown size={16} />
+            </summary>
+            <div>
+              <section className="explainer-signal-card">
+                <div className="section-title">
+                  <AlertTriangle size={16} />
+                  <span>좋은 신호 / 조심할 신호</span>
+                </div>
+                <div className="signal-columns">
+                  <div>
+                    <strong>좋은 신호</strong>
+                    {explainerSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
+                  </div>
+                  <div>
+                    <strong>조심할 신호</strong>
+                    {explainerSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
+                  </div>
+                </div>
+              </section>
+              <div className="explainer-action-row">
+                <ReportAction reportLink={primaryReportLink} className="explainer-report-action" iconSize={15} label="공시 원문 보기" />
+                <button type="button" onClick={() => scrollToAnalysisSection('relationship-details')}>
+                  <FileSearch size={15} />
+                  관계 출처 보기
+                </button>
+                <button type="button" onClick={() => scrollToAnalysisSection('related-companies')}>
+                  <ArrowRight size={15} />
+                  관련 기업 보기
+                </button>
+                <button type="button" onClick={() => scrollToAnalysisSection('trade-report-details')}>
+                  <CircleDollarSign size={15} />
+                  기관 동향 보기
+                </button>
+              </div>
+            </div>
+          </details>
         </section>
 
         <section className="analysis-card analysis-overview-card financial-learning-card">
