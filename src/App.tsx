@@ -3671,6 +3671,43 @@ function App() {
     ? groupLinks.filter((link) => link.source === selectedCompany.id || link.target === selectedCompany.id)
     : [];
   const primaryDirectLinks = selectedDirectLinks.slice(0, isAiRelationshipMap ? 3 : 6);
+  const selectedConnectionCards = selectedCompany
+    ? selectedDirectLinks
+        .map((link) => {
+          const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
+          const counterpart = companies.find((company) => company.id === counterpartId);
+          if (!counterpart) return undefined;
+          return {
+            link,
+            company: counterpart,
+            relationship: linkRelationshipSummary(link),
+            direction: link.target === selectedCompany.id ? 'incoming' : 'outgoing',
+          };
+        })
+        .filter((item): item is { link: (typeof links)[number]; company: Company; relationship: ReturnType<typeof linkRelationshipSummary>; direction: 'incoming' | 'outgoing' } => Boolean(item))
+    : [];
+  const prioritizedSelectedConnectionCards = [...selectedConnectionCards].sort((a, b) => {
+    const firstLookA = aiFirstLookIds.indexOf(a.company.id);
+    const firstLookB = aiFirstLookIds.indexOf(b.company.id);
+    const priorityA =
+      (aiCoreLinkIds.has(a.link.id) ? 0 : 20) +
+      (firstLookA >= 0 ? firstLookA : 10) +
+      (isMainListedCompany(a.company) ? 0 : 6);
+    const priorityB =
+      (aiCoreLinkIds.has(b.link.id) ? 0 : 20) +
+      (firstLookB >= 0 ? firstLookB : 10) +
+      (isMainListedCompany(b.company) ? 0 : 6);
+    return priorityA - priorityB;
+  });
+  const incomingConnectionCards = prioritizedSelectedConnectionCards.filter((item) => item.direction === 'incoming').slice(0, 2);
+  const outgoingConnectionCards = prioritizedSelectedConnectionCards.filter((item) => item.direction === 'outgoing').slice(0, 3);
+  const focusPreviousCards = incomingConnectionCards.length ? incomingConnectionCards : prioritizedSelectedConnectionCards.slice(0, 1);
+  const focusNextCards = (outgoingConnectionCards.length ? outgoingConnectionCards : prioritizedSelectedConnectionCards.filter((item) => !focusPreviousCards.some((prev) => prev.company.id === item.company.id))).slice(0, 3);
+  const hiddenFocusConnectionCount = Math.max(
+    0,
+    selectedConnectionCards.length -
+      new Set([...focusPreviousCards, ...focusNextCards].map((item) => item.company.id)).size,
+  );
   const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
   const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
   const activeRelationshipSummary = activeRelationship ? linkRelationshipSummary(activeRelationship) : undefined;
@@ -3786,6 +3823,10 @@ function App() {
 
   function fitVisibleMap() {
     if (!flowInstance) return;
+    if (isAiRelationshipMap && selectedCompany) {
+      centerCompanyInMap(selectedCompany.id);
+      return;
+    }
     window.requestAnimationFrame(() => {
       flowInstance.fitView({
         padding: isAiRelationshipMap ? 0.14 : 0.22,
@@ -3826,7 +3867,7 @@ function App() {
     const position = getNodePosition(company);
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
-        zoom: isAiRelationshipMap ? 0.82 : Math.max(flowInstance.getZoom(), 0.58),
+        zoom: isAiRelationshipMap ? 0.9 : Math.max(flowInstance.getZoom(), 0.58),
         duration: 420,
       });
     });
@@ -3992,6 +4033,10 @@ function App() {
   useEffect(() => {
     if (!flowInstance || !isCategoryRoute || !flowNodes.length) return;
     const timer = window.setTimeout(() => {
+      if (isAiRelationshipMap && shouldShowRelationshipCanvas && selectedCompany) {
+        centerCompanyInMap(selectedCompany.id);
+        return;
+      }
       flowInstance.fitView({
         padding: isAiRelationshipMap ? 0.2 : 0.22,
         duration: 420,
@@ -4008,6 +4053,8 @@ function App() {
     isAiRelationshipMap,
     isCategoryRoute,
     isDetailCollapsed,
+    selectedCompany?.id,
+    shouldShowRelationshipCanvas,
     listingFilter,
     mapViewMode,
     query,
@@ -4029,6 +4076,10 @@ function App() {
     const fitAfterResize = () => {
       if (resizeTimer) window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
+        if (isAiRelationshipMap && shouldShowRelationshipCanvas && selectedCompany) {
+          centerCompanyInMap(selectedCompany.id);
+          return;
+        }
         flowInstance.fitView({
           padding: isAiRelationshipMap ? 0.2 : 0.22,
           duration: 320,
@@ -4043,7 +4094,7 @@ function App() {
       if (resizeTimer) window.clearTimeout(resizeTimer);
       observer.disconnect();
     };
-  }, [flowInstance, isAiRelationshipMap, isCategoryRoute]);
+  }, [flowInstance, isAiRelationshipMap, isCategoryRoute, selectedCompany?.id, shouldShowRelationshipCanvas]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4679,134 +4730,96 @@ function App() {
                 </div>
               </div>
               <div className="flow-help-pills" aria-label="지도 사용 팁">
-                <span>기본: 5단계 핵심 흐름</span>
-                <span>회사를 클릭하면 오른쪽에서 핵심 요약</span>
-                <span>출처와 공급망은 보조 보기</span>
+                <span>기본: 선택 기업 중심</span>
+                <span>관련 기업은 3개만 먼저</span>
+                <span>전체 그래프는 고급 보기</span>
               </div>
-              <div className="market-flow-board" aria-label="AI 반도체와 데이터센터 5단계 흐름">
-                {flowStageCards.map((stage, stageIndex) => {
-                  const isActiveStage = selectedFlowStage === stage.stage;
-                  const isAdjacentStage = selectedFlowStageIndex >= 0 && Math.abs(stageIndex - selectedFlowStageIndex) === 1;
-                  return (
-                  <article
+              <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
+                {flowStageCards.map((stage) => (
+                  <button
                     key={stage.stage}
-                    className={`market-flow-stage-card ${isActiveStage ? 'active-stage' : ''} ${isAdjacentStage ? 'adjacent-stage' : ''} ${selectedFlowStage && !isActiveStage && !isAdjacentStage ? 'muted-stage' : ''}`}
+                    type="button"
+                    className={selectedFlowStage === stage.stage ? 'active' : ''}
+                    onClick={() => selectFlowStage(stage.stage)}
+                    aria-current={selectedFlowStage === stage.stage ? 'step' : undefined}
                   >
-                    <button
-                      type="button"
-                      className="stage-card-trigger"
-                      onClick={() => selectFlowStage(stage.stage)}
-                      aria-expanded={selectedFlowStage === stage.stage}
-                    >
-                      <span className="stage-heading">
-                        <span>{stage.symbol}</span>
-                        <strong>{stage.stage}</strong>
-                      </span>
-                      <p>{stage.summary}</p>
-                    </button>
-                    <div className="stage-company-list">
-                      {stage.companies.map((company) => {
-                        const role = companyRoleProfile(company);
-                        return (
-                          <button
-                            key={company.id}
-                            type="button"
-                            className={`${selectedCompanyId === company.id ? 'active-company' : ''} ${connectedIds.has(company.id) ? 'connected-company' : ''}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              focusCompany(company.id);
-                            }}
-                          >
-                            <CompanyLogo company={company} size="small" />
+                    <span>{stage.symbol}</span>
+                    <strong>{stage.stage}</strong>
+                    <small>{stage.summary}</small>
+                  </button>
+                ))}
+              </nav>
+
+              {selectedCompany && (
+                <section className="flow-focus-explorer" aria-label="선택 기업 중심 관계 탐색">
+                  <div className="flow-connection-column previous">
+                    <span>이전 단계 / 수요 연결</span>
+                    {focusPreviousCards.length ? (
+                      <div className="flow-connection-list">
+                        {focusPreviousCards.map((item) => (
+                          <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
+                            <CompanyLogo company={item.company} size="small" />
                             <span>
-                              <strong>{company.name}</strong>
-                              <small>{role.primary}</small>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {selectedFlowStage === stage.stage && stage.extraCompanies.length > 0 && (
-                      <div className="stage-extra-company-list" aria-label={`${stage.stage} 관련 기업 더보기`}>
-                        {stage.extraCompanies.map((company) => (
-                          <button
-                            key={company.id}
-                            type="button"
-                            className={`${selectedCompanyId === company.id ? 'active-company' : ''} ${connectedIds.has(company.id) ? 'connected-company' : ''}`}
-                            onClick={() => focusCompany(company.id)}
-                          >
-                            <CompanyLogo company={company} size="small" />
-                            <span>
-                              <strong>{company.name}</strong>
-                              <small>{companyRoleProfile(company).primary}</small>
+                              <strong>{item.company.name}</strong>
+                              <small>{shortRelationshipLabel(item.relationship.type)}</small>
                             </span>
                           </button>
                         ))}
                       </div>
+                    ) : (
+                      <p>앞 단계 연결은 아직 정리 중입니다.</p>
                     )}
-                    {stage.hiddenCount > 0 && selectedFlowStage !== stage.stage && (
-                      <button type="button" className="stage-more-button" onClick={() => selectFlowStage(stage.stage)}>
-                        관련 기업 더보기
-                      </button>
-                    )}
-                  </article>
-                  );
-                })}
-              </div>
+                  </div>
 
-              {selectedCompany && (
-                <section className="flow-selection-panel" aria-label="선택 기업 중심 탐색">
-                  <div className="flow-selection-main">
+                  <article className="flow-focus-company-card" aria-label="현재 선택한 기업">
                     <CompanyLogo company={selectedCompany} size="large" />
                     <div>
                       <span>선택한 기업</span>
-                      {activeFlowStageCard && <em className="flow-active-stage-label">확대 단계: {activeFlowStageCard.stage}</em>}
+                      {activeFlowStageCard && <em className="flow-active-stage-label">{activeFlowStageCard.stage}</em>}
                       <strong>{selectedCompany.name}</strong>
-                      <p>{companyBusinessSummary(selectedCompany)}</p>
+                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      <p>{beginnerCompanyConclusion(selectedCompany)}</p>
+                      <div className="flow-focus-actions">
+                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                          기업 해설 보기
+                        </button>
+                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                          재무 쉽게 보기
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flow-selection-links">
-                    <span>바로 옆에서 같이 볼 기업</span>
-                    {primaryDirectLinks.length > 0 ? (
-                      <div>
-                        {primaryDirectLinks.slice(0, 3).map((link) => {
-                          const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
-                          const counterpart = companies.find((company) => company.id === counterpartId);
-                          const summary = linkRelationshipSummary(link);
-                          if (!counterpart) return null;
-                          return (
-                            <button key={link.id} type="button" onClick={() => focusCompany(counterpart.id)}>
-                              <CompanyLogo company={counterpart} size="small" />
-                              <span>
-                                <strong>{counterpart.name}</strong>
-                                <small>{shortRelationshipLabel(summary.type)} · {summary.confidence}</small>
-                              </span>
-                            </button>
-                          );
-                        })}
+                  </article>
+
+                  <div className="flow-connection-column next">
+                    <span>다음에 같이 볼 기업</span>
+                    {focusNextCards.length ? (
+                      <div className="flow-connection-list">
+                        {focusNextCards.map((item) => (
+                          <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
+                            <CompanyLogo company={item.company} size="small" />
+                            <span>
+                              <strong>{item.company.name}</strong>
+                              <small>{item.relationship.demandConnection}</small>
+                            </span>
+                          </button>
+                        ))}
                       </div>
                     ) : (
-                      <p>현재 선택한 기업의 직접 연결 관계가 아직 정리되지 않았습니다.</p>
+                      <p>직접 연결 기업은 아직 정리 중입니다.</p>
                     )}
-                  </div>
-                  <div className="flow-selection-actions">
-                    {primaryDirectLinks[0] && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextId = primaryDirectLinks[0].source === selectedCompany.id ? primaryDirectLinks[0].target : primaryDirectLinks[0].source;
-                          focusCompany(nextId);
-                        }}
-                      >
-                        다음 연결 보기
+                    {hiddenFocusConnectionCount > 0 && (
+                      <button type="button" className="focus-more-button" onClick={() => applyFlowViewMode('all')}>
+                        관련 기업 더보기
                       </button>
                     )}
-                    <button type="button" className="advanced-map-button" onClick={() => applyFlowViewMode('all')}>
-                      전체 관계 보기
-                    </button>
                   </div>
                 </section>
               )}
+
+              <div className="advanced-map-entry">
+                <span>전체 관계 보기는 고급 탐색용입니다. 처음에는 선택 기업 중심으로 보는 것을 추천합니다.</span>
+                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 관계 보기</button>
+              </div>
 
               {flowViewMode === 'kr' && (
               <div className="ai-sector-support-grid">
@@ -4915,10 +4928,10 @@ function App() {
               onEdgeMouseLeave={() => setHoveredLinkId(null)}
               onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
               onInit={(instance) => setFlowInstance(instance)}
-              fitView
+              fitView={!isAiRelationshipMap}
               fitViewOptions={{ padding: isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
-              minZoom={isAiRelationshipMap ? 0.24 : 0.32}
-              maxZoom={isAiRelationshipMap ? 1.32 : 1.45}
+              minZoom={isAiRelationshipMap ? 0.52 : 0.32}
+              maxZoom={isAiRelationshipMap ? 1.4 : 1.45}
               nodesDraggable={!isMapLocked}
               nodesConnectable={false}
               elementsSelectable={!isMapLocked}
