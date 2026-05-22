@@ -948,6 +948,16 @@ function beginnerIndustryMetrics(company: Company, displayMetrics: CompanyDispla
   ];
 }
 
+function beginnerMetricValueLabel(value: string) {
+  if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '공식 데이터 연결 필요';
+  return value;
+}
+
+function beginnerMetricStatusLabel(value: string) {
+  if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '값 확인 전, 지표 의미만 표시';
+  return '연결된 데이터 기준';
+}
+
 function beginnerSignalSet(company: Company) {
   const stage = companyValueChainStage(company);
   if (stage.includes('메모리') || stage.includes('HBM')) {
@@ -3004,12 +3014,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
         <section className="analysis-card analysis-overview-card financial-learning-card">
           <div className="analysis-overview-head financial-learning-head">
             <div>
-              <span className="analysis-market-pill">재무제표 해설 · {marketDisplayLabel(company)}</span>
-              <h2>재무제표는 숫자를 외우는 것이 아니라, 회사의 상태를 해석하는 도구입니다.</h2>
-              <p>이 산업에서 먼저 볼 지표부터 확인하고, 더 깊은 지표는 단계적으로 열어보세요.</p>
+              <span className="analysis-market-pill">재무 쉽게 보기 · {marketDisplayLabel(company)}</span>
+              <h2>숫자 3개만 먼저 봅니다.</h2>
+              <p>전체 재무제표보다 이 회사에서 먼저 확인할 숫자와 해석만 짧게 봅니다.</p>
             </div>
             <div className="analysis-overview-side">
-              <PriceBadge price={companyPrice} compact />
               <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
               <div className="data-freshness-card" aria-label="재무 데이터 기준">
                 <strong>기준 보고서: {dataFreshness.reportName}</strong>
@@ -3038,15 +3047,16 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <section className="financial-priority-card">
             <div className="section-title">
               <BarChart3 size={16} />
-              <span>이 산업에서 먼저 볼 지표 3개</span>
+              <span>먼저 볼 숫자 3개</span>
             </div>
-            <p>모든 기업에 같은 지표를 억지로 적용하지 않고, {companyValueChainStage(company)} 맥락에서 먼저 확인할 숫자만 보여줍니다.</p>
+            <p>{companyValueChainStage(company)} 흐름에서는 아래 3개를 먼저 확인합니다. 값이 없으면 가짜 숫자 대신 연결 필요 상태로 표시합니다.</p>
             <div className="financial-priority-grid">
               {explainerMetrics.map((metric) => (
                 <article key={metric.label}>
                   <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
+                  <strong>{beginnerMetricValueLabel(metric.value)}</strong>
                   <p>{metric.note}</p>
+                  <small>{beginnerMetricStatusLabel(metric.value)}</small>
                 </article>
               ))}
             </div>
@@ -3055,22 +3065,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="financial-signal-grid">
             <section>
               <strong>좋은 신호</strong>
-              {explainerSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
+              {explainerSignals.good.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
             </section>
             <section>
               <strong>조심할 신호</strong>
-              {explainerSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
+              {explainerSignals.caution.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
             </section>
-          </div>
-
-          <div className="financial-next-watch">
-            <strong>다음 분기에 확인할 것</strong>
-            <div>
-              {(watchPoints.length ? watchPoints : [firstWatchPoint]).slice(0, 3).map((point) => (
-                <span key={point}>{point}</span>
-              ))}
-            </div>
-            <small>{recentMovementSummary}</small>
           </div>
 
           <div className="financial-more-actions" aria-label="재무제표 상세 보기">
@@ -3087,6 +3087,25 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
               원문 보고서 확인
             </button>
           </div>
+
+          <details className="financial-advanced-card">
+            <summary>
+              <span>
+                <Target size={15} />
+                <strong>다음 분기에 확인할 것</strong>
+                <small>필요할 때만 펼쳐서 봅니다.</small>
+              </span>
+              <ChevronDown size={15} />
+            </summary>
+            <div className="financial-next-watch">
+              <div>
+                {(watchPoints.length ? watchPoints : [firstWatchPoint]).slice(0, 3).map((point) => (
+                  <span key={point}>{point}</span>
+                ))}
+              </div>
+              <small>{recentMovementSummary}</small>
+            </div>
+          </details>
         </section>
 
         <div className="analysis-detail-stack">
