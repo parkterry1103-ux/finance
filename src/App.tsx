@@ -2163,16 +2163,16 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     companies[0];
 
   return (
-    <div className="home-shell">
+    <div className="home-shell" id="top">
       <header className="home-nav">
-        <a href="/ko/" onClick={(event) => event.preventDefault()} className="home-brand">
+        <a href="#top" className="home-brand">
           <span className="home-logo">
             <Network size={20} />
           </span>
           <strong>주가해부실</strong>
         </a>
         <nav>
-          <a href="/ko/" onClick={(event) => event.preventDefault()}>홈</a>
+          <a href="#top">홈</a>
           <a
             href="/ko/picks"
             onClick={(event) => {
@@ -2182,9 +2182,9 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           >
             Pick
           </a>
-          <a href="#market-flow-map">시장 흐름 지도</a>
-          <a href="#beginner-guide">기업 해설</a>
-          <a href="#beginner-guide">재무 쉽게 보기</a>
+          <a href="#market-flow">시장 흐름 지도</a>
+          <a href="#company-explainer">기업 해설</a>
+          <a href="#financial-easy">재무 쉽게 보기</a>
         </nav>
       </header>
 
@@ -2192,15 +2192,18 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
         <section className="home-hero mvp-hero">
           <div className="home-hero-copy">
             <p className="home-kicker">주가해부실 · 시장 흐름 지도</p>
-            <h1>오늘 시장 흐름, 한눈에.</h1>
-            <p>핵심만 쉽고 빠르게 파악하세요. 오늘의 이슈가 어떤 기업으로 이어지는지 카드 흐름으로 봅니다.</p>
+            <h1>
+              <span>오늘 시장 흐름,</span>
+              <span>한눈에.</span>
+            </h1>
+            <p>뉴스 하나가 왜 이 주가를 움직였는지 — 흐름으로 봅니다.</p>
             <div className="hero-principle-row" aria-label="사이트 사용 흐름">
               <span>오늘 시장 흐름</span>
               <span>같이 볼 기업</span>
               <span>먼저 볼 숫자</span>
             </div>
             <div className="home-hero-actions">
-              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+              <button type="button" className="primary" onClick={() => onOpenCategory('us-semiconductors')}>
                 관계지도 보기
                 <ArrowRight size={16} />
               </button>
@@ -2226,7 +2229,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
 
         <section className="home-section market-issue-section" id="today-flow">
           <div className="home-section-head">
-            <span>1</span>
             <div>
               <h2>오늘 주목할 핵심 이슈</h2>
               <p>가격보다 먼저, 어떤 이슈가 어떤 기업 흐름으로 번지는지 봅니다.</p>
@@ -2248,9 +2250,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
         </section>
 
-        <section className="flow-preview-section mvp-flow-preview" id="market-flow-map">
+        <section className="flow-preview-section mvp-flow-preview" id="market-flow">
           <div className="home-section-head">
-            <span>2</span>
             <div>
               <h2>오늘의 핵심 흐름</h2>
               <p>홈에서는 복잡한 그래프 대신 5단계 카드 흐름만 봅니다.</p>
@@ -2280,7 +2281,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
 
         <section className="home-section pick-home-section" id="picks-preview">
           <div className="home-section-head">
-            <span>3</span>
             <div>
               <h2>이번 주 해부 종목</h2>
               <p>종목을 “왜 움직였나”와 “같이 볼 기업” 중심으로 짧게 봅니다.</p>
@@ -2321,30 +2321,26 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
 
         <section className="home-section beginner-guide-section" id="beginner-guide">
           <div className="home-section-head">
-            <span>4</span>
             <div>
               <h2>처음 오신 분은 여기부터</h2>
               <p>한 번에 많은 금융 데이터를 보지 않고, 회사와 숫자를 읽는 순서만 잡습니다.</p>
             </div>
           </div>
           <div className="beginner-guide-grid">
-            <article>
-              <span>반도체 용어 사전</span>
-              <h3>어려운 용어, 쉽게 풀었어요</h3>
-              <p>HBM, 파운드리, 후공정처럼 낯선 단어를 흐름 안에서 이해합니다.</p>
-              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>지도에서 보기</button>
+            <article id="company-explainer">
+              <h3>기업 해설</h3>
+              <p>이 회사가 뭘 하는지 먼저 봅니다.</p>
+              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix)}>보기</button>
             </article>
             <article>
-              <span>최근 산업 주요 뉴스</span>
-              <h3>최근 관련 이슈만 보기</h3>
-              <p>뉴스가 어떤 기업 수요와 연결되는지 Pick에서 빠르게 확인합니다.</p>
-              <button type="button" onClick={onOpenPicks}>Pick 목록 보기</button>
+              <h3>시장 흐름 지도</h3>
+              <p>뉴스가 어떤 기업으로 이어지는지 봅니다.</p>
+              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>보기</button>
             </article>
-            <article>
-              <span>재무 쉽게 보기</span>
-              <h3>먼저 볼 숫자 3개만</h3>
-              <p>매출, 이익률, 현금흐름을 왜 봐야 하는지 짧게 해석합니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>재무 쉽게 보기</button>
+            <article id="financial-easy">
+              <h3>재무 쉽게 보기</h3>
+              <p>숫자 3개만 먼저 확인합니다.</p>
+              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>보기</button>
             </article>
           </div>
           <div className="advanced-reference-note">
