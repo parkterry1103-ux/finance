@@ -12876,6 +12876,32 @@ body {
   word-break: keep-all;
 }
 
+.company-explainer-card .explainer-highlight-card strong,
+.company-explainer-card .explainer-highlight-card p,
+.company-explainer-card .explainer-card-grid strong,
+.company-explainer-card .explainer-card-grid p,
+.company-explainer-card .explainer-metric-card article p,
+.financial-beginner-grid p,
+.financial-priority-card > p,
+.financial-priority-grid p {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.company-explainer-card .explainer-highlight-card p,
+.company-explainer-card .explainer-card-grid p,
+.financial-priority-grid p {
+  max-width: 34em;
+}
+
+.financial-priority-grid article small {
+  max-width: 100%;
+  line-height: 1.25;
+  white-space: normal;
+}
+
 @media (max-width: 1180px) {
   .home-issue-grid {
     grid-template-columns: 1fr;

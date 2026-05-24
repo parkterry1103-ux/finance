@@ -601,6 +601,79 @@ function companyInvestorWatchPoint(company: Company) {
   return company.investorWatchPoint ?? '수요 변화, 원문 공시, 고객 다변화 여부를 함께 확인합니다.';
 }
 
+function companyEasyExplanation(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') {
+    return 'AI가 많은 계산을 하려면 강력한 두뇌칩이 필요한데, NVIDIA가 그 칩을 설계합니다.';
+  }
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
+    return 'AI 서버가 계산할 데이터를 빠르게 주고받도록 HBM 같은 고성능 메모리를 공급합니다.';
+  }
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') {
+    return '메모리를 만들고 일부 칩은 고객 대신 생산하는 제조 기반 반도체 회사입니다.';
+  }
+  if (company.id === 'ai-datacenter-micron') {
+    return 'AI 서버와 PC·서버가 데이터를 빠르게 처리하도록 메모리 반도체를 공급합니다.';
+  }
+
+  const stage = companyValueChainStage(company);
+  if (stage.includes('AI 칩') || stage.includes('GPU')) return 'AI 계산에 필요한 칩을 설계해 서버와 클라우드 수요에 연결됩니다.';
+  if (stage.includes('메모리') || stage.includes('HBM')) return '서버가 데이터를 빠르게 주고받도록 메모리를 공급합니다.';
+  if (stage.includes('파운드리') || stage.includes('제조')) return '다른 회사가 설계한 칩을 실제 제품으로 만들어 주는 역할을 합니다.';
+  if (stage.includes('장비') || stage.includes('소재')) return '반도체를 만들 때 필요한 장비와 소재를 공급하는 역할입니다.';
+  return `${productText(company)}가 필요한 고객과 산업 수요를 이어 봅니다.`;
+}
+
+function companyDemandTitle(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '클라우드와 AI 데이터센터';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'AI 서버와 메모리 업황';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 고객과 파운드리 고객';
+  if (company.id === 'ai-datacenter-micron') return '서버·PC·AI 메모리 수요';
+
+  const demand = company.mainCustomersOrDemand?.length ? company.mainCustomersOrDemand : company.mainCustomers;
+  if (demand?.length) return demand.slice(0, 2).join(', ');
+  return companyValueChainStage(company);
+}
+
+function companyProductExplanation(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return 'GPU, AI 가속기, 네트워킹 장비가 데이터센터 매출의 핵심입니다.';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM, DRAM, NAND가 핵심 제품입니다.';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 반도체, 파운드리, 스마트폰이 주요 사업입니다.';
+  if (company.id === 'ai-datacenter-micron') return 'DRAM, NAND, HBM이 매출을 만드는 핵심 제품입니다.';
+  return `${productText(company)}가 매출을 만드는 핵심 제품입니다.`;
+}
+
+function companyDemandExplanation(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '클라우드 기업의 서버 투자가 GPU와 네트워크 장비 주문으로 이어집니다.';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'GPU 서버 증설과 메모리 가격 사이클이 HBM 수요를 좌우합니다.';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '스마트폰·서버·AI 반도체 투자 흐름이 각 사업 수요로 이어집니다.';
+  if (company.id === 'ai-datacenter-micron') return '서버와 PC 수요, HBM 전환 속도가 메모리 판매에 영향을 줍니다.';
+  return `${companyValueChainStage(company)} 단계의 고객 투자와 연결됩니다. 고객별 비중은 원문에서 확인합니다.`;
+}
+
+function companyWatchChecklistSummary(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '데이터센터 매출, 고객 투자, 마진이 유지되는지 봅니다.';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM 매출, 메모리 가격, 현금흐름이 함께 좋아지는지 봅니다.';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return 'HBM 경쟁력, 파운드리 가동률, 메모리 가격을 같이 봅니다.';
+  if (company.id === 'ai-datacenter-micron') return 'HBM 전환, 메모리 가격, 현금흐름 개선을 같이 봅니다.';
+  return companyInvestorWatchPoint(company);
+}
+
+function companyInvestorSignalTitle(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '데이터센터 매출과 마진';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM 매출과 현금흐름';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return 'HBM 경쟁력과 가동률';
+  if (company.id === 'ai-datacenter-micron') return 'HBM 전환과 가격 회복';
+  return '다음 공시에서 확인할 신호';
+}
+
+function companyInvestorSignalCopy(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '고객 투자가 둔화되지 않는지, 높은 수익성이 유지되는지 확인합니다.';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return '고부가 메모리 판매가 이익과 현금 회수로 이어지는지 확인합니다.';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 회복과 파운드리 개선이 같은 방향으로 움직이는지 확인합니다.';
+  if (company.id === 'ai-datacenter-micron') return '메모리 업황 회복이 매출, 이익, 현금흐름에 같이 반영되는지 확인합니다.';
+  return companyInvestorWatchPoint(company);
+}
+
 function relationshipTypeLabel(company: Company) {
   if (company.relationshipType) return company.relationshipType;
   if (company.tier === 'anchor') return '중심 기업';
@@ -885,16 +958,19 @@ function missingFinancialValueLabel(company: Company, hasDetailedAnalysis: boole
 
 function beginnerCompanyConclusion(company: Company) {
   if (company.id === 'us-semiconductors-nvidia') {
-    return 'NVIDIA는 AI 서버 수요의 중심에 있는 AI 칩 기업으로, GPU와 CUDA 생태계가 핵심 경쟁력입니다.';
+    return 'NVIDIA는 AI 서버 계산에 필요한 GPU와 AI 가속기를 설계하는 회사입니다.';
   }
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
-    return 'SK하이닉스는 AI 서버에 필요한 HBM 수요와 연결된 메모리 기업으로, HBM 경쟁력과 현금흐름 회복이 핵심입니다.';
+    return 'SK하이닉스는 AI 서버용 HBM과 메모리를 만드는 회사입니다.';
   }
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') {
-    return '삼성전자는 메모리와 파운드리를 모두 가진 반도체 기업으로, 업황 회복과 HBM 경쟁력 확보가 중요합니다.';
+    return '삼성전자는 메모리, 파운드리, 스마트폰을 함께 운영하는 글로벌 제조 기업입니다.';
+  }
+  if (company.id === 'ai-datacenter-micron') {
+    return 'Micron은 DRAM, NAND, HBM을 만드는 미국 메모리 반도체 기업입니다.';
   }
 
-  return `${company.name}${topicParticle(company.name)} ${productText(company)} 중심 기업입니다. ${companyCustomerSummary(company)} 흐름과 연결되며, ${companyInvestorWatchPoint(company)}를 먼저 확인합니다.`;
+  return `${company.name}${topicParticle(company.name)} ${productText(company)}를 제공하는 ${companyValueChainStage(company)} 기업입니다.`;
 }
 
 function financialOneLineConclusion(company: Company, analysis: FilingAnalysis) {
@@ -959,8 +1035,11 @@ function beginnerMetricValueLabel(value: string) {
   return value;
 }
 
-function beginnerMetricStatusLabel(value: string) {
+function financialMetricSourceNote(value: string, summary: FinancialStatementSummary) {
   if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '값 확인 전, 지표 의미만 표시';
+  if (!isConnectedFinancialSummary(summary)) return '연결된 데이터 기준';
+  if (summary.source === 'OpenDART') return 'OpenDART 원문 · 공시 기준';
+  if (summary.source === 'SEC CompanyFacts') return 'SEC 원문 기준';
   return '연결된 데이터 기준';
 }
 
@@ -1017,17 +1096,12 @@ function connectedPriorityLabel(label: string, metricItem: FinancialMetricItem) 
 }
 
 function connectedPriorityNote(summary: FinancialStatementSummary, metricItem: FinancialMetricItem) {
-  if (summary.source === 'OpenDART') {
-    if (metricItem.key === 'revenue') return `${metricItem.beginnerExplanation} 매출 기준으로 수요가 공시 실적에 반영되는지 봅니다. ${metricItem.keyTakeaway}`;
-    if (metricItem.key === 'operatingIncome') return `${metricItem.beginnerExplanation} 영업이익 금액으로 수익성이 실적에 반영되는지 봅니다. ${metricItem.keyTakeaway}`;
-    if (metricItem.key === 'cashFlow' || metricItem.key === 'freeCashFlow') return `${metricItem.beginnerExplanation} 현금흐름 기준으로 확인합니다. ${metricItem.keyTakeaway}`;
-    if (metricItem.key === 'capitalExpenditures') return `${metricItem.beginnerExplanation} CAPEX 금액 기준으로 투자 부담과 생산능력을 함께 봅니다. ${metricItem.keyTakeaway}`;
-    return `${metricItem.beginnerExplanation} ${metricItem.keyTakeaway}`;
-  }
-  if (metricItem.key === 'revenue') return `${metricItem.beginnerExplanation} 매출 기준으로 수요가 실적에 반영되는지 봅니다.`;
-  if (metricItem.key === 'operatingIncome') return `${metricItem.beginnerExplanation} 영업이익 금액으로 수익성을 확인합니다.`;
-  if (metricItem.key === 'cashFlow' || metricItem.key === 'freeCashFlow') return `${metricItem.beginnerExplanation} 현금흐름 기준으로 확인합니다.`;
-  return `${metricItem.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`;
+  if (metricItem.key === 'revenue') return '매출로 수요가 실적에 반영되는지 봅니다.';
+  if (metricItem.key === 'operatingIncome') return '팔고 남긴 이익이 얼마나 커졌는지 봅니다.';
+  if (metricItem.key === 'netIncome') return '최종 이익이 함께 개선되는지 봅니다.';
+  if (metricItem.key === 'cashFlow' || metricItem.key === 'freeCashFlow') return '현금 회수가 실제로 좋아지는지 봅니다.';
+  if (metricItem.key === 'capitalExpenditures') return '투자가 생산능력과 부담으로 이어지는지 봅니다.';
+  return summary.source === 'OpenDART' ? '공시 숫자가 해설과 같은 방향인지 확인합니다.' : '공식 숫자가 해설과 같은 방향인지 확인합니다.';
 }
 
 function connectFinancialPriorityMetrics(
@@ -3092,12 +3166,12 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             </article>
             <article className="explainer-highlight-card">
               <span><BookOpen size={14} />쉽게 말하면</span>
-              <strong>{companyBusinessSummary(company)}</strong>
-              <p>{companyCustomerSummary(company)}</p>
+              <strong>{companyEasyExplanation(company)}</strong>
+              <p>관련 수요: {companyDemandTitle(company)}</p>
             </article>
             <article className="explainer-highlight-card">
               <span><BarChart3 size={14} />그래서 뭘 볼까?</span>
-              <strong>{companyInvestorWatchPoint(company)}</strong>
+              <strong>{companyWatchChecklistSummary(company)}</strong>
               <ul className="explainer-watch-list">
                 {explainerMetrics.map((metric) => <li key={metric.label}>{metric.label}</li>)}
               </ul>
@@ -3109,13 +3183,13 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
               <Factory size={18} />
               <span>무엇을 파는 회사인가</span>
               <strong>{productText(company)}</strong>
-              <p>{companyBusinessSummary(company)}</p>
+              <p>{companyProductExplanation(company)}</p>
             </article>
             <article>
               <Network size={18} />
               <span>누구의 수요와 연결되는가</span>
-              <strong>{companyCustomerSummary(company)}</strong>
-              <p>{companyCustomerExposure(company)}</p>
+              <strong>{companyDemandTitle(company)}</strong>
+              <p>{companyDemandExplanation(company)}</p>
             </article>
             <article>
               <ShieldAlert size={18} />
@@ -3126,8 +3200,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <article>
               <Target size={18} />
               <span>투자자가 볼 포인트</span>
-              <strong>{companyInvestorWatchPoint(company)}</strong>
-              <p>{companyRevenueExposure(company)}</p>
+              <strong>{companyInvestorSignalTitle(company)}</strong>
+              <p>{companyInvestorSignalCopy(company)}</p>
             </article>
           </div>
 
@@ -3274,7 +3348,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                   <span><BarChart3 size={14} />{metric.label}</span>
                   <strong>{beginnerMetricValueLabel(metric.value)}</strong>
                   <p>{metric.note}</p>
-                  <small>{beginnerMetricStatusLabel(metric.value)}</small>
+                  <small>{financialMetricSourceNote(metric.value, financialSummary)}</small>
                 </article>
               ))}
             </div>
