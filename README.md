@@ -168,6 +168,8 @@ Vercel에서 이 폴더를 프로젝트로 가져오면 됩니다.
 
 `/api/financials`의 US SEC CompanyFacts 데이터는 프론트의 “재무 쉽게 보기” 화면에 연결되어 있습니다. `sourceStatus`가 `direct` 또는 `partial`일 때만 기존 “먼저 볼 숫자 3개” 카드에 실제 SEC 숫자를 일부 표시하고, 실패하거나 값이 없으면 기존 fallback을 유지합니다. 가짜 숫자는 생성하지 않으며, KR/OpenDART 프론트 연결은 다음 단계에서 진행합니다.
 
+SEC 보조 지표는 CIK가 있는 미국 기업에 재사용 가능한 구조로 연결합니다. NVIDIA와 Micron은 필수 검증 대상이며, 유동비율, 이자보상배율, FCF, EPS, 감가상각비는 “지표 더 깊게 보기” 같은 고급 영역에만 표시합니다. FCF는 `영업현금흐름 - CAPEX`로 계산하며, 값이 없으면 기존 fallback을 유지합니다. PER/PBR은 가격·시가총액 데이터가 필요해 보류하고, EPS 성장률은 기간 비교 정합성이 필요해 보류하며, ROE는 평균자본 기준 정교화 전까지 보류 또는 고급 지표로 관리합니다. 출처 없는 숫자나 가짜 숫자는 만들지 않습니다.
+
 ### 추가된 주요 파일
 
 - `src/services/financials.ts`: OpenDART, SEC CompanyFacts 조회 구조와 fallback

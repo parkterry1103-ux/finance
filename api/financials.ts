@@ -53,6 +53,13 @@ const SEC_CONCEPTS = {
   assetsCurrent: ['AssetsCurrent'],
   liabilitiesCurrent: ['LiabilitiesCurrent'],
   interestExpense: ['InterestExpenseNonOperating', 'InterestExpense', 'InterestAndDebtExpense'],
+  capitalExpenditures: ['PaymentsToAcquirePropertyPlantAndEquipment', 'CapitalExpendituresIncurredButNotYetPaid'],
+  eps: ['EarningsPerShareDiluted', 'EarningsPerShareBasic'],
+  depreciationAndAmortization: [
+    'DepreciationDepletionAndAmortization',
+    'DepreciationDepletionAndAmortizationExpense',
+    'Depreciation',
+  ],
 };
 
 function firstQueryValue(value: QueryValue) {
@@ -138,6 +145,9 @@ function rawAvailability(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetr
     assetsCurrent: Boolean(metrics.assetsCurrent),
     liabilitiesCurrent: Boolean(metrics.liabilitiesCurrent),
     interestExpense: Boolean(metrics.interestExpense),
+    capitalExpenditures: Boolean(metrics.capitalExpenditures),
+    eps: Boolean(metrics.eps),
+    depreciationAndAmortization: Boolean(metrics.depreciationAndAmortization),
   };
 }
 
@@ -218,6 +228,10 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
         assetsCurrent: null,
         liabilitiesCurrent: null,
         interestExpense: null,
+        capitalExpenditures: null,
+        freeCashFlow: null,
+        eps: null,
+        depreciationAndAmortization: null,
         debtToEquity: null,
         currentRatio: null,
         interestCoverage: null,
@@ -234,6 +248,9 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
         assetsCurrent: false,
         liabilitiesCurrent: false,
         interestExpense: false,
+        capitalExpenditures: false,
+        eps: false,
+        depreciationAndAmortization: false,
       },
       message: 'SEC_USER_AGENT is required for SEC CompanyFacts requests.',
       env: {
@@ -268,6 +285,10 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
         assetsCurrent: null,
         liabilitiesCurrent: null,
         interestExpense: null,
+        capitalExpenditures: null,
+        freeCashFlow: null,
+        eps: null,
+        depreciationAndAmortization: null,
         debtToEquity: null,
         currentRatio: null,
         interestCoverage: null,
@@ -284,6 +305,9 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
         assetsCurrent: false,
         liabilitiesCurrent: false,
         interestExpense: false,
+        capitalExpenditures: false,
+        eps: false,
+        depreciationAndAmortization: false,
       },
       message: secResult.message,
       env: {
@@ -304,10 +328,18 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
     assetsCurrent: selectMetric(facts, SEC_CONCEPTS.assetsCurrent),
     liabilitiesCurrent: selectMetric(facts, SEC_CONCEPTS.liabilitiesCurrent),
     interestExpense: selectMetric(facts, SEC_CONCEPTS.interestExpense),
+    capitalExpenditures: selectMetric(facts, SEC_CONCEPTS.capitalExpenditures),
+    eps: selectMetric(facts, SEC_CONCEPTS.eps),
+    depreciationAndAmortization: selectMetric(facts, SEC_CONCEPTS.depreciationAndAmortization),
   };
   const sourceStatus = sourceStatusFor(selected);
   const reportFact = reportFactFor(selected);
   const operatingCashFlow = selected.operatingCashFlow?.value ?? null;
+  const capitalExpenditures = selected.capitalExpenditures?.value ?? null;
+  const freeCashFlow =
+    operatingCashFlow !== null && capitalExpenditures !== null
+      ? operatingCashFlow - Math.abs(capitalExpenditures)
+      : null;
 
   return {
     ok: true,
@@ -332,6 +364,10 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       assetsCurrent: selected.assetsCurrent?.value ?? null,
       liabilitiesCurrent: selected.liabilitiesCurrent?.value ?? null,
       interestExpense: selected.interestExpense?.value ?? null,
+      capitalExpenditures,
+      freeCashFlow,
+      eps: selected.eps?.value ?? null,
+      depreciationAndAmortization: selected.depreciationAndAmortization?.value ?? null,
       debtToEquity: safeRatio(selected.totalLiabilities, selected.stockholdersEquity),
       currentRatio: safeRatio(selected.assetsCurrent, selected.liabilitiesCurrent),
       interestCoverage: safeRatio(selected.operatingIncome, selected.interestExpense),
@@ -390,6 +426,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       assetsCurrent: null,
       liabilitiesCurrent: null,
       interestExpense: null,
+      capitalExpenditures: null,
+      freeCashFlow: null,
+      eps: null,
+      depreciationAndAmortization: null,
       debtToEquity: null,
       currentRatio: null,
       interestCoverage: null,
@@ -406,6 +446,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       assetsCurrent: false,
       liabilitiesCurrent: false,
       interestExpense: false,
+      capitalExpenditures: false,
+      eps: false,
+      depreciationAndAmortization: false,
     },
     sourceStatus: hasRequiredEnv ? 'not-found' : 'missing-env',
     message: 'Financial metrics are not connected for this request yet.',

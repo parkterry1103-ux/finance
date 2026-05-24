@@ -33,6 +33,10 @@ type FinancialsApiMetrics = {
   debtToEquity?: number | null;
   currentRatio?: number | null;
   interestCoverage?: number | null;
+  capitalExpenditures?: number | null;
+  freeCashFlow?: number | null;
+  eps?: number | null;
+  depreciationAndAmortization?: number | null;
 };
 
 type FinancialsApiResponse = {
@@ -84,6 +88,11 @@ function compactRatio(value: number | null | undefined) {
 function compactUsdMetric(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
   return compactAmount(value, 'USD');
+}
+
+function compactUsdPerShare(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
+  return `$${value.toFixed(2)}`;
 }
 
 function metric(
@@ -156,6 +165,9 @@ function mapFinancialsApiResponse(
   const debtToEquity = apiMetricValue(metrics, 'debtToEquity');
   const currentRatio = apiMetricValue(metrics, 'currentRatio');
   const interestCoverage = apiMetricValue(metrics, 'interestCoverage');
+  const freeCashFlow = apiMetricValue(metrics, 'freeCashFlow');
+  const eps = apiMetricValue(metrics, 'eps');
+  const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
 
   const metricItems: FinancialMetric[] = [
     metric('revenue', '매출', compactUsdMetric(revenue), 'SEC CompanyFacts 기준 매출입니다. 세부 사업부 매출은 MD&A에서 함께 확인합니다.', 'USD'),
@@ -165,6 +177,15 @@ function mapFinancialsApiResponse(
     metric('debtRatio', '부채비율', compactRatio(debtToEquity), '자기자본 대비 부채 부담을 보는 안정성 지표입니다.', 'x'),
     metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
     metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),
+    metric('freeCashFlow', 'FCF', compactUsdMetric(freeCashFlow), '영업현금흐름에서 CAPEX를 뺀 현금 여력입니다.', 'USD'),
+    metric('eps', 'EPS', compactUsdPerShare(eps), '희석 EPS가 있으면 우선 사용하고, 없으면 기본 EPS를 사용합니다.', 'USD/share'),
+    metric(
+      'depreciationAndAmortization',
+      '감가상각비',
+      compactUsdMetric(depreciationAndAmortization),
+      '설비와 무형자산 비용이 기간별로 반영되는 금액입니다.',
+      'USD',
+    ),
   ];
 
   const sourceLabel = payload.sourceStatus === 'partial' ? 'SEC 일부 원문 연결됨' : 'SEC 원문 연결됨';

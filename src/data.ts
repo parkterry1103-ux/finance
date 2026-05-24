@@ -13,7 +13,10 @@ export type FinancialMetricKey =
   | 'operatingMargin'
   | 'cashFlow'
   | 'currentRatio'
-  | 'interestCoverage';
+  | 'interestCoverage'
+  | 'freeCashFlow'
+  | 'eps'
+  | 'depreciationAndAmortization';
 export type RelationshipEvidenceType =
   | 'company-filing'
   | 'annual-report'
@@ -6429,6 +6432,9 @@ export const financialMetricGuides: Record<FinancialMetricKey, string> = {
   cashFlow: '실제로 현금이 들어오고 나가는 흐름',
   currentRatio: '단기 부채를 감당할 유동자산 여력을 보는 지표',
   interestCoverage: '영업이익으로 이자비용을 얼마나 감당하는지 보는 지표',
+  freeCashFlow: '투자를 하고도 남는 현금 여력을 보는 지표',
+  eps: '주식 한 주당 이익을 보여주는 지표',
+  depreciationAndAmortization: '설비와 무형자산 비용이 기간별로 반영되는 금액',
 };
 
 export const marketMovers: MarketMover[] = [

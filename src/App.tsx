@@ -964,14 +964,12 @@ function beginnerMetricStatusLabel(value: string) {
   return '연결된 데이터 기준';
 }
 
-const financialApiDisplayCompanyIds = new Set(['us-semiconductors-nvidia', 'ai-datacenter-micron']);
-
 function isConnectedFinancialSummary(summary: FinancialStatementSummary) {
   return summary.isApiData && (summary.sourceStatus === 'direct' || summary.sourceStatus === 'partial');
 }
 
 function shouldDisplayConnectedFinancials(company: Company, summary: FinancialStatementSummary) {
-  return financialApiDisplayCompanyIds.has(company.id) && isConnectedFinancialSummary(summary);
+  return company.country === 'US' && Boolean(company.cik) && isConnectedFinancialSummary(summary);
 }
 
 function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'][number]) {
@@ -1012,6 +1010,16 @@ function connectFinancialPriorityMetrics(
   });
 }
 
+function connectedMetricValue(
+  summary: FinancialStatementSummary,
+  key: FinancialStatementSummary['metrics'][number]['key'],
+  fallback = '공식 데이터 연결 필요',
+) {
+  if (!isConnectedFinancialSummary(summary)) return fallback;
+  const metricItem = summary.metrics.find((item) => item.key === key);
+  return usableFinancialMetricValue(metricItem) ?? fallback;
+}
+
 function beginnerSignalSet(company: Company) {
   const stage = companyValueChainStage(company);
   if (stage.includes('메모리') || stage.includes('HBM')) {
@@ -1048,13 +1056,21 @@ function buildMetricBranchGroups({
   company,
   displayMetrics,
   quickMetrics,
+  financialSummary,
 }: {
   company: Company;
   displayMetrics: CompanyDisplayMetrics;
   quickMetrics: Array<{ label: string; value: string; note: string }>;
+  financialSummary: FinancialStatementSummary;
 }) {
   const revenueValue = quickMetrics.find((metric) => metric.label === '매출')?.value ?? displayMetrics.revenue;
   const cashFlowValue = quickMetrics.find((metric) => metric.label === '현금흐름')?.value ?? '원문 확인';
+  const debtRatioValue = connectedMetricValue(financialSummary, 'debtRatio', displayMetrics.debtRatio);
+  const currentRatioValue = connectedMetricValue(financialSummary, 'currentRatio');
+  const interestCoverageValue = connectedMetricValue(financialSummary, 'interestCoverage');
+  const freeCashFlowValue = connectedMetricValue(financialSummary, 'freeCashFlow');
+  const epsValue = connectedMetricValue(financialSummary, 'eps');
+  const depreciationAndAmortizationValue = connectedMetricValue(financialSummary, 'depreciationAndAmortization');
   const stage = companyValueChainStage(company);
   const industryMetric =
     stage.includes('메모리') || stage.includes('HBM')
@@ -1090,11 +1106,11 @@ function buildMetricBranchGroups({
         },
         {
           name: 'ROE',
-          value: '데이터 연결 필요',
-          benchmark: '산업 평균 데이터 연결 필요',
+          value: '계산 보류',
+          benchmark: '평균자본 기준 정교화 필요',
           interpretation: '자기자본으로 얼마나 효율적으로 이익을 냈는지 봅니다.',
           why: '자본을 얼마나 잘 굴리는지 보여주지만 산업마다 적정 수준이 다릅니다.',
-          caution: '부채를 많이 써서 ROE가 높아질 수 있어 부채비율과 같이 봐야 합니다.',
+          caution: '단순 기말 자본으로 계산하면 오해가 생길 수 있어 평균자본 기준 연결 전까지 보류합니다.',
         },
       ],
     },
@@ -1112,11 +1128,11 @@ function buildMetricBranchGroups({
         },
         {
           name: 'EPS 성장률',
-          value: '데이터 연결 필요',
-          benchmark: '경쟁사 비교 데이터 연결 필요',
+          value: '계산 보류',
+          benchmark: '기간 비교 정합성 필요',
           interpretation: '주당순이익이 늘었는지 확인합니다.',
           why: '전체 이익보다 주식 한 주당 이익이 늘었는지가 주주에게 중요합니다.',
-          caution: '자사주 매입이나 일회성 이익으로 좋아 보일 수 있습니다.',
+          caution: '분기·연간 기준이 섞이면 잘못 보일 수 있어 기간 비교 로직 연결 전까지 계산하지 않습니다.',
         },
         {
           name: 'CAPEX 증가율',
@@ -1134,7 +1150,7 @@ function buildMetricBranchGroups({
       items: [
         {
           name: '부채비율',
-          value: displayMetrics.debtRatio,
+          value: debtRatioValue,
           benchmark: '산업 평균 데이터 연결 필요',
           interpretation: '자본 대비 빚 부담이 얼마나 큰지 봅니다.',
           why: '업황이 꺾일 때 빚 부담이 큰 회사는 선택지가 줄어들 수 있습니다.',
@@ -1142,7 +1158,7 @@ function buildMetricBranchGroups({
         },
         {
           name: '유동비율',
-          value: '데이터 연결 필요',
+          value: currentRatioValue,
           benchmark: '원문 재무상태표 기준',
           interpretation: '단기적으로 갚아야 할 돈을 감당할 수 있는지 봅니다.',
           why: '현금과 단기자산이 충분해야 투자와 운영을 이어갈 수 있습니다.',
@@ -1150,7 +1166,7 @@ function buildMetricBranchGroups({
         },
         {
           name: '이자보상배율',
-          value: '데이터 연결 필요',
+          value: interestCoverageValue,
           benchmark: '경쟁사 비교 데이터 연결 필요',
           interpretation: '영업이익으로 이자를 얼마나 감당할 수 있는지 봅니다.',
           why: '금리가 높거나 차입금이 많을 때 중요한 안정성 지표입니다.',
@@ -1172,7 +1188,7 @@ function buildMetricBranchGroups({
         },
         {
           name: 'FCF',
-          value: '데이터 연결 필요',
+          value: freeCashFlowValue,
           benchmark: '영업현금흐름 - CAPEX',
           interpretation: '투자와 운영을 하고도 남는 현금입니다.',
           why: '배당, 자사주, 부채 상환, 재투자 여력을 보여줍니다.',
@@ -1180,7 +1196,7 @@ function buildMetricBranchGroups({
         },
         {
           name: '감가상각비',
-          value: '원문 확인',
+          value: depreciationAndAmortizationValue,
           benchmark: '원문 주석 기준',
           interpretation: '과거 설비투자가 비용으로 나뉘어 반영되는 금액입니다.',
           why: '대규모 투자 산업에서는 미래 이익률과 세금 효과에 영향을 줍니다.',
@@ -1194,15 +1210,15 @@ function buildMetricBranchGroups({
       items: [
         {
           name: 'PER',
-          value: '데이터 연결 필요',
-          benchmark: '산업 평균 데이터 연결 필요',
+          value: '가격 데이터 연결 필요',
+          benchmark: '시가총액 / 이익 데이터 필요',
           interpretation: '이익 대비 주가가 비싼지 보는 지표입니다.',
           why: '같은 이익을 내는 회사라도 성장 기대가 다르면 PER이 달라집니다.',
-          caution: '반도체처럼 이익 변동이 큰 산업은 바닥에서 PER이 높아 보여 오해할 수 있습니다.',
+          caution: '가격과 시가총액 데이터가 필요하므로 이번 단계에서는 계산하지 않습니다.',
         },
         {
           name: 'EPS',
-          value: '데이터 연결 필요',
+          value: epsValue,
           benchmark: '전년 대비 / 경쟁사 비교 필요',
           interpretation: '회사 이익을 주식 한 주당으로 나눈 값입니다.',
           why: '주주 입장에서 한 주당 이익이 늘어나는지 확인합니다.',
@@ -1210,11 +1226,11 @@ function buildMetricBranchGroups({
         },
         {
           name: 'PBR',
-          value: '데이터 연결 필요',
-          benchmark: '산업 평균 데이터 연결 필요',
+          value: '가격 데이터 연결 필요',
+          benchmark: '시가총액 / 순자산 데이터 필요',
           interpretation: '자산가치 대비 주가 수준을 보는 지표입니다.',
           why: '금융주나 자산 많은 기업은 PER보다 PBR과 ROE를 같이 보는 경우가 많습니다.',
-          caution: '자산의 질이 낮거나 수익성이 약하면 낮은 PBR도 싸다고 단정할 수 없습니다.',
+          caution: '가격과 시가총액 데이터가 필요하므로 이번 단계에서는 계산하지 않습니다.',
         },
       ],
     },
@@ -2959,7 +2975,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
-  const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics });
+  const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics, financialSummary });
 
   return (
     <div className="analysis-shell">
