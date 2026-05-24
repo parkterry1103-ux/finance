@@ -1043,6 +1043,12 @@ function financialMetricSourceNote(value: string, summary: FinancialStatementSum
   return '연결된 데이터 기준';
 }
 
+function financialDetailValueClass(value: string) {
+  return /공식 데이터 연결 필요|가격 데이터 연결 필요|계산 보류|원문 확인|확인 필요|보류/i.test(value)
+    ? 'muted'
+    : 'connected';
+}
+
 function isConnectedFinancialSummary(summary: FinancialStatementSummary) {
   return summary.isApiData && (summary.sourceStatus === 'direct' || summary.sourceStatus === 'partial');
 }
@@ -3426,7 +3432,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                         <article className="metric-detail-card" key={metric.name}>
                           <div>
                             <span>{metric.name}</span>
-                            <strong>{metric.value}</strong>
+                            <strong className={financialDetailValueClass(metric.value)}>{metric.value}</strong>
                           </div>
                           <div className="metric-detail-grid">
                             <p><b>비교 기준</b>{metric.benchmark}</p>

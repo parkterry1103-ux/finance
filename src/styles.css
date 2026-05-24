@@ -5351,12 +5351,19 @@ body,
 
 .metric-branch-card summary span {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 4px;
+  flex: 1 1 auto;
 }
 
 .metric-branch-card summary strong {
   color: #111827;
   font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .metric-branch-card summary small {
@@ -5392,6 +5399,23 @@ body,
   color: #0057d9;
   font-size: 17px;
   overflow-wrap: anywhere;
+}
+
+.metric-detail-card strong.muted {
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid rgba(145, 158, 171, 0.24);
+  border-radius: 999px;
+  color: #667085;
+  background: rgba(248, 250, 252, 0.95);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.metric-detail-card strong.connected {
+  color: #0057d9;
 }
 
 .metric-detail-grid {
@@ -13160,7 +13184,6 @@ body {
 .home-hero-actions button:first-child,
 .flow-preview-copy button,
 .explainer-primary-actions button:first-child,
-.financial-more-actions button:first-child,
 .flow-focus-actions button:first-child {
   background: linear-gradient(135deg, #2563eb 0%, #4f7cf7 100%);
   box-shadow: 0 16px 34px rgba(37, 99, 235, 0.22);
@@ -13173,6 +13196,62 @@ body {
   color: #1d4ed8;
   border-color: rgba(37, 99, 235, 0.14);
   background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.financial-learning-card .financial-more-actions button,
+.financial-learning-card .financial-more-actions button:first-child {
+  min-height: 40px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+  background: #eff6ff;
+  box-shadow: none;
+}
+
+.financial-learning-card .financial-more-actions button:hover {
+  border-color: rgba(37, 99, 235, 0.32);
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.financial-branch-section .analysis-detail-content {
+  gap: 14px;
+  padding: 14px;
+  background: #f8fbff;
+}
+
+.financial-branch-section .metric-branch-grid {
+  gap: 12px;
+}
+
+.financial-branch-section .metric-branch-card {
+  border-color: rgba(226, 232, 240, 0.96);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.financial-branch-section .metric-branch-card[open] > summary {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.financial-branch-section .metric-branch-card summary > span {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.financial-branch-section .metric-branch-card summary > svg {
+  flex: 0 0 auto;
+}
+
+.financial-branch-section .metric-detail-card {
+  border-color: rgba(226, 232, 240, 0.92);
+  box-shadow: none;
+}
+
+.financial-branch-section .metric-detail-grid p {
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  background: #f8fafc;
 }
 
 .market-trend-stack article {

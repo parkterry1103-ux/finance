@@ -194,6 +194,32 @@ SEC 보조 지표는 CIK가 있는 미국 기업에 재사용 가능한 구조�
 
 `/api/financials`는 KR 기업에 대해 OpenDART 정기보고서 재무정보도 조회합니다. 연결재무제표 `CFS`를 먼저 보고, 데이터가 없으면 개별재무제표 `OFS`로 fallback하며, `11014` 3분기, `11012` 반기, `11013` 1분기, `11011` 사업보고서 순서로 최근 연도부터 탐색합니다. OpenDART에 없는 항목은 `null`로 유지하고 가짜 숫자는 만들지 않습니다. KR 프론트 화면 연결은 API 안정화 다음 단계에서 진행합니다.
 
+### 향후 산업 데이터 연결 후보
+
+이번 MVP에서는 산업 평균 PER/PBR/마진을 화면에 표시하지 않습니다. 출처가 검증된 API를 연결하기 전까지 `산업 평균 데이터 연결 필요`, `경쟁사 비교 데이터 연결 필요` 상태를 유지하고, 가격 데이터로 PER/PBR을 임의 계산하지 않습니다.
+
+후보 조사는 “공식 재무 원문은 SEC/OpenDART 우선, 외부 API는 산업·peer 비교 보조” 원칙으로만 정리합니다. 실제 연결 시에는 서버리스 함수에서 호출하고, 화면에는 `출처`, `기준일`, `계산 방식`, `표본 범위`를 함께 표시해야 합니다.
+
+| 후보 | 쓸 수 있는 데이터 | 적용 범위 | MVP 판단 | 구현 위치 후보 |
+| --- | --- | --- | --- | --- |
+| FMP | Sector/Industry P/E snapshot, sector/industry performance snapshot, financial ratios | 미국 섹터·산업 비교에 우선 적합. 한국 종목 적용성은 별도 확인 필요 | 산업 P/E나 섹터 흐름 후보로 가장 직접적입니다. 무료/요금제 제한과 재배포 조건 확인 후 연결합니다. | 새 `api/industry-benchmarks.ts` 또는 sync script. 기존 `/api/financials`와 분리 |
+| Finnhub | Company peers, basic financials, 기업별 margin/P/E 등 보조 지표 | 미국 상장사 peer 그룹 구성에 우선 적합. 한국 커버리지는 종목별 확인 필요 | 산업 평균보다는 “peer sample” 구성 후보입니다. 평균을 만들 경우 표본과 계산식을 명시해야 합니다. | 새 peer/benchmark service. SEC 숫자와 섞지 않고 별도 source label 사용 |
+| Alpha Vantage | Company Overview의 기업 정보, financial ratios, key metrics | 미국 기업 보조 지표에 우선 적합. 글로벌 ticker는 거래소 표기 확인 필요 | 기업별 valuation/ratio 보조 후보입니다. 산업 평균 원천으로 단정하지 않습니다. | 새 benchmark 후보 service. 기존 재무 원문 값과 분리 |
+| Twelve Data | Fundamentals, profile, statistics, key ratios | 글로벌 커버리지 가능성이 있으나 plan 제한 확인 필요 | 이미 다른 소스가 부족할 때 보조 후보입니다. 유료 플랜/credit 비용을 먼저 확인합니다. | 별도 adapter 후보. 화면 표시는 보류 |
+| FRED | 금리, 물가, 산업생산 같은 거시 시계열 | 미국 거시·금리 맥락에 적합 | 산업 PER/PBR 평균용이 아니라 매크로 배경 데이터로 분리합니다. | 시장 흐름 해설의 거시 참고자료 영역 |
+| KIS | 한국 주식 현재가·기간별 시세 등 국내 가격 데이터 | 한국 상장사 가격/시세 보조에 적합 | 산업 평균보다는 가격 데이터 후보입니다. PER/PBR 계산은 공식 재무 기준과 시가총액 기준이 정리될 때까지 보류합니다. | 가격 전용 API/service. 이번 단계 연결 금지 |
+| Exchange Rates | 환율 변환 | 통화 표시 보조 | 산업 비교 데이터가 아닙니다. USD/KRW 표시가 필요할 때만 보조로 검토합니다. | 통화 표시 helper 또는 서버리스 환율 cache |
+
+참고 문서:
+
+- FMP Sector P/E Snapshot: https://site.financialmodelingprep.com/developer/docs/stable/sector-pe-snapshot
+- FMP Sector Performance Snapshot: https://site.financialmodelingprep.com/developer/docs/stable/sector-performance-snapshot
+- Finnhub Company Peers / Basic Financials: https://finnhub.io/docs/api/company-peers, https://finnhub.io/docs/api/company-basic-financials
+- Alpha Vantage Company Overview: https://www.alphavantage.co/documentation/#company-overview
+- Twelve Data Fundamentals/Profile: https://twelvedata.com/docs/fundamentals/profile
+- FRED API: https://fred.stlouisfed.org/docs/api/fred/
+- KIS Developers API 문서: https://apiportal.koreainvestment.com/
+
 ### 추가된 주요 파일
 
 - `src/services/financials.ts`: OpenDART, SEC CompanyFacts 조회 구조와 fallback
