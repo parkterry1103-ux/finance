@@ -44,14 +44,24 @@ type SelectedMetric = {
 type DartAccountRow = {
   rcept_no?: string;
   sj_div?: string;
+  account_id?: string;
   account_nm?: string;
   thstrm_amount?: string;
+  thstrm_add_amount?: string;
+  currency?: string;
 };
 
 type DartApiPayload = {
   status?: string;
   message?: string;
   list?: DartAccountRow[];
+};
+
+type DartMetricSelection = {
+  value: number;
+  row: DartAccountRow;
+  currency: string | null;
+  amountField: 'thstrm_amount';
 };
 
 const SEC_TIMEOUT_MS = 8000;
@@ -303,8 +313,36 @@ function statementMatches(row: DartAccountRow, statements?: string[]) {
   return statements.includes(row.sj_div);
 }
 
-function isPerShareAccount(accountName?: string) {
-  return compactAccountName(accountName).includes('주당');
+function isPerShareAccount(accountName?: string, accountId?: string) {
+  const normalizedName = compactAccountName(accountName);
+  const normalizedId = String(accountId ?? '').toLowerCase();
+  return (
+    normalizedName.includes('주당') ||
+    normalizedName.includes('기본주당') ||
+    normalizedName.includes('희석주당') ||
+    normalizedName.includes('주당이익') ||
+    normalizedId.includes('pershare') ||
+    normalizedId.includes('earningslossper')
+  );
+}
+
+function isRatioAccount(accountName?: string, accountId?: string) {
+  const normalizedName = compactAccountName(accountName);
+  const normalizedId = String(accountId ?? '').toLowerCase();
+  return (
+    normalizedName.includes('비율') ||
+    normalizedName.includes('이익률') ||
+    normalizedName.includes('마진') ||
+    normalizedId.includes('ratio') ||
+    normalizedId.includes('rate')
+  );
+}
+
+function normalizeDartCurrency(value?: string | null) {
+  const normalized = String(value ?? '').trim().toUpperCase();
+  if (!normalized) return null;
+  if (normalized === 'KRW' || normalized === '원' || normalized === '￦' || normalized === '₩') return 'KRW';
+  return normalized;
 }
 
 function parseDartAmount(value?: string | null) {
@@ -321,19 +359,36 @@ function parseDartAmount(value?: string | null) {
   return parenthesized ? -Math.abs(numeric) : numeric;
 }
 
-function findDartMetric(rows: DartAccountRow[], aliases: string[], options: { statements?: string[]; excludePerShare?: boolean } = {}) {
+function findDartMetric(
+  rows: DartAccountRow[],
+  aliases: string[],
+  options: { statements?: string[]; excludePerShare?: boolean; excludeRatios?: boolean; minAbsAmount?: number } = {},
+): DartMetricSelection | null {
   const candidates = rows.filter((item) => {
     if (!statementMatches(item, options.statements)) return false;
-    if (options.excludePerShare && isPerShareAccount(item.account_nm)) return false;
+    if (options.excludePerShare && isPerShareAccount(item.account_nm, item.account_id)) return false;
+    if (options.excludeRatios && isRatioAccount(item.account_nm, item.account_id)) return false;
     return true;
   });
 
   for (const alias of aliases) {
     const row = candidates.find((item) => accountMatches(item.account_nm ?? '', alias));
+    if (!row) continue;
     const value = parseDartAmount(row?.thstrm_amount);
-    if (value !== null) return value;
+    if (value === null) continue;
+    if (options.minAbsAmount && value !== 0 && Math.abs(value) < options.minAbsAmount) continue;
+    return { value, row, currency: normalizeDartCurrency(row?.currency), amountField: 'thstrm_amount' };
   }
   return null;
+}
+
+function selectionValue(selection: DartMetricSelection | null) {
+  return selection?.value ?? null;
+}
+
+function currencyFromSelections(selections: Array<DartMetricSelection | null>) {
+  const currencies = [...new Set(selections.map((selection) => selection?.currency).filter((currency): currency is string => Boolean(currency)))];
+  return currencies.length === 1 ? currencies[0] : null;
 }
 
 function rawAvailableFromValues(values: Record<keyof typeof DART_ACCOUNT_ALIASES, number | null>) {
@@ -431,18 +486,31 @@ function recentDartYears() {
 }
 
 function buildDartMetrics(rows: DartAccountRow[]) {
+  const selections = {
+    revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    operatingIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingIncome, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    netIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.netIncome, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    operatingCashFlow: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingCashFlow, { statements: ['CF'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    totalLiabilities: findDartMetric(rows, DART_ACCOUNT_ALIASES.totalLiabilities, { statements: ['BS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    stockholdersEquity: findDartMetric(rows, DART_ACCOUNT_ALIASES.stockholdersEquity, { statements: ['BS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    assetsCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.assetsCurrent, { statements: ['BS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    liabilitiesCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.liabilitiesCurrent, { statements: ['BS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    interestExpense: findDartMetric(rows, DART_ACCOUNT_ALIASES.interestExpense, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    capitalExpenditures: findDartMetric(rows, DART_ACCOUNT_ALIASES.capitalExpenditures, { statements: ['CF'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+    depreciationAndAmortization: findDartMetric(rows, DART_ACCOUNT_ALIASES.depreciationAndAmortization, { statements: ['CF'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
+  };
   const values = {
-    revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue, { statements: ['IS', 'CIS'], excludePerShare: true }),
-    operatingIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingIncome, { statements: ['IS', 'CIS'], excludePerShare: true }),
-    netIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.netIncome, { statements: ['IS', 'CIS'], excludePerShare: true }),
-    operatingCashFlow: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingCashFlow, { statements: ['CF'] }),
-    totalLiabilities: findDartMetric(rows, DART_ACCOUNT_ALIASES.totalLiabilities, { statements: ['BS'] }),
-    stockholdersEquity: findDartMetric(rows, DART_ACCOUNT_ALIASES.stockholdersEquity, { statements: ['BS'] }),
-    assetsCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.assetsCurrent, { statements: ['BS'] }),
-    liabilitiesCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.liabilitiesCurrent, { statements: ['BS'] }),
-    interestExpense: findDartMetric(rows, DART_ACCOUNT_ALIASES.interestExpense, { statements: ['IS', 'CIS'], excludePerShare: true }),
-    capitalExpenditures: findDartMetric(rows, DART_ACCOUNT_ALIASES.capitalExpenditures, { statements: ['CF'] }),
-    depreciationAndAmortization: findDartMetric(rows, DART_ACCOUNT_ALIASES.depreciationAndAmortization, { statements: ['CF'] }),
+    revenue: selectionValue(selections.revenue),
+    operatingIncome: selectionValue(selections.operatingIncome),
+    netIncome: selectionValue(selections.netIncome),
+    operatingCashFlow: selectionValue(selections.operatingCashFlow),
+    totalLiabilities: selectionValue(selections.totalLiabilities),
+    stockholdersEquity: selectionValue(selections.stockholdersEquity),
+    assetsCurrent: selectionValue(selections.assetsCurrent),
+    liabilitiesCurrent: selectionValue(selections.liabilitiesCurrent),
+    interestExpense: selectionValue(selections.interestExpense),
+    capitalExpenditures: selectionValue(selections.capitalExpenditures),
+    depreciationAndAmortization: selectionValue(selections.depreciationAndAmortization),
   };
   const freeCashFlow =
     values.operatingCashFlow !== null && values.capitalExpenditures !== null
@@ -459,6 +527,8 @@ function buildDartMetrics(rows: DartAccountRow[]) {
     interestCoverage: safeNumberRatio(values.operatingIncome, values.interestExpense),
     operatingMargin: null,
     debtRatio: null,
+    currency: currencyFromSelections(Object.values(selections)),
+    amountBasis: 'OpenDART thstrm_amount',
   };
 }
 
@@ -529,18 +599,19 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
         if (result.status !== 'ok') continue;
 
         const selectedMetrics = buildDartMetrics(result.rows);
+        const { currency, amountBasis, ...metrics } = selectedMetrics;
         const dartValues = {
-          revenue: selectedMetrics.revenue,
-          operatingIncome: selectedMetrics.operatingIncome,
-          netIncome: selectedMetrics.netIncome,
-          operatingCashFlow: selectedMetrics.operatingCashFlow,
-          totalLiabilities: selectedMetrics.totalLiabilities,
-          stockholdersEquity: selectedMetrics.stockholdersEquity,
-          assetsCurrent: selectedMetrics.assetsCurrent,
-          liabilitiesCurrent: selectedMetrics.liabilitiesCurrent,
-          interestExpense: selectedMetrics.interestExpense,
-          capitalExpenditures: selectedMetrics.capitalExpenditures,
-          depreciationAndAmortization: selectedMetrics.depreciationAndAmortization,
+          revenue: metrics.revenue,
+          operatingIncome: metrics.operatingIncome,
+          netIncome: metrics.netIncome,
+          operatingCashFlow: metrics.operatingCashFlow,
+          totalLiabilities: metrics.totalLiabilities,
+          stockholdersEquity: metrics.stockholdersEquity,
+          assetsCurrent: metrics.assetsCurrent,
+          liabilitiesCurrent: metrics.liabilitiesCurrent,
+          interestExpense: metrics.interestExpense,
+          capitalExpenditures: metrics.capitalExpenditures,
+          depreciationAndAmortization: metrics.depreciationAndAmortization,
         };
         const sourceStatus = dartSourceStatusFor(dartValues);
         if (sourceStatus === 'not-found') continue;
@@ -557,9 +628,12 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
           fiscalYear: year,
           fiscalPeriod: report.fiscalPeriod,
           asOf: dartReceiptDate(result.rows),
-          metrics: selectedMetrics,
+          currency,
+          amountBasis,
+          periodBasis: 'OpenDART regular filing disclosure basis',
+          metrics,
           rawAvailable: rawAvailableFromValues(dartValues),
-          message: 'OpenDART data loaded. Amounts are parsed from raw OpenDART strings; unit follows the original OpenDART response and is not rescaled.',
+          message: 'OpenDART data loaded. Amounts are parsed from raw OpenDART thstrm_amount strings and are not rescaled by this API. Currency follows the OpenDART currency field when available.',
           env: {
             secUserAgent: hasEnv('SEC_USER_AGENT') ? 'present' : 'missing',
             openDartApiKey: 'present',

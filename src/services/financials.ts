@@ -49,6 +49,9 @@ type FinancialsApiResponse = {
   fiscalYear?: string | number | null;
   fiscalPeriod?: string | null;
   asOf?: string | null;
+  currency?: string | null;
+  amountBasis?: string | null;
+  periodBasis?: string | null;
   metrics?: FinancialsApiMetrics;
   message?: string;
 };
@@ -90,9 +93,22 @@ function compactUsdMetric(value: number | null | undefined) {
   return compactAmount(value, 'USD');
 }
 
-function compactKrwMetric(value: number | null | undefined) {
+function normalizeCurrencyLabel(currency?: string | null) {
+  const normalized = String(currency ?? '').trim().toUpperCase();
+  if (!normalized) return '';
+  if (normalized === 'KRW' || normalized === '원' || normalized === '￦' || normalized === '₩') return 'KRW';
+  return normalized;
+}
+
+function openDartUnitLabel(currency?: string | null) {
+  const normalizedCurrency = normalizeCurrencyLabel(currency);
+  return normalizedCurrency ? `OpenDART 원문 ${normalizedCurrency}` : 'OpenDART 원문 단위';
+}
+
+function formatOpenDartAmount(value: number | null | undefined, currency?: string | null) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
-  return compactAmount(value, '원');
+  const formatted = value.toLocaleString('ko-KR');
+  return normalizeCurrencyLabel(currency) === 'KRW' ? `${formatted}원` : formatted;
 }
 
 function compactUsdPerShare(value: number | null | undefined) {
@@ -248,23 +264,25 @@ function mapKoreanFinancialsApiResponse(
   const capitalExpenditures = apiMetricValue(metrics, 'capitalExpenditures');
   const freeCashFlow = apiMetricValue(metrics, 'freeCashFlow');
   const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
+  const openDartUnit = openDartUnitLabel(payload.currency);
+  const openDartAmountNote = `${openDartUnit} ${payload.amountBasis ?? 'thstrm_amount'} 기준입니다. 정기보고서 공시 기준 수치로 원문 기간 해석과 함께 봅니다.`;
 
   const metricItems: FinancialMetric[] = [
-    metric('revenue', '매출', compactKrwMetric(revenue), 'OpenDART 원문 기준 매출입니다. 사업부별 수요와 함께 확인합니다.', '원'),
-    metric('operatingIncome', '영업이익', compactKrwMetric(operatingIncome), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', '원'),
-    metric('netIncome', '순이익', compactKrwMetric(netIncome), '세금과 금융비용까지 반영한 최종 이익입니다.', '원'),
-    metric('cashFlow', '영업현금흐름', compactKrwMetric(operatingCashFlow), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', '원'),
+    metric('revenue', '매출', formatOpenDartAmount(revenue, payload.currency), `매출은 ${openDartAmountNote}`, openDartUnit),
+    metric('operatingIncome', '영업이익', formatOpenDartAmount(operatingIncome, payload.currency), `영업이익은 ${openDartAmountNote}`, openDartUnit),
+    metric('netIncome', '순이익', formatOpenDartAmount(netIncome, payload.currency), `순이익은 ${openDartAmountNote}`, openDartUnit),
+    metric('cashFlow', '영업현금흐름', formatOpenDartAmount(operatingCashFlow, payload.currency), `영업현금흐름은 ${openDartAmountNote}`, openDartUnit),
     metric('debtRatio', '부채비율', compactRatio(debtToEquity), 'OpenDART 부채총계와 자본총계로 보는 안정성 지표입니다.', 'x'),
     metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
     metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),
-    metric('capitalExpenditures', 'CAPEX', compactKrwMetric(capitalExpenditures), '설비와 유형자산 취득에 들어간 투자 금액입니다.', '원'),
-    metric('freeCashFlow', 'FCF', compactKrwMetric(freeCashFlow), '영업현금흐름에서 CAPEX를 뺀 현금 여력입니다.', '원'),
+    metric('capitalExpenditures', 'CAPEX', formatOpenDartAmount(capitalExpenditures, payload.currency), `CAPEX는 ${openDartAmountNote}`, openDartUnit),
+    metric('freeCashFlow', 'FCF', formatOpenDartAmount(freeCashFlow, payload.currency), `FCF는 ${openDartAmountNote}`, openDartUnit),
     metric(
       'depreciationAndAmortization',
       '감가상각비',
-      compactKrwMetric(depreciationAndAmortization),
-      '설비와 무형자산 비용이 기간별로 반영되는 금액입니다.',
-      '원',
+      formatOpenDartAmount(depreciationAndAmortization, payload.currency),
+      `감가상각비는 ${openDartAmountNote}`,
+      openDartUnit,
     ),
   ];
 
@@ -285,11 +303,11 @@ function mapKoreanFinancialsApiResponse(
     isApiData: true,
     isFallbackData: false,
     metrics: metricItems,
-    beginnerExplanation: 'OpenDART에서 가져온 공식 재무제표 숫자입니다. 세부 해석과 사업 설명은 기존 공시 해설과 함께 봅니다.',
+    beginnerExplanation: 'OpenDART에서 가져온 공식 재무제표 원문 숫자입니다. 금액은 API가 재스케일링하지 않은 공시 기준 수치로 표시합니다.',
     keyTakeaway:
       payload.sourceStatus === 'partial'
         ? '일부 OpenDART 숫자가 연결되었습니다. 없는 항목은 가짜 숫자 대신 연결 필요 상태로 유지합니다.'
-        : 'OpenDART 공식 숫자가 연결되었습니다. 먼저 볼 핵심 지표만 화면에 반영합니다.',
+        : 'OpenDART 공식 숫자가 연결되었습니다. 정기보고서는 항목별 기간 기준이 다를 수 있어 원문 공시와 함께 봅니다.',
     fiscalPeriod: payload.fiscalPeriod ?? fallback.fiscalPeriod,
     filingDate,
     sourceStatus: payload.sourceStatus,

@@ -1008,7 +1008,10 @@ function connectFinancialPriorityMetrics(
     return {
       ...item,
       value,
-      note: `${financialMetric.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`,
+      note:
+        summary.source === 'OpenDART'
+          ? `${financialMetric.beginnerExplanation} ${financialMetric.keyTakeaway}`
+          : `${financialMetric.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`,
     };
   });
 }
@@ -1374,7 +1377,7 @@ function financialFreshnessInfo(
   return {
     reportName,
     filingDate: summary.filingDate ?? fallback.filingDate,
-    status: sourceLabel,
+    status: summary.source === 'OpenDART' ? '공시 기준 수치입니다.' : sourceLabel,
     sourceLabel,
     sourceClass: 'direct',
   };
