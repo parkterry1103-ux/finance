@@ -57,6 +57,7 @@ type FinancialsApiResponse = {
 };
 
 const API_TIMEOUT_MS = 10000;
+const KR_API_TIMEOUT_MS = 30000;
 const OFFICIAL_DATA_REQUIRED = '공식 데이터 연결 필요';
 
 function envValue(key: string) {
@@ -107,8 +108,8 @@ function openDartUnitLabel(currency?: string | null) {
 
 function formatOpenDartAmount(value: number | null | undefined, currency?: string | null) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
-  const formatted = value.toLocaleString('ko-KR');
-  return normalizeCurrencyLabel(currency) === 'KRW' ? `${formatted}원` : formatted;
+  if (normalizeCurrencyLabel(currency) === 'KRW') return compactAmount(value, '원');
+  return value.toLocaleString('ko-KR');
 }
 
 function compactUsdPerShare(value: number | null | undefined) {
@@ -160,9 +161,9 @@ function financialsApiUrl(company: Company) {
   return `/api/financials?${params.toString()}`;
 }
 
-async function fetchJsonWithTimeout(url: string): Promise<FinancialsApiResponse | null> {
+async function fetchJsonWithTimeout(url: string, timeoutMs = API_TIMEOUT_MS): Promise<FinancialsApiResponse | null> {
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -327,7 +328,7 @@ async function fetchKoreanFinancialsFromApi(company: Company): Promise<Financial
   if (company.country !== 'KR' || !company.corpCode) return null;
 
   const fallback = buildFallbackFinancials(company);
-  const payload = await fetchJsonWithTimeout(financialsApiUrl(company));
+  const payload = await fetchJsonWithTimeout(financialsApiUrl(company), KR_API_TIMEOUT_MS);
   if (!payload) return null;
   return mapKoreanFinancialsApiResponse(company, payload, fallback);
 }

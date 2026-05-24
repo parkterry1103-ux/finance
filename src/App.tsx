@@ -981,15 +981,53 @@ function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'
   return value;
 }
 
-function priorityMetricKey(label: string, index: number) {
-  if (/현금흐름/.test(label)) return 'cashFlow';
-  if (/영업이익|영업마진|마진/.test(label)) return 'operatingIncome';
-  if (/순이익/.test(label)) return 'netIncome';
-  if (/부채/.test(label)) return 'debtRatio';
-  if (/유동/.test(label)) return 'currentRatio';
-  if (/이자/.test(label)) return 'interestCoverage';
-  if (/매출|수요|HBM|메모리|데이터센터/.test(label)) return 'revenue';
-  return (['revenue', 'operatingIncome', 'cashFlow'] as const)[index] ?? 'revenue';
+type FinancialMetricItem = FinancialStatementSummary['metrics'][number];
+type FinancialMetricItemKey = FinancialMetricItem['key'];
+
+function priorityMetricKeys(label: string, index: number): FinancialMetricItemKey[] {
+  if (/CAPEX|가동률/.test(label)) return ['capitalExpenditures', 'cashFlow', 'revenue'];
+  if (/현금흐름|재고|R&D/.test(label)) return ['cashFlow', 'freeCashFlow', 'operatingIncome'];
+  if (/영업이익|영업이익률|영업마진|마진|수익성/.test(label)) return ['operatingIncome', 'netIncome'];
+  if (/순이익/.test(label)) return ['netIncome', 'operatingIncome'];
+  if (/부채/.test(label)) return ['debtRatio', 'currentRatio'];
+  if (/유동/.test(label)) return ['currentRatio', 'cashFlow'];
+  if (/이자/.test(label)) return ['interestCoverage', 'operatingIncome'];
+  if (/매출|수요|HBM|메모리|데이터센터|수주잔고/.test(label)) return ['revenue', 'operatingIncome', 'cashFlow'];
+  return ([
+    ['revenue', 'operatingIncome', 'cashFlow'],
+    ['operatingIncome', 'revenue', 'netIncome'],
+    ['cashFlow', 'freeCashFlow', 'revenue'],
+  ] as FinancialMetricItemKey[][])[index] ?? ['revenue'];
+}
+
+function connectedPriorityMetric(
+  metricByKey: Map<FinancialMetricItemKey, FinancialMetricItem>,
+  keys: FinancialMetricItemKey[],
+) {
+  for (const key of keys) {
+    const metricItem = metricByKey.get(key);
+    if (usableFinancialMetricValue(metricItem)) return metricItem;
+  }
+  return undefined;
+}
+
+function connectedPriorityLabel(label: string, metricItem: FinancialMetricItem) {
+  if (metricItem.key === 'operatingIncome' && /영업이익률|영업마진|마진|수익성/.test(label)) return '영업이익';
+  return label;
+}
+
+function connectedPriorityNote(summary: FinancialStatementSummary, metricItem: FinancialMetricItem) {
+  if (summary.source === 'OpenDART') {
+    if (metricItem.key === 'revenue') return `${metricItem.beginnerExplanation} 매출 기준으로 수요가 공시 실적에 반영되는지 봅니다. ${metricItem.keyTakeaway}`;
+    if (metricItem.key === 'operatingIncome') return `${metricItem.beginnerExplanation} 영업이익 금액으로 수익성이 실적에 반영되는지 봅니다. ${metricItem.keyTakeaway}`;
+    if (metricItem.key === 'cashFlow' || metricItem.key === 'freeCashFlow') return `${metricItem.beginnerExplanation} 현금흐름 기준으로 확인합니다. ${metricItem.keyTakeaway}`;
+    if (metricItem.key === 'capitalExpenditures') return `${metricItem.beginnerExplanation} CAPEX 금액 기준으로 투자 부담과 생산능력을 함께 봅니다. ${metricItem.keyTakeaway}`;
+    return `${metricItem.beginnerExplanation} ${metricItem.keyTakeaway}`;
+  }
+  if (metricItem.key === 'revenue') return `${metricItem.beginnerExplanation} 매출 기준으로 수요가 실적에 반영되는지 봅니다.`;
+  if (metricItem.key === 'operatingIncome') return `${metricItem.beginnerExplanation} 영업이익 금액으로 수익성을 확인합니다.`;
+  if (metricItem.key === 'cashFlow' || metricItem.key === 'freeCashFlow') return `${metricItem.beginnerExplanation} 현금흐름 기준으로 확인합니다.`;
+  return `${metricItem.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`;
 }
 
 function connectFinancialPriorityMetrics(
@@ -1001,22 +1039,15 @@ function connectFinancialPriorityMetrics(
 
   const metricByKey = new Map(summary.metrics.map((metricItem) => [metricItem.key, metricItem]));
   return metrics.map((item, index) => {
-    const financialMetric = metricByKey.get(priorityMetricKey(item.label, index));
+    const financialMetric = connectedPriorityMetric(metricByKey, priorityMetricKeys(item.label, index));
     const value = usableFinancialMetricValue(financialMetric);
     if (!value || !financialMetric) return item;
-    const label =
-      financialMetric.key === 'operatingIncome' && /영업이익률|영업마진|마진/.test(item.label)
-        ? financialMetric.label
-        : item.label;
 
     return {
       ...item,
-      label,
+      label: connectedPriorityLabel(item.label, financialMetric),
       value,
-      note:
-        summary.source === 'OpenDART'
-          ? `${financialMetric.beginnerExplanation} ${financialMetric.keyTakeaway}`
-          : `${financialMetric.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`,
+      note: connectedPriorityNote(summary, financialMetric),
     };
   });
 }
