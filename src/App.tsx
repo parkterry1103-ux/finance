@@ -1004,9 +1004,14 @@ function connectFinancialPriorityMetrics(
     const financialMetric = metricByKey.get(priorityMetricKey(item.label, index));
     const value = usableFinancialMetricValue(financialMetric);
     if (!value || !financialMetric) return item;
+    const label =
+      financialMetric.key === 'operatingIncome' && /영업이익률|영업마진|마진/.test(item.label)
+        ? financialMetric.label
+        : item.label;
 
     return {
       ...item,
+      label,
       value,
       note:
         summary.source === 'OpenDART'
