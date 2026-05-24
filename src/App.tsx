@@ -969,7 +969,10 @@ function isConnectedFinancialSummary(summary: FinancialStatementSummary) {
 }
 
 function shouldDisplayConnectedFinancials(company: Company, summary: FinancialStatementSummary) {
-  return company.country === 'US' && Boolean(company.cik) && isConnectedFinancialSummary(summary);
+  if (!isConnectedFinancialSummary(summary)) return false;
+  if (company.country === 'US') return Boolean(company.cik);
+  if (company.country === 'KR') return Boolean(company.corpCode);
+  return false;
 }
 
 function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'][number]) {
@@ -1360,11 +1363,19 @@ function financialFreshnessInfo(
   }
 
   const reportName = [summary.fiscalYear, summary.fiscalPeriod, summary.reportType].filter(Boolean).join(' ') || fallback.reportName;
+  const sourceLabel =
+    summary.source === 'OpenDART'
+      ? summary.sourceStatus === 'partial'
+        ? 'OpenDART 일부 원문 연결됨'
+        : 'OpenDART 원문 연결됨'
+      : summary.sourceStatus === 'partial'
+        ? 'SEC 일부 연결됨'
+        : 'SEC 원문 연결됨';
   return {
     reportName,
     filingDate: summary.filingDate ?? fallback.filingDate,
-    status: summary.sourceStatus === 'partial' ? 'SEC 일부 연결됨' : 'SEC 원문 연결됨',
-    sourceLabel: summary.sourceStatus === 'partial' ? 'SEC 일부 연결됨' : 'SEC 원문 연결됨',
+    status: sourceLabel,
+    sourceLabel,
     sourceClass: 'direct',
   };
 }

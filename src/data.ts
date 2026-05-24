@@ -12,6 +12,7 @@ export type FinancialMetricKey =
   | 'debtRatio'
   | 'operatingMargin'
   | 'cashFlow'
+  | 'capitalExpenditures'
   | 'currentRatio'
   | 'interestCoverage'
   | 'freeCashFlow'
@@ -6430,6 +6431,7 @@ export const financialMetricGuides: Record<FinancialMetricKey, string> = {
   debtRatio: '빚 부담이 얼마나 큰지 보는 지표',
   operatingMargin: '매출 중 본업 이익으로 남는 비율',
   cashFlow: '실제로 현금이 들어오고 나가는 흐름',
+  capitalExpenditures: '미래 생산능력을 위해 설비와 자산에 투자한 금액',
   currentRatio: '단기 부채를 감당할 유동자산 여력을 보는 지표',
   interestCoverage: '영업이익으로 이자비용을 얼마나 감당하는지 보는 지표',
   freeCashFlow: '투자를 하고도 남는 현금 여력을 보는 지표',

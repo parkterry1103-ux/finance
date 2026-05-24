@@ -43,6 +43,7 @@ type SelectedMetric = {
 
 type DartAccountRow = {
   rcept_no?: string;
+  sj_div?: string;
   account_nm?: string;
   thstrm_amount?: string;
 };
@@ -297,6 +298,15 @@ function accountMatches(accountName: string, alias: string) {
   return normalizedAccount.includes(normalizedAlias);
 }
 
+function statementMatches(row: DartAccountRow, statements?: string[]) {
+  if (!statements?.length || !row.sj_div) return true;
+  return statements.includes(row.sj_div);
+}
+
+function isPerShareAccount(accountName?: string) {
+  return compactAccountName(accountName).includes('주당');
+}
+
 function parseDartAmount(value?: string | null) {
   const raw = String(value ?? '').trim();
   if (!raw || raw === '-' || raw.toLowerCase() === 'null') return null;
@@ -311,9 +321,15 @@ function parseDartAmount(value?: string | null) {
   return parenthesized ? -Math.abs(numeric) : numeric;
 }
 
-function findDartMetric(rows: DartAccountRow[], aliases: string[]) {
+function findDartMetric(rows: DartAccountRow[], aliases: string[], options: { statements?: string[]; excludePerShare?: boolean } = {}) {
+  const candidates = rows.filter((item) => {
+    if (!statementMatches(item, options.statements)) return false;
+    if (options.excludePerShare && isPerShareAccount(item.account_nm)) return false;
+    return true;
+  });
+
   for (const alias of aliases) {
-    const row = rows.find((item) => accountMatches(item.account_nm ?? '', alias));
+    const row = candidates.find((item) => accountMatches(item.account_nm ?? '', alias));
     const value = parseDartAmount(row?.thstrm_amount);
     if (value !== null) return value;
   }
@@ -416,17 +432,17 @@ function recentDartYears() {
 
 function buildDartMetrics(rows: DartAccountRow[]) {
   const values = {
-    revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue),
-    operatingIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingIncome),
-    netIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.netIncome),
-    operatingCashFlow: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingCashFlow),
-    totalLiabilities: findDartMetric(rows, DART_ACCOUNT_ALIASES.totalLiabilities),
-    stockholdersEquity: findDartMetric(rows, DART_ACCOUNT_ALIASES.stockholdersEquity),
-    assetsCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.assetsCurrent),
-    liabilitiesCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.liabilitiesCurrent),
-    interestExpense: findDartMetric(rows, DART_ACCOUNT_ALIASES.interestExpense),
-    capitalExpenditures: findDartMetric(rows, DART_ACCOUNT_ALIASES.capitalExpenditures),
-    depreciationAndAmortization: findDartMetric(rows, DART_ACCOUNT_ALIASES.depreciationAndAmortization),
+    revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue, { statements: ['IS', 'CIS'], excludePerShare: true }),
+    operatingIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingIncome, { statements: ['IS', 'CIS'], excludePerShare: true }),
+    netIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.netIncome, { statements: ['IS', 'CIS'], excludePerShare: true }),
+    operatingCashFlow: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingCashFlow, { statements: ['CF'] }),
+    totalLiabilities: findDartMetric(rows, DART_ACCOUNT_ALIASES.totalLiabilities, { statements: ['BS'] }),
+    stockholdersEquity: findDartMetric(rows, DART_ACCOUNT_ALIASES.stockholdersEquity, { statements: ['BS'] }),
+    assetsCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.assetsCurrent, { statements: ['BS'] }),
+    liabilitiesCurrent: findDartMetric(rows, DART_ACCOUNT_ALIASES.liabilitiesCurrent, { statements: ['BS'] }),
+    interestExpense: findDartMetric(rows, DART_ACCOUNT_ALIASES.interestExpense, { statements: ['IS', 'CIS'], excludePerShare: true }),
+    capitalExpenditures: findDartMetric(rows, DART_ACCOUNT_ALIASES.capitalExpenditures, { statements: ['CF'] }),
+    depreciationAndAmortization: findDartMetric(rows, DART_ACCOUNT_ALIASES.depreciationAndAmortization, { statements: ['CF'] }),
   };
   const freeCashFlow =
     values.operatingCashFlow !== null && values.capitalExpenditures !== null

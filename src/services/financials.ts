@@ -90,6 +90,11 @@ function compactUsdMetric(value: number | null | undefined) {
   return compactAmount(value, 'USD');
 }
 
+function compactKrwMetric(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
+  return compactAmount(value, '원');
+}
+
 function compactUsdPerShare(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
   return `$${value.toFixed(2)}`;
@@ -122,6 +127,15 @@ function apiMetricValue(metrics: FinancialsApiMetrics | undefined, key: keyof Fi
 }
 
 function financialsApiUrl(company: Company) {
+  if (company.country === 'KR' && company.corpCode) {
+    const params = new URLSearchParams({
+      country: company.country,
+      corpCode: company.corpCode,
+      companyId: company.id,
+    });
+    return `/api/financials?${params.toString()}`;
+  }
+
   const params = new URLSearchParams({
     country: company.country,
     companyId: company.id,
@@ -216,6 +230,72 @@ function mapFinancialsApiResponse(
   };
 }
 
+function mapKoreanFinancialsApiResponse(
+  company: Company,
+  payload: FinancialsApiResponse,
+  fallback: FinancialStatementSummary,
+): FinancialStatementSummary | null {
+  if (!isConnectedApiStatus(payload.sourceStatus)) return null;
+
+  const metrics = payload.metrics ?? {};
+  const revenue = apiMetricValue(metrics, 'revenue');
+  const operatingIncome = apiMetricValue(metrics, 'operatingIncome');
+  const netIncome = apiMetricValue(metrics, 'netIncome');
+  const operatingCashFlow = apiMetricValue(metrics, 'operatingCashFlow');
+  const debtToEquity = apiMetricValue(metrics, 'debtToEquity');
+  const currentRatio = apiMetricValue(metrics, 'currentRatio');
+  const interestCoverage = apiMetricValue(metrics, 'interestCoverage');
+  const capitalExpenditures = apiMetricValue(metrics, 'capitalExpenditures');
+  const freeCashFlow = apiMetricValue(metrics, 'freeCashFlow');
+  const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
+
+  const metricItems: FinancialMetric[] = [
+    metric('revenue', '매출', compactKrwMetric(revenue), 'OpenDART 원문 기준 매출입니다. 사업부별 수요와 함께 확인합니다.', '원'),
+    metric('operatingIncome', '영업이익', compactKrwMetric(operatingIncome), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', '원'),
+    metric('netIncome', '순이익', compactKrwMetric(netIncome), '세금과 금융비용까지 반영한 최종 이익입니다.', '원'),
+    metric('cashFlow', '영업현금흐름', compactKrwMetric(operatingCashFlow), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', '원'),
+    metric('debtRatio', '부채비율', compactRatio(debtToEquity), 'OpenDART 부채총계와 자본총계로 보는 안정성 지표입니다.', 'x'),
+    metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
+    metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),
+    metric('capitalExpenditures', 'CAPEX', compactKrwMetric(capitalExpenditures), '설비와 유형자산 취득에 들어간 투자 금액입니다.', '원'),
+    metric('freeCashFlow', 'FCF', compactKrwMetric(freeCashFlow), '영업현금흐름에서 CAPEX를 뺀 현금 여력입니다.', '원'),
+    metric(
+      'depreciationAndAmortization',
+      '감가상각비',
+      compactKrwMetric(depreciationAndAmortization),
+      '설비와 무형자산 비용이 기간별로 반영되는 금액입니다.',
+      '원',
+    ),
+  ];
+
+  const sourceLabel = payload.sourceStatus === 'partial' ? 'OpenDART 일부 원문 연결됨' : 'OpenDART 원문 연결됨';
+  const reportType = payload.reportType ?? fallback.reportType;
+  const fiscalYear = payload.fiscalYear ? String(payload.fiscalYear) : fallback.fiscalYear;
+  const filingDate = payload.asOf ?? fallback.filingDate;
+
+  return {
+    ...fallback,
+    companyId: company.id,
+    status: 'api-live',
+    fiscalYear,
+    reportType,
+    updatedAt: new Date().toISOString(),
+    source: 'OpenDART',
+    sourceLabel,
+    isApiData: true,
+    isFallbackData: false,
+    metrics: metricItems,
+    beginnerExplanation: 'OpenDART에서 가져온 공식 재무제표 숫자입니다. 세부 해석과 사업 설명은 기존 공시 해설과 함께 봅니다.',
+    keyTakeaway:
+      payload.sourceStatus === 'partial'
+        ? '일부 OpenDART 숫자가 연결되었습니다. 없는 항목은 가짜 숫자 대신 연결 필요 상태로 유지합니다.'
+        : 'OpenDART 공식 숫자가 연결되었습니다. 먼저 볼 핵심 지표만 화면에 반영합니다.',
+    fiscalPeriod: payload.fiscalPeriod ?? fallback.fiscalPeriod,
+    filingDate,
+    sourceStatus: payload.sourceStatus,
+  };
+}
+
 async function fetchUSFinancialsFromApi(company: Company): Promise<FinancialStatementSummary | null> {
   if (company.country !== 'US' || !company.cik) return null;
 
@@ -223,6 +303,15 @@ async function fetchUSFinancialsFromApi(company: Company): Promise<FinancialStat
   const payload = await fetchJsonWithTimeout(financialsApiUrl(company));
   if (!payload) return null;
   return mapFinancialsApiResponse(company, payload, fallback);
+}
+
+async function fetchKoreanFinancialsFromApi(company: Company): Promise<FinancialStatementSummary | null> {
+  if (company.country !== 'KR' || !company.corpCode) return null;
+
+  const fallback = buildFallbackFinancials(company);
+  const payload = await fetchJsonWithTimeout(financialsApiUrl(company));
+  if (!payload) return null;
+  return mapKoreanFinancialsApiResponse(company, payload, fallback);
 }
 
 function latestSecFact(units?: Record<string, SecFactUnit[]>) {
@@ -401,8 +490,8 @@ export async function fetchUSFinancialsFromSEC(cik?: string): Promise<FinancialS
 
 export async function fetchFinancialsByCompany(company: Company): Promise<FinancialStatementSummary> {
   if (company.country === 'KR') {
-    const dartSummary = await fetchKoreanFinancialsFromOpenDart(company.corpCode);
-    return dartSummary ?? buildFallbackFinancials(company);
+    const apiSummary = await fetchKoreanFinancialsFromApi(company);
+    return apiSummary ?? buildFallbackFinancials(company);
   }
 
   const apiSummary = await fetchUSFinancialsFromApi(company);
