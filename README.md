@@ -166,6 +166,8 @@ Vercel에서 이 폴더를 프로젝트로 가져오면 됩니다.
 
 프론트 화면은 API/DB가 없어도 기존 `src/data.ts` mock/fallback 데이터를 계속 보여줍니다. 자동 수집 데이터는 기존 재무제표 해설, DART/SEC 분석, MD&A 해설을 대체하지 않고 보강하는 용도입니다.
 
+`/api/financials`의 US SEC CompanyFacts 데이터는 프론트의 “재무 쉽게 보기” 화면에 연결되어 있습니다. `sourceStatus`가 `direct` 또는 `partial`일 때만 기존 “먼저 볼 숫자 3개” 카드에 실제 SEC 숫자를 일부 표시하고, 실패하거나 값이 없으면 기존 fallback을 유지합니다. 가짜 숫자는 생성하지 않으며, KR/OpenDART 프론트 연결은 다음 단계에서 진행합니다.
+
 ### 추가된 주요 파일
 
 - `src/services/financials.ts`: OpenDART, SEC CompanyFacts 조회 구조와 fallback

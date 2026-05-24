@@ -4,8 +4,16 @@ export type RiskLevel = 'low' | 'medium' | 'high';
 export type CompanyStatus = 'core' | 'watch' | 'opportunity';
 export type SourceType = 'official' | 'verified-news' | 'analyst-api-ready' | 'seed-model';
 export type CompanyFinancialStatus = 'api-live' | 'fallback' | 'needs-source';
-export type FilingSourceStatus = 'direct' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing' | 'listing-unknown';
-export type FinancialMetricKey = 'revenue' | 'operatingIncome' | 'netIncome' | 'debtRatio' | 'operatingMargin' | 'cashFlow';
+export type FilingSourceStatus = 'direct' | 'partial' | 'search-only' | 'needs-link' | 'private-company' | 'no-public-filing' | 'listing-unknown';
+export type FinancialMetricKey =
+  | 'revenue'
+  | 'operatingIncome'
+  | 'netIncome'
+  | 'debtRatio'
+  | 'operatingMargin'
+  | 'cashFlow'
+  | 'currentRatio'
+  | 'interestCoverage';
 export type RelationshipEvidenceType =
   | 'company-filing'
   | 'annual-report'
@@ -6419,6 +6427,8 @@ export const financialMetricGuides: Record<FinancialMetricKey, string> = {
   debtRatio: '빚 부담이 얼마나 큰지 보는 지표',
   operatingMargin: '매출 중 본업 이익으로 남는 비율',
   cashFlow: '실제로 현금이 들어오고 나가는 흐름',
+  currentRatio: '단기 부채를 감당할 유동자산 여력을 보는 지표',
+  interestCoverage: '영업이익으로 이자비용을 얼마나 감당하는지 보는 지표',
 };
 
 export const marketMovers: MarketMover[] = [

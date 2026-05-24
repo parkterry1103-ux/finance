@@ -964,6 +964,54 @@ function beginnerMetricStatusLabel(value: string) {
   return '연결된 데이터 기준';
 }
 
+const financialApiDisplayCompanyIds = new Set(['us-semiconductors-nvidia', 'ai-datacenter-micron']);
+
+function isConnectedFinancialSummary(summary: FinancialStatementSummary) {
+  return summary.isApiData && (summary.sourceStatus === 'direct' || summary.sourceStatus === 'partial');
+}
+
+function shouldDisplayConnectedFinancials(company: Company, summary: FinancialStatementSummary) {
+  return financialApiDisplayCompanyIds.has(company.id) && isConnectedFinancialSummary(summary);
+}
+
+function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'][number]) {
+  const value = metric?.value ?? '';
+  if (!value || /공식 데이터 연결 필요|원문|MD&A|공시|IR|데이터 연결|확인 필요/i.test(value)) return undefined;
+  return value;
+}
+
+function priorityMetricKey(label: string, index: number) {
+  if (/현금흐름/.test(label)) return 'cashFlow';
+  if (/영업이익|영업마진|마진/.test(label)) return 'operatingIncome';
+  if (/순이익/.test(label)) return 'netIncome';
+  if (/부채/.test(label)) return 'debtRatio';
+  if (/유동/.test(label)) return 'currentRatio';
+  if (/이자/.test(label)) return 'interestCoverage';
+  if (/매출|수요|HBM|메모리|데이터센터/.test(label)) return 'revenue';
+  return (['revenue', 'operatingIncome', 'cashFlow'] as const)[index] ?? 'revenue';
+}
+
+function connectFinancialPriorityMetrics(
+  company: Company,
+  summary: FinancialStatementSummary,
+  metrics: Array<{ label: string; value: string; note: string }>,
+) {
+  if (!shouldDisplayConnectedFinancials(company, summary)) return metrics;
+
+  const metricByKey = new Map(summary.metrics.map((metricItem) => [metricItem.key, metricItem]));
+  return metrics.map((item, index) => {
+    const financialMetric = metricByKey.get(priorityMetricKey(item.label, index));
+    const value = usableFinancialMetricValue(financialMetric);
+    if (!value || !financialMetric) return item;
+
+    return {
+      ...item,
+      value,
+      note: `${financialMetric.beginnerExplanation} 기존 산업 해설과 함께 확인합니다.`,
+    };
+  });
+}
+
 function beginnerSignalSet(company: Company) {
   const stage = companyValueChainStage(company);
   if (stage.includes('메모리') || stage.includes('HBM')) {
@@ -1278,6 +1326,31 @@ function dataFreshnessInfo(company: Company, reportLink: ReportLink) {
               ? '상장 정보 확인 필요'
               : '원문 연결 필요';
   return { reportName, filingDate, status };
+}
+
+function financialFreshnessInfo(
+  company: Company,
+  reportLink: ReportLink,
+  summary: FinancialStatementSummary,
+  fallback: ReturnType<typeof dataFreshnessInfo>,
+  fallbackSourceLabel: string,
+) {
+  if (!shouldDisplayConnectedFinancials(company, summary)) {
+    return {
+      ...fallback,
+      sourceLabel: fallbackSourceLabel,
+      sourceClass: reportLinkClass(reportLink),
+    };
+  }
+
+  const reportName = [summary.fiscalYear, summary.fiscalPeriod, summary.reportType].filter(Boolean).join(' ') || fallback.reportName;
+  return {
+    reportName,
+    filingDate: summary.filingDate ?? fallback.filingDate,
+    status: summary.sourceStatus === 'partial' ? 'SEC 일부 연결됨' : 'SEC 원문 연결됨',
+    sourceLabel: summary.sourceStatus === 'partial' ? 'SEC 일부 연결됨' : 'SEC 원문 연결됨',
+    sourceClass: 'direct',
+  };
 }
 
 function newsKeywords(company: Company) {
@@ -2777,6 +2850,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const cashFlowMetric = metricByKey.get('cashFlow');
   const debtRatioMetric = metricByKey.get('debtRatio');
   const operatingMarginMetric = metricByKey.get('operatingMargin');
+  const shouldUseConnectedFinancials = shouldDisplayConnectedFinancials(company, financialSummary);
+  const shouldUseSummaryMetrics = company.country === 'KR' ? financialSummary.isApiData : shouldUseConnectedFinancials;
   const analysisRevenueDisplay = revenueDisplayForCompany(company, displayMetrics);
   const beginnerConclusion = beginnerInterpretation(disclosureAnalysis, company);
   const firstWatchPoint = watchPoints[0] ?? '다음 공시에서 매출, 현금흐름, 부채가 같은 방향으로 개선되는지 확인합니다.';
@@ -2785,30 +2860,39 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const quickMetrics = [
     {
       label: '매출',
-      value: financialSummary.isApiData && revenueMetric ? revenueMetric.value : analysisRevenueDisplay.primary,
+      value: shouldUseSummaryMetrics && revenueMetric ? revenueMetric.value : analysisRevenueDisplay.primary,
       note:
-        financialSummary.isApiData && revenueMetric
+        shouldUseSummaryMetrics && revenueMetric
           ? `${revenueMetric.beginnerExplanation} · ${revenueMetric.unit ?? sourceUnitShort(displayMetrics.revenueUnit, company.country)}`
           : analysisRevenueDisplay.sourceUnit,
     },
     {
       label: operatingIncomeMetric ? '영업이익' : '영업마진',
-      value: operatingIncomeMetric?.value ?? displayMetrics.opMargin,
-      note: operatingIncomeMetric ? operatingIncomeMetric.beginnerExplanation : '영업이익 금액은 원문 해설에서 확인하고, 첫 화면에서는 본업 수익성 비율을 먼저 봅니다.',
+      value: shouldUseSummaryMetrics ? operatingIncomeMetric?.value ?? displayMetrics.opMargin : displayMetrics.opMargin,
+      note:
+        shouldUseSummaryMetrics && operatingIncomeMetric
+          ? operatingIncomeMetric.beginnerExplanation
+          : '영업이익 금액은 원문 해설에서 확인하고, 첫 화면에서는 본업 수익성 비율을 먼저 봅니다.',
     },
     {
       label: '순이익',
-      value: netIncomeMetric?.value ?? missingFinancialValue,
-      note: netIncomeMetric?.beginnerExplanation ?? '세금과 비용까지 반영한 최종 이익입니다. 숫자가 없으면 원문을 실제 금액처럼 꾸미지 않습니다.',
+      value: shouldUseSummaryMetrics ? netIncomeMetric?.value ?? missingFinancialValue : missingFinancialValue,
+      note:
+        shouldUseSummaryMetrics && netIncomeMetric
+          ? netIncomeMetric.beginnerExplanation
+          : '세금과 비용까지 반영한 최종 이익입니다. 숫자가 없으면 원문을 실제 금액처럼 꾸미지 않습니다.',
     },
     {
       label: '현금흐름',
-      value: cashFlowMetric?.value ?? missingFinancialValue,
-      note: cashFlowMetric?.beginnerExplanation ?? '실제로 현금이 들어오고 나가는 흐름입니다. 이익과 같이 움직이는지 봅니다.',
+      value: shouldUseSummaryMetrics ? cashFlowMetric?.value ?? missingFinancialValue : missingFinancialValue,
+      note:
+        shouldUseSummaryMetrics && cashFlowMetric
+          ? cashFlowMetric.beginnerExplanation
+          : '실제로 현금이 들어오고 나가는 흐름입니다. 이익과 같이 움직이는지 봅니다.',
     },
     {
       label: debtRatioMetric ? '부채비율' : '영업마진',
-      value: financialSummary.isApiData ? debtRatioMetric?.value ?? operatingMarginMetric?.value ?? displayMetrics.debtRatio : displayMetrics.debtRatio,
+      value: shouldUseSummaryMetrics ? debtRatioMetric?.value ?? operatingMarginMetric?.value ?? displayMetrics.debtRatio : displayMetrics.debtRatio,
       note: debtRatioMetric?.beginnerExplanation ?? operatingMarginMetric?.beginnerExplanation ?? '빚 부담과 본업 수익성을 같이 봅니다.',
     },
   ];
@@ -2839,6 +2923,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             : '직접 원문 URL이 아직 연결되지 않았습니다. 나중에 reportUrl을 넣으면 바로 연결됩니다.';
   const explainerMoat = companyMoatSummary(company);
   const explainerMetrics = beginnerIndustryMetrics(company, displayMetrics);
+  const financialPriorityMetrics = connectFinancialPriorityMetrics(company, financialSummary, explainerMetrics);
+  const financialDataFreshness = financialFreshnessInfo(company, primaryReportLink, financialSummary, dataFreshness, sourceStatusShort);
   const explainerSignals = beginnerSignalSet(company);
   const relatedLinks = links.filter((link) => link.source === company.id || link.target === company.id);
   const relatedCompanies = relatedLinks
@@ -3085,11 +3171,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
               <p>전체 재무제표보다 이 회사에서 먼저 확인할 숫자와 해석만 짧게 봅니다.</p>
             </div>
             <div className="analysis-overview-side">
-              <span className={`analysis-source-pill ${reportLinkClass(primaryReportLink)}`}>{sourceStatusShort}</span>
+              <span className={`analysis-source-pill ${financialDataFreshness.sourceClass}`}>{financialDataFreshness.sourceLabel}</span>
               <div className="data-freshness-card" aria-label="재무 데이터 기준">
-                <strong>기준 보고서: {dataFreshness.reportName}</strong>
-                <span>공시일: {dataFreshness.filingDate}</span>
-                <em>{dataFreshness.status}</em>
+                <strong>기준 보고서: {financialDataFreshness.reportName}</strong>
+                <span>공시일: {financialDataFreshness.filingDate}</span>
+                <em>{financialDataFreshness.status}</em>
               </div>
               <small className="analysis-report-meta">{primaryReportLink.statusDetail}</small>
             </div>
@@ -3117,7 +3203,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             </div>
             <p>{companyValueChainStage(company)} 흐름에서는 아래 3개를 먼저 확인합니다. 값이 없으면 가짜 숫자 대신 연결 필요 상태로 표시합니다.</p>
             <div className="financial-priority-grid">
-              {explainerMetrics.map((metric) => (
+              {financialPriorityMetrics.map((metric) => (
                 <article key={metric.label}>
                   <span><BarChart3 size={14} />{metric.label}</span>
                   <strong>{beginnerMetricValueLabel(metric.value)}</strong>
