@@ -15234,3 +15234,332 @@ body,
     min-height: 230px;
   }
 }
+
+/* Dark premium readability pass: typography and contrast over atmosphere. */
+:root {
+  --story-font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Noto Sans KR", "Segoe UI", sans-serif;
+  --story-text-primary: #f8fafc;
+  --story-text-secondary: #d6e0ef;
+  --story-text-muted: #a9b8d0;
+  --story-text-disabled: #7d8ca5;
+  --story-card-title: #f8fafc;
+  --story-card-body: #d6e0ef;
+  --story-badge-text: #dbeafe;
+  --story-readable-panel: rgba(12, 25, 48, 0.92);
+  --story-readable-panel-strong: rgba(18, 36, 66, 0.96);
+  --story-readable-border: rgba(219, 234, 254, 0.24);
+}
+
+.story-dark-shell,
+.story-dark-shell button,
+.story-dark-shell input,
+.story-dark-shell textarea,
+.story-dark-shell select {
+  font-family: var(--story-font-sans);
+}
+
+.story-dark-shell {
+  color: var(--story-text-primary);
+  font-size: 16px;
+  font-weight: 560;
+  line-height: 1.58;
+  font-variant-numeric: tabular-nums;
+}
+
+.story-dark-shell :is(h1, h2, h3, strong, b) {
+  color: var(--story-card-title);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.story-dark-shell :is(p, li, small, em) {
+  color: var(--story-card-body);
+  font-weight: 560;
+  line-height: 1.62;
+  opacity: 1;
+}
+
+.story-dark-shell :is(small, em, .eyebrow, .breadcrumb, .home-mvp-note) {
+  color: var(--story-text-muted);
+  font-weight: 650;
+}
+
+.story-dark-shell :is(.story-disabled, .pick-disabled-action, button:disabled, [aria-disabled="true"]) {
+  color: var(--story-text-disabled);
+  opacity: 1;
+}
+
+.story-dark-shell :is(
+  .hero-principle-row span,
+  .analysis-market-pill,
+  .reference-status-pill,
+  .pick-move,
+  .pick-section-kicker,
+  .card-topline span,
+  .mini-tag-row span,
+  .flow-help-pills span,
+  .map-mode-strip button,
+  .story-pill,
+  .story-term-badge,
+  .value-chain-steps span,
+  .pick-chip-row span,
+  .scope-pill,
+  .role-badge,
+  .risk-badge,
+  .confidence-badge
+) {
+  border-color: rgba(219, 234, 254, 0.3);
+  color: var(--story-badge-text);
+  background: rgba(96, 165, 250, 0.16);
+  font-weight: 800;
+  opacity: 1;
+}
+
+.story-dark-shell :is(
+  .ghost-action,
+  .analysis-link-button,
+  .pick-detail-actions button,
+  .pick-advanced-actions summary,
+  .map-advanced-actions summary,
+  .financial-more-actions button,
+  .flow-focus-actions button,
+  .topbar-actions button,
+  .topbar-report-action
+) {
+  color: #edf6ff;
+  border-color: rgba(219, 234, 254, 0.22);
+  background: rgba(255, 255, 255, 0.075);
+  font-weight: 800;
+}
+
+.story-dark-shell :is(
+  .ghost-action:hover,
+  .analysis-link-button:hover,
+  .pick-detail-actions button:hover,
+  .financial-more-actions button:hover,
+  .topbar-actions button:hover
+) {
+  color: #ffffff;
+  border-color: rgba(125, 211, 252, 0.46);
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel,
+.app-shell.story-dark-shell.ai-mvp-map .topbar,
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-card {
+  color: var(--story-text-primary);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel > *,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel :is(
+  .panel-heading,
+  .detail-card,
+  .relationship-brief-grid article,
+  .beginner-metrics-compact article,
+  .direct-connections-card,
+  .map-advanced-actions,
+  .report-state-note,
+  .reference-status-card
+) {
+  border-color: var(--story-readable-border);
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(125, 211, 252, 0.12), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)),
+    var(--story-readable-panel);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel :is(h2, strong, .panel-title-row h2, .relationship-brief-grid article strong, .detail-card strong) {
+  color: #ffffff;
+  font-weight: 850;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel :is(p, small, em, span, .role-explanation) {
+  color: var(--story-card-body);
+  opacity: 1;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel :is(.eyebrow, .panel-heading-actions span, .relationship-brief-grid article > span, .section-title span) {
+  color: #bfdbfe;
+  font-weight: 800;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel .relationship-brief-grid article span em,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel .confidence-badge em {
+  color: var(--story-text-muted);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.company-row-card, .company-row, .anchor-list, .term-guide, .stage-filter, .selected-company-context) {
+  border-color: rgba(219, 234, 254, 0.2);
+  background: rgba(12, 25, 48, 0.74);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.company-row-main strong, .company-row strong, .anchor-list strong) {
+  color: #ffffff;
+  font-weight: 850;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.company-row-main small, .company-row-main em, .anchor-list small, .brand-block p, .stage-filter span) {
+  color: var(--story-card-body);
+  opacity: 1;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel .company-row-card.selected,
+.app-shell.story-dark-shell.ai-mvp-map .left-panel .company-row-card:has(.company-row:focus-visible) {
+  border-color: rgba(125, 211, 252, 0.48);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(125, 211, 252, 0.18), transparent 38%),
+    rgba(15, 35, 68, 0.92);
+  box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.1), 0 0 34px rgba(59, 130, 246, 0.22);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel .company-row-card:hover {
+  border-color: rgba(147, 197, 253, 0.36);
+  background: rgba(18, 36, 66, 0.9);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button {
+  min-height: 206px;
+  padding: 18px 16px;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button strong {
+  min-height: auto;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.28;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button small {
+  color: var(--story-card-body);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button em {
+  color: var(--story-badge-text);
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(219, 234, 254, 0.28);
+  font-weight: 850;
+}
+
+.story-analysis-shell .financial-priority-grid article strong,
+.story-analysis-shell .financial-one-line-panel strong,
+.story-dark-shell :is(.price-badge, .data-freshness-card, .metric, .financial-priority-grid article strong, .beginner-metrics-compact article span) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.story-analysis-shell .financial-priority-grid article p,
+.story-analysis-shell .financial-priority-grid article small,
+.story-analysis-shell .financial-beginner-grid article p {
+  color: var(--story-card-body);
+  font-weight: 600;
+}
+
+.story-analysis-shell .financial-priority-grid article span,
+.story-analysis-shell .financial-signal-grid section strong {
+  color: var(--story-badge-text);
+  font-weight: 850;
+}
+
+.story-analysis-shell .financial-priority-grid article small {
+  color: #eff6ff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 820px) {
+  .app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button {
+    min-width: min(74vw, 252px);
+    min-height: 188px;
+  }
+
+  .app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button strong {
+    font-size: 17px;
+  }
+}
+
+.story-dark-shell :is(button.primary, a.primary, .story-primary-button, .pick-primary-action) {
+  color: #ffffff;
+  border-color: rgba(125, 211, 252, 0.42);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.98), rgba(6, 182, 212, 0.9));
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.28);
+}
+
+.story-dark-shell :is(.direct-source-button, .compact-report-action.direct, .analysis-link-button.direct, .topbar-report-action.direct) {
+  color: #eaf4ff;
+  border-color: rgba(125, 211, 252, 0.34);
+  background: rgba(125, 211, 252, 0.12);
+  font-weight: 850;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.first-look-card, .company-list, .advanced-map-entry) {
+  border-color: rgba(219, 234, 254, 0.2);
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.1), transparent 34%),
+    rgba(12, 25, 48, 0.74);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.first-look-card, .company-list, .advanced-map-entry) :is(p, small, span, em) {
+  color: var(--story-card-body);
+  opacity: 1;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.first-look-card, .company-list, .advanced-map-entry) :is(h2, h3, strong, b) {
+  color: #ffffff;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .advanced-map-entry {
+  color: var(--story-card-body);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button {
+  min-width: 0;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button strong,
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button small,
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button em {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button small {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article {
+  border-color: rgba(219, 234, 254, 0.2);
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.12), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(12, 25, 48, 0.84);
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article span {
+  color: #bfdbfe;
+  font-weight: 850;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article strong {
+  color: #ffffff;
+  font-weight: 850;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article p {
+  color: var(--story-card-body);
+  font-weight: 650;
+}
