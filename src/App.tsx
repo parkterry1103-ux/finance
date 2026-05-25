@@ -163,42 +163,42 @@ const aiStageColumns = [
 const aiFlowStages = [
   {
     stage: 'AI 수요',
-    symbol: '수요',
+    symbol: '01',
     easyTitle: 'AI를 많이 써요',
-    term: 'AI 서비스',
-    summary: '서비스 수요가 서버 투자로 이어집니다.',
+    term: 'AI 수요',
+    summary: 'AI 서비스를 많이 쓰면 뒤에서 계산할 서버가 더 필요해집니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
     stage: 'AI 칩',
-    symbol: 'GPU',
+    symbol: '02',
     easyTitle: '계산 칩이 필요해요',
     term: 'GPU / AI 칩',
-    summary: 'GPU와 맞춤형 칩이 계산을 맡습니다.',
+    summary: 'AI 계산에는 많은 일을 동시에 처리하는 칩이 필요합니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM',
-    symbol: 'HBM',
+    symbol: '03',
     easyTitle: '빠른 메모리가 필요해요',
-    term: 'HBM / 메모리',
-    summary: 'GPU 옆에서 데이터를 빠르게 주고받습니다.',
+    term: 'HBM',
+    summary: '칩 옆에서 데이터를 빠르게 꺼내주는 기억장치입니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
   },
   {
     stage: '파운드리',
-    symbol: 'FAB',
-    easyTitle: '칩을 만들어야 해요',
+    symbol: '04',
+    easyTitle: '칩을 실제로 만들어요',
     term: '파운드리',
-    summary: '설계된 칩을 실제 반도체로 생산합니다.',
+    summary: '설계된 칩을 실제 반도체로 생산하는 단계입니다.',
     companyIds: ['ai-datacenter-tsmc'],
   },
   {
     stage: '장비/전력',
-    symbol: '인프라',
+    symbol: '05',
     easyTitle: '전기·냉각이 필요해요',
-    term: '장비 / 전력',
-    summary: '전력·냉각과 장비 수요도 함께 봅니다.',
+    term: '전력 / 냉각',
+    summary: '서버가 많아지면 전기와 열 관리도 중요해집니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
   },
 ];
@@ -2411,27 +2411,27 @@ type LandingPageProps = {
 
 function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
   const aiFlowPreview = [
-    { title: '수요', summary: '클라우드/AI', icon: <Globe2 size={18} />, companies: ['Microsoft', 'Google'] },
-    { title: 'AI 칩', summary: '설계 및 가속', icon: <Radio size={18} />, companies: ['NVIDIA'] },
-    { title: '메모리', summary: 'HBM 공급', icon: <Database size={18} />, companies: ['SK하이닉스', '삼성전자'] },
-    { title: '파운드리', summary: '위탁 생산', icon: <Factory size={18} />, companies: ['TSMC'] },
-    { title: '전력', summary: '인프라 확대', icon: <LineChart size={18} />, companies: ['ASML', 'Vertiv'] },
+    { title: 'AI를 많이 써요', term: 'AI 수요', summary: 'AI 서비스를 많이 쓰면 뒤에서 계산할 서버가 더 필요해집니다.', icon: <Globe2 size={18} />, companies: ['Microsoft', 'Google'] },
+    { title: '계산 칩이 필요해요', term: 'GPU / AI 칩', summary: 'AI 계산에는 많은 일을 동시에 처리하는 칩이 필요합니다.', icon: <Radio size={18} />, companies: ['NVIDIA'] },
+    { title: '빠른 메모리가 필요해요', term: 'HBM', summary: '칩 옆에서 데이터를 빠르게 꺼내주는 기억장치입니다.', icon: <Database size={18} />, companies: ['SK하이닉스', '삼성전자'] },
+    { title: '칩을 실제로 만들어요', term: '파운드리', summary: '설계된 칩을 실제 반도체로 생산하는 단계입니다.', icon: <Factory size={18} />, companies: ['TSMC'] },
+    { title: '전기·냉각이 필요해요', term: '전력 / 냉각', summary: '서버가 많아지면 전기와 열 관리도 중요해집니다.', icon: <LineChart size={18} />, companies: ['ASML', 'Vertiv'] },
   ];
   const trendCards = [
     {
-      title: 'AI 반도체',
-      note: 'AI 칩 수요 강세',
-      icon: <Cpu size={18} />,
+      title: '왜 움직였나',
+      note: '오늘 이슈가 주가에 영향을 준 이유',
+      icon: <Newspaper size={18} />,
     },
     {
-      title: '전력 인프라',
-      note: '전력 수요 확대',
-      icon: <Zap size={18} />,
+      title: '같이 볼 회사',
+      note: '한 회사가 아니라 연결된 기업들',
+      icon: <Network size={18} />,
     },
     {
-      title: '클라우드 수요',
-      note: '기업 IT 투자 증가',
-      icon: <Cloud size={18} />,
+      title: '숫자 3개',
+      note: '마지막에 확인할 핵심 지표',
+      icon: <BarChart3 size={18} />,
     },
   ];
   const issueCards = [
@@ -2494,14 +2494,14 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           <div className="home-hero-copy">
             <p className="home-kicker">주가해부실 · 시장 흐름 지도</p>
             <h1>
-              <span>오늘 시장 흐름,</span>
-              <span>한눈에.</span>
+              <span>오늘 이슈가</span>
+              <span>어떤 회사로 이어질까요?</span>
             </h1>
-            <p>뉴스 하나가 왜 이 주가를 움직였는지 — 흐름으로 봅니다.</p>
+            <p>뉴스가 왜 이 회사로 이어지는지, 한눈에. 어려운 용어보다 흐름부터 보고, 오늘 이슈가 어떤 기업으로 이어지는지 쉽게 봅니다.</p>
             <div className="hero-principle-row" aria-label="사이트 사용 흐름">
-              <span>오늘 시장 흐름</span>
-              <span>같이 볼 기업</span>
-              <span>먼저 볼 숫자</span>
+              <span>왜 움직였나</span>
+              <span>같이 볼 회사</span>
+              <span>숫자 3개</span>
             </div>
             <div className="home-hero-actions">
               <button type="button" className="primary" onClick={() => onOpenCategory('us-semiconductors')}>
@@ -2564,6 +2564,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <div className="flow-step-icon story-icon-orb story-icon-orb-lg">{step.icon}</div>
                 <h3>{step.title}</h3>
+                <em className="story-term-badge flow-step-term">전문용어: {step.term}</em>
                 <p>{step.summary}</p>
                 <small>{step.companies.join(' · ')}</small>
               </article>
@@ -4133,6 +4134,15 @@ function App() {
     selectedConnectionCards.length -
       new Set([...focusPreviousCards, ...focusNextCards].map((item) => item.company.id)).size,
   );
+  const selectedRelatedCompanyNames =
+    prioritizedSelectedConnectionCards
+      .slice(0, 3)
+      .map((item) => item.company.name)
+      .join(', ') || '직접 연결 기업 정리 중';
+  const selectedRelatedCompanyCopy =
+    prioritizedSelectedConnectionCards.length > 0
+      ? '같은 수요 흐름에서 함께 확인할 기업입니다. 직접 거래 여부는 공시와 출처로 따로 확인합니다.'
+      : '아직 연결 기업이 충분히 정리되지 않았습니다. 전체 관계 보기에서 후보를 더 확인합니다.';
   const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
   const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
   const activeRelationshipSummary = activeRelationship ? linkRelationshipSummary(activeRelationship) : undefined;
@@ -5070,7 +5080,7 @@ function App() {
               <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 흐름도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">
                 {isAiRelationshipMap
-                  ? 'AI 서비스 수요가 칩, HBM, 생산, 장비·전력 인프라로 이어지는 흐름을 핵심만 먼저 봅니다.'
+                  ? 'AI를 많이 쓰면 서버, 칩, 메모리, 생산, 전기·냉각으로 이어지는 흐름을 먼저 봅니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -5136,7 +5146,7 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>AI 수요가 칩, 메모리, 생산, 인프라로 이어지는 흐름을 5단계로 봅니다.</strong>
+                <strong>AI를 많이 쓰면 어떤 회사들이 이어지는지 5단계로 봅니다.</strong>
                 <p>먼저 큰 흐름을 보고, 자세한 기업과 출처는 필요할 때만 펼쳐 봅니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
@@ -5221,7 +5231,20 @@ function App() {
                       {activeFlowStageCard && <em className="flow-active-stage-label">{activeFlowStageCard.stage}</em>}
                       <strong>{selectedCompany.name}</strong>
                       <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
-                      <p>{beginnerCompanyConclusion(selectedCompany)}</p>
+                      <dl className="flow-focus-qa" aria-label="선택 기업 핵심 질문">
+                        <div>
+                          <dt>이 회사는 뭐 해요?</dt>
+                          <dd>{companyProductExplanation(selectedCompany)}</dd>
+                        </div>
+                        <div>
+                          <dt>왜 이 흐름에 나오나요?</dt>
+                          <dd>{companyDemandExplanation(selectedCompany)}</dd>
+                        </div>
+                        <div>
+                          <dt>같이 볼 회사는 누구인가요?</dt>
+                          <dd>{selectedRelatedCompanyNames}</dd>
+                        </div>
+                      </dl>
                       <div className="flow-focus-actions">
                         <button type="button" onClick={() => openAnalysis(selectedCompany)}>
                           기업 해설 보기
@@ -5584,19 +5607,19 @@ function App() {
 
               <div className="relationship-brief-grid" aria-label="선택 기업 핵심 관계">
                 <article>
-                  <span>무엇을 파는 회사인가</span>
+                  <span>이 회사는 뭐 해요?</span>
                   <strong>{productText(selectedCompany)}</strong>
-                  <p>{companyBusinessSummary(selectedCompany)}</p>
+                  <p>{companyProductExplanation(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>누구 수요와 연결되는가</span>
-                  <strong>{companyCustomerSummary(selectedCompany)}</strong>
-                  <p>{companyCustomerExposure(selectedCompany)}</p>
+                  <span>왜 이 흐름에 나오나요?</span>
+                  <strong>{companyDemandTitle(selectedCompany)}</strong>
+                  <p>{companyDemandExplanation(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>밸류체인 단계 <em>제품이 만들어지고 팔리기까지의 연결 구조</em></span>
-                  <strong>{companyValueChainStage(selectedCompany)}</strong>
-                  <p>{relationshipTypeLabel(selectedCompany)}</p>
+                  <span>같이 볼 회사는 누구인가요?</span>
+                  <strong>{selectedRelatedCompanyNames}</strong>
+                  <p>{selectedRelatedCompanyCopy}</p>
                   <span className={`confidence-badge ${confidenceClassName(relationshipConfidenceLabel(selectedCompany))}`}>
                     {relationshipConfidenceLabel(selectedCompany)}
                     <em>{confidenceHelpText(relationshipConfidenceLabel(selectedCompany))}</em>
