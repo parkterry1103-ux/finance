@@ -164,31 +164,31 @@ const aiFlowStages = [
   {
     stage: 'AI 수요',
     symbol: '수요',
-    summary: '클라우드가 AI 서버를 더 필요로 합니다.',
+    summary: 'AI 서비스가 서버 수요를 키웁니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
     stage: 'AI 칩',
     symbol: 'GPU',
-    summary: 'AI 계산을 처리하는 핵심 칩입니다.',
+    summary: 'GPU와 맞춤형 칩이 AI 계산을 맡습니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM',
     symbol: 'HBM',
-    summary: 'AI 칩 옆에서 데이터를 빠르게 넘깁니다.',
+    summary: 'GPU 옆의 고성능 메모리입니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
   },
   {
     stage: '파운드리',
     symbol: 'FAB',
-    summary: '설계된 칩을 실제로 만듭니다.',
+    summary: '설계된 칩을 실제 반도체로 생산합니다.',
     companyIds: ['ai-datacenter-tsmc'],
   },
   {
     stage: '장비/전력',
     symbol: '인프라',
-    summary: '반도체 장비와 데이터센터 인프라입니다.',
+    summary: '칩 생산 장비와 데이터센터 전력·냉각을 함께 봅니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
   },
 ];
@@ -602,17 +602,35 @@ function companyInvestorWatchPoint(company: Company) {
 }
 
 function companyEasyExplanation(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') {
+    return 'Azure와 AI 서비스를 운영하며, 더 많은 AI 서버 투자가 필요한 쪽의 수요를 만듭니다.';
+  }
+  if (company.id === 'ai-datacenter-google') {
+    return '검색·광고와 Google Cloud를 운영하며, AI 서비스와 데이터센터 투자 흐름을 확인하는 기업입니다.';
+  }
   if (company.id === 'us-semiconductors-nvidia') {
-    return 'AI가 많은 계산을 하려면 강력한 두뇌칩이 필요한데, NVIDIA가 그 칩을 설계합니다.';
+    return 'AI 계산에 필요한 GPU와 네트워킹 칩을 설계해 클라우드 서버 수요와 연결됩니다.';
+  }
+  if (company.id === 'ai-datacenter-broadcom') {
+    return '클라우드 고객이 원하는 기능에 맞춘 AI 칩과 네트워크 반도체를 설계합니다.';
+  }
+  if (company.id === 'ai-datacenter-tsmc') {
+    return '다른 회사가 설계한 첨단 칩을 실제 반도체로 생산하는 파운드리 기업입니다.';
   }
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
-    return 'AI 서버가 계산할 데이터를 빠르게 주고받도록 HBM 같은 고성능 메모리를 공급합니다.';
+    return 'GPU가 데이터를 빠르게 쓰도록 돕는 HBM과 DRAM 같은 메모리를 만듭니다.';
   }
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') {
-    return '메모리를 만들고 일부 칩은 고객 대신 생산하는 제조 기반 반도체 회사입니다.';
+    return '메모리와 파운드리를 함께 운영해 AI 서버용 메모리와 칩 생산 흐름을 같이 봅니다.';
   }
   if (company.id === 'ai-datacenter-micron') {
-    return 'AI 서버와 PC·서버가 데이터를 빠르게 처리하도록 메모리 반도체를 공급합니다.';
+    return '미국 메모리 기업으로, DRAM·NAND·HBM 수요 회복을 확인할 때 함께 봅니다.';
+  }
+  if (company.id === 'ai-datacenter-asml') {
+    return '칩 회로를 아주 미세하게 새기는 EUV 노광장비를 공급하는 장비 기업입니다.';
+  }
+  if (company.id === 'ai-datacenter-vertiv') {
+    return 'AI 서버가 많은 전기와 냉각을 필요로 할 때 같이 확인하는 데이터센터 인프라 기업입니다.';
   }
 
   const stage = companyValueChainStage(company);
@@ -624,10 +642,16 @@ function companyEasyExplanation(company: Company) {
 }
 
 function companyDemandTitle(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') return 'Azure 고객과 AI 서비스 수요';
+  if (company.id === 'ai-datacenter-google') return 'Google Cloud와 AI 서비스 수요';
   if (company.id === 'us-semiconductors-nvidia') return '클라우드와 AI 데이터센터';
+  if (company.id === 'ai-datacenter-broadcom') return '클라우드 맞춤형 칩과 네트워크 수요';
+  if (company.id === 'ai-datacenter-tsmc') return 'AI 칩 설계사의 생산 수요';
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'AI 서버와 메모리 업황';
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 고객과 파운드리 고객';
   if (company.id === 'ai-datacenter-micron') return '서버·PC·AI 메모리 수요';
+  if (company.id === 'ai-datacenter-asml') return '첨단 공정 설비투자';
+  if (company.id === 'ai-datacenter-vertiv') return '데이터센터 전력·냉각 증설';
 
   const demand = company.mainCustomersOrDemand?.length ? company.mainCustomersOrDemand : company.mainCustomers;
   if (demand?.length) return demand.slice(0, 2).join(', ');
@@ -635,42 +659,72 @@ function companyDemandTitle(company: Company) {
 }
 
 function companyProductExplanation(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') return 'Azure 클라우드, AI 서비스, 기업용 소프트웨어가 핵심입니다.';
+  if (company.id === 'ai-datacenter-google') return '검색·광고, Google Cloud, AI 인프라가 주요 사업입니다.';
   if (company.id === 'us-semiconductors-nvidia') return 'GPU, AI 가속기, 네트워킹 장비가 데이터센터 매출의 핵심입니다.';
+  if (company.id === 'ai-datacenter-broadcom') return 'AI 맞춤형 칩, 네트워크 반도체, 스위칭 칩을 제공합니다.';
+  if (company.id === 'ai-datacenter-tsmc') return '고객이 설계한 칩을 첨단 공정으로 대신 생산합니다.';
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM, DRAM, NAND가 핵심 제품입니다.';
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 반도체, 파운드리, 스마트폰이 주요 사업입니다.';
   if (company.id === 'ai-datacenter-micron') return 'DRAM, NAND, HBM이 매출을 만드는 핵심 제품입니다.';
+  if (company.id === 'ai-datacenter-asml') return 'EUV·DUV 노광장비와 장비 서비스가 핵심입니다.';
+  if (company.id === 'ai-datacenter-vertiv') return '전력 장비, 냉각 인프라, 데이터센터 운영 솔루션을 제공합니다.';
   return `${productText(company)}가 매출을 만드는 핵심 제품입니다.`;
 }
 
 function companyDemandExplanation(company: Company) {
-  if (company.id === 'us-semiconductors-nvidia') return '클라우드 기업의 서버 투자가 GPU와 네트워크 장비 주문으로 이어집니다.';
-  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'GPU 서버 증설과 메모리 가격 사이클이 HBM 수요를 좌우합니다.';
-  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '스마트폰·서버·AI 반도체 투자 흐름이 각 사업 수요로 이어집니다.';
+  if (company.id === 'ai-datacenter-microsoft') return 'Azure에서 AI 서비스 사용이 늘면 GPU 서버와 전력·냉각 인프라 투자도 함께 확인합니다.';
+  if (company.id === 'ai-datacenter-google') return 'Google Cloud와 AI 서비스 투자가 맞춤형 칩, GPU, 데이터센터 인프라 수요와 연결될 수 있습니다.';
+  if (company.id === 'us-semiconductors-nvidia') return '클라우드 기업의 AI 서버 투자가 GPU와 네트워크 장비 주문으로 이어지는지 봅니다.';
+  if (company.id === 'ai-datacenter-broadcom') return '클라우드 고객의 자체 AI 칩과 네트워크 투자가 주문으로 이어지는지 확인합니다.';
+  if (company.id === 'ai-datacenter-tsmc') return 'AI 칩 설계사의 주문이 첨단 공정 생산과 가동률로 이어지는지 봅니다.';
+  if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'GPU 서버 증설이 HBM 출하와 메모리 가격 흐름으로 이어지는지 봅니다.';
+  if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return 'AI 서버 메모리와 파운드리 고객 주문이 각 사업 실적으로 이어지는지 봅니다.';
   if (company.id === 'ai-datacenter-micron') return '서버와 PC 수요, HBM 전환 속도가 메모리 판매에 영향을 줍니다.';
+  if (company.id === 'ai-datacenter-asml') return 'TSMC·삼성전자 같은 제조사의 첨단 공정 투자가 장비 주문으로 이어지는지 봅니다.';
+  if (company.id === 'ai-datacenter-vertiv') return 'AI 서버가 늘수록 전력 공급과 냉각 부담이 커지는지, 실제 수주로 확인합니다.';
   return `${companyValueChainStage(company)} 단계의 고객 투자와 연결됩니다. 고객별 비중은 원문에서 확인합니다.`;
 }
 
 function companyWatchChecklistSummary(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') return 'Azure 성장과 AI 설비투자가 매출과 비용에 어떻게 반영되는지 봅니다.';
+  if (company.id === 'ai-datacenter-google') return 'AI 인프라 투자와 Cloud 성장, 자체 칩 전략을 함께 확인합니다.';
   if (company.id === 'us-semiconductors-nvidia') return '데이터센터 매출, 고객 투자, 마진이 유지되는지 봅니다.';
+  if (company.id === 'ai-datacenter-broadcom') return 'AI 맞춤형 칩 매출과 네트워크 반도체 수요가 이어지는지 봅니다.';
+  if (company.id === 'ai-datacenter-tsmc') return '첨단 공정 가동률과 고객 주문, 설비투자 속도를 봅니다.';
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM 매출, 메모리 가격, 현금흐름이 함께 좋아지는지 봅니다.';
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return 'HBM 경쟁력, 파운드리 가동률, 메모리 가격을 같이 봅니다.';
   if (company.id === 'ai-datacenter-micron') return 'HBM 전환, 메모리 가격, 현금흐름 개선을 같이 봅니다.';
+  if (company.id === 'ai-datacenter-asml') return 'EUV 수주와 장비 인도, 고객 투자 지연 여부를 봅니다.';
+  if (company.id === 'ai-datacenter-vertiv') return '전력·냉각 수주와 마진이 데이터센터 투자와 같이 움직이는지 봅니다.';
   return companyInvestorWatchPoint(company);
 }
 
 function companyInvestorSignalTitle(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') return 'Azure 성장과 AI 투자';
+  if (company.id === 'ai-datacenter-google') return 'Cloud 성장과 AI 인프라';
   if (company.id === 'us-semiconductors-nvidia') return '데이터센터 매출과 마진';
+  if (company.id === 'ai-datacenter-broadcom') return 'AI ASIC과 네트워크 수요';
+  if (company.id === 'ai-datacenter-tsmc') return '첨단 공정 가동률';
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return 'HBM 매출과 현금흐름';
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return 'HBM 경쟁력과 가동률';
   if (company.id === 'ai-datacenter-micron') return 'HBM 전환과 가격 회복';
+  if (company.id === 'ai-datacenter-asml') return 'EUV 수주와 인도';
+  if (company.id === 'ai-datacenter-vertiv') return '전력·냉각 수주';
   return '다음 공시에서 확인할 신호';
 }
 
 function companyInvestorSignalCopy(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') return 'AI 서비스 수요가 Azure 성장과 설비투자 부담에 어떻게 반영되는지 확인합니다.';
+  if (company.id === 'ai-datacenter-google') return 'AI 서비스와 Cloud 성장이 반도체·데이터센터 투자로 이어지는지 확인합니다.';
   if (company.id === 'us-semiconductors-nvidia') return '고객 투자가 둔화되지 않는지, 높은 수익성이 유지되는지 확인합니다.';
+  if (company.id === 'ai-datacenter-broadcom') return '맞춤형 칩 수요가 실제 매출과 고객 집중 리스크에 어떻게 반영되는지 확인합니다.';
+  if (company.id === 'ai-datacenter-tsmc') return 'AI 칩 주문이 가동률과 첨단 공정 매출로 이어지는지 확인합니다.';
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') return '고부가 메모리 판매가 이익과 현금 회수로 이어지는지 확인합니다.';
   if (company.id === 'kr-semiconductors-samsung' || company.id === 'ai-datacenter-samsung') return '메모리 회복과 파운드리 개선이 같은 방향으로 움직이는지 확인합니다.';
   if (company.id === 'ai-datacenter-micron') return '메모리 업황 회복이 매출, 이익, 현금흐름에 같이 반영되는지 확인합니다.';
+  if (company.id === 'ai-datacenter-asml') return '고객 설비투자가 장비 수주와 인도 일정으로 이어지는지 확인합니다.';
+  if (company.id === 'ai-datacenter-vertiv') return '데이터센터 증설이 전력·냉각 수주와 현금흐름으로 이어지는지 확인합니다.';
   return companyInvestorWatchPoint(company);
 }
 
@@ -957,8 +1011,20 @@ function missingFinancialValueLabel(company: Company, hasDetailedAnalysis: boole
 }
 
 function beginnerCompanyConclusion(company: Company) {
+  if (company.id === 'ai-datacenter-microsoft') {
+    return 'Microsoft는 Azure와 AI 서비스를 운영하며, 기업 고객의 AI 사용 증가와 데이터센터 투자를 함께 볼 기업입니다.';
+  }
+  if (company.id === 'ai-datacenter-google') {
+    return 'Google / Alphabet은 검색·광고와 Google Cloud를 운영하며, AI 서비스와 인프라 투자 흐름을 확인할 기업입니다.';
+  }
   if (company.id === 'us-semiconductors-nvidia') {
-    return 'NVIDIA는 AI 서버 계산에 필요한 GPU와 AI 가속기를 설계하는 회사입니다.';
+    return 'NVIDIA는 AI 서버 계산에 필요한 GPU와 네트워킹 칩을 설계하는 회사입니다.';
+  }
+  if (company.id === 'ai-datacenter-broadcom') {
+    return 'Broadcom은 클라우드 고객용 맞춤형 AI 칩과 네트워크 반도체를 설계하는 회사입니다.';
+  }
+  if (company.id === 'ai-datacenter-tsmc') {
+    return 'TSMC는 AI 칩 설계사가 맡긴 칩을 첨단 공정으로 생산하는 파운드리 회사입니다.';
   }
   if (company.id === 'kr-semiconductors-sk-hynix' || company.id === 'ai-datacenter-sk-hynix') {
     return 'SK하이닉스는 AI 서버용 HBM과 메모리를 만드는 회사입니다.';
@@ -968,6 +1034,12 @@ function beginnerCompanyConclusion(company: Company) {
   }
   if (company.id === 'ai-datacenter-micron') {
     return 'Micron은 DRAM, NAND, HBM을 만드는 미국 메모리 반도체 기업입니다.';
+  }
+  if (company.id === 'ai-datacenter-asml') {
+    return 'ASML은 첨단 반도체 회로를 새기는 EUV 노광장비를 만드는 장비 회사입니다.';
+  }
+  if (company.id === 'ai-datacenter-vertiv') {
+    return 'Vertiv는 AI 데이터센터에 필요한 전력 공급과 냉각 인프라를 제공하는 회사입니다.';
   }
 
   return `${company.name}${topicParticle(company.name)} ${productText(company)}를 제공하는 ${companyValueChainStage(company)} 기업입니다.`;
@@ -4988,7 +5060,7 @@ function App() {
               <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 흐름도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">
                 {isAiRelationshipMap
-                  ? 'AI 수요가 AI 칩, HBM, 파운드리, 장비·전력 기업으로 이어지는 흐름을 핵심만 먼저 봅니다.'
+                  ? 'AI 서비스 수요가 칩, HBM, 생산, 장비·전력 인프라로 이어지는 흐름을 핵심만 먼저 봅니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -5054,8 +5126,8 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>AI 수요가 어떤 기업 단계로 이어지는지 5단계로 압축했습니다.</strong>
-                <p>기본 화면은 핵심 흐름만 보여주고, 자세한 기업과 출처는 더 깊게 볼 수 있게 분리했습니다.</p>
+                <strong>AI 수요가 칩, 메모리, 생산, 인프라로 이어지는 흐름을 5단계로 봅니다.</strong>
+                <p>먼저 큰 흐름을 보고, 자세한 기업과 출처는 필요할 때만 펼쳐 봅니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
                 <div>
