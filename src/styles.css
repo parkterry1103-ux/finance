@@ -16009,3 +16009,54 @@ body,
 .story-analysis-shell :is(.direct-report-link span, .disclosure-list span, .source-policy span) {
   color: var(--story-card-body) !important;
 }
+
+/* Targeted readability fix for specific small/list labels reported in production. */
+.app-shell.story-dark-shell.ai-mvp-map .first-look-list button {
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  gap: 4px 10px !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .first-look-list small,
+.app-shell.story-dark-shell.ai-mvp-map .company-row-main small,
+.app-shell.story-dark-shell.ai-mvp-map .anchor-list small {
+  color: #dceaff !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0 !important;
+  opacity: 1 !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .first-look-list span {
+  color: #f8fbff !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+.story-analysis-shell .explainer-watch-list {
+  gap: 8px !important;
+}
+
+.story-analysis-shell .explainer-watch-list li {
+  min-height: 32px !important;
+  padding: 7px 12px !important;
+  color: #f8fbff !important;
+  border: 1px solid rgba(191, 219, 254, 0.28) !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.14), transparent 34%),
+    rgba(30, 58, 95, 0.72) !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0 !important;
+  opacity: 1 !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .beginner-metrics-compact article strong {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  opacity: 1 !important;
+}
