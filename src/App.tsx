@@ -2454,7 +2454,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     companies[0];
 
   return (
-    <div className="home-shell" id="top">
+    <div className="home-shell story-dark-shell story-home-shell" id="top">
       <header className="home-nav">
         <a href="#top" className="home-brand">
           <span className="home-logo">
@@ -2552,7 +2552,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             {aiFlowPreview.map((step, index) => (
               <article className="flow-step-card" key={step.title}>
                 <span>{String(index + 1).padStart(2, '0')}</span>
-                <div className="flow-step-icon">{step.icon}</div>
+                <div className="flow-step-icon story-icon-orb story-icon-orb-lg">{step.icon}</div>
                 <h3>{step.title}</h3>
                 <p>{step.summary}</p>
                 <small>{step.companies.join(' · ')}</small>
@@ -2755,7 +2755,7 @@ function StockAutopsyPicksPage({
 
   if (selectedPickId && !detailPick) {
     return (
-      <div className="pick-shell">
+      <div className="pick-shell story-dark-shell story-pick-shell">
         <header className="pick-nav">
           <button type="button" onClick={onHome}>홈</button>
           <button type="button" onClick={onOpenPicks}>Pick 목록</button>
@@ -2786,7 +2786,7 @@ function StockAutopsyPicksPage({
     const flowStage = pickFlowStage(detailPick);
 
     return (
-      <div className="pick-shell">
+      <div className="pick-shell story-dark-shell story-pick-shell">
         <header className="pick-nav">
           <div className="breadcrumb" aria-label="현재 위치">
             <button type="button" onClick={onHome}>홈</button>
@@ -2965,7 +2965,7 @@ function StockAutopsyPicksPage({
   }
 
   return (
-    <div className="pick-shell">
+    <div className="pick-shell story-dark-shell story-pick-shell">
       <header className="pick-nav">
         <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
           <span className="home-logo">
@@ -3180,7 +3180,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics, financialSummary });
 
   return (
-    <div className="analysis-shell">
+    <div className="analysis-shell story-dark-shell story-analysis-shell">
       <header className="analysis-hero company-explainer-hero">
         <nav className="breadcrumb" aria-label="현재 위치">
           <button type="button" onClick={onHome}>홈</button>

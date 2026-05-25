@@ -14088,3 +14088,817 @@ body {
     height: 64px;
   }
 }
+
+/* Storybook dark premium design pass v2: reference-like layout without changing data/API. */
+body {
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(65, 109, 255, 0.14), transparent 30%),
+    radial-gradient(circle at 82% 10%, rgba(77, 217, 255, 0.1), transparent 28%),
+    linear-gradient(180deg, #00040b 0%, #010711 52%, #000000 100%);
+}
+
+.story-dark-shell.home-shell,
+.story-dark-shell.pick-shell,
+.story-dark-shell.analysis-shell {
+  min-height: 100vh;
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(63, 111, 255, 0.16), transparent 30%),
+    radial-gradient(circle at 86% 14%, rgba(77, 217, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, #050b16 0%, #020713 64%, #00030a 100%);
+}
+
+.story-dark-shell.home-shell,
+.story-dark-shell.pick-shell,
+.story-dark-shell.analysis-shell,
+.story-dark-shell.app-shell {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+.story-dark-shell :is(button, a, summary) {
+  letter-spacing: 0;
+}
+
+.story-dark-shell :focus-visible {
+  outline: 2px solid rgba(120, 183, 255, 0.9);
+  outline-offset: 3px;
+}
+
+.story-home-shell {
+  padding: 26px;
+}
+
+.story-home-shell main,
+.story-pick-shell main,
+.story-analysis-shell .analysis-detail-flow {
+  width: min(100%, 1520px);
+  margin: 0 auto;
+}
+
+.story-dark-shell :is(.home-nav, .pick-nav, .analysis-hero, .topbar) {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(9, 18, 34, 0.78);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(22px);
+}
+
+.story-dark-shell .home-nav {
+  position: sticky;
+  top: 18px;
+  z-index: 20;
+  width: min(100%, 1520px);
+  min-height: 58px;
+  margin: 0 auto 16px;
+  padding: 8px 12px;
+  border-radius: 28px !important;
+}
+
+.story-dark-shell :is(.home-brand, .home-nav a, .home-nav button, .pick-nav button, .breadcrumb button, .ghost-action) {
+  color: var(--story-text-secondary);
+}
+
+.story-dark-shell :is(.home-logo, .landing-logo, .brand-mark) {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(120, 183, 255, 0.26);
+  border-radius: 14px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.35), transparent 22%),
+    linear-gradient(135deg, #2d58ff 0%, #6aa9ff 62%, #9b7bff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 26px rgba(80, 145, 255, 0.28);
+}
+
+.story-dark-shell .home-brand strong,
+.story-dark-shell .home-nav a[href="#top"],
+.story-dark-shell .home-nav a:hover,
+.story-dark-shell .home-nav a:focus-visible {
+  color: var(--story-text-primary);
+}
+
+.story-dark-shell .home-nav nav a,
+.story-dark-shell .home-nav nav button {
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+
+.story-dark-shell .home-nav nav a:hover,
+.story-dark-shell .home-nav nav a:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.story-home-shell .home-hero.mvp-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 36px;
+  min-height: 680px;
+  overflow: hidden;
+  padding: 72px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 36px;
+  background:
+    linear-gradient(135deg, rgba(9, 18, 34, 0.94), rgba(4, 9, 19, 0.92)),
+    radial-gradient(circle at 73% 36%, rgba(79, 172, 255, 0.28), transparent 28%);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.48);
+}
+
+.story-home-shell .home-hero.mvp-hero::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 72% 44%, rgba(111, 189, 255, 0.24) 0 5%, transparent 20%),
+    radial-gradient(ellipse at 72% 48%, rgba(39, 105, 190, 0.5) 0 18%, transparent 38%),
+    radial-gradient(ellipse at 74% 66%, rgba(3, 10, 22, 0.15) 0 24%, rgba(0, 0, 0, 0.74) 42%, transparent 43%),
+    linear-gradient(115deg, transparent 0 38%, rgba(86, 164, 255, 0.12) 48%, transparent 62%);
+}
+
+.story-home-shell .home-hero.mvp-hero::after {
+  position: absolute;
+  right: 4%;
+  top: 14%;
+  width: min(740px, 54%);
+  height: 430px;
+  pointer-events: none;
+  content: "";
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at 18% 54%, rgba(255, 255, 255, 0.95) 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 34%, rgba(134, 207, 255, 0.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 65% 22%, rgba(134, 207, 255, 0.88) 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 44%, rgba(255, 255, 255, 0.88) 0 2px, transparent 3px),
+    linear-gradient(22deg, transparent 30%, rgba(116, 194, 255, 0.42) 31%, transparent 32%),
+    linear-gradient(340deg, transparent 42%, rgba(116, 194, 255, 0.32) 43%, transparent 44%),
+    linear-gradient(160deg, transparent 34%, rgba(116, 194, 255, 0.28) 35%, transparent 36%);
+  filter: drop-shadow(0 0 18px rgba(112, 185, 255, 0.32));
+}
+
+.story-home-shell .home-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+}
+
+.story-home-shell .home-kicker {
+  color: var(--story-text-secondary);
+}
+
+.story-home-shell .home-hero h1 {
+  max-width: 650px;
+  color: var(--story-text-primary);
+  font-size: 64px;
+  line-height: 1.08;
+}
+
+.story-home-shell .home-hero h1 span:last-child {
+  color: #70a5ff;
+  text-shadow: 0 0 28px rgba(94, 151, 255, 0.5);
+}
+
+.story-home-shell .home-hero-copy > p:not(.home-kicker):not(.home-mvp-note) {
+  max-width: 510px;
+  color: var(--story-text-secondary);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.story-home-shell .hero-principle-row span,
+.story-dark-shell :is(.analysis-market-pill, .reference-status-pill, .pick-move, .pick-section-kicker, .card-topline span, .story-pill) {
+  border: 1px solid rgba(120, 183, 255, 0.2);
+  color: var(--story-accent-blue);
+  background: rgba(120, 183, 255, 0.1);
+}
+
+.story-home-shell .home-hero-actions button,
+.story-dark-shell :is(.pick-primary-action, .flow-preview-copy button, .explainer-primary-actions button:first-child, .financial-more-actions button:first-child, .flow-focus-actions button:first-child) {
+  min-height: 48px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.story-home-shell .home-hero-actions button.primary,
+.story-dark-shell :is(.pick-primary-action, .flow-preview-copy button, .explainer-primary-actions button:first-child, .financial-more-actions button:first-child, .flow-focus-actions button:first-child) {
+  color: #03111f;
+  border-color: rgba(117, 195, 255, 0.52);
+  background: linear-gradient(135deg, #5ee1ff 0%, #6fa8ff 54%, #5f6cff 100%);
+  box-shadow: 0 20px 46px rgba(75, 137, 255, 0.32);
+}
+
+.story-home-shell .home-hero-actions button.secondary,
+.story-dark-shell :is(.ghost-action, .explainer-primary-actions button:nth-child(2), .financial-more-actions button, .pick-detail-actions button, .pick-advanced-actions summary) {
+  color: var(--story-text-primary);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.story-home-shell .home-mvp-note {
+  color: var(--story-text-muted);
+}
+
+.story-home-shell .home-hero-card-stack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: end;
+  gap: 18px;
+}
+
+.story-dark-shell :is(
+  .home-hero-card-stack article,
+  .home-issue-card,
+  .flow-step-card,
+  .pick-home-card,
+  .beginner-guide-grid article,
+  .advanced-reference-note,
+  .pick-card,
+  .pick-detail-card,
+  .pick-detail-hero,
+  .analysis-card,
+  .explainer-highlight-card,
+  .explainer-card-grid article,
+  .explainer-metric-card,
+  .explainer-related-card,
+  .financial-one-line-panel,
+  .financial-priority-card,
+  .financial-priority-grid article,
+  .financial-signal-grid section,
+  .financial-advanced-card,
+  .analysis-disclosure-section,
+  .sector-flow-card,
+  .flow-stage-nav button,
+  .flow-focus-explorer,
+  .flow-connection-column,
+  .flow-focus-company-card,
+  .flow-connection-list button
+) {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(13, 27, 50, 0.72);
+  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.story-dark-shell :is(
+  .home-hero-card-stack article,
+  .home-issue-card,
+  .flow-step-card,
+  .pick-home-card,
+  .beginner-guide-grid article,
+  .pick-card,
+  .pick-detail-card,
+  .explainer-highlight-card,
+  .explainer-card-grid article,
+  .financial-priority-grid article
+) {
+  border-radius: 24px;
+}
+
+.story-dark-shell :is(.home-hero-card-stack article, .home-issue-card, .pick-home-card, .pick-card, .explainer-card-grid article, .financial-priority-grid article) {
+  position: relative;
+  overflow: hidden;
+}
+
+.story-dark-shell :is(.home-hero-card-stack article, .home-issue-card, .pick-home-card, .pick-card, .explainer-card-grid article, .financial-priority-grid article)::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 54%;
+  pointer-events: none;
+  content: "";
+  background: radial-gradient(circle at 70% 100%, rgba(111, 168, 255, 0.16), transparent 56%);
+}
+
+.story-dark-shell :is(.home-hero-card-stack article strong, .home-issue-card h3, .flow-step-card h3, .pick-home-card strong, .pick-card h2, .pick-detail-card h2, .explainer-highlight-card strong, .explainer-card-grid strong, .financial-one-line-panel strong, .financial-priority-grid strong) {
+  color: var(--story-text-primary);
+}
+
+.story-dark-shell :is(.home-hero-card-stack article p, .home-issue-card p, .flow-step-card p, .flow-step-card small, .pick-home-card p, .pick-card p, .pick-helper-copy, .pick-detail-card p, .explainer-highlight-card p, .explainer-card-grid p, .financial-learning-card p, .financial-priority-grid p, .financial-signal-grid span) {
+  color: var(--story-text-secondary);
+}
+
+.story-dark-shell :is(.home-hero-card-stack article > svg, .home-issue-card > svg, .explainer-card-grid article > svg, .section-title > svg, .financial-signal-grid strong > svg) {
+  width: 52px;
+  height: 52px;
+  padding: 14px;
+  border: 1px solid rgba(120, 183, 255, 0.25);
+  border-radius: 18px;
+  color: var(--story-accent-cyan);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.28), transparent 25%),
+    linear-gradient(135deg, rgba(77, 217, 255, 0.22), rgba(108, 99, 255, 0.2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 30px rgba(80, 145, 255, 0.22);
+}
+
+.story-dark-shell .home-hero-card-stack article:nth-child(2) > svg,
+.story-dark-shell .home-issue-card:nth-child(2) > svg,
+.story-dark-shell .explainer-card-grid article:nth-child(3) > svg {
+  color: var(--story-accent-purple);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.25), transparent 25%),
+    linear-gradient(135deg, rgba(167, 139, 250, 0.26), rgba(77, 217, 255, 0.12));
+}
+
+.story-dark-shell .home-hero-card-stack article:nth-child(3) > svg,
+.story-dark-shell .home-issue-card:nth-child(3) > svg,
+.story-dark-shell .explainer-card-grid article:nth-child(2) > svg {
+  color: var(--story-accent-mint);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.25), transparent 25%),
+    linear-gradient(135deg, rgba(126, 231, 199, 0.26), rgba(77, 217, 255, 0.12));
+}
+
+.story-home-shell .home-section {
+  width: min(100%, 1520px);
+  margin-inline: auto;
+}
+
+.story-dark-shell .home-section-head h2,
+.story-dark-shell .pick-hero h1,
+.story-dark-shell .analysis-hero h1,
+.story-dark-shell .financial-learning-head h2,
+.story-dark-shell .sector-flow-copy strong {
+  color: var(--story-text-primary);
+}
+
+.story-dark-shell .home-section-head p,
+.story-dark-shell .pick-hero p,
+.story-dark-shell .pick-hero small,
+.story-dark-shell .analysis-hero p,
+.story-dark-shell .financial-learning-head p {
+  color: var(--story-text-secondary);
+}
+
+.story-home-shell .home-issue-grid,
+.story-home-shell .pick-home-grid,
+.story-home-shell .beginner-guide-grid {
+  gap: 18px;
+}
+
+.story-home-shell .flow-preview-section.mvp-flow-preview {
+  position: relative;
+  width: min(100%, 1520px);
+  margin-inline: auto;
+  overflow: hidden;
+  padding: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 34px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(8, 16, 31, 0.78);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.4);
+}
+
+.story-home-shell .flow-preview-map.compact-flow-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 18px;
+  overflow-x: auto;
+  padding: 6px 2px 12px;
+}
+
+.story-home-shell .flow-step-card {
+  min-height: 220px;
+  padding: 18px;
+}
+
+.story-home-shell .flow-step-card > span {
+  color: #ffffff;
+  background: linear-gradient(135deg, #4a64ff, #74d8ff);
+  box-shadow: 0 0 24px rgba(94, 151, 255, 0.28);
+}
+
+.story-home-shell .flow-step-card:not(:last-child)::after {
+  right: -24px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  border: 0;
+  background: linear-gradient(90deg, rgba(120, 183, 255, 0.15), rgba(120, 183, 255, 0.7));
+  transform: translateY(-50%);
+}
+
+.story-home-shell .flow-step-card:not(:last-child)::before {
+  right: -24px;
+  top: calc(50% - 4px);
+  width: 10px;
+  height: 10px;
+  border: solid rgba(120, 183, 255, 0.74);
+  border-width: 2px 2px 0 0;
+  transform: rotate(45deg);
+}
+
+.story-home-shell .flow-preview-copy {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-pick-shell,
+.story-analysis-shell {
+  padding: 24px;
+}
+
+.story-pick-shell .pick-nav,
+.story-analysis-shell .analysis-hero {
+  width: min(100%, 1520px);
+  margin-inline: auto;
+}
+
+.story-pick-shell .pick-hero,
+.story-pick-shell .pick-detail-hero {
+  overflow: hidden;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(120, 183, 255, 0.18), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04)),
+    rgba(10, 19, 36, 0.82);
+}
+
+.story-pick-shell .pick-grid {
+  width: min(100%, 1520px);
+  margin-inline: auto;
+  gap: 18px;
+}
+
+.story-pick-shell .pick-card {
+  min-height: 360px;
+}
+
+.story-pick-shell .pick-card-identity .company-logo,
+.story-dark-shell .company-logo {
+  border: 1px solid rgba(120, 183, 255, 0.24);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.36), transparent 24%),
+    linear-gradient(135deg, rgba(99, 166, 255, 0.22), rgba(167, 139, 250, 0.18));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 32px rgba(110, 169, 255, 0.18);
+}
+
+.story-pick-shell .pick-detail {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+}
+
+.story-pick-shell .pick-detail-card,
+.story-pick-shell .pick-detail-hero {
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+}
+
+.story-pick-shell .pick-related-company-grid article,
+.story-pick-shell .pick-metric-grid article,
+.story-pick-shell .pick-signal-grid article {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--story-text-primary);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-pick-shell .pick-chip-row span,
+.story-pick-shell .value-chain-steps span,
+.story-dark-shell .mini-tag-row span {
+  border-color: rgba(120, 183, 255, 0.18);
+  color: var(--story-text-secondary);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-pick-shell .value-chain-steps span.active,
+.story-pick-shell .pick-chip-row span:first-child {
+  color: #03111f;
+  background: linear-gradient(135deg, var(--story-accent-cyan), var(--story-accent-blue));
+}
+
+.story-analysis-shell .analysis-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  padding: 22px 26px;
+  border-radius: 32px !important;
+}
+
+.story-analysis-shell .analysis-hero > div:not(.analysis-nav-actions):not(.analysis-actions) {
+  max-width: 780px;
+}
+
+.story-analysis-shell .analysis-hero h1 {
+  font-size: 34px;
+  line-height: 1.16;
+}
+
+.story-analysis-shell .analysis-actions {
+  justify-self: end;
+}
+
+.story-analysis-shell .company-explainer-card,
+.story-analysis-shell .financial-learning-card {
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.story-analysis-shell .company-explainer-top {
+  grid-template-columns: auto minmax(0, 1fr) minmax(210px, auto);
+}
+
+.story-analysis-shell .company-explainer-logo {
+  box-shadow: 0 0 42px rgba(120, 183, 255, 0.24);
+}
+
+.story-analysis-shell .explainer-highlight-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.story-analysis-shell .explainer-highlight-card.primary {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(120, 183, 255, 0.22), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.story-analysis-shell .financial-learning-card {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(120, 183, 255, 0.18), transparent 32%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(10, 19, 36, 0.82);
+}
+
+.story-analysis-shell .financial-priority-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.story-analysis-shell .financial-priority-grid article {
+  min-height: 250px;
+  padding-bottom: 80px;
+}
+
+.story-analysis-shell .financial-priority-grid article::before {
+  position: absolute;
+  right: 22px;
+  bottom: 24px;
+  width: 120px;
+  height: 56px;
+  pointer-events: none;
+  content: "";
+  opacity: 0.9;
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(96, 133, 255, 0.75) 7% 13%, transparent 13% 20%, rgba(96, 133, 255, 0.9) 20% 28%, transparent 28% 35%, rgba(96, 133, 255, 0.7) 35% 43%, transparent 43% 50%, rgba(96, 133, 255, 0.95) 50% 58%, transparent 58% 65%, rgba(96, 133, 255, 0.72) 65% 73%, transparent 73% 80%, rgba(96, 133, 255, 0.9) 80% 88%, transparent 88% 100%);
+  border-radius: 6px;
+  transform: skewY(-10deg);
+}
+
+.story-analysis-shell .financial-priority-grid article:nth-child(2)::before {
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(126, 231, 199, 0.6) 7% 13%, transparent 13% 20%, rgba(126, 231, 199, 0.82) 20% 28%, transparent 28% 35%, rgba(126, 231, 199, 0.72) 35% 43%, transparent 43% 50%, rgba(126, 231, 199, 0.92) 50% 58%, transparent 58% 65%, rgba(126, 231, 199, 0.7) 65% 73%, transparent 73% 80%, rgba(126, 231, 199, 0.95) 80% 88%, transparent 88% 100%);
+}
+
+.story-analysis-shell .financial-priority-grid article:nth-child(3)::before {
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(167, 139, 250, 0.62) 7% 13%, transparent 13% 20%, rgba(167, 139, 250, 0.86) 20% 28%, transparent 28% 35%, rgba(167, 139, 250, 0.7) 35% 43%, transparent 43% 50%, rgba(167, 139, 250, 0.96) 50% 58%, transparent 58% 65%, rgba(167, 139, 250, 0.78) 65% 73%, transparent 73% 80%, rgba(167, 139, 250, 0.95) 80% 88%, transparent 88% 100%);
+}
+
+.story-analysis-shell .financial-priority-grid article strong {
+  font-size: 32px;
+}
+
+.story-analysis-shell .data-freshness-card,
+.story-dark-shell .analysis-source-pill {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--story-text-secondary);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-dark-shell .analysis-disclosure-section summary {
+  color: var(--story-text-primary);
+}
+
+.story-dark-shell .analysis-detail-content {
+  color: var(--story-text-secondary);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map {
+  padding: 18px;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar {
+  border-radius: 28px !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-card {
+  border-radius: 30px;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button {
+  min-height: 180px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button > span {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(120, 183, 255, 0.26);
+  border-radius: 14px;
+  color: var(--story-accent-cyan);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.26), transparent 24%),
+    rgba(120, 183, 255, 0.12);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-company-card {
+  border-radius: 28px;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-actions button {
+  border-radius: 999px;
+}
+
+@media (max-width: 980px) {
+  .story-home-shell,
+  .story-pick-shell,
+  .story-analysis-shell {
+    padding: 14px;
+  }
+
+  .story-dark-shell .home-nav {
+    top: 8px;
+    overflow-x: auto;
+  }
+
+  .story-home-shell .home-hero.mvp-hero {
+    min-height: 620px;
+    padding: 28px;
+  }
+
+  .story-home-shell .home-hero.mvp-hero::after {
+    top: 26%;
+    right: -18%;
+    width: 95%;
+    opacity: 0.62;
+  }
+
+  .story-home-shell .home-hero h1 {
+    font-size: 42px;
+  }
+
+  .story-home-shell .home-hero-card-stack,
+  .story-home-shell .home-issue-grid,
+  .story-home-shell .pick-home-grid,
+  .story-analysis-shell .explainer-highlight-grid,
+  .story-analysis-shell .financial-priority-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-home-shell .flow-preview-section.mvp-flow-preview {
+    padding: 20px;
+  }
+
+  .story-analysis-shell .analysis-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .story-analysis-shell .analysis-actions {
+    justify-self: stretch;
+  }
+
+  .story-analysis-shell .company-explainer-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-home-shell .home-hero.mvp-hero {
+    border-radius: 26px;
+  }
+
+  .story-home-shell .home-hero h1 {
+    font-size: 36px;
+  }
+
+  .story-home-shell .home-hero-copy > p:not(.home-kicker):not(.home-mvp-note) {
+    font-size: 15px;
+  }
+
+  .story-home-shell .home-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .story-home-shell .home-hero-actions button {
+    width: 100%;
+  }
+
+  .story-dark-shell :is(.home-hero-card-stack article > svg, .home-issue-card > svg, .explainer-card-grid article > svg, .section-title > svg) {
+    width: 44px;
+    height: 44px;
+    padding: 12px;
+  }
+
+  .story-pick-shell .pick-detail,
+  .story-pick-shell .pick-grid {
+    width: 100%;
+  }
+}
+
+html,
+body,
+#root {
+  background: #00040b;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-highlight-card,
+.story-analysis-shell .company-explainer-card .explainer-highlight-card:nth-child(1),
+.story-analysis-shell .company-explainer-card .explainer-highlight-card:nth-child(2),
+.story-analysis-shell .company-explainer-card .explainer-highlight-card:nth-child(3),
+.story-analysis-shell .financial-learning-card .financial-beginner-grid article,
+.story-analysis-shell .financial-learning-card .financial-priority-grid article,
+.story-analysis-shell .financial-learning-card .financial-signal-grid section,
+.story-analysis-shell .data-freshness-card,
+.story-analysis-shell .analysis-overview-side,
+.story-analysis-shell .analysis-report-meta {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(13, 27, 50, 0.72);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.story-analysis-shell .financial-learning-card .financial-beginner-grid article p,
+.story-analysis-shell .data-freshness-card span,
+.story-analysis-shell .data-freshness-card em,
+.story-analysis-shell .analysis-report-meta {
+  color: var(--story-text-secondary);
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact,
+.story-analysis-shell .analysis-overview-side .data-freshness-card {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(13, 27, 50, 0.72);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact :is(strong, span, em),
+.story-analysis-shell .analysis-overview-side .data-freshness-card :is(strong, span, em) {
+  color: var(--story-text-primary);
+}
+
+.story-analysis-shell .company-explainer-card .explainer-highlight-card span,
+.story-analysis-shell .financial-learning-card .financial-beginner-grid article span {
+  color: var(--story-accent-blue);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel > *,
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(.anchor-list, .term-guide, .role-filter-card, .advanced-filter-card, .company-row-card, .metric, .stage-filter, .selected-company-context),
+.app-shell.story-dark-shell.ai-mvp-map .company-row,
+.app-shell.story-dark-shell.ai-mvp-map .bottom-panel > *,
+.app-shell.story-dark-shell.ai-mvp-map .ai-sector-support-card,
+.app-shell.story-dark-shell.ai-mvp-map .detail-card,
+.app-shell.story-dark-shell.ai-mvp-map .source-card {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    rgba(13, 27, 50, 0.72);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .right-panel :is(p, small, em),
+.app-shell.story-dark-shell.ai-mvp-map .left-panel :is(p, small, em),
+.app-shell.story-dark-shell.ai-mvp-map .bottom-panel :is(p, small, em) {
+  color: var(--story-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .story-home-shell .home-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .story-home-shell .home-hero-actions button,
+  .story-home-shell .home-hero-actions button.primary,
+  .story-home-shell .home-hero-actions button.secondary {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 50px;
+    padding: 0 18px;
+    border-radius: 999px;
+  }
+}
