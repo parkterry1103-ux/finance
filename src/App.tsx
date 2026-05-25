@@ -2444,7 +2444,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       icon: <Cloud size={18} />,
     },
   ];
-  const featuredPickPriority = ['NVIDIA', '삼성전자', 'SK하이닉스'];
+  const featuredPickPriority = ['Dell Technologies', 'NVIDIA', 'SK하이닉스'];
   const featuredPicks = featuredPickPriority
     .map((name) => stockAutopsyPicks.find((pick) => pick.companyName === name && pick.status !== 'archived'))
     .filter((pick): pick is StockAutopsyPick => Boolean(pick));
