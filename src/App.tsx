@@ -4782,7 +4782,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map story-dark-shell' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">

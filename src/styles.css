@@ -13686,3 +13686,405 @@ body {
     padding-inline: 12px;
   }
 }
+
+/* Storybook dark premium design system v1. Scoped tokens/classes for the next UI pass. */
+:root {
+  --story-bg-dark-navy: #06111f;
+  --story-bg-midnight: #020712;
+  --story-bg-ink: #01040a;
+  --story-surface-glass: rgba(13, 27, 50, 0.72);
+  --story-surface-elevated: rgba(18, 36, 66, 0.86);
+  --story-surface-soft: rgba(255, 255, 255, 0.06);
+  --story-border-subtle: rgba(255, 255, 255, 0.12);
+  --story-border-strong: rgba(148, 197, 255, 0.26);
+  --story-text-primary: #f5f9ff;
+  --story-text-secondary: #c4d2e7;
+  --story-text-muted: #8392ab;
+  --story-accent-blue: #78b7ff;
+  --story-accent-cyan: #4dd9ff;
+  --story-accent-purple: #a78bfa;
+  --story-accent-mint: #7ee7c7;
+  --story-warning-amber: #fbbf24;
+  --story-success-green: #34d399;
+  --story-glow-blue: 0 0 42px rgba(78, 166, 255, 0.22);
+  --story-glow-cyan: 0 0 36px rgba(77, 217, 255, 0.18);
+  --story-card-shadow: 0 24px 70px rgba(0, 7, 18, 0.42);
+  --story-card-shadow-soft: 0 18px 48px rgba(0, 7, 18, 0.3);
+  --story-radius-large: 30px;
+  --story-radius-card: 24px;
+  --story-radius-medium: 18px;
+  --story-radius-pill: 999px;
+  --story-space-1: 4px;
+  --story-space-2: 8px;
+  --story-space-3: 12px;
+  --story-space-4: 16px;
+  --story-space-5: 24px;
+  --story-space-6: 32px;
+  --story-space-7: 48px;
+}
+
+.story-dark-shell {
+  --jg-primary-blue: var(--story-accent-blue);
+  --jg-secondary-blue: rgba(120, 183, 255, 0.14);
+  --jg-soft-green: rgba(126, 231, 199, 0.12);
+  --jg-soft-purple: rgba(167, 139, 250, 0.13);
+  --jg-soft-orange: rgba(251, 191, 36, 0.12);
+  --jg-text-primary: var(--story-text-primary);
+  --jg-text-secondary: var(--story-text-secondary);
+  --jg-border: var(--story-border-subtle);
+  --jg-card: var(--story-surface-glass);
+  --proto-blue: var(--story-accent-blue);
+  --proto-blue-soft: rgba(120, 183, 255, 0.14);
+  --proto-ink: var(--story-text-primary);
+  --proto-muted: var(--story-text-secondary);
+  --proto-border: var(--story-border-subtle);
+  --proto-card: var(--story-surface-glass);
+  position: relative;
+  color: var(--story-text-primary);
+  background:
+    radial-gradient(circle at 12% -4%, rgba(77, 217, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 88% 8%, rgba(167, 139, 250, 0.16), transparent 28%),
+    radial-gradient(circle at 44% 94%, rgba(126, 231, 199, 0.1), transparent 34%),
+    linear-gradient(180deg, var(--story-bg-dark-navy) 0%, var(--story-bg-midnight) 58%, var(--story-bg-ink) 100%);
+}
+
+.story-dark-shell::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent 82%);
+}
+
+.story-glass-card,
+.story-hero-card,
+.story-flow-card,
+.story-step-card,
+.story-note-card,
+.story-question-card,
+.story-easy-flow-card,
+.story-number-card,
+.story-deep-card {
+  border: 1px solid var(--story-border-subtle);
+  color: var(--story-text-primary);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    var(--story-surface-glass);
+  box-shadow: var(--story-card-shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.story-hero-card,
+.story-question-card {
+  padding: clamp(22px, 4vw, 42px);
+  border-radius: var(--story-radius-large);
+  box-shadow: var(--story-card-shadow), var(--story-glow-blue);
+}
+
+.story-flow-card,
+.story-step-card,
+.story-easy-flow-card {
+  display: grid;
+  gap: var(--story-space-3);
+  padding: var(--story-space-5);
+  border-radius: var(--story-radius-card);
+}
+
+.story-note-card,
+.story-deep-card {
+  padding: var(--story-space-4);
+  border-radius: var(--story-radius-medium);
+  color: var(--story-text-secondary);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.story-number-card {
+  display: grid;
+  gap: var(--story-space-2);
+  min-height: 148px;
+  padding: var(--story-space-5);
+  border-radius: var(--story-radius-card);
+}
+
+.story-number-card strong {
+  color: var(--story-text-primary);
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1;
+}
+
+.story-icon-orb {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--story-border-strong);
+  border-radius: 18px;
+  color: var(--story-accent-blue);
+  background:
+    radial-gradient(circle at 32% 18%, rgba(255, 255, 255, 0.28), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(120, 183, 255, 0.24), transparent 55%),
+    rgba(120, 183, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--story-glow-blue);
+}
+
+.story-icon-orb svg {
+  width: 52%;
+  height: 52%;
+  stroke-width: 1.9;
+}
+
+.story-icon-orb-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+}
+
+.story-icon-orb-md {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+}
+
+.story-icon-orb-lg {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+}
+
+.story-icon-blue {
+  color: var(--story-accent-blue);
+}
+
+.story-icon-cyan {
+  color: var(--story-accent-cyan);
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.28), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(77, 217, 255, 0.24), transparent 55%),
+    rgba(77, 217, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), var(--story-glow-cyan);
+}
+
+.story-icon-purple {
+  color: var(--story-accent-purple);
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.24), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(167, 139, 250, 0.25), transparent 55%),
+    rgba(167, 139, 250, 0.11);
+}
+
+.story-icon-mint {
+  color: var(--story-accent-mint);
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.24), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(126, 231, 199, 0.25), transparent 55%),
+    rgba(126, 231, 199, 0.1);
+}
+
+.story-pill,
+.story-term-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 30px;
+  align-items: center;
+  gap: var(--story-space-2);
+  padding: 0 12px;
+  border: 1px solid rgba(120, 183, 255, 0.22);
+  border-radius: var(--story-radius-pill);
+  color: var(--story-accent-blue);
+  background: rgba(120, 183, 255, 0.1);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.story-term-badge {
+  color: var(--story-text-secondary);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-primary-button,
+.story-ghost-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--story-space-2);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.story-primary-button {
+  color: #03111f;
+  background: linear-gradient(135deg, var(--story-accent-cyan), var(--story-accent-blue));
+  box-shadow: 0 16px 34px rgba(77, 217, 255, 0.2);
+}
+
+.story-ghost-button {
+  color: var(--story-text-primary);
+  border-color: var(--story-border-subtle);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map {
+  background:
+    radial-gradient(circle at 16% -8%, rgba(77, 217, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 86% 4%, rgba(167, 139, 250, 0.16), transparent 28%),
+    linear-gradient(180deg, #06111f 0%, #020712 62%, #01040a 100%);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .left-panel,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel,
+.app-shell.story-dark-shell.ai-mvp-map .topbar,
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-card,
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-explorer,
+.app-shell.story-dark-shell.ai-mvp-map .flow-connection-column,
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-company-card,
+.app-shell.story-dark-shell.ai-mvp-map .market-flow-stage-card,
+.app-shell.story-dark-shell.ai-mvp-map .graph-wrap,
+.app-shell.story-dark-shell.ai-mvp-map .supply-node,
+.app-shell.story-dark-shell.ai-mvp-map .company-row-card,
+.app-shell.story-dark-shell.ai-mvp-map .advanced-map-entry,
+.app-shell.story-dark-shell.ai-mvp-map .ai-sector-support-card {
+  border: 1px solid var(--story-border-subtle);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+    var(--story-surface-glass);
+  box-shadow: var(--story-card-shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar,
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-card {
+  box-shadow: var(--story-card-shadow), var(--story-glow-blue);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .brand-mark,
+.app-shell.story-dark-shell.ai-mvp-map .company-logo {
+  border: 1px solid rgba(120, 183, 255, 0.24);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.28), transparent 25%),
+    linear-gradient(135deg, rgba(77, 217, 255, 0.22), rgba(167, 139, 250, 0.2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), var(--story-glow-blue);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map :is(
+  .brand-block h1,
+  .topbar h2,
+  .sector-flow-copy strong,
+  .company-row-main strong,
+  .flow-stage-nav button strong,
+  .flow-focus-company-card strong,
+  .flow-connection-list button strong,
+  .market-flow-stage-card strong,
+  .node-name
+) {
+  color: var(--story-text-primary);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map :is(
+  .eyebrow,
+  .topbar-subcopy,
+  .sector-flow-copy p,
+  .company-row-main small,
+  .flow-stage-nav button small,
+  .flow-focus-company-card p,
+  .flow-focus-company-card small,
+  .flow-connection-column > p,
+  .flow-connection-list button small,
+  .market-flow-stage-card > p,
+  .node-subtitle,
+  .topbar-reference-note
+) {
+  color: var(--story-text-secondary);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .breadcrumb,
+.app-shell.story-dark-shell.ai-mvp-map .breadcrumb button,
+.app-shell.story-dark-shell.ai-mvp-map .breadcrumb span {
+  color: var(--story-text-muted);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .breadcrumb strong,
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-copy > span,
+.app-shell.story-dark-shell.ai-mvp-map .flow-connection-column > span,
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-company-card > div > span {
+  color: var(--story-accent-cyan);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map :is(
+  .map-mode-strip button,
+  .flow-help-pills span,
+  .flow-stage-nav button,
+  .flow-focus-actions button,
+  .flow-connection-list button,
+  .icon-action,
+  .topbar-report-action,
+  .company-row-action,
+  .analysis-link-button,
+  .market-flow-stage-card > div button,
+  .map-stage-ribbon span,
+  .role-badge,
+  .node-meta span
+) {
+  border-color: var(--story-border-subtle);
+  color: var(--story-text-primary);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map :is(
+  .map-mode-strip button.active,
+  .flow-stage-nav button.active,
+  .stage-filter button.active,
+  .company-row-card.selected,
+  .flow-focus-actions button:first-child
+) {
+  color: #03111f;
+  border-color: rgba(77, 217, 255, 0.44);
+  background: linear-gradient(135deg, var(--story-accent-cyan), var(--story-accent-blue));
+  box-shadow: 0 16px 34px rgba(77, 217, 255, 0.2);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .flow-stage-nav button > span,
+.app-shell.story-dark-shell.ai-mvp-map .flow-active-stage-label,
+.app-shell.story-dark-shell.ai-mvp-map .selected-company-context em {
+  color: var(--story-accent-blue);
+  background: rgba(120, 183, 255, 0.14);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .map-mode-secondary button {
+  color: var(--story-text-secondary);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .react-flow__edge-textbg {
+  fill: rgba(8, 19, 36, 0.92);
+  fill-opacity: 0.92;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .react-flow__edge-text {
+  fill: var(--story-text-secondary);
+}
+
+@media (max-width: 820px) {
+  .story-hero-card,
+  .story-question-card,
+  .story-flow-card,
+  .story-step-card,
+  .story-easy-flow-card,
+  .story-number-card {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .story-icon-orb-lg {
+    width: 64px;
+    height: 64px;
+  }
+}
