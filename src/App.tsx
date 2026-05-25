@@ -164,30 +164,40 @@ const aiFlowStages = [
   {
     stage: 'AI 수요',
     symbol: '수요',
+    easyTitle: 'AI를 쓰는 사람이 늘어요',
+    term: 'AI 서비스',
     summary: 'AI 서비스가 서버 수요를 키웁니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
     stage: 'AI 칩',
     symbol: 'GPU',
+    easyTitle: '계산할 칩이 더 필요해요',
+    term: 'GPU / AI 칩',
     summary: 'GPU와 맞춤형 칩이 AI 계산을 맡습니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
     stage: 'HBM',
     symbol: 'HBM',
+    easyTitle: '빠른 기억장치가 붙어요',
+    term: 'HBM / 메모리',
     summary: 'GPU 옆의 고성능 메모리입니다.',
     companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
   },
   {
     stage: '파운드리',
     symbol: 'FAB',
+    easyTitle: '칩을 실제로 만들어야 해요',
+    term: '파운드리',
     summary: '설계된 칩을 실제 반도체로 생산합니다.',
     companyIds: ['ai-datacenter-tsmc'],
   },
   {
     stage: '장비/전력',
     symbol: '인프라',
+    easyTitle: '전기와 냉각도 더 필요해요',
+    term: '장비 / 전력',
     summary: '칩 생산 장비와 데이터센터 전력·냉각을 함께 봅니다.',
     companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
   },
@@ -5167,17 +5177,18 @@ function App() {
                 <span>전체 그래프는 고급 보기</span>
               </div>
               <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
-                {flowStageCards.map((stage) => (
+                {flowStageCards.map((stage, index) => (
                   <button
                     key={stage.stage}
                     type="button"
-                    className={selectedFlowStage === stage.stage ? 'active' : ''}
+                    className={`${selectedFlowStage === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
                     onClick={() => selectFlowStage(stage.stage)}
                     aria-current={selectedFlowStage === stage.stage ? 'step' : undefined}
                   >
                     <span>{stage.symbol}</span>
-                    <strong>{stage.stage}</strong>
+                    <strong>{stage.easyTitle}</strong>
                     <small>{stage.summary}</small>
+                    <em>전문용어: {stage.term}</em>
                   </button>
                 ))}
               </nav>
