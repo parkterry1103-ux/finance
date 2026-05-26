@@ -2783,18 +2783,65 @@ function StockAutopsyPicksPage({
   if (detailPick) {
     const relatedCompany = pickMainCompany(detailPick);
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
-    const price = getPriceForPick(detailPick, marketPrices);
-    const highlightedStep = valueChainStepByPosition[detailPick.valueChainPosition];
-    const reasonLines = (detailPick.beginnerExplanation ?? detailPick.beginnerSummary)
-      .split(/(?<=\.)\s+/)
-      .filter(Boolean)
-      .slice(0, 3);
-    const relatedPickCompanies = pickRelatedCompanyList(detailPick).slice(0, 5);
+    const relatedPickCompanies = pickRelatedCompanyList(detailPick).slice(0, 3);
     const watchMetricCards = pickWatchMetricCards(detailPick, relatedCompany).slice(0, 3);
     const signalSet = pickSignalSet(detailPick, relatedCompany);
     const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
     const flowLabel = pickFlowLabel(detailPick);
     const flowStage = pickFlowStage(detailPick);
+    const isDellAiServerPick = detailPick.id === 'pick-dell-ai-server-demand';
+    const storyQuestion = isDellAiServerPick
+      ? 'AI 서버가 늘면 Dell은 왜 같이 움직일까?'
+      : `${detailPick.companyName}은 왜 같이 움직일까?`;
+    const storyAnswer = isDellAiServerPick
+      ? 'Dell은 AI 서버를 기업에 팝니다.'
+      : '시장 흐름과 연결해 봅니다.';
+    const storyRelatedLabels = isDellAiServerPick
+      ? ['NVIDIA', 'Super Micro', 'Vertiv']
+      : relatedPickCompanies.map((company) => company.name).slice(0, 3);
+    const storyMetricLabels = ['매출', '영업이익', '현금흐름'];
+    const storyCompanyByLabel = (label: string) => {
+      if (label === 'NVIDIA') return companies.find((company) => company.id === 'us-semiconductors-nvidia');
+      if (label === 'Super Micro') return companies.find((company) => company.id === 'ai-datacenter-supermicro');
+      if (label === 'Vertiv') return companies.find((company) => company.id === 'ai-datacenter-vertiv');
+      return relatedPickCompanies.find((company) => company.name === label || company.legalName === label || company.ticker === label);
+    };
+    const storyCards = [
+      {
+        title: '무슨 일이 있었나요?',
+        description: isDellAiServerPick ? 'AI 서버 수요가 주목받았습니다.' : '시장 이슈가 주목받았습니다.',
+        badge: '오늘 이슈',
+        icon: <Newspaper size={34} />,
+      },
+      {
+        title: isDellAiServerPick ? '왜 Dell인가요?' : '왜 이 회사인가요?',
+        description: isDellAiServerPick ? 'Dell은 AI 서버를 팝니다.' : `${detailPick.companyName}을 함께 봅니다.`,
+        badge: isDellAiServerPick ? 'AI 서버' : flowStage,
+        icon: <Cloud size={34} />,
+      },
+      {
+        title: '어디에 있나요?',
+        description: isDellAiServerPick ? '서버와 인프라 단계에 있습니다.' : `${flowStage} 단계에 있습니다.`,
+        badge: isDellAiServerPick ? '데이터센터' : flowLabel,
+        icon: <Network size={34} />,
+      },
+      {
+        title: '같이 볼 회사',
+        description: isDellAiServerPick ? 'GPU, 서버, 전력 회사를 봅니다.' : '연결된 회사 3개만 봅니다.',
+        badge: '3개만',
+        icon: <Target size={34} />,
+        chips: storyRelatedLabels,
+        chipType: 'company' as const,
+      },
+      {
+        title: '숫자 3개',
+        description: '팔렸는지, 남겼는지, 현금이 들어왔는지 봅니다.',
+        badge: '핵심 지표',
+        icon: <BarChart3 size={34} />,
+        chips: storyMetricLabels,
+        chipType: 'metric' as const,
+      },
+    ];
 
     return (
       <div className="pick-shell story-dark-shell story-pick-shell">
@@ -2811,154 +2858,107 @@ function StockAutopsyPicksPage({
         </header>
 
         <main className="pick-detail">
-          <section className="pick-detail-hero">
+          <section className="pick-story-hero">
             <div>
               <span className={`pick-move ${detailPick.movementDirection}`}>
-                {detailPick.movementDirection === 'up' ? '상승' : '하락'} · {detailPick.movementLabel}
+                {detailPick.ticker} · {pickMarketLabel(detailPick)}
               </span>
-              <h1>{detailPick.title ?? `${detailPick.companyName} 해부`}</h1>
-              <p>{detailPick.ticker} · {pickMarketLabel(detailPick)} · {flowLabel}</p>
+              <h1>{storyQuestion}</h1>
+              <strong>{storyAnswer}</strong>
+              <p>흐름을 보고, 숫자 3개만 확인합니다.</p>
             </div>
-            <div className="pick-hero-side">
-              <PriceBadge price={price} />
-              <strong>{conclusion}</strong>
-            </div>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">한 줄 결론</span>
-            <h2>{conclusion}</h2>
-            <p>이 종목은 {flowLabel} 흐름 안에서 {flowStage} 단계로 함께 봅니다.</p>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">왜 움직였나</span>
-            <div className="pick-reason-list">
-              <p>{detailPick.reasonSummary}</p>
-              {reasonLines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+            <div className="pick-story-cover" aria-label="Pick 요약">
+              {relatedCompany ? (
+                <CompanyLogo company={relatedCompany} size="hero" />
+              ) : (
+                <span className="pick-story-cover-fallback">{detailPick.companyName.slice(0, 2)}</span>
+              )}
+              <span>{flowLabel}</span>
             </div>
           </section>
 
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">어떤 시장 흐름인가</span>
-            <h2>{flowLabel}</h2>
-            <p>{detailPick.beginnerSummary}</p>
-            <div className="value-chain-steps" aria-label="밸류체인 단계">
-              {valueChainSteps.map((step) => (
-                <span key={step} className={step === highlightedStep ? 'active' : ''}>
-                  {step}
-                </span>
-              ))}
-            </div>
-            <p className="pick-helper-copy">
-              거래 관계를 단정하지 않고, 같은 밸류체인에서 함께 봐야 할 대표 기업을 연결합니다.
-            </p>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">같이 볼 기업</span>
-            <div className="pick-related-company-grid">
-              {relatedPickCompanies.map((company) => (
-                <article key={company.id}>
-                  <div>
-                    <strong>{company.name}</strong>
-                    <small>{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</small>
+          <section className="pick-story-board" aria-label="Pick 카드뉴스 5장">
+            {storyCards.map((card, index) => (
+              <article className="pick-story-card" key={card.title}>
+                <div className="pick-story-card-top">
+                  <span className="pick-story-step">{index + 1}</span>
+                  <span className="story-term-badge">{card.badge}</span>
+                </div>
+                <div className="pick-story-icon">{card.icon}</div>
+                <h2>{card.title}</h2>
+                <p>{card.description}</p>
+                {card.chips && (
+                  <div className="pick-story-chip-row" aria-label={card.title}>
+                    {card.chips.slice(0, 3).map((chip) => {
+                      const company = card.chipType === 'company' ? storyCompanyByLabel(chip) : undefined;
+                      return company ? (
+                        <button key={chip} type="button" onClick={() => onOpenAnalysis(company)}>
+                          {chip}
+                        </button>
+                      ) : (
+                        <span key={chip}>{chip}</span>
+                      );
+                    })}
                   </div>
-                  <p>{pickRelationCopy(company, detailPick)}</p>
-                  <button type="button" onClick={() => onOpenAnalysis(company)}>기업 해설 보기</button>
-                </article>
-              ))}
-            </div>
-            {relatedPickCompanies.length === 0 && (
-              <p className="pick-helper-copy">아직 연결 기업 데이터가 충분하지 않습니다. 시장 흐름 지도에서 관련 기업을 확인해주세요.</p>
-            )}
-            <p className="pick-helper-copy">직접 거래나 결과를 단정하지 않고, 같은 시장 흐름에서 같이 볼 기업입니다.</p>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">이 회사는 무엇을 파나</span>
-            <h2>{relatedCompany ? relatedCompany.name : detailPick.companyName}</h2>
-            <p>{relatedCompany ? companyBusinessSummary(relatedCompany) : detailPick.beginnerSummary}</p>
-            <div className="pick-chip-row soft">
-              {(relatedCompany?.mainProducts ?? relatedCompany?.products ?? [detailPick.sector]).slice(0, 4).map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">먼저 볼 재무지표 3개</span>
-            <div className="pick-metric-grid">
-              {watchMetricCards.map((metric) => (
-                <article key={metric.label}>
-                  <strong>{metric.label}</strong>
-                  <small>{metric.value}</small>
-                  <p>{metric.note}</p>
-                </article>
-              ))}
-            </div>
-            <p className="pick-helper-copy">실제 값이 연결되지 않은 지표는 가짜 숫자 대신 재무제표 해설에서 원문 기준으로 확인합니다.</p>
-          </section>
-
-          <section className="pick-detail-card">
-            <span className="pick-section-kicker">좋은 신호 / 조심할 신호</span>
-            <div className="pick-signal-grid">
-              <article>
-                <strong>좋은 신호</strong>
-                {signalSet.good.slice(0, 3).map((item) => <p key={item}>{item}</p>)}
+                )}
               </article>
-              <article>
-                <strong>조심할 신호</strong>
-                {signalSet.caution.slice(0, 3).map((item) => <p key={item}>{item}</p>)}
-              </article>
-            </div>
+            ))}
           </section>
 
-          <section className="pick-detail-card pick-detail-actions">
-            <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-              지도에서 보기
-            </button>
-            {relatedCompany ? (
-              <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                기업 해설 보기
-              </button>
-            ) : (
-              <span className="pick-disabled-action">기업 해설 연결 준비 중</span>
-            )}
-            {relatedCompany ? (
-              <button type="button" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
-                재무 쉽게 보기
-              </button>
-            ) : (
-              <span className="pick-disabled-action">재무제표 연결 준비 중</span>
-            )}
-            <details className="pick-advanced-actions">
+          <section className="pick-story-drawers" aria-label="더 깊게 보기">
+            <details>
               <summary>
-                <span>더 깊게 보기</span>
+                <span>자세한 설명</span>
                 <ChevronDown size={15} />
               </summary>
-              <div>
+              <div className="pick-drawer-body">
+                <p>{conclusion}</p>
+                <p>{detailPick.reasonSummary}</p>
+                <p>{detailPick.beginnerExplanation ?? detailPick.beginnerSummary}</p>
+                <div className="pick-drawer-metric-grid">
+                  {watchMetricCards.map((metric) => (
+                    <article key={metric.label}>
+                      <strong>{metric.label}</strong>
+                      <span>{metric.value}</span>
+                      <small>{metric.note}</small>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                <span>좋은 신호</span>
+                <ChevronDown size={15} />
+              </summary>
+              <div className="pick-drawer-list">
+                {signalSet.good.slice(0, 3).map((item) => <span key={item}>{item}</span>)}
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                <span>조심할 신호</span>
+                <ChevronDown size={15} />
+              </summary>
+              <div className="pick-drawer-list caution">
+                {signalSet.caution.slice(0, 3).map((item) => <span key={item}>{item}</span>)}
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                <span>원문/출처</span>
+                <ChevronDown size={15} />
+              </summary>
+              <div className="pick-drawer-sources">
                 {reportLink ? (
                   <ReportAction reportLink={reportLink} className="compact-report-action" iconSize={14} />
                 ) : (
                   <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
                 )}
-                <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-                  관계 출처 보기
-                </button>
-                {relatedCompany ? (
-                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                    관련 뉴스 보기
-                  </button>
-                ) : (
-                  <span className="pick-disabled-action">관련 뉴스 연결 준비 중</span>
-                )}
-                <button type="button" onClick={onOpenSmartMoney}>
-                  기관 동향 보기
-                </button>
-                {detailPick.sourceLinks?.map((source) =>
+                {detailPick.sourceLinks?.slice(0, 3).map((source) =>
                   source.url ? (
                     <a key={source.label} href={source.url} target="_blank" rel="noreferrer">
                       {source.label}
@@ -2967,6 +2967,35 @@ function StockAutopsyPicksPage({
                     <span key={source.label} className="pick-disabled-action">{source.label} 준비 중</span>
                   ),
                 )}
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                <span>고급 참고자료</span>
+                <ChevronDown size={15} />
+              </summary>
+              <div className="pick-drawer-actions">
+                <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
+                  지도에서 보기
+                </button>
+                {relatedCompany ? (
+                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                    기업 해설 보기
+                  </button>
+                ) : (
+                  <span className="pick-disabled-action">기업 해설 연결 준비 중</span>
+                )}
+                {relatedCompany ? (
+                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
+                    재무 쉽게 보기
+                  </button>
+                ) : (
+                  <span className="pick-disabled-action">재무제표 연결 준비 중</span>
+                )}
+                <button type="button" onClick={onOpenSmartMoney}>
+                  기관 동향 보기
+                </button>
               </div>
             </details>
           </section>
