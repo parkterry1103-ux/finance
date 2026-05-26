@@ -166,7 +166,7 @@ const aiFlowStages = [
     symbol: '01',
     easyTitle: 'AI를 많이 써요',
     term: 'AI 수요',
-    summary: 'AI 서비스를 많이 쓰면 뒤에서 계산할 서버가 더 필요해집니다.',
+    summary: 'AI 서비스를 쓰면 계산할 서버가 더 필요해집니다.',
     companyIds: ['ai-datacenter-microsoft', 'ai-datacenter-google'],
   },
   {
@@ -174,7 +174,7 @@ const aiFlowStages = [
     symbol: '02',
     easyTitle: '계산 칩이 필요해요',
     term: 'GPU / AI 칩',
-    summary: 'AI 계산에는 많은 일을 동시에 처리하는 칩이 필요합니다.',
+    summary: '서버 안에는 AI 계산용 칩이 들어갑니다.',
     companyIds: ['us-semiconductors-nvidia', 'ai-datacenter-broadcom'],
   },
   {
@@ -182,24 +182,24 @@ const aiFlowStages = [
     symbol: '03',
     easyTitle: '빠른 메모리가 필요해요',
     term: 'HBM',
-    summary: '칩 옆에서 데이터를 빠르게 꺼내주는 기억장치입니다.',
-    companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung'],
+    summary: '칩 옆에서 데이터를 빠르게 꺼내줘야 합니다.',
+    companyIds: ['ai-datacenter-sk-hynix', 'ai-datacenter-samsung', 'ai-datacenter-micron'],
   },
   {
     stage: '파운드리',
     symbol: '04',
     easyTitle: '칩을 실제로 만들어요',
     term: '파운드리',
-    summary: '설계된 칩을 실제 반도체로 생산하는 단계입니다.',
-    companyIds: ['ai-datacenter-tsmc'],
+    summary: '설계된 칩을 공장에서 생산합니다.',
+    companyIds: ['ai-datacenter-tsmc', 'ai-datacenter-asml'],
   },
   {
     stage: '장비/전력',
     symbol: '05',
     easyTitle: '전기·냉각이 필요해요',
     term: '전력 / 냉각',
-    summary: '서버가 많아지면 전기와 열 관리도 중요해집니다.',
-    companyIds: ['ai-datacenter-asml', 'ai-datacenter-vertiv'],
+    summary: '서버가 많아지면 전기와 열 관리가 중요해집니다.',
+    companyIds: ['ai-datacenter-vertiv', 'ai-datacenter-dell'],
   },
 ];
 
@@ -274,6 +274,11 @@ function companySymbol(company: Company) {
     label: label || company.name.slice(0, 2),
     tone: isMainListedCompany(company) ? 'default' : 'reference',
   };
+}
+
+function flowRepresentativeCompanyName(company: Company) {
+  if (company.id === 'ai-datacenter-google') return 'Google';
+  return company.name;
 }
 
 const companyLogoSources: Array<{ match: string[]; url: string }> = [
@@ -4326,7 +4331,7 @@ function App() {
     const stagePool = [...representativeCompanies, ...stageCompanies].filter(
       (company, index, list) => list.findIndex((item) => item.id === company.id) === index,
     );
-    const displayCompanies = (representativeCompanies.length ? representativeCompanies : stageCompanies).slice(0, 2);
+    const displayCompanies = (representativeCompanies.length ? representativeCompanies : stageCompanies).slice(0, 3);
     const extraCompanies = stagePool.filter((company) => !displayCompanies.some((item) => item.id === company.id)).slice(0, 4);
     const hiddenCount = Math.max(0, stagePool.length - displayCompanies.length);
     return {
@@ -4336,8 +4341,11 @@ function App() {
       hiddenCount,
     };
   });
-  const activeFlowStageCard = flowStageCards.find((stage) => stage.stage === selectedFlowStage) ?? null;
-  const selectedFlowStageIndex = selectedFlowStage ? flowStageCards.findIndex((stage) => stage.stage === selectedFlowStage) : -1;
+  const activeFlowStageName =
+    selectedFlowStage ??
+    (selectedCompany ? flowStageCards.find((stage) => matchesAiFlowStage(stage.stage, selectedCompany))?.stage ?? null : null);
+  const activeFlowStageCard = activeFlowStageName ? flowStageCards.find((stage) => stage.stage === activeFlowStageName) ?? null : null;
+  const selectedFlowStageIndex = activeFlowStageName ? flowStageCards.findIndex((stage) => stage.stage === activeFlowStageName) : -1;
   const aiKoreaListedCompanies = aiKoreaListedPriorityNames
     .map((name) =>
       groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
@@ -5241,10 +5249,10 @@ function App() {
               <p className="eyebrow">
                 {country.label} · {selectedSector.label}
               </p>
-              <h2>{isAiRelationshipMap ? 'AI 반도체 & 데이터센터 흐름도' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
+              <h2>{isAiRelationshipMap ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
               <p className="topbar-subcopy">
                 {isAiRelationshipMap
-                  ? 'AI를 많이 쓰면 서버, 칩, 메모리, 생산, 전기·냉각으로 이어지는 흐름을 먼저 봅니다.'
+                  ? '어려운 용어보다 흐름부터 봅니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -5278,7 +5286,7 @@ function App() {
                 <Database size={18} />
                 {selectedIsMainListed ? '재무 쉽게' : '관계 참고용'}
               </button>
-              <button type="button" className="icon-action text-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
+              <button type="button" className="icon-action text-action detail-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
                 <PanelRightOpen size={18} />
                 {isDetailCollapsed ? '상세 열기' : '상세 접기'}
               </button>
@@ -5310,8 +5318,8 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>AI를 많이 쓰면 어떤 회사들이 이어지는지 5단계로 봅니다.</strong>
-                <p>먼저 큰 흐름을 보고, 자세한 기업과 출처는 필요할 때만 펼쳐 봅니다.</p>
+                <strong>AI를 많이 쓰면 어떤 회사들이 같이 움직일까?</strong>
+                <p>어려운 용어보다 흐름부터 봅니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
                 <div>
@@ -5346,8 +5354,8 @@ function App() {
                 </div>
               </div>
               <div className="flow-help-pills" aria-label="지도 사용 팁">
-                <span>기본: 선택 기업 중심</span>
-                <span>관련 기업은 3개만 먼저</span>
+                <span>5장만 순서대로</span>
+                <span>대표 기업은 2~3개만</span>
                 <span>전체 그래프는 고급 보기</span>
               </div>
               <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
@@ -5355,14 +5363,18 @@ function App() {
                   <button
                     key={stage.stage}
                     type="button"
-                    className={`${selectedFlowStage === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
+                    className={`${activeFlowStageName === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
                     onClick={() => selectFlowStage(stage.stage)}
-                    aria-current={selectedFlowStage === stage.stage ? 'step' : undefined}
+                    aria-current={activeFlowStageName === stage.stage ? 'step' : undefined}
                   >
                     <span>{stage.symbol}</span>
                     <strong>{stage.easyTitle}</strong>
                     <small>{stage.summary}</small>
                     <em>전문용어: {stage.term}</em>
+                    <span className="flow-stage-company-row" aria-label={`${stage.easyTitle} 대표 기업`}>
+                      <b>대표 기업</b>
+                      <i>{stage.companies.map(flowRepresentativeCompanyName).join(', ')}</i>
+                    </span>
                   </button>
                 ))}
               </nav>
@@ -5398,14 +5410,14 @@ function App() {
                       <dl className="flow-focus-qa" aria-label="선택 기업 핵심 질문">
                         <div>
                           <dt>이 회사는 뭐 해요?</dt>
-                          <dd>{companyProductExplanation(selectedCompany)}</dd>
+                          <dd>{companyQuestionProductCopy(selectedCompany)}</dd>
                         </div>
                         <div>
-                          <dt>왜 이 흐름에 나오나요?</dt>
-                          <dd>{companyDemandExplanation(selectedCompany)}</dd>
+                          <dt>왜 이 흐름에 있나요?</dt>
+                          <dd>{companyQuestionDemandCopy(selectedCompany)}</dd>
                         </div>
                         <div>
-                          <dt>같이 볼 회사는 누구인가요?</dt>
+                          <dt>같이 볼 회사는?</dt>
                           <dd>{selectedRelatedCompanyNames}</dd>
                         </div>
                       </dl>
@@ -5772,16 +5784,16 @@ function App() {
               <div className="relationship-brief-grid" aria-label="선택 기업 핵심 관계">
                 <article>
                   <span>이 회사는 뭐 해요?</span>
-                  <strong>{productText(selectedCompany)}</strong>
-                  <p>{companyProductExplanation(selectedCompany)}</p>
+                  <strong>{companyQuestionProductCopy(selectedCompany)}</strong>
+                  <p>{productText(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>왜 이 흐름에 나오나요?</span>
-                  <strong>{companyDemandTitle(selectedCompany)}</strong>
-                  <p>{companyDemandExplanation(selectedCompany)}</p>
+                  <span>왜 이 흐름에 있나요?</span>
+                  <strong>{companyQuestionDemandCopy(selectedCompany)}</strong>
+                  <p>{companyDemandTitle(selectedCompany)}</p>
                 </article>
                 <article>
-                  <span>같이 볼 회사는 누구인가요?</span>
+                  <span>같이 볼 회사는?</span>
                   <strong>{selectedRelatedCompanyNames}</strong>
                   <p>{selectedRelatedCompanyCopy}</p>
                   <span className={`confidence-badge ${confidenceClassName(relationshipConfidenceLabel(selectedCompany))}`}>

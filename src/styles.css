@@ -16861,3 +16861,455 @@ body,
     min-height: 230px;
   }
 }
+
+/* AI market flow default: five-card picture-book reading mode. */
+.app-shell.story-dark-shell.ai-board-default {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: min(100%, 1640px);
+  min-width: 0;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(125, 211, 252, 0.16), transparent 30%),
+    radial-gradient(circle at 84% 0%, rgba(167, 139, 250, 0.13), transparent 28%),
+    radial-gradient(circle at 88% 82%, rgba(126, 231, 199, 0.1), transparent 24%),
+    linear-gradient(180deg, #020711 0%, #071326 48%, #040914 100%);
+}
+
+.app-shell.ai-board-default .left-panel,
+.app-shell.ai-board-default .right-panel {
+  display: none !important;
+}
+
+.app-shell.ai-board-default .map-panel {
+  width: min(100%, 1500px);
+  min-width: 0;
+  min-height: 0;
+  margin: 0 auto;
+  gap: clamp(14px, 2vw, 22px);
+  overflow: visible;
+}
+
+.app-shell.ai-board-default .topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: clamp(18px, 2.2vw, 28px);
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  border-radius: 32px !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(125, 211, 252, 0.15), transparent 32%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(9, 20, 38, 0.86);
+}
+
+.app-shell.ai-board-default .topbar h2 {
+  max-width: 860px;
+  margin-top: 8px;
+  color: #ffffff;
+  font-size: clamp(30px, 4vw, 58px);
+  font-weight: 950;
+  line-height: 1.04;
+}
+
+.app-shell.ai-board-default .topbar-subcopy {
+  max-width: 520px;
+  margin-top: 10px;
+  color: var(--story-card-body);
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 760;
+}
+
+.app-shell.ai-board-default .topbar-actions .lock-action,
+.app-shell.ai-board-default .topbar-actions .detail-action,
+.app-shell.ai-board-default .topbar-report-action,
+.app-shell.ai-board-default .topbar-reference-note,
+.app-shell.ai-board-default .map-mode-strip {
+  display: none !important;
+}
+
+.app-shell.ai-board-default .sector-flow-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 24px);
+  min-width: 0;
+  padding: clamp(18px, 2.4vw, 30px);
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  border-radius: 34px !important;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(96, 165, 250, 0.15), transparent 32%),
+    radial-gradient(circle at 78% 0%, rgba(126, 231, 199, 0.09), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)),
+    rgba(10, 22, 42, 0.78);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+}
+
+.app-shell.ai-board-default .sector-flow-copy {
+  max-width: 760px;
+}
+
+.app-shell.ai-board-default .sector-flow-copy > span {
+  color: #93e7ff;
+}
+
+.app-shell.ai-board-default .sector-flow-copy strong {
+  max-width: 760px;
+  color: #ffffff;
+  font-size: clamp(24px, 2.6vw, 42px);
+  line-height: 1.08;
+}
+
+.app-shell.ai-board-default .sector-flow-copy p {
+  max-width: 520px;
+  color: var(--story-card-body);
+  font-size: 16px;
+}
+
+.app-shell.ai-board-default .flow-help-pills {
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.app-shell.ai-board-default .flow-help-pills span {
+  min-height: 30px;
+  border-color: rgba(191, 219, 254, 0.24);
+  color: #dbeafe;
+  background: rgba(96, 165, 250, 0.13);
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 22px);
+  width: 100%;
+  min-width: 0;
+  justify-items: stretch;
+  overflow: visible;
+  padding: 4px 0 8px;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+  justify-self: stretch;
+  min-height: clamp(300px, 29vw, 390px);
+  padding: clamp(18px, 1.8vw, 24px);
+  border: 1px solid rgba(219, 234, 254, 0.18) !important;
+  border-radius: 30px !important;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(125, 211, 252, 0.16), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(12, 25, 48, 0.86) !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+  transform: none;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(2) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(167, 139, 250, 0.18), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(15, 24, 52, 0.88) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(3) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(126, 231, 199, 0.15), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(9, 31, 46, 0.88) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(4) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(251, 191, 36, 0.15), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(35, 29, 16, 0.86) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(5) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(52, 211, 153, 0.14), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(10, 34, 34, 0.86) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:hover,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:focus-visible,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button.active {
+  border-color: rgba(125, 211, 252, 0.5) !important;
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.12),
+    0 0 46px rgba(59, 130, 246, 0.18),
+    0 28px 76px rgba(0, 0, 0, 0.38);
+  transform: translateY(-4px);
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::after {
+  top: 50%;
+  right: -22px;
+  width: 22px;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::before {
+  top: calc(50% - 5px);
+  right: -24px;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button > span {
+  width: 68px;
+  height: 68px;
+  border-radius: 24px;
+  font-size: 18px;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button strong {
+  min-height: 0;
+  color: #ffffff;
+  font-size: clamp(20px, 1.7vw, 26px);
+  font-weight: 950;
+  line-height: 1.18;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button small {
+  color: var(--story-card-body);
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button em {
+  min-height: 28px;
+  padding: 5px 10px;
+  color: #eaf4ff;
+  border-color: rgba(191, 219, 254, 0.24);
+  background: rgba(96, 165, 250, 0.13);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button > .flow-stage-company-row {
+  display: grid;
+  width: auto;
+  height: auto;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(219, 234, 254, 0.14);
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.flow-stage-company-row b {
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.flow-stage-company-row i {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff !important;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell.ai-board-default .flow-focus-explorer {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-shell.ai-board-default .flow-connection-column {
+  display: none;
+}
+
+.app-shell.ai-board-default .flow-focus-company-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 0;
+  padding: clamp(20px, 2.4vw, 30px);
+  border-color: rgba(125, 211, 252, 0.28);
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(10, 24, 48, 0.9);
+  box-shadow: 0 24px 68px rgba(0, 0, 0, 0.3);
+}
+
+.app-shell.ai-board-default .flow-focus-company-card .company-logo {
+  width: clamp(84px, 7vw, 118px);
+  height: clamp(84px, 7vw, 118px);
+  border-radius: 30px;
+}
+
+.app-shell.ai-board-default .flow-focus-company-card strong {
+  color: #ffffff;
+  font-size: clamp(28px, 3.2vw, 48px);
+  line-height: 1.05;
+}
+
+.app-shell.ai-board-default .flow-focus-qa {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: none;
+}
+
+.app-shell.ai-board-default .flow-focus-qa div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(219, 234, 254, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.app-shell.ai-board-default .flow-focus-qa dt {
+  color: #bfdbfe;
+  font-size: 12px;
+}
+
+.app-shell.ai-board-default .flow-focus-qa dd {
+  display: block;
+  overflow: hidden;
+  color: var(--story-card-body);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.42;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.app-shell.ai-board-default .advanced-map-entry {
+  padding: 13px 15px;
+  border-color: rgba(191, 219, 254, 0.22);
+  border-radius: 24px;
+  color: var(--story-card-body);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.app-shell.ai-board-default .advanced-map-entry button {
+  color: #eaf4ff !important;
+  border-color: rgba(191, 219, 254, 0.28) !important;
+  background: rgba(12, 25, 48, 0.88) !important;
+}
+
+@media (max-width: 1180px) {
+  .app-shell.story-dark-shell.ai-board-default {
+    display: grid !important;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .app-shell.ai-board-default .map-panel {
+    width: 100%;
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav button {
+    min-height: 0;
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -19px;
+    left: 34px;
+    width: 2px;
+    height: 18px;
+    background: linear-gradient(180deg, rgba(120, 183, 255, 0.22), rgba(120, 183, 255, 0.82));
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::before {
+    top: auto;
+    right: auto;
+    bottom: -22px;
+    left: 30px;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .app-shell.ai-board-default .flow-focus-qa {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell.story-dark-shell.ai-board-default {
+    padding: 8px;
+  }
+
+  .app-shell.ai-board-default .topbar,
+  .app-shell.ai-board-default .sector-flow-card {
+    border-radius: 26px !important;
+  }
+
+  .app-shell.ai-board-default .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.ai-board-default .topbar-actions {
+    justify-content: flex-start;
+  }
+
+  .app-shell.ai-board-default .topbar h2 {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav button {
+    padding: 18px;
+    border-radius: 24px !important;
+  }
+
+  .app-shell.story-dark-shell.ai-board-default .flow-stage-nav button > span {
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+  }
+
+  .app-shell.ai-board-default .flow-focus-company-card {
+    grid-template-columns: 1fr;
+    border-radius: 26px;
+  }
+
+  .app-shell.ai-board-default .flow-focus-company-card .company-logo {
+    width: 82px;
+    height: 82px;
+    border-radius: 24px;
+  }
+
+  .app-shell.ai-board-default .flow-focus-company-card strong {
+    white-space: normal;
+  }
+
+  .app-shell.ai-board-default .flow-focus-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.ai-board-default .flow-focus-actions button,
+  .app-shell.ai-board-default .advanced-map-entry button {
+    width: 100%;
+  }
+}
