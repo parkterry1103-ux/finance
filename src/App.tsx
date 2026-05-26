@@ -1182,6 +1182,26 @@ function financialMetricSourceNote(value: string, summary: FinancialStatementSum
   return '연결된 데이터 기준';
 }
 
+function financialQuestionTitle(index: number) {
+  if (index === 0) return '얼마나 팔았나요?';
+  if (index === 1) return '팔고 돈이 남았나요?';
+  return '현금이 들어왔나요?';
+}
+
+function financialTermBadge(label: string, index: number) {
+  if (/FCF|잉여현금/i.test(label)) return '전문용어: FCF';
+  if (/현금흐름|재고|R&D/.test(label) || index === 2) return '전문용어: 영업현금흐름';
+  if (/영업이익|영업마진|마진|이익률|수익성/.test(label) || index === 1) return '전문용어: 영업이익';
+  return '전문용어: 매출';
+}
+
+function financialSimpleSignalSet() {
+  return {
+    good: ['매출이 실제로 늘어요', '이익이 같이 남아요', '현금흐름이 버텨요'],
+    caution: ['매출만 늘고 이익이 줄어요', '현금흐름이 약해져요', '비용 부담이 커져요'],
+  };
+}
+
 function financialDetailValueClass(value: string) {
   return /공식 데이터 연결 필요|가격 데이터 연결 필요|계산 보류|원문 확인|확인 필요|보류/i.test(value)
     ? 'muted'
@@ -3275,6 +3295,13 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   };
   const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
   const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics, financialSummary });
+  const financialNumberCards = financialPriorityMetrics.slice(0, 3).map((metric, index) => ({
+    ...metric,
+    question: financialQuestionTitle(index),
+    badge: financialTermBadge(metric.label, index),
+    sourceNote: financialMetricSourceNote(metric.value, financialSummary),
+  }));
+  const financialSignals = financialSimpleSignalSet();
   const questionTermBadges = companyQuestionTermBadges(company);
   const companyQuestionCards = [
     {
@@ -3521,8 +3548,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="analysis-overview-head financial-learning-head">
             <div>
               <span className="analysis-market-pill">재무 쉽게 보기 · {marketDisplayLabel(company)}</span>
-              <h2>숫자 3개만 먼저 봅니다.</h2>
-              <p>전체 재무제표보다 이 회사에서 먼저 확인할 숫자와 해석만 짧게 봅니다.</p>
+              <h2>숫자는 마지막 확인입니다.</h2>
+              <p>이야기가 실제 돈으로 이어졌는지 3개만 봅니다.</p>
             </div>
             <div className="analysis-overview-side">
               <span className={`analysis-source-pill ${financialDataFreshness.sourceClass}`}>{financialDataFreshness.sourceLabel}</span>
@@ -3535,34 +3562,19 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             </div>
           </div>
 
-          <div className="financial-one-line-panel">
-            <span>한 줄 결론</span>
-            <strong>{financialConclusion}</strong>
-            <div className="financial-beginner-grid">
-              <article>
-                <span>쉽게 말하면</span>
-                <p>{beginnerConclusion}</p>
-              </article>
-              <article>
-                <span>그래서 뭘 봐야 하나요?</span>
-                <p>{firstWatchPoint}</p>
-              </article>
-            </div>
-          </div>
-
           <section className="financial-priority-card">
             <div className="section-title">
               <BarChart3 size={16} />
               <span>먼저 볼 숫자 3개</span>
             </div>
-            <p>{companyValueChainStage(company)} 흐름에서는 아래 3개를 먼저 확인합니다. 값이 없으면 가짜 숫자 대신 연결 필요 상태로 표시합니다.</p>
             <div className="financial-priority-grid">
-              {financialPriorityMetrics.map((metric) => (
-                <article key={metric.label}>
-                  <span><BarChart3 size={14} />{metric.label}</span>
+              {financialNumberCards.map((metric, index) => (
+                <article key={`${metric.badge}-${metric.label}`}>
+                  <span className="financial-card-step">{index + 1}</span>
+                  <h3>{metric.question}</h3>
                   <strong>{beginnerMetricValueLabel(metric.value)}</strong>
-                  <p>{metric.note}</p>
-                  <small>{financialMetricSourceNote(metric.value, financialSummary)}</small>
+                  <em>{metric.badge}</em>
+                  <small>{metric.sourceNote}</small>
                 </article>
               ))}
             </div>
@@ -3571,45 +3583,72 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="financial-signal-grid">
             <section>
               <strong><CheckCircle size={15} />좋은 신호</strong>
-              {explainerSignals.good.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
+              {financialSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
             </section>
             <section>
               <strong><AlertTriangle size={15} />조심할 신호</strong>
-              {explainerSignals.caution.slice(0, 3).map((signal) => <span key={signal}>{signal}</span>)}
+              {financialSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
             </section>
-          </div>
-
-          <div className="financial-more-actions" aria-label="재무제표 상세 보기">
-            <button type="button" onClick={() => scrollToAnalysisSection('financial-metric-branches')}>
-              지표 더 깊게 보기
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
-              손익·현금흐름 해설
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
-              MD&A / 공시 해설
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('source-report-details')}>
-              원문 보고서 확인
-            </button>
           </div>
 
           <details className="financial-advanced-card">
             <summary>
               <span>
                 <Target size={15} />
-                <strong>다음 분기에 확인할 것</strong>
-                <small>필요할 때만 펼쳐서 봅니다.</small>
+                <strong>더 깊게 보기</strong>
+                <small>긴 설명과 전체 지표는 필요할 때만 펼쳐 봅니다.</small>
               </span>
               <ChevronDown size={15} />
             </summary>
-            <div className="financial-next-watch">
-              <div>
-                {(watchPoints.length ? watchPoints : [firstWatchPoint]).slice(0, 3).map((point) => (
-                  <span key={point}>{point}</span>
+            <div className="financial-deep-drawer">
+              <div className="financial-one-line-panel">
+                <span>한 줄 결론</span>
+                <strong>{financialConclusion}</strong>
+                <div className="financial-beginner-grid">
+                  <article>
+                    <span>쉽게 말하면</span>
+                    <p>{beginnerConclusion}</p>
+                  </article>
+                  <article>
+                    <span>그래서 뭘 봐야 하나요?</span>
+                    <p>{firstWatchPoint}</p>
+                  </article>
+                </div>
+              </div>
+
+              <div className="financial-card-note-grid">
+                {financialNumberCards.map((metric) => (
+                  <article key={`${metric.badge}-${metric.question}-note`}>
+                    <span>{metric.badge}</span>
+                    <p>{metric.note}</p>
+                  </article>
                 ))}
               </div>
-              <small>{recentMovementSummary}</small>
+
+              <div className="financial-next-watch">
+                <strong>다음 분기에 확인할 것</strong>
+                <div>
+                  {(watchPoints.length ? watchPoints : [firstWatchPoint]).slice(0, 3).map((point) => (
+                    <span key={point}>{point}</span>
+                  ))}
+                </div>
+                <small>{recentMovementSummary}</small>
+              </div>
+
+              <div className="financial-more-actions" aria-label="재무제표 상세 보기">
+                <button type="button" onClick={() => scrollToAnalysisSection('financial-metric-branches')}>
+                  전체 지표
+                </button>
+                <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
+                  손익·현금흐름
+                </button>
+                <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
+                  MD&A / 공시
+                </button>
+                <button type="button" onClick={() => scrollToAnalysisSection('source-report-details')}>
+                  원문 보고서
+                </button>
+              </div>
             </div>
           </details>
         </section>
