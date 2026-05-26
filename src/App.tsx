@@ -738,6 +738,63 @@ function companyInvestorSignalCopy(company: Company) {
   return companyInvestorWatchPoint(company);
 }
 
+function shortCardSentence(text: string, fallback: string) {
+  const first = text.split(/(?<=\.)\s+/).find(Boolean)?.replace(/\.$/, '') ?? fallback;
+  return first.length > 42 ? fallback : first;
+}
+
+function companyQuestionProductCopy(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return 'AI 계산용 칩을 설계합니다.';
+  if (company.id === 'ai-datacenter-dell') return 'AI 서버를 기업에 팝니다.';
+  if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return 'AI 서버용 메모리를 만듭니다.';
+  if (company.id === 'ai-datacenter-micron') return 'AI 서버용 메모리를 만듭니다.';
+  return shortCardSentence(companyProductExplanation(company), `${productText(company).split(', ')[0]}를 제공합니다.`);
+}
+
+function companyQuestionDemandCopy(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return 'AI 서비스를 만드는 회사들이 씁니다.';
+  if (company.id === 'ai-datacenter-dell') return 'AI 서버를 늘리는 기업이 필요합니다.';
+  if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return 'GPU 서버를 만드는 회사들이 필요합니다.';
+  if (company.id === 'ai-datacenter-micron') return 'GPU 서버를 만드는 회사들이 필요합니다.';
+  return shortCardSentence(companyDemandExplanation(company), `${companyDemandTitle(company)}가 필요로 합니다.`);
+}
+
+function companyQuestionMoatCopy(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '칩 설계와 생태계를 따라 하기 어렵습니다.';
+  if (company.id === 'ai-datacenter-dell') return '고객 기반과 공급망을 따라 하기 어렵습니다.';
+  if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return '고성능 메모리 양산이 어렵습니다.';
+  if (company.id === 'ai-datacenter-micron') return '메모리 기술과 양산 경험이 필요합니다.';
+  return shortCardSentence(companyMoatSummary(company).explanation, '기술과 고객 신뢰를 따라 하기 어렵습니다.');
+}
+
+function companyQuestionCheckCopy(company: Company) {
+  if (company.id === 'us-semiconductors-nvidia') return '매출, 이익, 현금흐름을 봅니다.';
+  if (company.id === 'ai-datacenter-dell') return '서버 매출과 현금흐름을 봅니다.';
+  if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return 'HBM 매출과 현금흐름을 봅니다.';
+  if (company.id === 'ai-datacenter-micron') return '메모리 매출과 현금흐름을 봅니다.';
+  return shortCardSentence(companyInvestorSignalCopy(company), '매출, 이익, 현금흐름을 봅니다.');
+}
+
+function companyQuestionTermBadges(company: Company) {
+  const stage = companyValueChainStage(company);
+  return {
+    product: stage.includes('GPU') || company.id === 'us-semiconductors-nvidia'
+      ? '전문용어: GPU'
+      : stage.includes('메모리') || stage.includes('HBM')
+        ? '전문용어: HBM'
+        : stage.includes('파운드리')
+          ? '전문용어: 파운드리'
+          : company.id === 'ai-datacenter-dell'
+            ? '전문용어: AI 서버'
+            : `전문용어: ${stage}`,
+    demand: company.id === 'us-semiconductors-nvidia' || company.id.includes('datacenter') || stage.includes('전력') || stage.includes('서버')
+      ? '전문용어: 데이터센터'
+      : `전문용어: ${companyDemandTitle(company).split(', ')[0]}`,
+    moat: '전문용어: 경제적 해자',
+    check: '전문용어: 영업현금흐름',
+  };
+}
+
 function relationshipTypeLabel(company: Company) {
   if (company.relationshipType) return company.relationshipType;
   if (company.tier === 'anchor') return '중심 기업';
@@ -3218,6 +3275,70 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   };
   const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
   const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics, financialSummary });
+  const questionTermBadges = companyQuestionTermBadges(company);
+  const companyQuestionCards = [
+    {
+      title: '이 회사는 뭐 해요?',
+      description: companyQuestionProductCopy(company),
+      badge: questionTermBadges.product,
+      icon: <Factory size={34} />,
+    },
+    {
+      title: '누가 이걸 필요로 해요?',
+      description: companyQuestionDemandCopy(company),
+      badge: questionTermBadges.demand,
+      icon: <Network size={34} />,
+    },
+    {
+      title: '왜 쉽게 못 따라 하나요?',
+      description: companyQuestionMoatCopy(company),
+      badge: questionTermBadges.moat,
+      icon: <ShieldAlert size={34} />,
+    },
+    {
+      title: '뭘 확인하면 돼요?',
+      description: companyQuestionCheckCopy(company),
+      badge: questionTermBadges.check,
+      icon: <BarChart3 size={34} />,
+    },
+  ];
+  const deepSummaryCards = [
+    {
+      title: '한 줄 결론',
+      value: beginnerCompanyConclusion(company),
+      note: `기준: ${dataFreshness.reportName} · ${dataFreshness.status}`,
+    },
+    {
+      title: '쉽게 말하면',
+      value: companyEasyExplanation(company),
+      note: `관련 수요: ${companyDemandTitle(company)}`,
+    },
+    {
+      title: '그래서 뭘 볼까?',
+      value: companyWatchChecklistSummary(company),
+      note: explainerMetrics.slice(0, 3).map((metric) => metric.label).join(', '),
+    },
+    {
+      title: '무엇을 파는 회사인가',
+      value: productText(company),
+      note: companyProductExplanation(company),
+    },
+    {
+      title: '누구의 수요와 연결되는가',
+      value: companyDemandTitle(company),
+      note: companyDemandExplanation(company),
+    },
+    {
+      title: '경제적 해자',
+      value: explainerMoat.title,
+      note: explainerMoat.explanation,
+    },
+    {
+      title: '투자자가 볼 포인트',
+      value: companyInvestorSignalTitle(company),
+      note: companyInvestorSignalCopy(company),
+    },
+  ];
 
   return (
     <div className="analysis-shell story-dark-shell story-analysis-shell">
@@ -3262,7 +3383,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
               </div>
               <h2>{company.name}</h2>
-              <p>한 줄 결론, 쉽게 말하면, 그래서 뭘 볼까만 먼저 확인합니다.</p>
+              <p>질문 4개로 먼저 봅니다.</p>
             </div>
             <div className="company-explainer-price">
               {hasTradableTicker(company) && companyPrice && priceDirection(companyPrice) !== 'pending' ? (
@@ -3276,93 +3397,18 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             </div>
           </div>
 
-          <div className="explainer-highlight-grid">
-            <article className="explainer-highlight-card primary">
-              <span><Target size={14} />한 줄 결론</span>
-              <strong>{beginnerCompanyConclusion(company)}</strong>
-              <p>기준: {dataFreshness.reportName} · {dataFreshness.status}</p>
-            </article>
-            <article className="explainer-highlight-card">
-              <span><BookOpen size={14} />쉽게 말하면</span>
-              <strong>{companyEasyExplanation(company)}</strong>
-              <p>관련 수요: {companyDemandTitle(company)}</p>
-            </article>
-            <article className="explainer-highlight-card">
-              <span><BarChart3 size={14} />그래서 뭘 볼까?</span>
-              <strong>{companyWatchChecklistSummary(company)}</strong>
-              <ul className="explainer-watch-list">
-                {explainerMetrics.map((metric) => <li key={metric.label}>{metric.label}</li>)}
-              </ul>
-            </article>
-          </div>
-
-          <div className="explainer-card-grid">
-            <article>
-              <Factory size={18} />
-              <span>무엇을 파는 회사인가</span>
-              <strong>{productText(company)}</strong>
-              <p>{companyProductExplanation(company)}</p>
-            </article>
-            <article>
-              <Network size={18} />
-              <span>누구의 수요와 연결되는가</span>
-              <strong>{companyDemandTitle(company)}</strong>
-              <p>{companyDemandExplanation(company)}</p>
-            </article>
-            <article>
-              <ShieldAlert size={18} />
-              <span>경제적 해자</span>
-              <strong>{explainerMoat.title}</strong>
-              <p>{explainerMoat.explanation}</p>
-            </article>
-            <article>
-              <Target size={18} />
-              <span>투자자가 볼 포인트</span>
-              <strong>{companyInvestorSignalTitle(company)}</strong>
-              <p>{companyInvestorSignalCopy(company)}</p>
-            </article>
-          </div>
-
-          <div className="explainer-lower-grid">
-            <section className="explainer-metric-card">
-              <div className="section-title">
-                <BarChart3 size={16} />
-                <span>이 산업에서 먼저 볼 지표 3개</span>
-              </div>
-              <div>
-              {explainerMetrics.map((metric) => (
-                <article key={metric.label}>
-                  <span><BarChart3 size={14} />{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                  <p>{metric.note}</p>
-                </article>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <section className="explainer-related-card" id="related-companies">
-            <div className="section-title">
-              <ArrowRight size={16} />
-              <span>{company.name}와 함께 볼 기업</span>
-            </div>
-            {relatedCompanies.length ? (
-              <div className="explainer-related-list">
-                {relatedCompanies.map((item) => (
-                  <button key={item.company.id} type="button" onClick={() => onOpenAnalysis(item.company)}>
-                    <CompanyLogo company={item.company} size="small" />
-                    <span>
-                      <strong>{item.company.name}</strong>
-                      <small>{marketDisplayLabel(item.company)} · {item.company.ticker ?? '티커 확인 필요'}</small>
-                      <em>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</em>
-                    </span>
-                    <b>보기</b>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="explainer-empty-copy">현재 공개 데이터 기준 정리된 관련 기업이 아직 없습니다.</p>
-            )}
+          <section className="company-question-card-grid" aria-label={`${company.name} 질문 카드`}>
+            {companyQuestionCards.map((card, index) => (
+              <article className="company-question-card" key={card.title}>
+                <div className="company-question-top">
+                  <span>{index + 1}</span>
+                  <em>{card.badge}</em>
+                </div>
+                <div className="company-question-icon">{card.icon}</div>
+                <h3>{card.title}</h3>
+                <p>{card.description}</p>
+              </article>
+            ))}
           </section>
 
           <div className="explainer-primary-actions">
@@ -3380,12 +3426,62 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <summary>
               <span>
                 <FileSearch size={16} />
-                <strong>고급 참고자료</strong>
-                <small>원문, 관계 출처, 기관 동향은 필요할 때만 펼쳐 봅니다.</small>
+                <strong>더 깊게 보기</strong>
+                <small>긴 설명, 원문, 관계 출처는 필요할 때만 펼쳐 봅니다.</small>
               </span>
               <ChevronDown size={16} />
             </summary>
             <div>
+              <section className="company-deep-summary-grid" aria-label="기업 해설 자세한 설명">
+                {deepSummaryCards.map((card) => (
+                  <article key={card.title}>
+                    <span>{card.title}</span>
+                    <strong>{card.value}</strong>
+                    <p>{card.note}</p>
+                  </article>
+                ))}
+              </section>
+
+              <section className="explainer-metric-card compact">
+                <div className="section-title">
+                  <BarChart3 size={16} />
+                  <span>이 산업에서 먼저 볼 지표 3개</span>
+                </div>
+                <div>
+                  {explainerMetrics.slice(0, 3).map((metric) => (
+                    <article key={metric.label}>
+                      <span><BarChart3 size={14} />{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      <p>{metric.note}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="explainer-related-card" id="related-companies">
+                <div className="section-title">
+                  <ArrowRight size={16} />
+                  <span>{company.name}와 함께 볼 기업</span>
+                </div>
+                {relatedCompanies.length ? (
+                  <div className="explainer-related-list">
+                    {relatedCompanies.map((item) => (
+                      <button key={item.company.id} type="button" onClick={() => onOpenAnalysis(item.company)}>
+                        <CompanyLogo company={item.company} size="small" />
+                        <span>
+                          <strong>{item.company.name}</strong>
+                          <small>{marketDisplayLabel(item.company)} · {item.company.ticker ?? '티커 확인 필요'}</small>
+                          <em>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</em>
+                        </span>
+                        <b>보기</b>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="explainer-empty-copy">현재 공개 데이터 기준 정리된 관련 기업이 아직 없습니다.</p>
+                )}
+              </section>
+
               <section className="explainer-signal-card">
                 <div className="section-title">
                   <AlertTriangle size={16} />

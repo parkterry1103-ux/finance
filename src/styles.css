@@ -16440,6 +16440,184 @@ body,
   font-size: 11px;
 }
 
+/* Company explainer picture-book question cards. */
+.company-question-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.company-question-card {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 12px;
+  min-width: 0;
+  min-height: 260px;
+  align-content: start;
+  padding: 20px;
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  border-radius: 30px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(12, 25, 48, 0.86);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+}
+
+.company-question-top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.company-question-top > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  border-radius: 14px;
+  color: #93e7ff;
+  background: rgba(96, 165, 250, 0.12);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.company-question-top em {
+  display: inline-flex;
+  max-width: min(100%, 190px);
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 1px solid rgba(191, 219, 254, 0.22);
+  border-radius: 999px;
+  color: var(--story-badge-text);
+  background: rgba(96, 165, 250, 0.14);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-question-icon {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  border-radius: 24px;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.company-question-card h3,
+.company-question-card p {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.company-question-card h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(20px, 1.7vw, 25px);
+  font-weight: 950;
+  line-height: 1.18;
+}
+
+.company-question-card p {
+  display: -webkit-box;
+  margin: 0;
+  color: var(--story-card-body);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.company-deep-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.company-deep-summary-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(191, 219, 254, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.company-deep-summary-grid span,
+.company-deep-summary-grid strong,
+.company-deep-summary-grid p {
+  min-width: 0;
+}
+
+.company-deep-summary-grid span {
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.company-deep-summary-grid strong {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.company-deep-summary-grid p {
+  margin: 0;
+  color: var(--story-card-body);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.story-analysis-shell .company-explainer-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
+    rgba(7, 15, 29, 0.88);
+}
+
+.story-analysis-shell .company-explainer-top h2,
+.story-analysis-shell .company-explainer-top p {
+  word-break: keep-all;
+}
+
+.story-analysis-shell .explainer-advanced-card > div {
+  padding-top: 14px;
+}
+
+.story-analysis-shell .explainer-metric-card.compact {
+  box-shadow: none;
+}
+
+@media (max-width: 1180px) {
+  .company-question-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .company-question-card-grid,
+  .company-deep-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-question-card {
+    min-height: 220px;
+  }
+}
+
 @media (max-width: 1180px) {
   .pick-story-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
