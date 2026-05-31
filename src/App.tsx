@@ -4308,7 +4308,7 @@ function App() {
   const selectedRelatedCompanyCopy =
     prioritizedSelectedConnectionCards.length > 0
       ? '같은 수요 흐름에서 함께 확인할 기업입니다. 직접 거래 여부는 공시와 출처로 따로 확인합니다.'
-      : '아직 연결 기업이 충분히 정리되지 않았습니다. 전체 관계 보기에서 후보를 더 확인합니다.';
+      : '아직 연결 기업이 충분히 정리되지 않았습니다. 전체 연결 보기에서 후보를 더 확인합니다.';
   const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
   const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
   const activeRelationshipSummary = activeRelationship ? linkRelationshipSummary(activeRelationship) : undefined;
@@ -4362,12 +4362,13 @@ function App() {
   const flowModeOptions: Array<{ value: FlowViewMode; label: string; note: string; tone?: 'primary' | 'secondary' }> = [
     { value: 'core', label: '핵심 흐름', note: '대표 기업 8~10개', tone: 'primary' },
     { value: 'kr', label: '한국 관련주', note: '한국 상장기업', tone: 'primary' },
-    { value: 'all', label: '전체 관계', note: '상장기업 전체', tone: 'primary' },
+    { value: 'all', label: '전체 연결 보기', note: '전체 연결을 한 번에 확인', tone: 'primary' },
     { value: 'sources', label: '출처 보기', note: '관계 근거 확인', tone: 'secondary' },
     { value: 'reference', label: '공급망 참고', note: '비상장/보조', tone: 'secondary' },
   ];
   const shouldShowRelationshipCanvas =
     !isAiRelationshipMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
+  const isAdvancedRelationshipView = isAiRelationshipMap && shouldShowRelationshipCanvas;
   const routeHashIndex = route.indexOf('#');
   const routeWithoutHash = routeHashIndex >= 0 ? route.slice(0, routeHashIndex) : route;
   const routeHash = routeHashIndex >= 0 ? decodeURIComponent(route.slice(routeHashIndex + 1)) : '';
@@ -4482,7 +4483,7 @@ function App() {
     const position = getNodePosition(company);
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
-        zoom: isAiRelationshipMap ? 0.9 : Math.max(flowInstance.getZoom(), 0.58),
+        zoom: isAiRelationshipMap ? (isAdvancedRelationshipView ? 0.72 : 0.9) : Math.max(flowInstance.getZoom(), 0.58),
         duration: 420,
       });
     });
@@ -4605,7 +4606,12 @@ function App() {
           id: link.id,
           source: link.source,
           target: link.target,
-          label: showDetailedLinks || flowViewMode === 'sources' ? relationship.type : shortRelationshipLabel(relationship.type),
+          label:
+            isAdvancedRelationshipView && !isActiveRelationship
+              ? ''
+              : showDetailedLinks || flowViewMode === 'sources'
+                ? relationship.type
+                : shortRelationshipLabel(relationship.type),
           animated: isConnected || isActiveRelationship,
           type: isAiRelationshipMap ? 'default' : 'smoothstep',
           className: [
@@ -4642,7 +4648,7 @@ function App() {
           labelBgBorderRadius: 8,
         };
       }),
-    [activeRelationshipId, flowViewMode, groupLinks, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
+    [activeRelationshipId, flowViewMode, groupLinks, isAdvancedRelationshipView, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
   );
 
   useEffect(() => {
@@ -4971,7 +4977,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map story-dark-shell' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map story-dark-shell' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -5246,9 +5252,17 @@ function App() {
               <p className="eyebrow">
                 {country.label} · {selectedSector.label}
               </p>
-              <h2>{isAiRelationshipMap ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?' : `${selectedAnchor.name} 기업 관계 지도`}</h2>
+              <h2>
+                {isAdvancedRelationshipView
+                  ? '전체 연결 보기'
+                  : isAiRelationshipMap
+                    ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?'
+                    : `${selectedAnchor.name} 기업 관계 지도`}
+              </h2>
               <p className="topbar-subcopy">
-                {isAiRelationshipMap
+                {isAdvancedRelationshipView
+                  ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
+                  : isAiRelationshipMap
                   ? '어려운 용어보다 흐름부터 봅니다.'
                   : selectedSector.description}
               </p>
@@ -5315,9 +5329,30 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>5장 흐름 이야기</strong>
-                <p>대표 기업만 먼저 봅니다.</p>
+                <strong>{shouldShowRelationshipCanvas ? '전체 연결 보기' : '5장 흐름 이야기'}</strong>
+                <p>
+                  {shouldShowRelationshipCanvas
+                    ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
+                    : '대표 기업만 먼저 봅니다.'}
+                </p>
               </div>
+              {shouldShowRelationshipCanvas && (
+                <div className="relationship-view-intro" aria-label="전체 연결 보기 안내">
+                  <div className="relationship-view-copy">
+                    <span>고급 참고</span>
+                    <p>처음에는 5장 흐름만 봐도 충분합니다. 관계선은 필요할 때 눌러 근거를 확인하세요.</p>
+                  </div>
+                  <div className="relationship-legend" aria-label="관계도 범례">
+                    <span>선택 기업</span>
+                    <span>직접 연결</span>
+                    <span>보조 연결</span>
+                  </div>
+                  <div className="relationship-view-actions">
+                    <button type="button" onClick={() => applyFlowViewMode('core')}>5장 흐름으로 돌아가기</button>
+                    <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>선택 기업 중심</button>
+                  </div>
+                </div>
+              )}
               <div className="map-mode-strip" aria-label="지도 표시 모드">
                 <div>
                   {flowModeOptions
@@ -5448,7 +5483,7 @@ function App() {
                     )}
                     {hiddenFocusConnectionCount > 0 && (
                       <button type="button" className="focus-more-button" onClick={() => applyFlowViewMode('all')}>
-                        전체 관계 보기
+                        전체 연결 보기
                       </button>
                     )}
                   </div>
@@ -5456,8 +5491,8 @@ function App() {
               )}
 
               <div className="advanced-map-entry">
-                <span>처음에는 5장만 보고, 필요하면 전체 관계를 엽니다.</span>
-                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 관계 보기</button>
+                <span>처음에는 5장만 보고, 필요하면 전체 연결을 엽니다.</span>
+                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
               </div>
 
               {flowViewMode === 'kr' && (
@@ -5503,7 +5538,7 @@ function App() {
           <>
           {isAiRelationshipMap && (
             <div className="advanced-map-note">
-              전체 관계 보기는 고급 탐색용입니다. 처음에는 선택 기업 중심으로 크게 보여줍니다.
+              전체 연결은 고급 참고입니다. 선을 누르면 관계 요약과 출처를 확인할 수 있습니다.
             </div>
           )}
           <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
@@ -5516,8 +5551,7 @@ function App() {
             )}
             <div className="canvas-toolbar" aria-label="지도 보기 조정">
               <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>선택 기업 중심</button>
-              <button type="button" onClick={fitVisibleMap}>화면 맞춤</button>
-              {isAiRelationshipMap && <button type="button" onClick={fitEntireRelationshipMap}>전체 축소 보기</button>}
+              <button type="button" onClick={isAiRelationshipMap ? fitEntireRelationshipMap : fitVisibleMap}>전체 맞춤</button>
             </div>
             {activeRelationship && activeRelationshipSummary && (
               <div className="relationship-popover" role="status" aria-live="polite">
@@ -5568,9 +5602,9 @@ function App() {
               onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
               onInit={(instance) => setFlowInstance(instance)}
               fitView={!isAiRelationshipMap}
-              fitViewOptions={{ padding: isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
-              minZoom={isAiRelationshipMap ? 0.52 : 0.32}
-              maxZoom={isAiRelationshipMap ? 1.4 : 1.45}
+              fitViewOptions={{ padding: isAdvancedRelationshipView ? 0.32 : isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
+              minZoom={isAdvancedRelationshipView ? 0.36 : isAiRelationshipMap ? 0.52 : 0.32}
+              maxZoom={isAdvancedRelationshipView ? 1.18 : isAiRelationshipMap ? 1.4 : 1.45}
               nodesDraggable={!isMapLocked}
               nodesConnectable={false}
               elementsSelectable={!isMapLocked}
@@ -5581,7 +5615,7 @@ function App() {
               preventScrolling={!isMapLocked}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color={isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAiRelationshipMap ? 36 : 22} />
+              <Background color={isAdvancedRelationshipView ? '#edf2f7' : isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAdvancedRelationshipView ? 42 : isAiRelationshipMap ? 36 : 22} />
               <Controls position="bottom-left" showInteractive={false} />
             </ReactFlow>
           </section>
