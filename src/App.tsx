@@ -2510,6 +2510,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
   const [activeMarketTab, setActiveMarketTab] = useState(currentWeeklyDigest.marketTabs[0]?.id ?? 'ALL');
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
+  const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
+  const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
 
   const openWeeklyPick = () => {
     if (featuredPick) {
@@ -2600,16 +2602,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             <p className="home-kicker">{currentWeeklyDigest.kicker}</p>
             <h1>{currentWeeklyDigest.headline}</h1>
             <p>{currentWeeklyDigest.subheadline}</p>
-            <div className="home-hero-actions">
-              <button type="button" className="primary" onClick={openWeeklyPick}>
-                {currentWeeklyDigest.featured.primaryCtaLabel}
-                <ArrowRight size={16} />
-              </button>
-              <button type="button" className="secondary" onClick={() => document.getElementById('recent-autopsies')?.scrollIntoView({ behavior: 'smooth' })}>
-                {currentWeeklyDigest.featured.secondaryCtaLabel}
-                <ArrowRight size={16} />
-              </button>
-            </div>
             <p className="home-mvp-note">{currentWeeklyDigest.sourceNote}</p>
           </div>
           <article className="weekly-autopsy-card" aria-label="이번 주 대표 해부">
@@ -2617,7 +2609,10 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>대표 해부</span>
               <span>{currentWeeklyDigest.featured.marketLabel}</span>
               <span>{currentWeeklyDigest.featured.theme}</span>
+              <span>{featuredMovementLabel}</span>
             </div>
+            <h2>{currentWeeklyDigest.featured.question}</h2>
+            <p>{currentWeeklyDigest.featured.headline}</p>
             <div className="weekly-autopsy-company">
               {featuredCompany ? (
                 <CompanyLogo company={featuredCompany} size="medium" />
@@ -2625,17 +2620,32 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                 <span className="company-symbol symbol-dell" aria-hidden="true">DELL</span>
               )}
               <div>
-                <strong>{currentWeeklyDigest.featured.question}</strong>
-                <small>{currentWeeklyDigest.featured.meta}</small>
+                <strong>{currentWeeklyDigest.featured.meta}</strong>
+                <small>{currentWeeklyDigest.featured.summary}</small>
               </div>
             </div>
-            <h2>{currentWeeklyDigest.featured.headline}</h2>
-            <p>{currentWeeklyDigest.featured.summary}</p>
-            <ul>
-              {currentWeeklyDigest.featured.metricLabels.map((metric) => (
-                <li key={metric}>{metric}</li>
-              ))}
-            </ul>
+            <div className="weekly-autopsy-summary-grid" aria-label="대표 해부 요약">
+              <div>
+                <span>같이 볼 회사</span>
+                <div className="weekly-pill-row">
+                  {featuredRelatedCompanies.map((companyName) => (
+                    <em key={companyName}>{companyName}</em>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span>숫자 3개</span>
+                <div className="weekly-pill-row">
+                  {currentWeeklyDigest.featured.metricLabels.map((metric) => (
+                    <em key={metric}>{metric}</em>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button type="button" className="weekly-primary-action" onClick={openWeeklyPick}>
+              {currentWeeklyDigest.featured.primaryCtaLabel}
+              <ArrowRight size={16} />
+            </button>
           </article>
         </section>
 
@@ -2664,13 +2674,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             {filteredRecentAutopsies.map((item) => (
               <article className="recent-autopsy-card" key={item.id}>
                 <div className="recent-autopsy-main">
-                  <div className="recent-autopsy-logo">
-                    {item.company ? (
-                      <CompanyLogo company={item.company} size="small" />
-                    ) : (
-                      <BarChart3 size={18} />
-                    )}
-                  </div>
                   <div className="recent-autopsy-copy">
                     <div className="autopsy-badge-row">
                       <span>{item.marketLabel}</span>

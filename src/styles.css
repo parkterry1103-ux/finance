@@ -17783,3 +17783,400 @@ body,
     grid-template-columns: 1fr;
   }
 }
+
+/* Stage 3: quieter Toss-style hierarchy for the weekly home feed. */
+.story-home-shell {
+  --home-feed-panel: rgba(9, 18, 34, 0.82);
+  --home-feed-line: rgba(214, 232, 255, 0.12);
+  --home-feed-line-strong: rgba(148, 197, 255, 0.26);
+}
+
+.story-home-shell .home-hero.mvp-hero.editorial-feed-hero {
+  grid-template-columns: minmax(0, 0.78fr) minmax(390px, 0.82fr);
+  gap: 22px;
+  width: min(1120px, calc(100% - 32px));
+  min-height: 500px;
+  padding: clamp(24px, 4vw, 44px);
+  border-color: var(--home-feed-line);
+  border-radius: 16px;
+  background: #07111f;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
+}
+
+.story-home-shell .editorial-feed-hero .home-hero-copy {
+  justify-content: center;
+  max-width: 470px;
+}
+
+.story-home-shell .editorial-feed-hero .home-kicker {
+  margin-bottom: 10px;
+  color: #8fc7ff;
+  font-size: 12px;
+}
+
+.story-home-shell .editorial-feed-hero .home-hero-copy h1 {
+  max-width: 470px;
+  color: #edf6ff;
+  font-size: clamp(31px, 3.4vw, 42px);
+  line-height: 1.16;
+}
+
+.story-home-shell .editorial-feed-hero .home-hero-copy > p:not(.home-kicker):not(.home-mvp-note) {
+  max-width: 430px;
+  margin-top: 14px;
+  color: #b7c6da;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.story-home-shell .editorial-feed-hero .home-mvp-note {
+  max-width: 360px !important;
+  margin-top: 18px !important;
+  color: #8fa3bd !important;
+  font-size: 12px !important;
+}
+
+.weekly-autopsy-card {
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  padding: clamp(22px, 3vw, 30px);
+  border-color: var(--home-feed-line-strong);
+  border-radius: 14px;
+  background: #101b2d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 14px 32px rgba(0, 0, 0, 0.24);
+}
+
+.weekly-autopsy-topline span,
+.autopsy-badge-row span,
+.related-company-strip span,
+.saved-map-card span,
+.saved-map-card small,
+.weekly-pill-row em {
+  min-height: 22px;
+  padding: 0 8px;
+  border-color: rgba(148, 197, 255, 0.18);
+  color: #bdd6f2;
+  background: rgba(148, 197, 255, 0.075);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.weekly-autopsy-card h2 {
+  max-width: 520px;
+  color: #ffffff;
+  font-size: clamp(28px, 3.7vw, 42px);
+  line-height: 1.12;
+}
+
+.weekly-autopsy-card > p {
+  max-width: 500px;
+  color: #dce9f8;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.weekly-autopsy-company {
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.weekly-autopsy-company .company-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.weekly-autopsy-company strong {
+  color: #d9e8fa;
+  font-size: 14px;
+}
+
+.weekly-autopsy-company small {
+  max-width: 380px;
+  color: #91a5bf;
+  font-size: 12px;
+}
+
+.weekly-autopsy-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.weekly-autopsy-summary-grid > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(214, 232, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.weekly-autopsy-summary-grid > div > span {
+  color: #8fa3bd;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.weekly-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weekly-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 46px;
+  margin-top: 2px;
+  padding: 0 17px;
+  border: 1px solid rgba(143, 215, 255, 0.72);
+  border-radius: 8px;
+  color: #06111f !important;
+  background: #b8edff;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.story-home-shell .home-section.recent-autopsy-section,
+.story-home-shell .home-section.saved-map-section {
+  width: min(1040px, calc(100% - 32px));
+  margin-top: 34px;
+}
+
+.recent-autopsy-section .home-section-head,
+.saved-map-section .home-section-head {
+  margin-bottom: 10px;
+}
+
+.recent-autopsy-section .home-section-head span,
+.saved-map-section .home-section-head span {
+  margin-bottom: 6px;
+  color: #8fc7ff;
+  font-size: 11px;
+}
+
+.story-home-shell .home-section-head h2 {
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.2;
+}
+
+.story-home-shell .home-section-head p {
+  max-width: 440px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.market-tab-row {
+  gap: 2px;
+  margin: 2px 0 12px;
+  padding: 3px;
+  border-color: rgba(214, 232, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.market-tab-row button {
+  min-height: 30px;
+  padding: 0 12px;
+  color: #8fa3bd;
+  font-size: 12px;
+}
+
+.market-tab-row button.active {
+  color: #07111f;
+  background: #d8f1ff;
+}
+
+.recent-autopsy-list {
+  gap: 8px;
+}
+
+.recent-autopsy-card {
+  grid-template-columns: minmax(0, 1fr) minmax(142px, auto) auto;
+  gap: 12px;
+  padding: 12px 14px;
+  border-color: rgba(214, 232, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.026);
+  box-shadow: none;
+}
+
+.recent-autopsy-main {
+  gap: 0;
+}
+
+.recent-autopsy-card h3 {
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.32;
+}
+
+.recent-autopsy-card p {
+  margin-top: 4px;
+  color: #aebed2;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.recent-autopsy-card button,
+.saved-map-card button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-color: rgba(148, 197, 255, 0.14);
+  color: #cfe5ff;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.saved-map-section {
+  padding-top: 12px;
+  border-top: 1px solid rgba(214, 232, 255, 0.08);
+}
+
+.saved-map-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.saved-map-card {
+  min-height: 106px;
+  gap: 8px;
+  padding: 12px;
+  border-color: rgba(214, 232, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.023);
+  box-shadow: none;
+}
+
+.saved-map-card strong {
+  font-size: 14px;
+}
+
+.saved-map-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #91a5bf;
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.saved-map-card.disabled {
+  opacity: 0.48;
+}
+
+.saved-map-card.disabled small,
+.saved-map-card.disabled span {
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #8a9ab0;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+@media (max-width: 980px) {
+  .story-home-shell .home-hero.mvp-hero.editorial-feed-hero {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    width: min(100%, calc(100% - 28px));
+    padding: 24px;
+  }
+
+  .story-home-shell .editorial-feed-hero .home-hero-copy {
+    max-width: 100%;
+  }
+
+  .story-home-shell .editorial-feed-hero .home-hero-copy h1 {
+    max-width: 620px;
+    font-size: 34px;
+  }
+
+  .recent-autopsy-card {
+    grid-template-columns: 1fr auto;
+  }
+
+  .related-company-strip {
+    padding-left: 0;
+  }
+
+  .recent-autopsy-card button {
+    justify-self: end;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-home-shell .home-hero.mvp-hero.editorial-feed-hero {
+    width: min(100%, calc(100% - 16px));
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .story-home-shell .editorial-feed-hero .home-hero-copy h1 {
+    font-size: 27px;
+    line-height: 1.14;
+  }
+
+  .story-home-shell .editorial-feed-hero .home-hero-copy > p:not(.home-kicker):not(.home-mvp-note) {
+    font-size: 13px;
+  }
+
+  .weekly-autopsy-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .weekly-autopsy-card h2 {
+    font-size: 26px;
+  }
+
+  .weekly-autopsy-summary-grid,
+  .recent-autopsy-card {
+    grid-template-columns: 1fr;
+  }
+
+  .weekly-primary-action,
+  .recent-autopsy-card button {
+    width: fit-content;
+  }
+
+  .story-home-shell .home-section.recent-autopsy-section,
+  .story-home-shell .home-section.saved-map-section {
+    width: min(100%, calc(100% - 16px));
+    margin-top: 28px;
+  }
+
+  .market-tab-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .recent-autopsy-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .related-company-strip {
+    gap: 5px;
+  }
+
+  .recent-autopsy-card button {
+    justify-self: start;
+  }
+
+  .saved-map-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .saved-map-card {
+    min-height: 96px;
+  }
+}
