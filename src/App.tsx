@@ -784,19 +784,19 @@ function companyQuestionTermBadges(company: Company) {
   const stage = companyValueChainStage(company);
   return {
     product: stage.includes('GPU') || company.id === 'us-semiconductors-nvidia'
-      ? '전문용어: GPU'
+      ? 'GPU'
       : stage.includes('메모리') || stage.includes('HBM')
-        ? '전문용어: HBM'
+        ? 'HBM'
         : stage.includes('파운드리')
-          ? '전문용어: 파운드리'
+          ? '파운드리'
           : company.id === 'ai-datacenter-dell'
-            ? '전문용어: AI 서버'
-            : `전문용어: ${stage}`,
+            ? 'AI 서버'
+            : stage,
     demand: company.id === 'us-semiconductors-nvidia' || company.id.includes('datacenter') || stage.includes('전력') || stage.includes('서버')
-      ? '전문용어: 데이터센터'
-      : `전문용어: ${companyDemandTitle(company).split(', ')[0]}`,
-    moat: '전문용어: 경제적 해자',
-    check: '전문용어: 영업현금흐름',
+      ? '데이터센터'
+      : companyDemandTitle(company).split(', ')[0],
+    moat: '경제적 해자',
+    check: '영업현금흐름',
   };
 }
 
@@ -1194,10 +1194,10 @@ function financialQuestionTitle(index: number) {
 }
 
 function financialTermBadge(label: string, index: number) {
-  if (/FCF|잉여현금/i.test(label)) return '전문용어: FCF';
-  if (/현금흐름|재고|R&D/.test(label) || index === 2) return '전문용어: 영업현금흐름';
-  if (/영업이익|영업마진|마진|이익률|수익성/.test(label) || index === 1) return '전문용어: 영업이익';
-  return '전문용어: 매출';
+  if (/FCF|잉여현금/i.test(label)) return 'FCF';
+  if (/현금흐름|재고|R&D/.test(label) || index === 2) return '영업현금흐름';
+  if (/영업이익|영업마진|마진|이익률|수익성/.test(label) || index === 1) return '영업이익';
+  return '매출';
 }
 
 function financialSimpleSignalSet() {
@@ -2579,7 +2579,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>오늘 이슈가</span>
               <span>어떤 회사로 이어질까요?</span>
             </h1>
-            <p>뉴스가 왜 이 회사로 이어지는지, 한눈에. 어려운 용어보다 흐름부터 보고, 오늘 이슈가 어떤 기업으로 이어지는지 쉽게 봅니다.</p>
+            <p>뉴스가 어느 회사로 이어지는지 먼저 보고, 필요한 숫자는 뒤에서 확인합니다.</p>
             <div className="hero-principle-row" aria-label="사이트 사용 흐름">
               <span>왜 움직였나</span>
               <span>같이 볼 회사</span>
@@ -2587,7 +2587,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             </div>
             <div className="home-hero-actions">
               <button type="button" className="primary" onClick={() => onOpenCategory('us-semiconductors')}>
-                관계지도 보기
+                시장 흐름 보기
                 <ArrowRight size={16} />
               </button>
               <button type="button" className="secondary" onClick={onOpenPicks}>
@@ -2646,7 +2646,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <div className="flow-step-icon story-icon-orb story-icon-orb-lg">{step.icon}</div>
                 <h3>{step.title}</h3>
-                <em className="story-term-badge flow-step-term">전문용어: {step.term}</em>
+                <em className="story-term-badge flow-step-term">{step.term}</em>
                 <p>{step.summary}</p>
                 <small>{step.companies.join(' · ')}</small>
               </article>
@@ -2656,7 +2656,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             <strong>수요 → AI 칩 → 메모리 → 파운드리 → 전력 흐름만 먼저 봅니다.</strong>
             <p>직접 납품 관계가 확인되지 않은 기업은 “수요 연결” 또는 “같이 볼 기업”으로 표시합니다.</p>
             <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
-              시장 흐름 지도 보기
+              시장 흐름 보기
               <ArrowRight size={16} />
             </button>
             <small>다음에 추가할 흐름: 전력·냉각, 2차전지, 바이오/CDMO</small>
@@ -2714,22 +2714,22 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             <article id="company-explainer">
               <h3>기업 해설</h3>
               <p>이 회사가 뭘 하는지 먼저 봅니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix)}>보기</button>
+              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix)}>기업 해설 보기</button>
             </article>
             <article>
               <h3>시장 흐름 지도</h3>
               <p>뉴스가 어떤 기업으로 이어지는지 봅니다.</p>
-              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>보기</button>
+              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>시장 흐름 보기</button>
             </article>
             <article id="financial-easy">
               <h3>재무 쉽게 보기</h3>
               <p>숫자 3개만 먼저 확인합니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>보기</button>
+              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>재무 쉽게 보기</button>
             </article>
           </div>
           <div className="advanced-reference-note">
-            <strong>고급 참고자료는 숨겨두었습니다.</strong>
-            <p>13F, Form 4, 공시 원문, 관계 출처, 공급망 참고, 가격 상세는 기업 해설과 더 깊게 보기에서 확인할 수 있습니다.</p>
+            <strong>자료는 접어두었습니다.</strong>
+            <p>공시 원문과 기관 보고는 기업 해설의 접힘 영역에서 확인할 수 있습니다.</p>
           </div>
         </section>
 
@@ -2947,7 +2947,7 @@ function StockAutopsyPicksPage({
               </span>
               <h1>{storyQuestion}</h1>
               <strong>{storyAnswer}</strong>
-              <p>흐름을 보고, 숫자 3개만 확인합니다.</p>
+              <p>왜 움직였는지 먼저 봅니다.</p>
             </div>
             <div className="pick-story-cover" aria-label="Pick 요약">
               {relatedCompany ? (
@@ -3054,12 +3054,12 @@ function StockAutopsyPicksPage({
 
             <details>
               <summary>
-                <span>고급 참고자료</span>
+                <span>더 깊게 보기</span>
                 <ChevronDown size={15} />
               </summary>
               <div className="pick-drawer-actions">
                 <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-                  지도에서 보기
+                  시장 흐름 보기
                 </button>
                 {relatedCompany ? (
                   <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
@@ -3388,13 +3388,13 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </button>
           <button type="button" className="ghost-action" onClick={() => onBack(company)}>
             <ArrowRight size={16} />
-            기업 관계 지도
+            시장 흐름 보기
           </button>
         </div>
         <div>
           <p className="eyebrow">주가해부실 · 초보자용 기업 설명서</p>
           <h1>{company.name} 기업 해설</h1>
-          <p>이 회사가 뭘 파는지, 누구의 수요와 연결되는지, 먼저 볼 숫자 3개만 빠르게 봅니다.</p>
+          <p>이 회사가 뭘 파는지와 누구의 수요와 연결되는지 먼저 봅니다.</p>
         </div>
         <div className="analysis-actions">
           <div className="data-freshness-card compact" aria-label="데이터 기준">
@@ -3446,7 +3446,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="explainer-primary-actions">
             <button type="button" onClick={() => onBack(company)}>
               <Network size={15} />
-              지도에서 보기
+              시장 흐름 보기
             </button>
             <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
               <CircleDollarSign size={15} />
@@ -3600,7 +3600,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <summary>
               <span>
                 <Target size={15} />
-                <strong>더 깊게 보기</strong>
+                <strong>숫자 더 보기</strong>
                 <small>긴 설명과 전체 지표는 필요할 때만 펼쳐 봅니다.</small>
               </span>
               <ChevronDown size={15} />
@@ -3642,16 +3642,16 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
               <div className="financial-more-actions" aria-label="재무제표 상세 보기">
                 <button type="button" onClick={() => scrollToAnalysisSection('financial-metric-branches')}>
-                  전체 지표
+                  전체 지표 보기
                 </button>
                 <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
-                  손익·현금흐름
+                  손익·현금흐름 보기
                 </button>
                 <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
-                  MD&A / 공시
+                  공시 보기
                 </button>
                 <button type="button" onClick={() => scrollToAnalysisSection('source-report-details')}>
-                  원문 보고서
+                  원문 보고서 보기
                 </button>
               </div>
             </div>
@@ -3663,7 +3663,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <summary>
               <span>
                 <BarChart3 size={16} />
-                <strong>지표 더 깊게 보기</strong>
+                <strong>전체 지표 보기</strong>
                 <small>수익성, 성장성, 안정성, 현금흐름, 밸류에이션을 단계적으로 펼쳐 봅니다.</small>
               </span>
               <ChevronDown size={16} />
@@ -3876,7 +3876,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                   <p>{companyMoatSummary(company).explanation}</p>
                 </div>
                 <button type="button" onClick={() => onBack(company)}>
-                  기업 관계 지도에서 보기
+                  시장 흐름 보기
                   <ArrowRight size={15} />
                 </button>
               </div>
@@ -5284,7 +5284,7 @@ function App() {
                 onClick={() => selectedCompany && openAnalysis(selectedCompany, 'financial-easy-view')}
               >
                 <Database size={18} />
-                {selectedIsMainListed ? '재무 쉽게' : '관계 참고용'}
+                {selectedIsMainListed ? '재무 쉽게 보기' : '관계 참고용'}
               </button>
               <button type="button" className="icon-action text-action detail-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
                 <PanelRightOpen size={18} />
@@ -5318,8 +5318,8 @@ function App() {
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>AI를 많이 쓰면 어떤 회사들이 같이 움직일까?</strong>
-                <p>어려운 용어보다 흐름부터 봅니다.</p>
+                <strong>5장 흐름 이야기</strong>
+                <p>대표 기업만 먼저 봅니다.</p>
               </div>
               <div className="map-mode-strip" aria-label="지도 표시 모드">
                 <div>
@@ -5356,7 +5356,7 @@ function App() {
               <div className="flow-help-pills" aria-label="지도 사용 팁">
                 <span>5장만 순서대로</span>
                 <span>대표 기업은 2~3개만</span>
-                <span>전체 그래프는 고급 보기</span>
+                <span>전체 관계는 필요할 때만</span>
               </div>
               <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
                 {flowStageCards.map((stage, index) => (
@@ -5451,7 +5451,7 @@ function App() {
                     )}
                     {hiddenFocusConnectionCount > 0 && (
                       <button type="button" className="focus-more-button" onClick={() => applyFlowViewMode('all')}>
-                        관련 기업 더보기
+                        전체 관계 보기
                       </button>
                     )}
                   </div>
@@ -5459,7 +5459,7 @@ function App() {
               )}
 
               <div className="advanced-map-entry">
-                <span>전체 관계 보기는 고급 탐색용입니다. 처음에는 선택 기업 중심으로 보는 것을 추천합니다.</span>
+                <span>처음에는 5장만 보고, 필요하면 전체 관계를 엽니다.</span>
                 <button type="button" onClick={() => applyFlowViewMode('all')}>전체 관계 보기</button>
               </div>
 
@@ -5484,7 +5484,7 @@ function App() {
                           <span>{company.relationshipSummary ?? companyCustomerSummary(company)}</span>
                           <div className="korea-listed-actions">
                             <button type="button" onClick={() => openAnalysis(company)}>기업 해설 보기</button>
-                            <button type="button" onClick={() => openCompanyMap(company)}>지도에서 보기</button>
+                            <button type="button" onClick={() => openCompanyMap(company)}>시장 흐름 보기</button>
                             <ReportAction reportLink={reportLink} className="mini-report-action" iconSize={13} />
                           </div>
                         </article>
