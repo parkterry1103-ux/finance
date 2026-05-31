@@ -18180,3 +18180,790 @@ body,
     min-height: 96px;
   }
 }
+
+/* Light default UI: Toss-style readable hierarchy over the previous dark story layer. */
+:root {
+  --light-page: #f6f8fb;
+  --light-page-alt: #f8fafc;
+  --light-card: #ffffff;
+  --light-card-soft: #f8fafc;
+  --light-text-primary: #0f172a;
+  --light-text-secondary: #334155;
+  --light-text-muted: #64748b;
+  --light-border: #e2e8f0;
+  --light-border-strong: #bfdbfe;
+  --light-blue: #2563eb;
+  --light-blue-strong: #1d4ed8;
+  --light-blue-soft: #eff6ff;
+  --light-green: #047857;
+  --light-green-soft: #ecfdf5;
+  --light-amber: #b45309;
+  --light-amber-soft: #fff7ed;
+  --light-red: #dc2626;
+  --light-red-soft: #fff1f2;
+  --light-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --light-shadow-strong: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+html,
+body,
+#root {
+  color: var(--light-text-primary) !important;
+  background: var(--light-page) !important;
+}
+
+body {
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #f6f8fb 48%, #f8fafc 100%) !important;
+}
+
+.story-dark-shell,
+.story-dark-shell.home-shell,
+.story-dark-shell.pick-shell,
+.story-dark-shell.analysis-shell,
+.story-dark-shell.app-shell,
+.app-shell.story-dark-shell.ai-mvp-map,
+.app-shell.story-dark-shell.ai-board-default {
+  --story-bg-dark-navy: var(--light-page);
+  --story-bg-midnight: var(--light-page);
+  --story-bg-ink: var(--light-page);
+  --story-surface-glass: var(--light-card);
+  --story-surface-elevated: var(--light-card);
+  --story-surface-soft: var(--light-card-soft);
+  --story-border-subtle: var(--light-border);
+  --story-border-strong: var(--light-border-strong);
+  --story-text-primary: var(--light-text-primary);
+  --story-text-secondary: var(--light-text-secondary);
+  --story-text-muted: var(--light-text-muted);
+  --story-text-disabled: var(--light-text-muted);
+  --story-card-title: var(--light-text-primary);
+  --story-card-body: var(--light-text-secondary);
+  --story-badge-text: var(--light-blue-strong);
+  --story-readable-panel: var(--light-card);
+  --story-readable-panel-strong: var(--light-card);
+  --story-readable-border: var(--light-border);
+  --story-accent-blue: var(--light-blue);
+  --story-accent-cyan: var(--light-blue);
+  --story-accent-purple: #7c3aed;
+  --story-accent-mint: var(--light-green);
+  --story-glow-blue: none;
+  --story-glow-cyan: none;
+  --story-card-shadow: var(--light-shadow-strong);
+  --story-card-shadow-soft: var(--light-shadow);
+  color: var(--light-text-primary) !important;
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #f6f8fb 52%, #f8fafc 100%) !important;
+  text-rendering: optimizeLegibility;
+}
+
+.story-dark-shell::before,
+.story-dark-shell::after,
+.story-home-shell .home-hero.mvp-hero::before,
+.story-home-shell .home-hero.mvp-hero::after,
+.story-dark-shell :is(.home-hero-card-stack article, .home-issue-card, .pick-home-card, .pick-card, .explainer-card-grid article, .financial-priority-grid article)::after,
+.pick-story-card:not(:last-child)::after {
+  display: none !important;
+}
+
+.story-dark-shell *,
+.story-dark-shell :is(p, small, em, li, span),
+.story-analysis-shell .financial-priority-grid article strong,
+.story-home-shell .home-hero h1 span:last-child {
+  text-shadow: none !important;
+}
+
+.story-dark-shell :is(h1, h2, h3, h4, strong, b),
+.story-dark-shell :is(.home-brand strong, .home-nav a[href="#top"], .home-section-head h2, .pick-hero h1, .analysis-hero h1, .financial-learning-head h2, .sector-flow-copy strong),
+.app-shell.story-dark-shell.ai-mvp-map :is(.topbar h2, .sector-flow-copy strong, .flow-stage-nav button strong, .flow-focus-company-card strong, .company-row-main strong, .anchor-list strong, .panel-title-row h2, .detail-card strong),
+.pick-story-hero h1,
+.pick-story-hero strong,
+.pick-story-card h2,
+.company-question-card h3,
+.weekly-autopsy-card h2,
+.weekly-autopsy-company strong,
+.recent-autopsy-card h3,
+.saved-map-card strong {
+  color: var(--light-text-primary) !important;
+}
+
+.story-dark-shell :is(p, li, small, em),
+.story-dark-shell :is(.home-section-head p, .topbar-subcopy, .sector-flow-copy p, .pick-helper-copy, .analysis-report-meta, .financial-learning-head p),
+.app-shell.story-dark-shell.ai-mvp-map :is(.topbar-subcopy, .sector-flow-copy p, .flow-stage-nav button small, .flow-focus-qa dd, .company-row-main small, .anchor-list small, .right-panel p, .right-panel small, .right-panel em),
+.pick-story-hero p,
+.pick-story-card p,
+.company-question-card p,
+.weekly-autopsy-card p,
+.weekly-autopsy-company small,
+.recent-autopsy-card p,
+.saved-map-card p {
+  color: var(--light-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+.story-dark-shell :is(.home-kicker, .eyebrow, .breadcrumb, .breadcrumb button, .breadcrumb span, .home-mvp-note, .section-title span),
+.story-home-shell .editorial-feed-hero .home-kicker,
+.story-home-shell .editorial-feed-hero .home-mvp-note,
+.recent-autopsy-section .home-section-head span,
+.saved-map-section .home-section-head span,
+.weekly-autopsy-summary-grid > div > span {
+  color: var(--light-text-muted) !important;
+  opacity: 1 !important;
+}
+
+.story-dark-shell :is(
+  .home-nav,
+  .pick-nav,
+  .analysis-hero,
+  .topbar,
+  .home-hero.mvp-hero,
+  .weekly-autopsy-card,
+  .recent-autopsy-card,
+  .saved-map-card,
+  .market-tab-row,
+  .home-hero-card-stack article,
+  .home-issue-card,
+  .flow-preview-section.mvp-flow-preview,
+  .flow-preview-copy,
+  .flow-step-card,
+  .pick-home-card,
+  .beginner-guide-grid article,
+  .advanced-reference-note,
+  .pick-hero,
+  .pick-card,
+  .pick-detail-card,
+  .pick-detail-hero,
+  .pick-story-hero,
+  .pick-story-card,
+  .pick-story-drawers details,
+  .pick-drawer-metric-grid article,
+  .pick-meta-grid > div,
+  .pick-related-company-grid article,
+  .pick-metric-grid article,
+  .pick-signal-grid article,
+  .pick-reason-list,
+  .analysis-card,
+  .company-explainer-card,
+  .financial-learning-card,
+  .explainer-highlight-card,
+  .explainer-card-grid article,
+  .explainer-metric-card,
+  .explainer-metric-card article,
+  .explainer-related-card,
+  .explainer-signal-card,
+  .company-question-card,
+  .company-deep-summary-grid article,
+  .financial-one-line-panel,
+  .financial-priority-card,
+  .financial-priority-grid article,
+  .financial-signal-grid section,
+  .financial-advanced-card,
+  .financial-card-note-grid article,
+  .financial-beginner-grid article,
+  .financial-next-watch,
+  .analysis-disclosure-section,
+  .metric-branch-card,
+  .metric-detail-card,
+  .insight-card,
+  .filing-brief-body,
+  .report-meta-grid > div,
+  .plain-list li,
+  .disclosure-list a,
+  .direct-report-link,
+  .analysis-supply-box,
+  .source-policy,
+  .news-header,
+  .news-empty,
+  .sector-flow-card,
+  .flow-stage-nav button,
+  .flow-focus-explorer,
+  .flow-connection-column,
+  .flow-focus-company-card,
+  .flow-connection-list button,
+  .advanced-map-entry,
+  .ai-sector-support-card,
+  .left-panel,
+  .right-panel,
+  .detail-card,
+  .relationship-brief-grid article,
+  .beginner-metrics-compact article,
+  .direct-connections-card,
+  .map-advanced-actions,
+  .report-state-note,
+  .reference-status-card,
+  .company-row-card,
+  .first-look-card,
+  .company-list,
+  .term-guide,
+  .stage-filter,
+  .selected-company-context,
+  .graph-wrap,
+  .bottom-panel > *,
+  .relationship-popover,
+  .relationship-source-panel
+) {
+  border-color: var(--light-border) !important;
+  color: var(--light-text-primary) !important;
+  background: var(--light-card) !important;
+  box-shadow: var(--light-shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.story-dark-shell :is(.home-nav, .pick-nav, .analysis-hero, .topbar) {
+  border-radius: 12px !important;
+}
+
+.story-home-shell .home-hero.mvp-hero.editorial-feed-hero {
+  width: min(1120px, calc(100% - 32px));
+  min-height: 500px;
+  border-color: var(--light-border) !important;
+  border-radius: 16px !important;
+  background: var(--light-card) !important;
+  box-shadow: var(--light-shadow-strong) !important;
+}
+
+.story-home-shell .editorial-feed-hero .home-hero-copy h1 {
+  color: var(--light-text-primary) !important;
+}
+
+.story-home-shell .editorial-feed-hero .home-hero-copy > p:not(.home-kicker):not(.home-mvp-note) {
+  color: var(--light-text-secondary) !important;
+}
+
+.weekly-autopsy-card {
+  border-color: var(--light-border-strong) !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.08) !important;
+}
+
+.weekly-autopsy-summary-grid > div,
+.recent-autopsy-card,
+.saved-map-card {
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.recent-autopsy-card,
+.saved-map-card {
+  border-color: var(--light-border) !important;
+}
+
+.story-dark-shell :is(
+  .hero-principle-row span,
+  .weekly-autopsy-topline span,
+  .autopsy-badge-row span,
+  .related-company-strip span,
+  .saved-map-card span,
+  .saved-map-card small,
+  .weekly-pill-row em,
+  .analysis-market-pill,
+  .reference-status-pill,
+  .pick-move,
+  .pick-section-kicker,
+  .card-topline span,
+  .mini-tag-row span,
+  .flow-help-pills span,
+  .map-mode-strip button,
+  .story-pill,
+  .story-term-badge,
+  .value-chain-steps span,
+  .pick-chip-row span,
+  .scope-pill,
+  .role-badge,
+  .risk-badge,
+  .confidence-badge,
+  .analysis-status-pill,
+  .analysis-source-pill,
+  .price-badge,
+  .flow-active-stage-label,
+  .company-question-top em,
+  .financial-priority-grid article em
+) {
+  border-color: var(--light-border-strong) !important;
+  color: var(--light-blue-strong) !important;
+  background: var(--light-blue-soft) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.story-dark-shell :is(.risk-low, .confidence-high, .price-badge.up, .up) {
+  border-color: #bbf7d0 !important;
+  color: var(--light-green) !important;
+  background: var(--light-green-soft) !important;
+}
+
+.story-dark-shell :is(.risk-medium, .confidence-medium, .price-badge.pending) {
+  border-color: #fed7aa !important;
+  color: var(--light-amber) !important;
+  background: var(--light-amber-soft) !important;
+}
+
+.story-dark-shell :is(.risk-high, .confidence-low, .price-badge.down, .down) {
+  border-color: #fecdd3 !important;
+  color: var(--light-red) !important;
+  background: var(--light-red-soft) !important;
+}
+
+.story-dark-shell :is(
+  button,
+  a,
+  summary,
+  .ghost-action,
+  .analysis-link-button,
+  .pick-detail-actions button,
+  .pick-advanced-actions summary,
+  .map-advanced-actions summary,
+  .financial-more-actions button,
+  .flow-focus-actions button,
+  .topbar-actions button,
+  .topbar-report-action,
+  .recent-autopsy-card button,
+  .saved-map-card button,
+  .pick-drawer-actions button,
+  .pick-drawer-sources a,
+  .pick-drawer-sources .compact-report-action,
+  .direct-source-button,
+  .compact-report-action,
+  .direct-report-link,
+  .direct-action,
+  .refresh-action,
+  .icon-action,
+  .text-action
+) {
+  color: var(--light-blue-strong) !important;
+  border-color: var(--light-border-strong) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  text-decoration: none;
+  opacity: 1 !important;
+}
+
+.story-dark-shell :is(
+  button:hover,
+  a:hover,
+  summary:hover,
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible
+) {
+  color: var(--light-blue-strong) !important;
+  border-color: #93c5fd !important;
+  background: #f8fbff !important;
+}
+
+.story-dark-shell :is(
+  button.primary,
+  a.primary,
+  .story-primary-button,
+  .weekly-primary-action,
+  .home-hero-actions button.primary,
+  .flow-preview-copy button:first-child,
+  .pick-primary-action,
+  .explainer-primary-actions button:first-child,
+  .financial-more-actions button:first-child,
+  .flow-focus-actions button:first-child,
+  .market-tab-row button.active,
+  .map-mode-strip button.active,
+  .stage-filter button.active,
+  .country-toggle button.active,
+  .first-look-list button.active
+) {
+  color: #ffffff !important;
+  border-color: var(--light-blue) !important;
+  background: var(--light-blue) !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18) !important;
+}
+
+.story-dark-shell :is(button:disabled, [aria-disabled="true"], .story-disabled, .pick-disabled-action, .saved-map-card.disabled, .company-row-disabled) {
+  color: var(--light-text-muted) !important;
+  border-color: var(--light-border) !important;
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.story-dark-shell :is(.home-logo, .landing-logo, .brand-mark, .company-logo, .recent-autopsy-logo > svg, .pick-story-icon, .company-question-icon, .financial-card-step, .pick-story-step, .company-question-top > span, .flow-stage-nav button > span) {
+  border-color: var(--light-border-strong) !important;
+  color: var(--light-blue-strong) !important;
+  background: var(--light-blue-soft) !important;
+  box-shadow: none !important;
+}
+
+.story-dark-shell :is(.symbol-dell, .symbol-nvidia, .symbol-hynix, .symbol-samsung, .symbol-tsmc, .symbol-asml, .symbol-vertiv, .symbol-microsoft, .symbol-google, .symbol-amazon, .symbol-broadcom, .symbol-amd, .symbol-supermicro, .symbol-arista, .symbol-kr, .company-symbol) {
+  color: var(--light-blue-strong) !important;
+  border-color: var(--light-border-strong) !important;
+  background: var(--light-blue-soft) !important;
+  box-shadow: none !important;
+}
+
+.story-pick-shell .pick-story-board,
+.story-pick-shell .pick-story-drawers,
+.company-question-card-grid,
+.story-analysis-shell .financial-priority-grid,
+.financial-card-note-grid,
+.saved-map-grid {
+  min-width: 0;
+}
+
+.pick-story-drawers summary,
+.pick-drawer-body p,
+.pick-drawer-list span,
+.pick-drawer-sources .pick-disabled-action,
+.pick-drawer-actions .pick-disabled-action,
+.pick-drawer-metric-grid :is(strong, span, small),
+.company-deep-summary-grid :is(span, strong, p),
+.financial-card-note-grid :is(span, p),
+.story-analysis-shell .financial-advanced-card .financial-one-line-panel > strong,
+.story-analysis-shell .financial-advanced-card .financial-one-line-panel > span,
+.story-analysis-shell .financial-advanced-card .financial-beginner-grid span,
+.story-analysis-shell .financial-advanced-card .financial-next-watch strong {
+  color: inherit !important;
+}
+
+.story-analysis-shell .financial-priority-card,
+.story-analysis-shell .financial-learning-card,
+.story-analysis-shell .company-explainer-card,
+.app-shell.ai-board-default .sector-flow-card,
+.app-shell.ai-board-default .flow-focus-company-card {
+  background: #ffffff !important;
+}
+
+.story-analysis-shell .financial-priority-grid article,
+.company-question-card,
+.pick-story-card,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button {
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.story-analysis-shell .financial-priority-grid article strong {
+  color: var(--light-text-primary) !important;
+  font-size: clamp(32px, 3.8vw, 44px);
+}
+
+.story-analysis-shell .financial-priority-grid article small {
+  color: var(--light-text-muted) !important;
+  background: #f1f5f9 !important;
+}
+
+.story-analysis-shell .financial-signal-grid section:first-child,
+.story-pick-shell .pick-signal-grid article:first-child {
+  border-color: #bbf7d0 !important;
+  background: var(--light-green-soft) !important;
+}
+
+.story-analysis-shell .financial-signal-grid section:last-child,
+.story-pick-shell .pick-signal-grid article:last-child {
+  border-color: #fed7aa !important;
+  background: var(--light-amber-soft) !important;
+}
+
+.story-analysis-shell .financial-signal-grid section:first-child strong,
+.story-pick-shell .pick-signal-grid article:first-child strong {
+  color: var(--light-green) !important;
+}
+
+.story-analysis-shell .financial-signal-grid section:last-child strong,
+.story-pick-shell .pick-signal-grid article:last-child strong {
+  color: var(--light-amber) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map {
+  background: var(--light-page) !important;
+}
+
+.app-shell.ai-board-default .topbar,
+.app-shell.ai-board-default .sector-flow-card,
+.app-shell.ai-board-default .flow-focus-company-card,
+.app-shell.story-dark-shell.ai-mvp-map .left-panel,
+.app-shell.story-dark-shell.ai-mvp-map .right-panel,
+.app-shell.story-dark-shell.ai-mvp-map .topbar,
+.app-shell.story-dark-shell.ai-mvp-map .sector-flow-card {
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:hover,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:focus-visible,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button.active {
+  border-color: var(--light-border-strong) !important;
+  background: #f8fbff !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::after {
+  background: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:not(:last-child)::before {
+  border-color: #cbd5e1 !important;
+}
+
+.app-shell.ai-board-default .flow-focus-qa div,
+.app-shell.ai-board-default .advanced-map-entry,
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-qa div {
+  border-color: var(--light-border) !important;
+  background: var(--light-card-soft) !important;
+  box-shadow: none !important;
+}
+
+.app-shell.ai-board-default .flow-focus-qa dt,
+.app-shell.story-dark-shell.ai-mvp-map .flow-focus-qa dt,
+.flow-stage-company-row b {
+  color: var(--light-blue-strong) !important;
+}
+
+.app-shell.ai-board-default .flow-focus-qa dd,
+.flow-stage-company-row i {
+  color: var(--light-text-secondary) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map :is(.search-box, .select-wrap, .country-toggle, .country-toggle button, .first-look-list button, .company-row-card button, .stage-filter button) {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .selected-company-context :is(span, small, p, em),
+.app-shell.story-dark-shell.ai-mvp-map .first-look-list :is(span, small),
+.app-shell.story-dark-shell.ai-mvp-map .company-row-main :is(small, em),
+.app-shell.story-dark-shell.ai-mvp-map .anchor-list small {
+  color: var(--light-text-secondary) !important;
+}
+
+.react-flow__pane,
+.react-flow__renderer,
+.react-flow__viewport {
+  background: transparent !important;
+}
+
+.story-dark-shell .react-flow__edge-textbg,
+.app-shell.story-dark-shell.ai-mvp-map .react-flow__edge-textbg {
+  fill: #ffffff !important;
+  fill-opacity: 0.98 !important;
+}
+
+.story-dark-shell .react-flow__edge-text,
+.app-shell.story-dark-shell.ai-mvp-map .react-flow__edge-text {
+  fill: var(--light-text-secondary) !important;
+}
+
+.story-dark-shell .supply-node {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.story-dark-shell .supply-node.dimmed {
+  opacity: 0.72 !important;
+}
+
+.story-dark-shell :is(.home-shell, .pick-shell, .analysis-shell, .app-shell),
+.home-shell,
+.pick-shell,
+.analysis-shell,
+.app-shell,
+.map-panel,
+.story-home-shell main,
+.story-pick-shell main,
+.story-analysis-shell .analysis-detail-flow {
+  max-width: 100%;
+}
+
+.story-dark-shell :is(h1, h2, h3, p, small, span, strong, button, a, em, li),
+.weekly-autopsy-card,
+.recent-autopsy-card,
+.saved-map-card,
+.pick-story-card,
+.company-question-card,
+.financial-priority-grid article,
+.flow-stage-nav button {
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+@media (max-width: 980px) {
+  .story-home-shell .home-hero.mvp-hero.editorial-feed-hero {
+    width: min(100%, calc(100% - 24px));
+  }
+
+  .recent-autopsy-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-home-shell,
+  .story-pick-shell,
+  .story-analysis-shell {
+    padding: 10px;
+  }
+
+  .story-home-shell .home-hero.mvp-hero.editorial-feed-hero,
+  .story-home-shell .home-section.recent-autopsy-section,
+  .story-home-shell .home-section.saved-map-section {
+    width: 100%;
+  }
+
+  .story-home-shell .editorial-feed-hero .home-hero-copy h1 {
+    font-size: 27px;
+  }
+
+  .weekly-primary-action,
+  .recent-autopsy-card button,
+  .saved-map-card button {
+    width: 100%;
+  }
+
+  .saved-map-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Light QA fixes for high-specificity dark remnants. */
+body {
+  background-color: var(--light-page) !important;
+  background-image: linear-gradient(180deg, #f8fafc 0%, #f6f8fb 48%, #f8fafc 100%) !important;
+}
+
+.story-dark-shell.home-shell,
+.story-dark-shell.pick-shell,
+.story-dark-shell.analysis-shell {
+  background-color: var(--light-page) !important;
+  background-image: linear-gradient(180deg, #f8fafc 0%, #f6f8fb 52%, #f8fafc 100%) !important;
+}
+
+.pick-story-chip-row span,
+.pick-story-chip-row button,
+.pick-drawer-list span,
+.pick-drawer-sources a,
+.pick-drawer-sources .compact-report-action,
+.pick-drawer-sources .pick-disabled-action,
+.pick-drawer-actions button,
+.pick-drawer-actions .pick-disabled-action {
+  color: var(--light-blue-strong) !important;
+  border-color: var(--light-border-strong) !important;
+  background: var(--light-blue-soft) !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact,
+.story-analysis-shell .analysis-overview-side,
+.story-analysis-shell .analysis-overview-side .data-freshness-card,
+.story-analysis-shell .data-freshness-card,
+.story-analysis-shell .analysis-report-meta,
+.story-analysis-shell .company-explainer-card .explainer-highlight-card,
+.story-analysis-shell .financial-learning-card .financial-beginner-grid article,
+.story-analysis-shell .financial-learning-card .financial-priority-grid article,
+.story-analysis-shell .financial-learning-card .financial-signal-grid section {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact :is(strong, span, em),
+.story-analysis-shell .analysis-overview-side .data-freshness-card :is(strong, span, em),
+.story-analysis-shell .data-freshness-card :is(strong, span, em) {
+  color: var(--light-text-primary) !important;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article,
+.story-analysis-shell :is(.explainer-watch-list li, .explainer-related-list button, .signal-columns > div, .financial-next-watch, .analysis-detail-content, .metric-detail-card, .insight-card, .filing-brief-body, .report-meta-grid > div, .plain-list li, .disclosure-list a, .direct-report-link, .analysis-supply-box, .source-policy),
+.story-analysis-shell :is(.analysis-supply-box > div, .related-trade-list article, .trade-empty, .news-header, .analysis-card.analysis-disclosure-section > summary, .analysis-disclosure-section summary, .metric-branch-card summary) {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article span,
+.story-analysis-shell :is(.explainer-card-grid article span, .explainer-related-card .section-title span, .explainer-related-list small, .explainer-related-list em, .signal-columns span, .financial-next-watch span, .financial-next-watch small, .metric-detail-card span, .metric-detail-card b, .metric-detail-grid p, .insight-card span, .so-what-list p, .direct-report-link span, .analysis-supply-box span, .analysis-supply-box p, .source-policy p, .source-policy span),
+.story-analysis-shell :is(.analysis-card.analysis-disclosure-section > summary, .analysis-disclosure-section summary, .metric-branch-card summary, .filing-brief-body, .analysis-supply-box, .analysis-supply-box > div, .related-trade-list article, .trade-empty, .news-header) :is(span, small, p, em, b, li) {
+  color: var(--light-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article strong,
+.story-analysis-shell :is(.explainer-related-list strong, .signal-columns strong, .metric-detail-card strong, .metric-detail-card strong.muted, .insight-card strong, .direct-report-link strong, .analysis-supply-box strong, .source-policy strong),
+.story-analysis-shell :is(.analysis-card.analysis-disclosure-section > summary, .analysis-disclosure-section summary, .metric-branch-card summary, .filing-brief-body, .analysis-supply-box, .analysis-supply-box > div, .related-trade-list article, .trade-empty, .news-header) :is(strong, h2, h3),
+.story-analysis-shell .explainer-related-list button > span strong {
+  color: var(--light-text-primary) !important;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article span,
+.story-analysis-shell :is(.explainer-watch-list li, .explainer-card-grid article > span, .explainer-related-list b, .metric-detail-card > div > span, .insight-card > span, .analysis-detail-content .section-title span) {
+  color: var(--light-blue-strong) !important;
+  font-weight: 850;
+}
+
+.story-analysis-shell .signal-columns > div:first-child,
+.story-analysis-shell .financial-signal-grid section:first-child {
+  border-color: #bbf7d0 !important;
+  background: var(--light-green-soft) !important;
+}
+
+.story-analysis-shell .signal-columns > div:last-child,
+.story-analysis-shell .financial-signal-grid section:last-child {
+  border-color: #fed7aa !important;
+  background: var(--light-amber-soft) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .selected-company-context,
+.app-shell.story-dark-shell.ai-mvp-map .selected-company-context :is(strong, em, span, small, p),
+.app-shell.story-dark-shell.ai-mvp-map :is(.selected-company-context span) {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .selected-company-context :is(em, span, small, p) {
+  color: var(--light-text-secondary) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(2),
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(3),
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(4),
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button:nth-child(5) {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button :is(strong, small, em),
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button strong,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button small,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button em {
+  color: var(--light-text-primary) !important;
+}
+
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button small,
+.app-shell.story-dark-shell.ai-board-default .flow-stage-nav button em {
+  color: var(--light-text-secondary) !important;
+}
+
+.recent-autopsy-section .home-section-head span,
+.saved-map-section .home-section-head span,
+.story-analysis-shell .financial-priority-grid article small {
+  color: #475569 !important;
+}
+
+.story-analysis-shell .analysis-detail-content .disclosure-list a,
+.story-analysis-shell .analysis-detail-content .disclosure-list a :is(strong, span, small, em),
+.story-analysis-shell .disclosure-list a,
+.story-analysis-shell .disclosure-list a :is(strong, span, small, em) {
+  color: var(--light-text-primary) !important;
+  border-color: var(--light-border) !important;
+  background: #ffffff !important;
+}
+
+.story-analysis-shell .analysis-detail-content .disclosure-list a :is(span, small, em),
+.story-analysis-shell .disclosure-list a :is(span, small, em) {
+  color: var(--light-text-secondary) !important;
+}
