@@ -2492,58 +2492,126 @@ type LandingPageProps = {
 };
 
 function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
-  const aiFlowPreview = [
-    { title: 'AI를 많이 써요', term: 'AI 수요', summary: 'AI 서비스를 많이 쓰면 뒤에서 계산할 서버가 더 필요해집니다.', icon: <Globe2 size={18} />, companies: ['Microsoft', 'Google'] },
-    { title: '계산 칩이 필요해요', term: 'GPU / AI 칩', summary: 'AI 계산에는 많은 일을 동시에 처리하는 칩이 필요합니다.', icon: <Radio size={18} />, companies: ['NVIDIA'] },
-    { title: '빠른 메모리가 필요해요', term: 'HBM', summary: '칩 옆에서 데이터를 빠르게 꺼내주는 기억장치입니다.', icon: <Database size={18} />, companies: ['SK하이닉스', '삼성전자'] },
-    { title: '칩을 실제로 만들어요', term: '파운드리', summary: '설계된 칩을 실제 반도체로 생산하는 단계입니다.', icon: <Factory size={18} />, companies: ['TSMC'] },
-    { title: '전기·냉각이 필요해요', term: '전력 / 냉각', summary: '서버가 많아지면 전기와 열 관리도 중요해집니다.', icon: <LineChart size={18} />, companies: ['ASML', 'Vertiv'] },
+  type HomeMarketTab = 'ALL' | CountryId;
+  type RecentAutopsyItem = {
+    id: string;
+    market: CountryId;
+    marketLabel: string;
+    theme: string;
+    movement?: string;
+    title: string;
+    summary: string;
+    relatedCompanies: string[];
+    company?: Company;
+    onOpen: () => void;
+  };
+
+  const [activeMarketTab, setActiveMarketTab] = useState<HomeMarketTab>('ALL');
+  const dellPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-dell-ai-server-demand');
+  const nvidiaPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-nvidia-ai-demand');
+  const skHynixPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-sk-hynix-hbm');
+  const batteryPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-battery-materials-watch');
+  const micronCompany = companies.find((company) => company.id === 'ai-datacenter-micron');
+  const dellCompany = dellPick ? pickMainCompany(dellPick) : undefined;
+
+  const openWeeklyPick = () => {
+    if (dellPick) {
+      onOpenPick(dellPick);
+      return;
+    }
+    onOpenPicks();
+  };
+
+  const recentAutopsies: RecentAutopsyItem[] = [
+    ...(dellPick
+      ? [{
+          id: dellPick.id,
+          market: dellPick.market,
+          marketLabel: pickMarketLabel(dellPick),
+          theme: 'AI 서버',
+          movement: '급등',
+          title: 'Dell은 왜 크게 움직였을까?',
+          summary: 'AI 서버 수요가 다시 주목받으며 서버 매출과 마진을 같이 확인합니다.',
+          relatedCompanies: dellPick.connectedLeaders.slice(0, 3),
+          company: dellCompany,
+          onOpen: () => onOpenPick(dellPick),
+        }]
+      : []),
+    ...(nvidiaPick
+      ? [{
+          id: nvidiaPick.id,
+          market: nvidiaPick.market,
+          marketLabel: pickMarketLabel(nvidiaPick),
+          theme: 'AI 반도체',
+          movement: '실적',
+          title: 'NVIDIA는 AI 서버 수요를 어떻게 확인할까?',
+          summary: '데이터센터 매출, 마진, 현금흐름이 같은 방향인지 봅니다.',
+          relatedCompanies: nvidiaPick.connectedLeaders.slice(0, 3),
+          company: pickMainCompany(nvidiaPick),
+          onOpen: () => onOpenPick(nvidiaPick),
+        }]
+      : []),
+    ...(skHynixPick
+      ? [{
+          id: skHynixPick.id,
+          market: skHynixPick.market,
+          marketLabel: pickMarketLabel(skHynixPick),
+          theme: 'HBM',
+          movement: '이슈',
+          title: 'SK하이닉스는 HBM 수요가 숫자로 이어질까?',
+          summary: 'AI 메모리 기대가 매출과 영업현금흐름에 반영되는지 확인합니다.',
+          relatedCompanies: skHynixPick.connectedLeaders.slice(0, 3),
+          company: pickMainCompany(skHynixPick),
+          onOpen: () => onOpenPick(skHynixPick),
+        }]
+      : []),
+    ...(micronCompany
+      ? [{
+          id: 'home-micron-memory-cycle',
+          market: micronCompany.country,
+          marketLabel: micronCompany.country === 'KR' ? '한국' : '미국',
+          theme: '메모리',
+          movement: '실적',
+          title: 'Micron은 메모리 회복 흐름을 따라갈까?',
+          summary: 'HBM 전환과 메모리 가격 회복이 숫자로 이어지는지 봅니다.',
+          relatedCompanies: ['NVIDIA', 'SK하이닉스', '삼성전자'],
+          company: micronCompany,
+          onOpen: () => onOpenAnalysis(micronCompany),
+        }]
+      : []),
+    ...(batteryPick
+      ? [{
+          id: batteryPick.id,
+          market: batteryPick.market,
+          marketLabel: pickMarketLabel(batteryPick),
+          theme: '2차전지',
+          movement: '급락',
+          title: '배터리 소재는 왜 부담을 받았을까?',
+          summary: '전기차 수요와 소재 가격이 매출·마진에 주는 부담을 확인합니다.',
+          relatedCompanies: batteryPick.connectedLeaders.slice(0, 3),
+          company: pickMainCompany(batteryPick),
+          onOpen: () => onOpenPick(batteryPick),
+        }]
+      : []),
   ];
-  const trendCards = [
-    {
-      title: '왜 움직였나',
-      note: '오늘 이슈가 주가에 영향을 준 이유',
-      icon: <Newspaper size={18} />,
-    },
-    {
-      title: '같이 볼 회사',
-      note: '한 회사가 아니라 연결된 기업들',
-      icon: <Network size={18} />,
-    },
-    {
-      title: '숫자 3개',
-      note: '마지막에 확인할 핵심 지표',
-      icon: <BarChart3 size={18} />,
-    },
+  const marketTabs: Array<{ id: HomeMarketTab; label: string }> = [
+    { id: 'ALL', label: '전체' },
+    { id: 'US', label: '미국' },
+    { id: 'KR', label: '한국' },
   ];
-  const issueCards = [
-    {
-      title: 'AI 반도체 랠리 지속',
-      note: '엔비디아 실적 기대가 반도체 밸류체인 전반 관심으로 이어졌습니다.',
-      tags: ['엔비디아', 'SK하이닉스'],
-      icon: <Cpu size={18} />,
-    },
-    {
-      title: '전력 인프라 주목',
-      note: 'AI 데이터센터 전력 수요 증가로 인프라 기업을 같이 보는 흐름입니다.',
-      tags: ['HD현대일렉트릭', 'LS일렉트릭'],
-      icon: <Zap size={18} />,
-    },
-    {
-      title: '클라우드 전환 가속',
-      note: '빅테크의 데이터센터 투자 확대가 서버와 반도체 수요 확인 포인트입니다.',
-      tags: ['Microsoft', 'Amazon'],
-      icon: <Cloud size={18} />,
-    },
+  const filteredRecentAutopsies = activeMarketTab === 'ALL'
+    ? recentAutopsies
+    : recentAutopsies.filter((item) => item.market === activeMarketTab);
+  const savedMarketMaps = [
+    { title: 'AI 반도체', status: '열림', note: 'AI 서버, GPU, HBM, 파운드리, 전력 흐름', enabled: true },
+    { title: '전력 인프라', status: '준비 중', note: '데이터센터 전력과 냉각 인프라', enabled: false },
+    { title: '로봇', status: '준비 중', note: '감속기, 센서, 자동화 장비', enabled: false },
+    { title: '바이오', status: '준비 중', note: 'CDMO, 신약, 진단 장비', enabled: false },
+    { title: '방산', status: '준비 중', note: '수출 계약과 부품 공급망', enabled: false },
+    { title: '2차전지', status: '준비 중', note: '셀, 소재, 장비, 완성차 수요', enabled: false },
+    { title: '클라우드/SaaS', status: '준비 중', note: '클라우드 지출과 소프트웨어 마진', enabled: false },
+    { title: '사이버보안', status: '준비 중', note: '보안 지출과 플랫폼 전환', enabled: false },
   ];
-  const featuredPickPriority = ['Dell Technologies', 'NVIDIA', 'SK하이닉스'];
-  const featuredPicks = featuredPickPriority
-    .map((name) => stockAutopsyPicks.find((pick) => pick.companyName === name && pick.status !== 'archived'))
-    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
-  const guideSkHynix =
-    companies.find((company) => company.id === 'ai-datacenter-sk-hynix') ??
-    companies.find((company) => company.id === 'us-semiconductors-nvidia') ??
-    companies[0];
 
   return (
     <div className="home-shell story-dark-shell story-home-shell" id="top">
@@ -2565,171 +2633,138 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           >
             Pick
           </a>
-          <a href="#market-flow">시장 흐름 지도</a>
-          <a href="#company-explainer">기업 해설</a>
-          <a href="#financial-easy">재무 쉽게 보기</a>
+          <a href="#recent-autopsies">최근 해부</a>
+          <a href="#saved-market-maps">시장 지도</a>
         </nav>
       </header>
 
       <main>
-        <section className="home-hero mvp-hero">
-          <div className="home-hero-copy">
-            <p className="home-kicker">주가해부실 · 시장 흐름 지도</p>
-            <h1>
-              <span>오늘 이슈가</span>
-              <span>어떤 회사로 이어질까요?</span>
-            </h1>
-            <p>뉴스가 어느 회사로 이어지는지 먼저 보고, 필요한 숫자는 뒤에서 확인합니다.</p>
-            <div className="hero-principle-row" aria-label="사이트 사용 흐름">
-              <span>왜 움직였나</span>
-              <span>같이 볼 회사</span>
-              <span>숫자 3개</span>
-            </div>
+        <section className="home-hero mvp-hero editorial-feed-hero">
+          <div className="home-hero-copy editorial-hero-copy">
+            <p className="home-kicker">이번 주 해부</p>
+            <h1>이번 주 크게 움직인 종목을 흐름과 숫자 3개로 정리했습니다.</h1>
+            <p>종목 추천이 아니라, 왜 움직였는지 공부하는 카드형 해부입니다.</p>
             <div className="home-hero-actions">
-              <button type="button" className="primary" onClick={() => onOpenCategory('us-semiconductors')}>
-                시장 흐름 보기
+              <button type="button" className="primary" onClick={openWeeklyPick}>
+                1분 흐름 보기
                 <ArrowRight size={16} />
               </button>
-              <button type="button" className="secondary" onClick={onOpenPicks}>
-                이번 주 Pick
+              <button type="button" className="secondary" onClick={() => document.getElementById('recent-autopsies')?.scrollIntoView({ behavior: 'smooth' })}>
+                최근 해부 보기
                 <ArrowRight size={16} />
               </button>
             </div>
-            <p className="home-mvp-note">투자 추천이 아니라, 뉴스와 종목을 이해하기 위한 해설형 포트폴리오 사이트입니다.</p>
+            <p className="home-mvp-note">SEC/OpenDART 원문 숫자로 마지막에 확인합니다.</p>
           </div>
-          <div className="home-hero-card-stack market-trend-stack" aria-label="지금 주목할 시장 흐름">
-            {trendCards.map((card) => (
-              <article key={card.title}>
-                {card.icon}
-                <div>
-                  <strong>{card.title}</strong>
-                  <p>{card.note}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <article className="weekly-autopsy-card" aria-label="이번 주 대표 해부">
+            <div className="weekly-autopsy-topline">
+              <span>대표 해부</span>
+              <span>미국</span>
+              <span>AI 서버</span>
+            </div>
+            <div className="weekly-autopsy-company">
+              {dellCompany ? (
+                <CompanyLogo company={dellCompany} size="medium" />
+              ) : (
+                <span className="company-symbol symbol-dell" aria-hidden="true">DELL</span>
+              )}
+              <div>
+                <strong>Dell은 왜 크게 움직였을까?</strong>
+                <small>DELL · AI 서버·데이터센터 인프라</small>
+              </div>
+            </div>
+            <h2>AI 서버 수요가 다시 주목받았습니다.</h2>
+            <p>흐름을 보고, 숫자 3개만 확인합니다.</p>
+            <ul>
+              <li>서버/인프라 매출</li>
+              <li>영업이익률</li>
+              <li>영업현금흐름</li>
+            </ul>
+          </article>
         </section>
 
-        <section className="home-section market-issue-section" id="today-flow">
+        <section className="home-section recent-autopsy-section" id="recent-autopsies">
           <div className="home-section-head">
             <div>
-              <h2>오늘 주목할 핵심 이슈</h2>
-              <p>가격보다 먼저, 어떤 이슈가 어떤 기업 흐름으로 번지는지 봅니다.</p>
+              <span>최근 해부</span>
+              <h2>이번 주 피드</h2>
+              <p>크게 움직인 종목을 시장과 테마별로 짧게 모았습니다.</p>
             </div>
           </div>
-          <div className="home-issue-grid">
-            {issueCards.map((issue) => (
-              <article className="home-issue-card" key={issue.title}>
-                {issue.icon}
-                <div>
-                  <h3>{issue.title}</h3>
-                  <p>{issue.note}</p>
-                </div>
-                <div className="mini-tag-row">
-                  {issue.tags.map((tag) => <span key={tag}>{tag}</span>)}
-                </div>
-              </article>
+          <div className="market-tab-row" role="tablist" aria-label="최근 해부 시장 구분">
+            {marketTabs.map((tab) => (
+              <button
+                type="button"
+                key={tab.id}
+                className={activeMarketTab === tab.id ? 'active' : ''}
+                aria-pressed={activeMarketTab === tab.id}
+                onClick={() => setActiveMarketTab(tab.id)}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
-        </section>
-
-        <section className="flow-preview-section mvp-flow-preview" id="market-flow">
-          <div className="home-section-head">
-            <div>
-              <h2>오늘의 핵심 흐름</h2>
-              <p>홈에서는 복잡한 그래프 대신 5단계 카드 흐름만 봅니다.</p>
-            </div>
-          </div>
-          <div className="flow-preview-map compact-flow-map" aria-label="오늘의 AI 반도체 핵심 흐름">
-            {aiFlowPreview.map((step, index) => (
-              <article className="flow-step-card" key={step.title}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <div className="flow-step-icon story-icon-orb story-icon-orb-lg">{step.icon}</div>
-                <h3>{step.title}</h3>
-                <em className="story-term-badge flow-step-term">{step.term}</em>
-                <p>{step.summary}</p>
-                <small>{step.companies.join(' · ')}</small>
-              </article>
-            ))}
-          </div>
-          <div className="flow-preview-copy">
-            <strong>수요 → AI 칩 → 메모리 → 파운드리 → 전력 흐름만 먼저 봅니다.</strong>
-            <p>직접 납품 관계가 확인되지 않은 기업은 “수요 연결” 또는 “같이 볼 기업”으로 표시합니다.</p>
-            <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
-              시장 흐름 보기
-              <ArrowRight size={16} />
-            </button>
-            <small>다음에 추가할 흐름: 전력·냉각, 2차전지, 바이오/CDMO</small>
-          </div>
-        </section>
-
-        <section className="home-section pick-home-section" id="picks-preview">
-          <div className="home-section-head">
-            <div>
-              <h2>이번 주 해부 종목</h2>
-              <p>종목을 “왜 움직였나”와 “같이 볼 기업” 중심으로 짧게 봅니다.</p>
-            </div>
-          </div>
-          <div className="pick-home-grid">
-            {featuredPicks.map((pick) => {
-              const pickCompany = pickMainCompany(pick);
-              const pickSymbol = pickCompany ? companySymbol(pickCompany) : { label: pick.companyName.slice(0, 2), tone: 'reference' };
-              return (
-                <article className="pick-home-card" key={pick.id}>
-                  <div className="pick-card-identity">
-                    {pickCompany ? (
-                      <CompanyLogo company={pickCompany} size="small" />
+          <div className="recent-autopsy-list">
+            {filteredRecentAutopsies.map((item) => (
+              <article className="recent-autopsy-card" key={item.id}>
+                <div className="recent-autopsy-main">
+                  <div className="recent-autopsy-logo">
+                    {item.company ? (
+                      <CompanyLogo company={item.company} size="small" />
                     ) : (
-                      <span className={`company-symbol small symbol-${pickSymbol.tone}`} aria-hidden="true">{pickSymbol.label}</span>
+                      <BarChart3 size={18} />
                     )}
-                    <div>
-                      <strong>{pick.companyName}</strong>
-                      <small>{pick.ticker} · {pickMarketLabel(pick)}</small>
+                  </div>
+                  <div className="recent-autopsy-copy">
+                    <div className="autopsy-badge-row">
+                      <span>{item.marketLabel}</span>
+                      <span>{item.theme}</span>
+                      {item.movement ? <span>{item.movement}</span> : null}
                     </div>
+                    <h3>{item.title}</h3>
+                    <p>{item.summary}</p>
                   </div>
-                  <h3>{pick.movementLabel}</h3>
-                  <p>{pick.reasonSummary}</p>
-                  <div className="mini-tag-row">
-                    <span>{pickFlowLabel(pick)}</span>
-                  </div>
-                  <small>같이 볼 기업: {pick.connectedLeaders.slice(0, 3).join(', ')}</small>
-                  <button type="button" onClick={() => onOpenPick(pick)}>
-                    해부 보기
-                    <ArrowRight size={16} />
-                  </button>
-                </article>
-              );
-            })}
+                </div>
+                <div className="related-company-strip" aria-label={`${item.title} 같이 볼 회사`}>
+                  {item.relatedCompanies.slice(0, 3).map((companyName) => (
+                    <span key={`${item.id}-${companyName}`}>{companyName}</span>
+                  ))}
+                </div>
+                <button type="button" onClick={item.onOpen}>
+                  해부 보기
+                  <ArrowRight size={15} />
+                </button>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="home-section beginner-guide-section" id="beginner-guide">
+        <section className="home-section saved-map-section" id="saved-market-maps">
           <div className="home-section-head">
             <div>
-              <h2>처음 오신 분은 여기부터</h2>
-              <p>한 번에 많은 금융 데이터를 보지 않고, 회사와 숫자를 읽는 순서만 잡습니다.</p>
+              <span>저장해둘 시장 지도</span>
+              <h2>해부가 쌓이면 다시 보는 보관함</h2>
+              <p>지금은 AI 반도체 지도만 열려 있고, 나머지는 준비 중입니다.</p>
             </div>
           </div>
-          <div className="beginner-guide-grid">
-            <article id="company-explainer">
-              <h3>기업 해설</h3>
-              <p>이 회사가 뭘 하는지 먼저 봅니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix)}>기업 해설 보기</button>
-            </article>
-            <article>
-              <h3>시장 흐름 지도</h3>
-              <p>뉴스가 어떤 기업으로 이어지는지 봅니다.</p>
-              <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>시장 흐름 보기</button>
-            </article>
-            <article id="financial-easy">
-              <h3>재무 쉽게 보기</h3>
-              <p>숫자 3개만 먼저 확인합니다.</p>
-              <button type="button" onClick={() => onOpenAnalysis(guideSkHynix, 'financial-easy-view')}>재무 쉽게 보기</button>
-            </article>
-          </div>
-          <div className="advanced-reference-note">
-            <strong>자료는 접어두었습니다.</strong>
-            <p>공시 원문과 기관 보고는 기업 해설의 접힘 영역에서 확인할 수 있습니다.</p>
+          <div className="saved-map-grid">
+            {savedMarketMaps.map((map) => (
+              <article className={`saved-map-card${map.enabled ? '' : ' disabled'}`} key={map.title} aria-disabled={!map.enabled}>
+                <div>
+                  <strong>{map.title}</strong>
+                  <span>{map.status}</span>
+                </div>
+                <p>{map.note}</p>
+                {map.enabled ? (
+                  <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+                    지도 보기
+                    <ArrowRight size={15} />
+                  </button>
+                ) : (
+                  <small>준비 중</small>
+                )}
+              </article>
+            ))}
           </div>
         </section>
 
