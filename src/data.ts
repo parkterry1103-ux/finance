@@ -305,6 +305,54 @@ export interface StockAutopsyPick {
   status?: 'draft' | 'published' | 'archived';
 }
 
+export type WeeklyDigestMarketTabId = 'ALL' | CountryId;
+export type WeeklyDigestMarketMapStatus = 'active' | 'coming-soon';
+export type WeeklyDigestTarget = 'pick' | 'analysis';
+
+export interface WeeklyDigestRecentItem {
+  id: string;
+  pickId?: string;
+  companyId?: string;
+  market?: CountryId;
+  theme: string;
+  movementLabel?: string;
+  question: string;
+  summary: string;
+  relatedCompanies?: string[];
+  target?: WeeklyDigestTarget;
+}
+
+export interface WeeklyDigestMarketMapItem {
+  title: string;
+  status: WeeklyDigestMarketMapStatus;
+  href?: string;
+  sectorId?: string;
+  note: string;
+}
+
+export interface WeeklyDigest {
+  weekLabel: string;
+  kicker: string;
+  headline: string;
+  subheadline: string;
+  sourceNote: string;
+  featuredPickId: string;
+  featured: {
+    marketLabel: string;
+    theme: string;
+    question: string;
+    meta: string;
+    headline: string;
+    summary: string;
+    metricLabels: string[];
+    primaryCtaLabel: string;
+    secondaryCtaLabel: string;
+  };
+  recentItems: WeeklyDigestRecentItem[];
+  marketTabs: Array<{ id: WeeklyDigestMarketTabId; label: string }>;
+  marketMapItems: WeeklyDigestMarketMapItem[];
+}
+
 export interface MarketPrice {
   companyId?: string;
   ticker: string;
@@ -6917,6 +6965,98 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     status: 'published',
   },
 ];
+
+export const currentWeeklyDigest: WeeklyDigest = {
+  weekLabel: '2026년 5월 넷째 주',
+  kicker: '이번 주 해부',
+  headline: '이번 주 크게 움직인 종목을 흐름과 숫자 3개로 정리했습니다.',
+  subheadline: '종목 추천이 아니라, 왜 움직였는지 공부하는 카드형 해부입니다.',
+  sourceNote: 'SEC/OpenDART 원문 숫자로 마지막에 확인합니다.',
+  featuredPickId: 'pick-dell-ai-server-demand',
+  featured: {
+    marketLabel: '미국',
+    theme: 'AI 서버',
+    question: 'Dell은 왜 크게 움직였을까?',
+    meta: 'DELL · AI 서버·데이터센터 인프라',
+    headline: 'AI 서버 수요가 다시 주목받았습니다.',
+    summary: '흐름을 보고, 숫자 3개만 확인합니다.',
+    metricLabels: ['서버/인프라 매출', '영업이익률', '영업현금흐름'],
+    primaryCtaLabel: '1분 흐름 보기',
+    secondaryCtaLabel: '최근 해부 보기',
+  },
+  recentItems: [
+    {
+      id: 'weekly-dell-ai-server-demand',
+      pickId: 'pick-dell-ai-server-demand',
+      theme: 'AI 서버',
+      movementLabel: '급등',
+      question: 'Dell은 왜 크게 움직였을까?',
+      summary: 'AI 서버 수요가 다시 주목받으며 서버 매출과 마진을 같이 확인합니다.',
+      relatedCompanies: ['NVIDIA', 'Super Micro', 'Vertiv'],
+    },
+    {
+      id: 'weekly-nvidia-ai-demand',
+      pickId: 'pick-nvidia-ai-demand',
+      theme: 'AI 반도체',
+      movementLabel: '실적',
+      question: 'NVIDIA는 AI 서버 수요를 어떻게 확인할까?',
+      summary: '데이터센터 매출, 마진, 현금흐름이 같은 방향인지 봅니다.',
+      relatedCompanies: ['TSMC', 'SK하이닉스', 'ASML'],
+    },
+    {
+      id: 'weekly-sk-hynix-hbm',
+      pickId: 'pick-sk-hynix-hbm',
+      theme: 'HBM',
+      movementLabel: '이슈',
+      question: 'SK하이닉스는 HBM 수요가 숫자로 이어질까?',
+      summary: 'AI 메모리 기대가 매출과 영업현금흐름에 반영되는지 확인합니다.',
+      relatedCompanies: ['NVIDIA', 'AMD', '삼성전자'],
+    },
+    {
+      id: 'weekly-micron-memory-cycle',
+      companyId: 'ai-datacenter-micron',
+      market: 'US',
+      theme: '메모리',
+      movementLabel: '실적',
+      question: 'Micron은 메모리 회복 흐름을 따라갈까?',
+      summary: 'HBM 전환과 메모리 가격 회복이 숫자로 이어지는지 봅니다.',
+      relatedCompanies: ['NVIDIA', 'SK하이닉스', '삼성전자'],
+      target: 'analysis',
+    },
+    {
+      id: 'weekly-battery-materials-watch',
+      pickId: 'pick-battery-materials-watch',
+      theme: '2차전지',
+      movementLabel: '급락',
+      question: '배터리 소재는 왜 부담을 받았을까?',
+      summary: '전기차 수요와 소재 가격이 매출·마진에 주는 부담을 확인합니다.',
+      relatedCompanies: ['Tesla', 'BYD', 'CATL'],
+    },
+  ],
+  marketTabs: [
+    { id: 'ALL', label: '전체' },
+    { id: 'US', label: '미국' },
+    { id: 'KR', label: '한국' },
+  ],
+  marketMapItems: [
+    {
+      title: 'AI 반도체',
+      status: 'active',
+      href: '/ko/category/us-semiconductors',
+      sectorId: 'us-semiconductors',
+      note: 'AI 서버, GPU, HBM, 파운드리, 전력 흐름',
+    },
+    { title: '전력 인프라', status: 'coming-soon', note: '데이터센터 전력과 냉각 인프라' },
+    { title: '로봇', status: 'coming-soon', note: '감속기, 센서, 자동화 장비' },
+    { title: '바이오', status: 'coming-soon', note: 'CDMO, 신약, 진단 장비' },
+    { title: '방산', status: 'coming-soon', note: '수출 계약과 부품 공급망' },
+    { title: '2차전지', status: 'coming-soon', note: '셀, 소재, 장비, 완성차 수요' },
+    { title: '클라우드/SaaS', status: 'coming-soon', note: '클라우드 지출과 소프트웨어 마진' },
+    { title: '사이버보안', status: 'coming-soon', note: '보안 지출과 플랫폼 전환' },
+  ],
+};
+
+export const weeklyDigest = currentWeeklyDigest;
 
 export const smartMoneyMoves: SmartMoneyMove[] = [
   {

@@ -50,6 +50,7 @@ import {
   CompanyTier,
   countries,
   CountryId,
+  currentWeeklyDigest,
   FilingSourceStatus,
   FinancialStatementSummary,
   links,
@@ -62,6 +63,7 @@ import {
   sourcePolicies,
   StockAutopsyPick,
   stockAutopsyPicks,
+  WeeklyDigestRecentItem,
 } from './data';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import {
@@ -2492,7 +2494,6 @@ type LandingPageProps = {
 };
 
 function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
-  type HomeMarketTab = 'ALL' | CountryId;
   type RecentAutopsyItem = {
     id: string;
     market: CountryId;
@@ -2506,112 +2507,67 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     onOpen: () => void;
   };
 
-  const [activeMarketTab, setActiveMarketTab] = useState<HomeMarketTab>('ALL');
-  const dellPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-dell-ai-server-demand');
-  const nvidiaPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-nvidia-ai-demand');
-  const skHynixPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-sk-hynix-hbm');
-  const batteryPick = stockAutopsyPicks.find((pick) => pick.id === 'pick-battery-materials-watch');
-  const micronCompany = companies.find((company) => company.id === 'ai-datacenter-micron');
-  const dellCompany = dellPick ? pickMainCompany(dellPick) : undefined;
+  const [activeMarketTab, setActiveMarketTab] = useState(currentWeeklyDigest.marketTabs[0]?.id ?? 'ALL');
+  const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
+  const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
 
   const openWeeklyPick = () => {
-    if (dellPick) {
-      onOpenPick(dellPick);
+    if (featuredPick) {
+      onOpenPick(featuredPick);
       return;
     }
     onOpenPicks();
   };
 
-  const recentAutopsies: RecentAutopsyItem[] = [
-    ...(dellPick
-      ? [{
-          id: dellPick.id,
-          market: dellPick.market,
-          marketLabel: pickMarketLabel(dellPick),
-          theme: 'AI 서버',
-          movement: '급등',
-          title: 'Dell은 왜 크게 움직였을까?',
-          summary: 'AI 서버 수요가 다시 주목받으며 서버 매출과 마진을 같이 확인합니다.',
-          relatedCompanies: dellPick.connectedLeaders.slice(0, 3),
-          company: dellCompany,
-          onOpen: () => onOpenPick(dellPick),
-        }]
-      : []),
-    ...(nvidiaPick
-      ? [{
-          id: nvidiaPick.id,
-          market: nvidiaPick.market,
-          marketLabel: pickMarketLabel(nvidiaPick),
-          theme: 'AI 반도체',
-          movement: '실적',
-          title: 'NVIDIA는 AI 서버 수요를 어떻게 확인할까?',
-          summary: '데이터센터 매출, 마진, 현금흐름이 같은 방향인지 봅니다.',
-          relatedCompanies: nvidiaPick.connectedLeaders.slice(0, 3),
-          company: pickMainCompany(nvidiaPick),
-          onOpen: () => onOpenPick(nvidiaPick),
-        }]
-      : []),
-    ...(skHynixPick
-      ? [{
-          id: skHynixPick.id,
-          market: skHynixPick.market,
-          marketLabel: pickMarketLabel(skHynixPick),
-          theme: 'HBM',
-          movement: '이슈',
-          title: 'SK하이닉스는 HBM 수요가 숫자로 이어질까?',
-          summary: 'AI 메모리 기대가 매출과 영업현금흐름에 반영되는지 확인합니다.',
-          relatedCompanies: skHynixPick.connectedLeaders.slice(0, 3),
-          company: pickMainCompany(skHynixPick),
-          onOpen: () => onOpenPick(skHynixPick),
-        }]
-      : []),
-    ...(micronCompany
-      ? [{
-          id: 'home-micron-memory-cycle',
-          market: micronCompany.country,
-          marketLabel: micronCompany.country === 'KR' ? '한국' : '미국',
-          theme: '메모리',
-          movement: '실적',
-          title: 'Micron은 메모리 회복 흐름을 따라갈까?',
-          summary: 'HBM 전환과 메모리 가격 회복이 숫자로 이어지는지 봅니다.',
-          relatedCompanies: ['NVIDIA', 'SK하이닉스', '삼성전자'],
-          company: micronCompany,
-          onOpen: () => onOpenAnalysis(micronCompany),
-        }]
-      : []),
-    ...(batteryPick
-      ? [{
-          id: batteryPick.id,
-          market: batteryPick.market,
-          marketLabel: pickMarketLabel(batteryPick),
-          theme: '2차전지',
-          movement: '급락',
-          title: '배터리 소재는 왜 부담을 받았을까?',
-          summary: '전기차 수요와 소재 가격이 매출·마진에 주는 부담을 확인합니다.',
-          relatedCompanies: batteryPick.connectedLeaders.slice(0, 3),
-          company: pickMainCompany(batteryPick),
-          onOpen: () => onOpenPick(batteryPick),
-        }]
-      : []),
-  ];
-  const marketTabs: Array<{ id: HomeMarketTab; label: string }> = [
-    { id: 'ALL', label: '전체' },
-    { id: 'US', label: '미국' },
-    { id: 'KR', label: '한국' },
-  ];
+  const buildRecentAutopsyItem = (item: WeeklyDigestRecentItem): RecentAutopsyItem | null => {
+    const pick = item.pickId ? stockAutopsyPicks.find((candidate) => candidate.id === item.pickId) : undefined;
+    const company =
+      (item.companyId ? companies.find((candidate) => candidate.id === item.companyId) : undefined) ??
+      (pick ? pickMainCompany(pick) : undefined);
+
+    if (!pick && !company) return null;
+
+    const market = item.market ?? pick?.market ?? company?.country ?? 'US';
+    const relatedCompanies = (item.relatedCompanies ?? pick?.connectedLeaders ?? []).slice(0, 3);
+    const openItem = () => {
+      if (item.target === 'analysis' && company) {
+        onOpenAnalysis(company);
+        return;
+      }
+      if (pick) {
+        onOpenPick(pick);
+        return;
+      }
+      if (company) {
+        onOpenAnalysis(company);
+      }
+    };
+
+    return {
+      id: item.id,
+      market,
+      marketLabel: market === 'KR' ? '한국' : '미국',
+      theme: item.theme,
+      movement: item.movementLabel ?? pick?.movementLabel,
+      title: item.question,
+      summary: item.summary,
+      relatedCompanies,
+      company,
+      onOpen: openItem,
+    };
+  };
+
+  const recentAutopsies = currentWeeklyDigest.recentItems
+    .map(buildRecentAutopsyItem)
+    .filter((item): item is RecentAutopsyItem => Boolean(item));
   const filteredRecentAutopsies = activeMarketTab === 'ALL'
     ? recentAutopsies
     : recentAutopsies.filter((item) => item.market === activeMarketTab);
-  const savedMarketMaps = [
-    { title: 'AI 반도체', status: '열림', note: 'AI 서버, GPU, HBM, 파운드리, 전력 흐름', enabled: true },
-    { title: '전력 인프라', status: '준비 중', note: '데이터센터 전력과 냉각 인프라', enabled: false },
-    { title: '로봇', status: '준비 중', note: '감속기, 센서, 자동화 장비', enabled: false },
-    { title: '바이오', status: '준비 중', note: 'CDMO, 신약, 진단 장비', enabled: false },
-    { title: '방산', status: '준비 중', note: '수출 계약과 부품 공급망', enabled: false },
-    { title: '2차전지', status: '준비 중', note: '셀, 소재, 장비, 완성차 수요', enabled: false },
-    { title: '클라우드/SaaS', status: '준비 중', note: '클라우드 지출과 소프트웨어 마진', enabled: false },
-    { title: '사이버보안', status: '준비 중', note: '보안 지출과 플랫폼 전환', enabled: false },
-  ];
+
+  const openDigestMarketMap = (sectorId?: string, href?: string) => {
+    const categoryMatch = href?.match(/\/category\/([^/]+)/);
+    onOpenCategory(sectorId ?? categoryMatch?.[1] ?? 'us-semiconductors');
+  };
 
   return (
     <div className="home-shell story-dark-shell story-home-shell" id="top">
@@ -2641,44 +2597,44 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       <main>
         <section className="home-hero mvp-hero editorial-feed-hero">
           <div className="home-hero-copy editorial-hero-copy">
-            <p className="home-kicker">이번 주 해부</p>
-            <h1>이번 주 크게 움직인 종목을 흐름과 숫자 3개로 정리했습니다.</h1>
-            <p>종목 추천이 아니라, 왜 움직였는지 공부하는 카드형 해부입니다.</p>
+            <p className="home-kicker">{currentWeeklyDigest.kicker}</p>
+            <h1>{currentWeeklyDigest.headline}</h1>
+            <p>{currentWeeklyDigest.subheadline}</p>
             <div className="home-hero-actions">
               <button type="button" className="primary" onClick={openWeeklyPick}>
-                1분 흐름 보기
+                {currentWeeklyDigest.featured.primaryCtaLabel}
                 <ArrowRight size={16} />
               </button>
               <button type="button" className="secondary" onClick={() => document.getElementById('recent-autopsies')?.scrollIntoView({ behavior: 'smooth' })}>
-                최근 해부 보기
+                {currentWeeklyDigest.featured.secondaryCtaLabel}
                 <ArrowRight size={16} />
               </button>
             </div>
-            <p className="home-mvp-note">SEC/OpenDART 원문 숫자로 마지막에 확인합니다.</p>
+            <p className="home-mvp-note">{currentWeeklyDigest.sourceNote}</p>
           </div>
           <article className="weekly-autopsy-card" aria-label="이번 주 대표 해부">
             <div className="weekly-autopsy-topline">
               <span>대표 해부</span>
-              <span>미국</span>
-              <span>AI 서버</span>
+              <span>{currentWeeklyDigest.featured.marketLabel}</span>
+              <span>{currentWeeklyDigest.featured.theme}</span>
             </div>
             <div className="weekly-autopsy-company">
-              {dellCompany ? (
-                <CompanyLogo company={dellCompany} size="medium" />
+              {featuredCompany ? (
+                <CompanyLogo company={featuredCompany} size="medium" />
               ) : (
                 <span className="company-symbol symbol-dell" aria-hidden="true">DELL</span>
               )}
               <div>
-                <strong>Dell은 왜 크게 움직였을까?</strong>
-                <small>DELL · AI 서버·데이터센터 인프라</small>
+                <strong>{currentWeeklyDigest.featured.question}</strong>
+                <small>{currentWeeklyDigest.featured.meta}</small>
               </div>
             </div>
-            <h2>AI 서버 수요가 다시 주목받았습니다.</h2>
-            <p>흐름을 보고, 숫자 3개만 확인합니다.</p>
+            <h2>{currentWeeklyDigest.featured.headline}</h2>
+            <p>{currentWeeklyDigest.featured.summary}</p>
             <ul>
-              <li>서버/인프라 매출</li>
-              <li>영업이익률</li>
-              <li>영업현금흐름</li>
+              {currentWeeklyDigest.featured.metricLabels.map((metric) => (
+                <li key={metric}>{metric}</li>
+              ))}
             </ul>
           </article>
         </section>
@@ -2692,7 +2648,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             </div>
           </div>
           <div className="market-tab-row" role="tablist" aria-label="최근 해부 시장 구분">
-            {marketTabs.map((tab) => (
+            {currentWeeklyDigest.marketTabs.map((tab) => (
               <button
                 type="button"
                 key={tab.id}
@@ -2748,15 +2704,17 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             </div>
           </div>
           <div className="saved-map-grid">
-            {savedMarketMaps.map((map) => (
-              <article className={`saved-map-card${map.enabled ? '' : ' disabled'}`} key={map.title} aria-disabled={!map.enabled}>
+            {currentWeeklyDigest.marketMapItems.map((map) => {
+              const isActiveMap = map.status === 'active';
+              return (
+              <article className={`saved-map-card${isActiveMap ? '' : ' disabled'}`} key={map.title} aria-disabled={!isActiveMap}>
                 <div>
                   <strong>{map.title}</strong>
-                  <span>{map.status}</span>
+                  <span>{isActiveMap ? '열림' : '준비 중'}</span>
                 </div>
                 <p>{map.note}</p>
-                {map.enabled ? (
-                  <button type="button" onClick={() => onOpenCategory('us-semiconductors')}>
+                {isActiveMap ? (
+                  <button type="button" onClick={() => openDigestMarketMap(map.sectorId, map.href)}>
                     지도 보기
                     <ArrowRight size={15} />
                   </button>
@@ -2764,7 +2722,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                   <small>준비 중</small>
                 )}
               </article>
-            ))}
+              );
+            })}
           </div>
         </section>
 
