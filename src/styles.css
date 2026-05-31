@@ -19958,3 +19958,134 @@ body {
     width: 100%;
   }
 }
+
+/* Light residue cleanup: keep selected context and brand marks quiet and readable. */
+.story-dark-shell :is(.home-logo, .landing-logo, .brand-mark) {
+  position: relative;
+  overflow: visible;
+  border: 1px solid var(--light-border-strong) !important;
+  border-radius: 999px !important;
+  color: var(--light-blue) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-dark-shell :is(.home-logo, .landing-logo, .brand-mark)::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--light-blue);
+}
+
+.story-dark-shell :is(.home-brand:hover .home-logo, .pick-nav .home-brand:hover .home-logo),
+.app-shell.story-dark-shell.ai-mvp-map .brand-block:hover .brand-mark {
+  border-color: var(--light-blue) !important;
+  background: var(--light-blue-soft) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context,
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context,
+.app-shell.advanced-relationship-view .topbar .selected-company-context {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 6px 9px;
+  border: 1px solid var(--light-border-strong) !important;
+  border-radius: 999px !important;
+  color: var(--light-text-primary) !important;
+  background: var(--light-blue-soft) !important;
+  box-shadow: none !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context :is(span, strong, em),
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context :is(span, strong, em),
+.app-shell.advanced-relationship-view .topbar .selected-company-context :is(span, strong, em) {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context span,
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context span,
+.app-shell.advanced-relationship-view .topbar .selected-company-context span {
+  padding: 0 2px;
+  color: #475569 !important;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context strong,
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context strong,
+.app-shell.advanced-relationship-view .topbar .selected-company-context strong {
+  padding: 0 2px;
+  color: var(--light-text-primary) !important;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context em,
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context em,
+.app-shell.advanced-relationship-view .topbar .selected-company-context em {
+  padding: 3px 7px;
+  border: 1px solid var(--light-border-strong) !important;
+  border-radius: 999px;
+  color: var(--light-blue) !important;
+  background: #dbeafe !important;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context:hover,
+.app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context:hover,
+.app-shell.advanced-relationship-view .topbar .selected-company-context:hover {
+  border-color: var(--light-blue) !important;
+  background: #eff6ff !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action {
+  color: var(--light-blue-strong) !important;
+  border-color: var(--light-border-strong) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action:nth-of-type(3):not(:disabled) {
+  color: #ffffff !important;
+  border-color: var(--light-blue) !important;
+  background: var(--light-blue) !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action:hover,
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action:focus-visible {
+  color: var(--light-blue-strong) !important;
+  border-color: #93c5fd !important;
+  background: var(--light-blue-soft) !important;
+}
+
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action:nth-of-type(3):not(:disabled):hover,
+.app-shell.story-dark-shell.ai-mvp-map.ai-board-default .topbar-actions .icon-action.text-action:nth-of-type(3):not(:disabled):focus-visible {
+  color: #ffffff !important;
+  border-color: var(--light-blue-strong) !important;
+  background: var(--light-blue-strong) !important;
+}
+
+@media (max-width: 640px) {
+  .app-shell.story-dark-shell.ai-mvp-map .topbar .selected-company-context,
+  .app-shell.story-dark-shell.ai-board-default .topbar .selected-company-context,
+  .app-shell.advanced-relationship-view .topbar .selected-company-context {
+    border-radius: 12px !important;
+  }
+}
