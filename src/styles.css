@@ -19441,3 +19441,520 @@ body {
     width: calc(100% - 20px);
   }
 }
+
+/* Company explainer cleanup v1: quiet Toss-style hierarchy for beginner reading. */
+.story-analysis-shell {
+  background: var(--light-page) !important;
+}
+
+.story-analysis-shell .analysis-hero.company-explainer-hero {
+  width: min(100%, 1120px);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 18px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--light-border) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.story-analysis-shell .analysis-hero.company-explainer-hero h1 {
+  margin: 4px 0 4px;
+  color: var(--light-text-primary) !important;
+  font-size: clamp(25px, 3.2vw, 38px);
+  line-height: 1.14;
+}
+
+.story-analysis-shell .analysis-hero.company-explainer-hero p:not(.eyebrow) {
+  max-width: 520px;
+  color: var(--light-text-secondary) !important;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.story-analysis-shell .analysis-hero.company-explainer-hero .analysis-actions {
+  align-self: end;
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .analysis-actions .data-freshness-card.compact :is(strong, span, em) {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--light-border);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.story-analysis-shell .analysis-detail-flow {
+  width: min(100%, 1120px);
+  gap: 14px;
+  margin-inline: auto;
+}
+
+.story-analysis-shell .company-explainer-card,
+.story-analysis-shell .financial-learning-card {
+  gap: 14px;
+  padding: clamp(16px, 2vw, 22px);
+  border: 1px solid var(--light-border) !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: var(--light-shadow) !important;
+}
+
+.story-analysis-shell .company-explainer-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.story-analysis-shell .company-explainer-card .company-logo.size-hero {
+  width: clamp(64px, 7vw, 88px);
+  height: clamp(64px, 7vw, 88px);
+  border-radius: 18px;
+}
+
+.story-analysis-shell .company-explainer-meta {
+  gap: 6px;
+}
+
+.story-analysis-shell .company-explainer-top h2 {
+  margin: 8px 0 5px;
+  color: var(--light-text-primary) !important;
+  font-size: clamp(30px, 4.2vw, 48px);
+  line-height: 1.08;
+}
+
+.company-one-line-conclusion {
+  display: block;
+  max-width: 720px;
+  color: var(--light-text-primary) !important;
+  font-size: clamp(17px, 2vw, 22px);
+  font-weight: 900;
+  line-height: 1.32;
+}
+
+.story-analysis-shell .company-explainer-top p {
+  max-width: 680px;
+  margin-top: 7px;
+  color: var(--light-text-secondary) !important;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.58;
+}
+
+.story-analysis-shell .company-explainer-price {
+  min-width: 150px;
+  justify-items: end;
+}
+
+.story-analysis-shell .company-explainer-price small {
+  max-width: 180px;
+  color: var(--light-text-muted) !important;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.story-analysis-shell .company-question-card-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .company-question-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  min-height: 112px;
+  padding: 13px;
+  border: 1px solid var(--light-border) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .company-question-card:first-child {
+  border-color: var(--light-border-strong) !important;
+  background: #f8fbff !important;
+}
+
+.story-analysis-shell .company-question-top {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  justify-items: start;
+}
+
+.story-analysis-shell .company-question-top > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.story-analysis-shell .company-question-top em {
+  max-width: 88px;
+  min-height: 22px;
+  padding: 0 7px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.company-question-body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.story-analysis-shell .company-question-card h3 {
+  margin: 0;
+  color: var(--light-text-primary) !important;
+  font-size: 15px;
+  line-height: 1.28;
+}
+
+.story-analysis-shell .company-question-card p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--light-text-secondary) !important;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.story-analysis-shell .company-question-icon {
+  display: none !important;
+}
+
+.story-analysis-shell .explainer-primary-actions {
+  gap: 8px;
+  margin-top: 0;
+}
+
+.story-analysis-shell .explainer-primary-actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .explainer-primary-actions button:first-child {
+  color: #ffffff !important;
+  border-color: var(--light-blue) !important;
+  background: var(--light-blue) !important;
+}
+
+.story-analysis-shell .explainer-primary-actions button:nth-child(2) {
+  color: var(--light-blue-strong) !important;
+  border-color: var(--light-border-strong) !important;
+  background: #ffffff !important;
+}
+
+.story-analysis-shell .explainer-advanced-card,
+.story-analysis-shell .financial-advanced-card,
+.story-analysis-shell .analysis-disclosure-section {
+  border: 1px solid var(--light-border) !important;
+  border-radius: 12px !important;
+  background: var(--light-card-soft) !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .explainer-advanced-card summary,
+.story-analysis-shell .financial-advanced-card summary,
+.story-analysis-shell .analysis-disclosure-section summary {
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 0 !important;
+  color: var(--light-text-primary) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .explainer-advanced-card summary small,
+.story-analysis-shell .financial-advanced-card summary small,
+.story-analysis-shell .analysis-disclosure-section summary small {
+  color: var(--light-text-muted) !important;
+}
+
+.story-analysis-shell .explainer-advanced-card > div,
+.story-analysis-shell .financial-deep-drawer {
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.story-analysis-shell .company-deep-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .company-deep-summary-grid article,
+.story-analysis-shell .financial-card-note-grid article,
+.story-analysis-shell .financial-next-watch,
+.story-analysis-shell .financial-advanced-card .financial-beginner-grid article {
+  border: 1px solid var(--light-border) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .company-deep-summary-grid article {
+  padding: 11px;
+}
+
+.story-analysis-shell .company-deep-summary-grid span,
+.story-analysis-shell .financial-card-note-grid span {
+  color: var(--light-blue-strong) !important;
+  font-size: 11px;
+}
+
+.story-analysis-shell .company-deep-summary-grid strong {
+  color: var(--light-text-primary) !important;
+  font-size: 13px;
+}
+
+.story-analysis-shell .company-deep-summary-grid p,
+.story-analysis-shell .financial-card-note-grid p {
+  color: var(--light-text-secondary) !important;
+  font-size: 12px;
+}
+
+.story-analysis-shell .explainer-metric-card.compact,
+.story-analysis-shell .explainer-related-card,
+.story-analysis-shell .explainer-signal-card {
+  padding: 12px;
+  border: 1px solid var(--light-border) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .explainer-metric-card.compact > div:last-child {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-metric-card article {
+  min-height: 0;
+  padding: 11px;
+  border-radius: 10px !important;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-related-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .company-explainer-card .explainer-related-list button {
+  min-height: 76px;
+  padding: 10px;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .explainer-action-row {
+  gap: 7px;
+}
+
+.story-analysis-shell .explainer-action-row button,
+.story-analysis-shell .explainer-action-row a {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .financial-learning-head h2 {
+  margin-bottom: 5px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.16;
+}
+
+.story-analysis-shell .financial-learning-head p {
+  color: var(--light-text-secondary) !important;
+  font-size: 14px;
+}
+
+.story-analysis-shell .financial-priority-card {
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--light-border) !important;
+  border-radius: 12px !important;
+  background: var(--light-card-soft) !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .financial-priority-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .financial-priority-grid article {
+  min-height: 154px;
+  padding: 13px;
+  padding-bottom: 13px;
+  border: 1px solid var(--light-border) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .financial-priority-grid article::before {
+  display: none !important;
+}
+
+.story-analysis-shell .financial-card-step {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.story-analysis-shell .financial-priority-grid article h3 {
+  color: var(--light-text-primary) !important;
+  font-size: 15px;
+  line-height: 1.28;
+}
+
+.story-analysis-shell .financial-priority-grid article strong {
+  color: var(--light-text-primary) !important;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.12;
+}
+
+.story-analysis-shell .financial-priority-grid article em {
+  min-height: 22px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.story-analysis-shell .financial-priority-grid article small {
+  min-height: 0;
+  padding: 0;
+  color: var(--light-text-muted) !important;
+  background: transparent !important;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.story-analysis-shell .financial-signal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-analysis-shell .financial-signal-grid section {
+  padding: 12px;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.story-analysis-shell .financial-more-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.story-analysis-shell .financial-more-actions button {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.story-analysis-shell .analysis-detail-stack {
+  gap: 10px;
+}
+
+.story-analysis-shell .analysis-detail-content {
+  padding: 12px;
+  border-top: 1px solid var(--light-border);
+  background: #ffffff !important;
+}
+
+@media (max-width: 980px) {
+  .story-analysis-shell .analysis-hero.company-explainer-hero,
+  .story-analysis-shell .company-explainer-top {
+    grid-template-columns: 1fr;
+  }
+
+  .story-analysis-shell .analysis-hero.company-explainer-hero .analysis-actions,
+  .story-analysis-shell .company-explainer-price {
+    justify-self: stretch;
+    justify-items: start;
+  }
+
+  .story-analysis-shell .company-question-card-grid,
+  .story-analysis-shell .financial-priority-grid,
+  .story-analysis-shell .explainer-metric-card.compact > div:last-child,
+  .story-analysis-shell .company-explainer-card .explainer-related-list {
+    grid-template-columns: 1fr;
+  }
+
+  .story-analysis-shell .company-deep-summary-grid,
+  .story-analysis-shell .financial-card-note-grid,
+  .story-analysis-shell .financial-signal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-analysis-shell .analysis-hero.company-explainer-hero,
+  .story-analysis-shell .company-explainer-card,
+  .story-analysis-shell .financial-learning-card {
+    padding: 13px;
+    border-radius: 12px !important;
+  }
+
+  .story-analysis-shell .company-explainer-top h2 {
+    font-size: clamp(30px, 10vw, 42px);
+  }
+
+  .story-analysis-shell .company-question-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .story-analysis-shell .company-question-top {
+    display: flex;
+    align-items: center;
+  }
+
+  .story-analysis-shell .company-question-top em {
+    max-width: none;
+  }
+
+  .story-analysis-shell .company-question-card p {
+    -webkit-line-clamp: 1;
+  }
+
+  .story-analysis-shell .explainer-primary-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .story-analysis-shell .explainer-primary-actions button {
+    width: 100%;
+  }
+}

@@ -3304,31 +3304,29 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     sourceNote: financialMetricSourceNote(metric.value, financialSummary),
   }));
   const financialSignals = financialSimpleSignalSet();
+  const companyTopConclusion = beginnerCompanyConclusion(company);
+  const companyShortDescription = companyEasyExplanation(company);
   const questionTermBadges = companyQuestionTermBadges(company);
   const companyQuestionCards = [
     {
       title: '이 회사는 뭐 해요?',
       description: companyQuestionProductCopy(company),
       badge: questionTermBadges.product,
-      icon: <Factory size={34} />,
     },
     {
       title: '누가 이걸 필요로 해요?',
       description: companyQuestionDemandCopy(company),
       badge: questionTermBadges.demand,
-      icon: <Network size={34} />,
     },
     {
       title: '왜 쉽게 못 따라 하나요?',
       description: companyQuestionMoatCopy(company),
       badge: questionTermBadges.moat,
-      icon: <ShieldAlert size={34} />,
     },
     {
       title: '뭘 확인하면 돼요?',
       description: companyQuestionCheckCopy(company),
       badge: questionTermBadges.check,
-      icon: <BarChart3 size={34} />,
     },
   ];
   const deepSummaryCards = [
@@ -3412,7 +3410,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
               </div>
               <h2>{company.name}</h2>
-              <p>질문 4개로 먼저 봅니다.</p>
+              <strong className="company-one-line-conclusion">{companyTopConclusion}</strong>
+              <p>{companyShortDescription}</p>
             </div>
             <div className="company-explainer-price">
               {hasTradableTicker(company) && companyPrice && priceDirection(companyPrice) !== 'pending' ? (
@@ -3433,21 +3432,22 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                   <span>{index + 1}</span>
                   <em>{card.badge}</em>
                 </div>
-                <div className="company-question-icon">{card.icon}</div>
-                <h3>{card.title}</h3>
-                <p>{card.description}</p>
+                <div className="company-question-body">
+                  <h3>{card.title}</h3>
+                  <p>{card.description}</p>
+                </div>
               </article>
             ))}
           </section>
 
           <div className="explainer-primary-actions">
+            <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
+              <CircleDollarSign size={15} />
+              숫자 3개 보기
+            </button>
             <button type="button" onClick={() => onBack(company)}>
               <Network size={15} />
               시장 흐름 보기
-            </button>
-            <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
-              <CircleDollarSign size={15} />
-              재무 쉽게 보기
             </button>
           </div>
 
@@ -3582,17 +3582,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             </div>
           </section>
 
-          <div className="financial-signal-grid">
-            <section>
-              <strong><CheckCircle size={15} />좋은 신호</strong>
-              {financialSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
-            </section>
-            <section>
-              <strong><AlertTriangle size={15} />조심할 신호</strong>
-              {financialSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
-            </section>
-          </div>
-
           <details className="financial-advanced-card">
             <summary>
               <span>
@@ -3625,6 +3614,17 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                     <p>{metric.note}</p>
                   </article>
                 ))}
+              </div>
+
+              <div className="financial-signal-grid">
+                <section>
+                  <strong><CheckCircle size={15} />좋은 신호</strong>
+                  {financialSignals.good.map((signal) => <span key={signal}>{signal}</span>)}
+                </section>
+                <section>
+                  <strong><AlertTriangle size={15} />조심할 신호</strong>
+                  {financialSignals.caution.map((signal) => <span key={signal}>{signal}</span>)}
+                </section>
               </div>
 
               <div className="financial-next-watch">
