@@ -541,6 +541,10 @@ function isMainListedCompany(company: Company) {
   return inferCompanyListing(company).isInvestmentAnalyzable;
 }
 
+function canOpenCompanyAnalysis(company?: Company) {
+  return Boolean(company && isMainListedCompany(company));
+}
+
 function companyScopeLabel(company: Company) {
   const listing = inferCompanyListing(company);
   if (listing.listed) return '상장기업';
@@ -4309,6 +4313,7 @@ function App() {
   const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
+  const selectedCanOpenAnalysis = canOpenCompanyAnalysis(selectedCompany);
   const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const selectedDirectLinks = selectedCompany
@@ -4549,6 +4554,11 @@ function App() {
       if (nextCompany) setSelectedFlowStage(aiFlowStages.find((stage) => matchesAiFlowStage(stage.stage, nextCompany))?.stage ?? null);
     }
     centerCompanyInMap(companyId);
+  }
+
+  function openFlowCompanyAnalysis(company: Company) {
+    focusCompany(company.id);
+    openAnalysis(company);
   }
 
   function selectFlowStage(stageName: string) {
@@ -5394,6 +5404,20 @@ function App() {
                     <span>고급 참고</span>
                     <p>처음에는 5장 흐름만 봐도 충분합니다. 관계선은 필요할 때 눌러 근거를 확인하세요.</p>
                   </div>
+                  {selectedCompany && (
+                    <div className="relationship-selected-company-card" aria-label="전체 연결 보기 선택 기업">
+                      <span>선택 기업</span>
+                      <strong>{selectedCompany.name}</strong>
+                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      {selectedCanOpenAnalysis ? (
+                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                          기업 해설 보기
+                        </button>
+                      ) : (
+                        <em>기업 해설 준비 중</em>
+                      )}
+                    </div>
+                  )}
                   <div className="relationship-legend" aria-label="관계도 범례">
                     <span>선택 기업</span>
                     <span>직접 연결</span>
@@ -5444,22 +5468,46 @@ function App() {
               </div>
               <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
                 {flowStageCards.map((stage, index) => (
-                  <button
+                  <article
                     key={stage.stage}
-                    type="button"
-                    className={`${activeFlowStageName === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
-                    onClick={() => selectFlowStage(stage.stage)}
+                    className={`flow-stage-card ${activeFlowStageName === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
                     aria-current={activeFlowStageName === stage.stage ? 'step' : undefined}
                   >
-                    <span>{stage.symbol}</span>
-                    <strong>{stage.easyTitle}</strong>
-                    <small>{stage.summary}</small>
-                    <em>전문용어: {stage.term}</em>
+                    <button
+                      type="button"
+                      className="flow-stage-select"
+                      onClick={() => selectFlowStage(stage.stage)}
+                      aria-label={`${stage.easyTitle} 단계 보기`}
+                    >
+                      <span>{stage.symbol}</span>
+                      <strong>{stage.easyTitle}</strong>
+                      <small>{stage.summary}</small>
+                      <em>전문용어: {stage.term}</em>
+                    </button>
                     <span className="flow-stage-company-row" aria-label={`${stage.easyTitle} 대표 기업`}>
                       <b>대표 기업</b>
-                      <i>{stage.companies.map(flowRepresentativeCompanyName).join(', ')}</i>
+                      <span className="flow-stage-company-chip-row">
+                        {stage.companies.map((company) =>
+                          canOpenCompanyAnalysis(company) ? (
+                            <button
+                              key={company.id}
+                              type="button"
+                              className="flow-stage-company-chip"
+                              onClick={() => openFlowCompanyAnalysis(company)}
+                              aria-label={`${flowRepresentativeCompanyName(company)} 기업 해설 보기`}
+                            >
+                              {flowRepresentativeCompanyName(company)}
+                            </button>
+                          ) : (
+                            <span key={company.id} className="flow-stage-company-chip disabled" aria-disabled="true">
+                              {flowRepresentativeCompanyName(company)}
+                              <small>준비 중</small>
+                            </span>
+                          ),
+                        )}
+                      </span>
                     </span>
-                  </button>
+                  </article>
                 ))}
               </nav>
 
@@ -5506,12 +5554,18 @@ function App() {
                         </div>
                       </dl>
                       <div className="flow-focus-actions">
-                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
-                          기업 해설 보기
-                        </button>
-                        <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                          재무 쉽게 보기
-                        </button>
+                        {selectedCanOpenAnalysis ? (
+                          <>
+                            <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                              기업 해설 보기
+                            </button>
+                            <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
+                              재무 쉽게 보기
+                            </button>
+                          </>
+                        ) : (
+                          <span className="flow-focus-disabled">기업 해설 준비 중</span>
+                        )}
                       </div>
                     </div>
                   </article>
