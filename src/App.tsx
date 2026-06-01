@@ -1198,10 +1198,10 @@ function comparisonPercentLabel(value: number) {
 function financialComparisonNote(comparison?: FinancialMetric['comparison']) {
   const pieces: string[] = [];
   if (typeof comparison?.yoy === 'number' && Number.isFinite(comparison.yoy)) {
-    pieces.push(`전년 대비 ${comparisonPercentLabel(comparison.yoy)}`);
+    pieces.push(`작년 같은 기간보다 ${comparisonPercentLabel(comparison.yoy)}`);
   }
   if (typeof comparison?.qoq === 'number' && Number.isFinite(comparison.qoq)) {
-    pieces.push(`전분기 대비 ${comparisonPercentLabel(comparison.qoq)}`);
+    pieces.push(`직전 분기보다 ${comparisonPercentLabel(comparison.qoq)}`);
   }
   return pieces.join(' · ');
 }
@@ -3325,7 +3325,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     ...metric,
     question: financialQuestionTitle(index),
     badge: financialTermBadge(metric.label, index),
-    sourceNote: [financialComparisonNote(metric.comparison), financialMetricSourceNote(metric.value, financialSummary)].filter(Boolean).join(' · '),
+    comparisonNote: financialComparisonNote(metric.comparison),
+    sourceNote: financialMetricSourceNote(metric.value, financialSummary),
   }));
   const financialSignals = financialSimpleSignalSet();
   const companyTopConclusion = beginnerCompanyConclusion(company);
@@ -3600,6 +3601,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                   <h3>{metric.question}</h3>
                   <strong>{beginnerMetricValueLabel(metric.value)}</strong>
                   <em>{metric.badge}</em>
+                  {metric.comparisonNote ? <small className="financial-comparison-note">{metric.comparisonNote}</small> : null}
                   <small>{metric.sourceNote}</small>
                 </article>
               ))}
