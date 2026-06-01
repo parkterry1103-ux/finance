@@ -797,7 +797,8 @@ weekLabel:
 - 이번 주 종목은 Dell, Snowflake, Micron입니다.
 - 핵심 흐름은 `AI 인프라가 서버, 데이터, 메모리로 넓어지는 흐름`입니다.
 - 대표 해부는 Dell 후속 Pick `pick-dell-ai-server-earnings-check`로 둡니다.
-- Snowflake처럼 상세 페이지가 아직 없는 recent item은 가짜 링크를 만들지 않고 `coming-soon` 또는 disabled 상태로 처리합니다.
+- Snowflake는 AI 데이터 플랫폼 흐름 Pick `/ko/picks/pick-snowflake-ai-data-platform`으로 연결합니다.
+- Snowflake의 가이던스/컨센서스는 자동 연결하지 않고, 숫자는 다음 단계에서 공식 자료 기준으로만 연결합니다.
 - Micron처럼 기존 기업 해설과 재무 쉽게 보기가 있는 종목은 `companyId`와 `target: 'analysis'`로 기존 분석 페이지에 연결합니다.
 
 ### 참고 자료 반영 원칙
