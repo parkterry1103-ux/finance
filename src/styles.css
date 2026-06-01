@@ -18038,6 +18038,15 @@ body,
   font-size: 12px;
 }
 
+.recent-autopsy-card.disabled {
+  opacity: 0.72;
+}
+
+.recent-autopsy-card.disabled button {
+  color: #8a9ab0;
+  background: rgba(255, 255, 255, 0.025);
+}
+
 .saved-map-section {
   padding-top: 12px;
   border-top: 1px solid rgba(214, 232, 255, 0.08);

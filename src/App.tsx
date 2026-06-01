@@ -2528,7 +2528,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     summary: string;
     relatedCompanies: string[];
     company?: Company;
-    onOpen: () => void;
+    isComingSoon?: boolean;
+    onOpen?: () => void;
   };
 
   const [activeMarketTab, setActiveMarketTab] = useState(currentWeeklyDigest.marketTabs[0]?.id ?? 'ALL');
@@ -2551,11 +2552,13 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       (item.companyId ? companies.find((candidate) => candidate.id === item.companyId) : undefined) ??
       (pick ? pickMainCompany(pick) : undefined);
 
-    if (!pick && !company) return null;
+    const isComingSoon = item.target === 'coming-soon';
+    if (!pick && !company && !isComingSoon) return null;
 
     const market = item.market ?? pick?.market ?? company?.country ?? 'US';
     const relatedCompanies = (item.relatedCompanies ?? pick?.connectedLeaders ?? []).slice(0, 3);
     const openItem = () => {
+      if (isComingSoon) return;
       if (item.target === 'analysis' && company) {
         onOpenAnalysis(company);
         return;
@@ -2579,6 +2582,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       summary: item.summary,
       relatedCompanies,
       company,
+      isComingSoon,
       onOpen: openItem,
     };
   };
@@ -2696,7 +2700,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           </div>
           <div className="recent-autopsy-list">
             {filteredRecentAutopsies.map((item) => (
-              <article className="recent-autopsy-card" key={item.id}>
+              <article className={`recent-autopsy-card${item.isComingSoon ? ' disabled' : ''}`} key={item.id} aria-disabled={item.isComingSoon}>
                 <div className="recent-autopsy-main">
                   <div className="recent-autopsy-copy">
                     <div className="autopsy-badge-row">
@@ -2713,9 +2717,9 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                     <span key={`${item.id}-${companyName}`}>{companyName}</span>
                   ))}
                 </div>
-                <button type="button" onClick={item.onOpen}>
-                  해부 보기
-                  <ArrowRight size={15} />
+                <button type="button" onClick={item.onOpen} disabled={item.isComingSoon}>
+                  {item.isComingSoon ? '준비 중' : '해부 보기'}
+                  {!item.isComingSoon ? <ArrowRight size={15} /> : null}
                 </button>
               </article>
             ))}
@@ -2892,17 +2896,23 @@ function StockAutopsyPicksPage({
     const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
     const flowLabel = pickFlowLabel(detailPick);
     const flowStage = pickFlowStage(detailPick);
-    const isDellAiServerPick = detailPick.id === 'pick-dell-ai-server-demand';
-    const storyQuestion = isDellAiServerPick
+    const isDellAiServerDemandPick = detailPick.id === 'pick-dell-ai-server-demand';
+    const isDellAiServerEarningsPick = detailPick.id === 'pick-dell-ai-server-earnings-check';
+    const isDellAiServerPick = isDellAiServerDemandPick || isDellAiServerEarningsPick;
+    const storyQuestion = isDellAiServerEarningsPick
+      ? 'Dell은 왜 또 급등했을까?'
+      : isDellAiServerDemandPick
       ? 'AI 서버가 늘면 Dell은 왜 같이 움직일까?'
       : `${detailPick.companyName}은 왜 같이 움직일까?`;
-    const storyAnswer = isDellAiServerPick
+    const storyAnswer = isDellAiServerEarningsPick
+      ? '지난번엔 기대감, 이번엔 숫자 확인'
+      : isDellAiServerDemandPick
       ? 'Dell은 AI 서버를 기업에 팝니다.'
       : '시장 흐름과 연결해 봅니다.';
     const storyRelatedLabels = isDellAiServerPick
       ? ['NVIDIA', 'Super Micro', 'Vertiv']
       : relatedPickCompanies.map((company) => company.name).slice(0, 3);
-    const storyMetricLabels = ['매출', '영업이익', '현금흐름'];
+    const storyMetricLabels = isDellAiServerEarningsPick ? ['매출', 'AI 서버 주문 / 백로그', '가이던스'] : ['매출', '영업이익', '현금흐름'];
     const storyCompanyByLabel = (label: string) => {
       if (label === 'NVIDIA') return companies.find((company) => company.id === 'us-semiconductors-nvidia');
       if (label === 'Super Micro') return companies.find((company) => company.id === 'ai-datacenter-supermicro');
@@ -2912,25 +2922,41 @@ function StockAutopsyPicksPage({
     const storyCards = [
       {
         title: '무슨 일이 있었나요?',
-        description: isDellAiServerPick ? 'AI 서버 수요가 주목받았습니다.' : '시장 이슈가 주목받았습니다.',
+        description: isDellAiServerEarningsPick
+          ? '실적 발표 후 Dell이 크게 움직였습니다.'
+          : isDellAiServerDemandPick
+          ? 'AI 서버 수요가 주목받았습니다.'
+          : '시장 이슈가 주목받았습니다.',
         badge: '오늘 이슈',
         icon: <Newspaper size={34} />,
       },
       {
         title: isDellAiServerPick ? '왜 Dell인가요?' : '왜 이 회사인가요?',
-        description: isDellAiServerPick ? 'Dell은 AI 서버를 팝니다.' : `${detailPick.companyName}을 함께 봅니다.`,
+        description: isDellAiServerEarningsPick
+          ? 'AI 서버 수요가 주문과 전망 숫자로 확인됐기 때문입니다.'
+          : isDellAiServerDemandPick
+          ? 'Dell은 AI 서버를 팝니다.'
+          : `${detailPick.companyName}을 함께 봅니다.`,
         badge: isDellAiServerPick ? 'AI 서버' : flowStage,
         icon: <Cloud size={34} />,
       },
       {
         title: '어디에 있나요?',
-        description: isDellAiServerPick ? '서버와 인프라 단계에 있습니다.' : `${flowStage} 단계에 있습니다.`,
+        description: isDellAiServerEarningsPick
+          ? 'Dell은 AI 서버와 인프라를 기업에 공급하는 단계에 있습니다.'
+          : isDellAiServerDemandPick
+          ? '서버와 인프라 단계에 있습니다.'
+          : `${flowStage} 단계에 있습니다.`,
         badge: isDellAiServerPick ? '데이터센터' : flowLabel,
         icon: <Network size={34} />,
       },
       {
         title: '같이 볼 회사',
-        description: isDellAiServerPick ? 'GPU, 서버, 전력 회사를 봅니다.' : '연결된 회사 3개만 봅니다.',
+        description: isDellAiServerEarningsPick
+          ? 'GPU, 서버 경쟁사, 전력·냉각 인프라를 함께 봅니다.'
+          : isDellAiServerDemandPick
+          ? 'GPU, 서버, 전력 회사를 봅니다.'
+          : '연결된 회사 3개만 봅니다.',
         badge: '3개만',
         icon: <Target size={34} />,
         chips: storyRelatedLabels,
@@ -2938,7 +2964,7 @@ function StockAutopsyPicksPage({
       },
       {
         title: '숫자 3개',
-        description: '팔렸는지, 남겼는지, 현금이 들어왔는지 봅니다.',
+        description: isDellAiServerEarningsPick ? '매출, AI 서버 주문·백로그, 가이던스를 봅니다.' : '팔렸는지, 남겼는지, 현금이 들어왔는지 봅니다.',
         badge: '핵심 지표',
         icon: <BarChart3 size={34} />,
         chips: storyMetricLabels,

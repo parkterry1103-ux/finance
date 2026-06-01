@@ -792,6 +792,14 @@ weekLabel:
 6. `marketMapItems`에는 실제 연결이 있는 산업만 `active`와 `href`를 넣고, 준비 중 항목은 `status: 'coming-soon'`만 둡니다.
 7. 숫자 3개는 SEC/OpenDART, 회사 IR, 공시 원문처럼 확인 가능한 기준으로만 고릅니다.
 
+### 운영 예시: 2026년 5월 마지막 주
+
+- 이번 주 종목은 Dell, Snowflake, Micron입니다.
+- 핵심 흐름은 `AI 인프라가 서버, 데이터, 메모리로 넓어지는 흐름`입니다.
+- 대표 해부는 Dell 후속 Pick `pick-dell-ai-server-earnings-check`로 둡니다.
+- Snowflake처럼 상세 페이지가 아직 없는 recent item은 가짜 링크를 만들지 않고 `coming-soon` 또는 disabled 상태로 처리합니다.
+- Micron처럼 기존 기업 해설과 재무 쉽게 보기가 있는 종목은 `companyId`와 `target: 'analysis'`로 기존 분석 페이지에 연결합니다.
+
 ### 참고 자료 반영 원칙
 
 - Threads, 인스타그램 카드뉴스, 유튜브 영상은 참고하되 그대로 복사하지 않습니다.
