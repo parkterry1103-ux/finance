@@ -39,6 +39,17 @@ type FinancialsApiMetrics = {
   depreciationAndAmortization?: number | null;
 };
 
+type FinancialsApiComparisonMetric = {
+  yoy?: number | null;
+  qoq?: number | null;
+};
+
+type FinancialsApiComparison = {
+  revenue?: FinancialsApiComparisonMetric;
+  operatingIncome?: FinancialsApiComparisonMetric;
+  operatingCashFlow?: FinancialsApiComparisonMetric;
+};
+
 type FinancialsApiResponse = {
   ok?: boolean;
   country?: string;
@@ -53,6 +64,7 @@ type FinancialsApiResponse = {
   amountBasis?: string | null;
   periodBasis?: string | null;
   metrics?: FinancialsApiMetrics;
+  comparison?: FinancialsApiComparison;
   message?: string;
 };
 
@@ -123,12 +135,14 @@ function metric(
   value: string,
   keyTakeaway: string,
   unit?: string,
+  comparison?: FinancialMetric['comparison'],
 ): FinancialMetric {
   return {
     key,
     label,
     value,
     unit,
+    comparison,
     beginnerExplanation: financialMetricGuides[key],
     keyTakeaway,
   };
@@ -141,6 +155,13 @@ function isConnectedApiStatus(status?: string): status is 'direct' | 'partial' {
 function apiMetricValue(metrics: FinancialsApiMetrics | undefined, key: keyof FinancialsApiMetrics) {
   const value = metrics?.[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function apiComparisonValue(comparison: FinancialsApiComparison | undefined, key: keyof FinancialsApiComparison) {
+  const item = comparison?.[key];
+  const yoy = typeof item?.yoy === 'number' && Number.isFinite(item.yoy) ? item.yoy : null;
+  const qoq = typeof item?.qoq === 'number' && Number.isFinite(item.qoq) ? item.qoq : null;
+  return yoy === null && qoq === null ? undefined : { yoy, qoq };
 }
 
 function financialsApiUrl(company: Company) {
@@ -199,12 +220,13 @@ function mapFinancialsApiResponse(
   const freeCashFlow = apiMetricValue(metrics, 'freeCashFlow');
   const eps = apiMetricValue(metrics, 'eps');
   const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
+  const comparison = payload.comparison;
 
   const metricItems: FinancialMetric[] = [
-    metric('revenue', '매출', compactUsdMetric(revenue), 'SEC CompanyFacts 기준 매출입니다. 세부 사업부 매출은 MD&A에서 함께 확인합니다.', 'USD'),
-    metric('operatingIncome', '영업이익', compactUsdMetric(operatingIncome), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', 'USD'),
+    metric('revenue', '매출', compactUsdMetric(revenue), 'SEC CompanyFacts 기준 매출입니다. 세부 사업부 매출은 MD&A에서 함께 확인합니다.', 'USD', apiComparisonValue(comparison, 'revenue')),
+    metric('operatingIncome', '영업이익', compactUsdMetric(operatingIncome), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', 'USD', apiComparisonValue(comparison, 'operatingIncome')),
     metric('netIncome', '순이익', compactUsdMetric(netIncome), '세금과 금융비용까지 반영한 최종 이익입니다.', 'USD'),
-    metric('cashFlow', '영업현금흐름', compactUsdMetric(operatingCashFlow), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', 'USD'),
+    metric('cashFlow', '영업현금흐름', compactUsdMetric(operatingCashFlow), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', 'USD', apiComparisonValue(comparison, 'operatingCashFlow')),
     metric('debtRatio', '부채비율', compactRatio(debtToEquity), '자기자본 대비 부채 부담을 보는 안정성 지표입니다.', 'x'),
     metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
     metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),
@@ -267,12 +289,13 @@ function mapKoreanFinancialsApiResponse(
   const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
   const openDartUnit = openDartUnitLabel(payload.currency);
   const openDartAmountNote = `${openDartUnit} ${payload.amountBasis ?? 'thstrm_amount'} 기준입니다. 정기보고서 공시 기준 수치로 원문 기간 해석과 함께 봅니다.`;
+  const comparison = payload.comparison;
 
   const metricItems: FinancialMetric[] = [
-    metric('revenue', '매출', formatOpenDartAmount(revenue, payload.currency), `매출은 ${openDartAmountNote}`, openDartUnit),
-    metric('operatingIncome', '영업이익', formatOpenDartAmount(operatingIncome, payload.currency), `영업이익은 ${openDartAmountNote}`, openDartUnit),
+    metric('revenue', '매출', formatOpenDartAmount(revenue, payload.currency), `매출은 ${openDartAmountNote}`, openDartUnit, apiComparisonValue(comparison, 'revenue')),
+    metric('operatingIncome', '영업이익', formatOpenDartAmount(operatingIncome, payload.currency), `영업이익은 ${openDartAmountNote}`, openDartUnit, apiComparisonValue(comparison, 'operatingIncome')),
     metric('netIncome', '순이익', formatOpenDartAmount(netIncome, payload.currency), `순이익은 ${openDartAmountNote}`, openDartUnit),
-    metric('cashFlow', '영업현금흐름', formatOpenDartAmount(operatingCashFlow, payload.currency), `영업현금흐름은 ${openDartAmountNote}`, openDartUnit),
+    metric('cashFlow', '영업현금흐름', formatOpenDartAmount(operatingCashFlow, payload.currency), `영업현금흐름은 ${openDartAmountNote}`, openDartUnit, apiComparisonValue(comparison, 'operatingCashFlow')),
     metric('debtRatio', '부채비율', compactRatio(debtToEquity), 'OpenDART 부채총계와 자본총계로 보는 안정성 지표입니다.', 'x'),
     metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
     metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),

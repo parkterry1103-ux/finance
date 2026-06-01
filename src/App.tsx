@@ -52,6 +52,7 @@ import {
   CountryId,
   currentWeeklyDigest,
   FilingSourceStatus,
+  FinancialMetric,
   FinancialStatementSummary,
   links,
   marketMovers,
@@ -1189,6 +1190,22 @@ function financialMetricSourceNote(value: string, summary: FinancialStatementSum
   return '연결된 데이터 기준';
 }
 
+function comparisonPercentLabel(value: number) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)}%`;
+}
+
+function financialComparisonNote(comparison?: FinancialMetric['comparison']) {
+  const pieces: string[] = [];
+  if (typeof comparison?.yoy === 'number' && Number.isFinite(comparison.yoy)) {
+    pieces.push(`전년 대비 ${comparisonPercentLabel(comparison.yoy)}`);
+  }
+  if (typeof comparison?.qoq === 'number' && Number.isFinite(comparison.qoq)) {
+    pieces.push(`전분기 대비 ${comparisonPercentLabel(comparison.qoq)}`);
+  }
+  return pieces.join(' · ');
+}
+
 function financialQuestionTitle(index: number) {
   if (index === 0) return '얼마나 팔았나요?';
   if (index === 1) return '팔고 돈이 남았나요?';
@@ -1234,6 +1251,12 @@ function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'
 
 type FinancialMetricItem = FinancialStatementSummary['metrics'][number];
 type FinancialMetricItemKey = FinancialMetricItem['key'];
+type FinancialPriorityMetric = {
+  label: string;
+  value: string;
+  note: string;
+  comparison?: FinancialMetric['comparison'];
+};
 
 function priorityMetricKeys(label: string, index: number): FinancialMetricItemKey[] {
   if (/CAPEX|가동률/.test(label)) return ['capitalExpenditures', 'cashFlow', 'revenue'];
@@ -1279,7 +1302,7 @@ function connectedPriorityNote(summary: FinancialStatementSummary, metricItem: F
 function connectFinancialPriorityMetrics(
   company: Company,
   summary: FinancialStatementSummary,
-  metrics: Array<{ label: string; value: string; note: string }>,
+  metrics: FinancialPriorityMetric[],
 ) {
   if (!shouldDisplayConnectedFinancials(company, summary)) return metrics;
 
@@ -1294,6 +1317,7 @@ function connectFinancialPriorityMetrics(
       label: connectedPriorityLabel(item.label, financialMetric),
       value,
       note: connectedPriorityNote(summary, financialMetric),
+      comparison: financialMetric.comparison,
     };
   });
 }
@@ -3301,7 +3325,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     ...metric,
     question: financialQuestionTitle(index),
     badge: financialTermBadge(metric.label, index),
-    sourceNote: financialMetricSourceNote(metric.value, financialSummary),
+    sourceNote: [financialComparisonNote(metric.comparison), financialMetricSourceNote(metric.value, financialSummary)].filter(Boolean).join(' · '),
   }));
   const financialSignals = financialSimpleSignalSet();
   const companyTopConclusion = beginnerCompanyConclusion(company);

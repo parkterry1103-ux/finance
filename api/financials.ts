@@ -16,11 +16,13 @@ type ApiResponse = {
 };
 
 type SecFact = {
+  start?: string;
   end?: string;
   fy?: number;
   fp?: string;
   form?: string;
   filed?: string;
+  frame?: string;
   val?: number;
 };
 
@@ -62,6 +64,17 @@ type DartMetricSelection = {
   row: DartAccountRow;
   currency: string | null;
   amountField: 'thstrm_amount';
+};
+
+type ComparisonMetric = {
+  yoy?: number | null;
+  qoq?: number | null;
+};
+
+type FinancialComparison = {
+  revenue?: ComparisonMetric;
+  operatingIncome?: ComparisonMetric;
+  operatingCashFlow?: ComparisonMetric;
 };
 
 const SEC_TIMEOUT_MS = 8000;
@@ -184,6 +197,90 @@ function safeRatio(numerator: SelectedMetric | null, denominator: SelectedMetric
 function safeNumberRatio(numerator: number | null, denominator: number | null) {
   if (numerator === null || denominator === null || numerator <= 0 || denominator <= 0) return null;
   return Number((numerator / denominator).toFixed(4));
+}
+
+function percentageChange(current?: number | null, previous?: number | null) {
+  if (
+    typeof current !== 'number' ||
+    typeof previous !== 'number' ||
+    !Number.isFinite(current) ||
+    !Number.isFinite(previous) ||
+    previous <= 0
+  ) {
+    return null;
+  }
+  return Number((((current - previous) / previous) * 100).toFixed(1));
+}
+
+function comparisonMetric(yoy?: number | null, qoq?: number | null): ComparisonMetric | undefined {
+  const safeYoy = typeof yoy === 'number' && Number.isFinite(yoy) ? yoy : null;
+  const safeQoq = typeof qoq === 'number' && Number.isFinite(qoq) ? qoq : null;
+  if (safeYoy === null && safeQoq === null) return undefined;
+  return { yoy: safeYoy, qoq: safeQoq };
+}
+
+function factDurationDays(fact: SecFact) {
+  const start = dateValue(fact.start);
+  const end = dateValue(fact.end);
+  if (!start || !end || end <= start) return null;
+  return Math.round((end - start) / 86_400_000);
+}
+
+function hasComparableDuration(a: SecFact, b: SecFact) {
+  const aDuration = factDurationDays(a);
+  const bDuration = factDurationDays(b);
+  return aDuration !== null && bDuration !== null && Math.abs(aDuration - bDuration) <= 10;
+}
+
+function previousQuarterFp(fp?: string) {
+  if (fp === 'Q2') return 'Q1';
+  if (fp === 'Q3') return 'Q2';
+  return null;
+}
+
+function factsForSelectedMetric(
+  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  metric: SelectedMetric | null,
+) {
+  if (!metric) return [];
+  return rankedFacts(facts?.[metric.concept]?.units).filter((fact) => fact !== metric.fact && hasComparableDuration(metric.fact, fact));
+}
+
+function secComparisonForMetric(
+  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  metric: SelectedMetric | null,
+) {
+  if (!metric || typeof metric.fact.fy !== 'number') return undefined;
+  const candidates = factsForSelectedMetric(facts, metric);
+  const yoyFact = candidates.find((fact) =>
+    fact.form === metric.fact.form &&
+    fact.fp === metric.fact.fp &&
+    fact.fy === metric.fact.fy! - 1
+  );
+  const previousFp = previousQuarterFp(metric.fact.fp);
+  const qoqFact = previousFp && metric.fact.form === '10-Q'
+    ? candidates.find((fact) => fact.form === '10-Q' && fact.fy === metric.fact.fy && fact.fp === previousFp)
+    : undefined;
+
+  return comparisonMetric(
+    percentageChange(metric.value, yoyFact?.val),
+    percentageChange(metric.value, qoqFact?.val),
+  );
+}
+
+function secComparison(
+  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  selected: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>,
+): FinancialComparison {
+  const comparison: FinancialComparison = {};
+  const revenue = secComparisonForMetric(facts, selected.revenue);
+  const operatingIncome = secComparisonForMetric(facts, selected.operatingIncome);
+  const operatingCashFlow = secComparisonForMetric(facts, selected.operatingCashFlow);
+
+  if (revenue) comparison.revenue = revenue;
+  if (operatingIncome) comparison.operatingIncome = operatingIncome;
+  if (operatingCashFlow) comparison.operatingCashFlow = operatingCashFlow;
+  return comparison;
 }
 
 function rawAvailability(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>) {
@@ -532,6 +629,52 @@ function buildDartMetrics(rows: DartAccountRow[]) {
   };
 }
 
+type DartMetrics = ReturnType<typeof buildDartMetrics>;
+
+async function fetchOpenDartMetrics({
+  apiKey,
+  corpCode,
+  year,
+  reportCode,
+  fsDiv,
+}: {
+  apiKey: string;
+  corpCode: string;
+  year: string;
+  reportCode: string;
+  fsDiv: string;
+}) {
+  const result = await fetchOpenDartRows({ apiKey, corpCode, year, reportCode, fsDiv });
+  if (result.status !== 'ok') return null;
+  const metrics = buildDartMetrics(result.rows);
+  const sourceStatus = dartSourceStatusFor({
+    revenue: metrics.revenue,
+    operatingIncome: metrics.operatingIncome,
+    netIncome: metrics.netIncome,
+    operatingCashFlow: metrics.operatingCashFlow,
+    totalLiabilities: metrics.totalLiabilities,
+    stockholdersEquity: metrics.stockholdersEquity,
+    assetsCurrent: metrics.assetsCurrent,
+    liabilitiesCurrent: metrics.liabilitiesCurrent,
+    interestExpense: metrics.interestExpense,
+    capitalExpenditures: metrics.capitalExpenditures,
+    depreciationAndAmortization: metrics.depreciationAndAmortization,
+  });
+  return sourceStatus === 'not-found' ? null : metrics;
+}
+
+function dartComparison(current: DartMetrics, priorYear: DartMetrics | null): FinancialComparison {
+  const comparison: FinancialComparison = {};
+  const revenue = comparisonMetric(percentageChange(current.revenue, priorYear?.revenue), null);
+  const operatingIncome = comparisonMetric(percentageChange(current.operatingIncome, priorYear?.operatingIncome), null);
+  const operatingCashFlow = comparisonMetric(percentageChange(current.operatingCashFlow, priorYear?.operatingCashFlow), null);
+
+  if (revenue) comparison.revenue = revenue;
+  if (operatingIncome) comparison.operatingIncome = operatingIncome;
+  if (operatingCashFlow) comparison.operatingCashFlow = operatingCashFlow;
+  return comparison;
+}
+
 async function buildKoreanFinancialsResponse(country: string, companyId: string, corpCode: string, cik: string) {
   const openDartApiKey = process.env.OPENDART_API_KEY;
   if (!openDartApiKey) {
@@ -615,6 +758,15 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
         };
         const sourceStatus = dartSourceStatusFor(dartValues);
         if (sourceStatus === 'not-found') continue;
+        const priorYear = Number(year) > 0
+          ? await fetchOpenDartMetrics({
+              apiKey: openDartApiKey,
+              corpCode,
+              year: String(Number(year) - 1),
+              reportCode: report.code,
+              fsDiv,
+            })
+          : null;
 
         return {
           ok: true,
@@ -632,6 +784,7 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
           amountBasis,
           periodBasis: 'OpenDART regular filing disclosure basis',
           metrics,
+          comparison: dartComparison(selectedMetrics, priorYear),
           rawAvailable: rawAvailableFromValues(dartValues),
           message: 'OpenDART data loaded. Amounts are parsed from raw OpenDART thstrm_amount strings and are not rescaled by this API. Currency follows the OpenDART currency field when available.',
           env: {
@@ -838,6 +991,7 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       debtRatio: null,
     },
     rawAvailable: rawAvailability(selected),
+    comparison: secComparison(facts, selected),
     message: sourceStatus === 'not-found' ? 'No usable SEC CompanyFacts metrics found.' : 'SEC CompanyFacts data loaded.',
     env: {
       secUserAgent: 'present',

@@ -204,6 +204,10 @@ export interface FinancialMetric {
   label: string;
   value: string;
   unit?: string;
+  comparison?: {
+    yoy?: number | null;
+    qoq?: number | null;
+  };
   beginnerExplanation: string;
   keyTakeaway: string;
 }
