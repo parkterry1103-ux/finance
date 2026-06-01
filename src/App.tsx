@@ -2735,7 +2735,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             <div>
               <span>저장해둘 시장 지도</span>
               <h2>해부가 쌓이면 다시 보는 보관함</h2>
-              <p>지금은 AI 반도체 지도만 열려 있고, 나머지는 준비 중입니다.</p>
+              <p>AI 반도체 지도를 중심으로 서버·메모리·데이터센터 흐름을 함께 열어둡니다.</p>
             </div>
           </div>
           <div className="saved-map-grid">
@@ -3196,7 +3196,7 @@ function StockAutopsyPicksPage({
                   {pick.movementDirection === 'up' ? '상승' : '하락'}
                 </strong>
               </div>
-              <h2>{pick.companyName}</h2>
+              <h2>{pick.title}</h2>
               <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
               <div className="pick-movement-line">
                 <span>움직임</span>
