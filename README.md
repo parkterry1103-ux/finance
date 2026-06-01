@@ -883,6 +883,120 @@ weekLabel:
 
 오래된 데이터나 직전 보고서 기준 데이터는 기준 보고서, 공시일, 데이터 상태를 함께 보여줍니다. PER, EPS, PBR, ROE, FCF, CAPEX, 원문 보고서, MD&A, 전체 공시와 기관 동향은 더보기/고급 참고자료로 둡니다.
 
+## 재무 쉽게 보기 v2 사전 조사
+
+이번 조사는 실제 UI, API, data fetching 구현 없이 문서로만 정리합니다. 조사 대상은 `api/financials.ts`, `src/services/financials.ts`, `src/App.tsx`의 재무 카드 렌더링, `src/data.ts`의 financial 관련 필드, README의 재무/데이터 설명입니다.
+
+### 현재 재무 데이터 흐름
+
+- `/api/financials`는 미국 기업이면 `SEC_USER_AGENT + cik`로 SEC CompanyFacts를 조회하고, 한국 기업이면 `OPENDART_API_KEY + corpCode`로 OpenDART `fnlttSinglAcntAll`을 조회합니다.
+- US 매출, 영업이익, 영업현금흐름은 `SEC_CONCEPTS`의 `RevenueFromContractWithCustomerExcludingAssessedTax`, `Revenues`, `SalesRevenueNet`, `OperatingIncomeLoss`, `NetCashProvidedByUsedInOperatingActivities`에서 최신 `10-Q` 또는 `10-K` fact 하나를 고릅니다.
+- US EPS는 `EarningsPerShareDiluted`, `EarningsPerShareBasic`에서 fact 하나를 고르지만, 기본 3개 카드가 아니라 고급 지표 영역에서만 후보로 쓰입니다.
+- KR 매출, 영업이익, 영업현금흐름은 OpenDART 행의 `account_nm` alias를 `매출액`, `영업이익`, `영업활동현금흐름` 등으로 매칭하고 `thstrm_amount`만 숫자로 파싱합니다.
+- KR 조회 순서는 최근 연도부터 `11014` 3분기, `11012` 반기, `11013` 1분기, `11011` 사업보고서 순서이며, 연결재무제표 `CFS`를 먼저 보고 없으면 `OFS`를 봅니다.
+- `src/services/financials.ts`는 `/api/financials` 응답의 `metrics`를 `FinancialStatementSummary.metrics` 배열로 바꾸고, `sourceStatus`가 `direct` 또는 `partial`일 때만 `api-live`로 사용합니다.
+- `src/App.tsx`는 `fetchFinancialsByCompany(company)` 결과를 `financialSummary`로 저장한 뒤 `connectFinancialPriorityMetrics`를 통해 기본 카드 3개를 매출, 영업이익, 현금흐름 중심으로 치환합니다.
+- 기본 질문형 카드는 현재 `얼마나 팔았나요?`, `팔고 돈이 남았나요?`, `현금이 들어왔나요?` 3개입니다.
+- `src/data.ts`의 fallback 필드는 `revenue`, `revenueUnit`, `revenueBasis`, `growthBasis`, `opMargin`, `debtRatio`, `corpCode`, `cik`, `fiscalYear`, `fiscalPeriod`, `filingDate`처럼 문자열 중심입니다. fallback은 기간 비교 계산에 쓰면 안 됩니다.
+
+### 현재 가능한 것과 빠진 것
+
+- 현재 코드만으로 안정적으로 표시 가능한 값은 최신 또는 선택된 단일 기간의 `매출`, `영업이익`, `영업현금흐름`입니다. US는 `SEC CompanyFacts`, KR은 `OpenDART` 연결 상태가 `direct` 또는 `partial`일 때만 공식 숫자로 봅니다.
+- US CompanyFacts 원천 payload에는 concept별 여러 기간 fact가 있으므로 period별 이전 값 접근은 원천상 가능합니다. 하지만 현재 `selectMetric`이 최신 fact 하나만 골라 응답하고 나머지 기간 배열을 버리므로 프론트는 이전 값에 접근할 수 없습니다.
+- KR OpenDART도 `bsns_year`, `reprt_code`, `fs_div` 조합으로 이전 분기나 전년 동기 보고서를 다시 조회할 수 있습니다. 다만 현재 API 응답은 최신으로 선택된 보고서의 `thstrm_amount`만 반환하고, `frmtrm_amount`, `frmtrm_q_amount`, `thstrm_add_amount` 같은 비교 후보 필드는 사용하지 않습니다.
+- 현재 `/api/financials` 응답에는 전년 대비, 전분기 대비 계산에 필요한 `priorYear`, `priorQuarter`, `periodStart`, `periodEnd`, `duration`, `frame`, `accountId`, `concept`, `unit` 묶음이 없습니다.
+- YoY/QoQ를 구현하려면 API 응답을 `metric -> current/priorYear/priorQuarter/comparison` 형태로 확장해야 합니다. UI에서 직접 raw array를 재계산하지 말고 서버리스 API에서 기간 정합성을 먼저 검증해야 합니다.
+- fallback financials는 `src/data.ts`의 스크리닝/문구형 값입니다. direct financials는 `/api/financials`가 공식 원천에서 가져온 numeric 값입니다. fallback 값으로 YoY/QoQ, EPS 성장률, 컨센서스 대비를 계산하지 않습니다.
+- SK하이닉스 같은 KR 기업은 `corpCode`는 있으나 계정 매핑이 더 필요합니다. 우선 `account_id`가 있으면 `account_nm`보다 우선하고, 매출, 영업이익, 영업활동현금흐름, 기본/희석 EPS, CAPEX 후보를 회사별로 audit해야 합니다. 분기 현금흐름은 누적과 단일 분기 금액이 섞일 수 있으므로 `reprt_code`와 금액 필드를 함께 저장해야 합니다.
+
+### 비교 지표 가능성
+
+| 지표 | 판단 | 필요한 데이터 | 예상 난이도 | 주의점 |
+| --- | --- | --- | --- | --- |
+| 매출 YoY | API 확장 필요 | 현재 매출, 전년 동기 매출, 같은 회계기간 식별자 | 중 | US는 `fp/form`만 믿지 말고 기간 길이를 맞춥니다. KR은 같은 `reprt_code`와 `CFS/OFS` 기준을 맞춥니다. |
+| 영업이익 YoY | API 확장 필요 | 현재 영업이익, 전년 동기 영업이익 | 중 | 적자 전환/흑자 전환은 퍼센트 대신 금액 변화와 상태 문구가 더 안전합니다. |
+| 영업현금흐름 YoY | API 확장 필요 | 현재 OCF, 전년 동기 OCF, 현금흐름표 기간 기준 | 중상 | KR 반기/3분기 현금흐름은 누적 값일 수 있어 단일 분기처럼 표현하면 안 됩니다. |
+| EPS YoY | API 확장 필요 | 현재 EPS, 전년 동기 EPS, basic/diluted 구분 | 중상 | US는 SEC EPS fact 후보가 있으나 KR은 EPS 계정 매핑을 추가해야 합니다. 조정 EPS와 GAAP EPS를 섞지 않습니다. |
+| 매출 QoQ | API 확장 필요 | 현재 분기 매출, 직전 분기 매출, 보고서 기간 길이 | 중상 | 10-K/FY와 10-Q를 직접 비교하지 않습니다. Q4는 FY에서 9개월 누적을 빼야 하는 경우가 있어 보수적으로 처리합니다. |
+| 영업이익 QoQ | API 확장 필요 | 현재 분기 영업이익, 직전 분기 영업이익 | 중상 | 계절성과 일회성 비용이 크면 단순 증감률보다 상태 문구가 필요합니다. |
+| 영업현금흐름 QoQ | API 확장 필요 | 현재 분기 OCF, 직전 분기 OCF 또는 누적값 차감 로직 | 높음 | 현금흐름은 누적 보고가 많아 QoQ 계산을 가장 늦게 연결합니다. |
+| EPS QoQ | API 확장 필요 | 현재 EPS, 직전 분기 EPS, basic/diluted 구분 | 높음 | 분기 EPS, 연간 EPS, 조정 EPS가 섞이면 오해가 커서 고급 보기 후보입니다. |
+| EPS 실제값 | 현재 코드만으로 부분 가능 | US SEC EPS fact 또는 KR EPS 계정 | 중 | US는 고급 지표 후보로 이미 매핑되어 있습니다. KR은 기본/희석 EPS 계정 매핑 전까지 표시하지 않습니다. |
+| 매출 컨센서스 대비 | 외부 API 필요 | 실제 매출, revenue estimate consensus, period | 중상 | 공식 공시 원문에는 애널리스트 컨센서스가 없습니다. 출처와 기준일을 반드시 표시합니다. |
+| EPS 컨센서스 대비 | 외부 API 필요 | 실제 EPS, EPS estimate consensus, period | 중상 | GAAP EPS, non-GAAP EPS, adjusted EPS 구분이 핵심입니다. |
+| 다음 분기 가이던스 | 비추천 | 회사 IR, 실적 발표자료, 8-K/press release의 guidance 문구 | 높음 | 구조화 API보다 공식 IR/보도자료를 수동 또는 별도 파이프라인으로 검증하는 편이 안전합니다. |
+| 연간 가이던스 | 비추천 | 회사 IR, earnings release, conference call transcript | 높음 | 회사가 숫자 범위를 제시하지 않으면 만들지 않습니다. 매수/매도 신호처럼 보이지 않게 `회사 제시 전망`으로만 둡니다. |
+
+### 데이터 소스 후보
+
+현재 `.env.example`에는 `OPENDART_API_KEY`, `SEC_USER_AGENT`, Supabase, Cron, 가격 import 관련 변수만 있습니다. FMP, Finnhub, Alpha Vantage, Twelve Data, KIS용 키는 없고 이번 단계에서 새 env를 추가하지 않습니다.
+
+| 후보 | 적합한 데이터 | 판단 | 무료/제한 메모 | 참고 |
+| --- | --- | --- | --- | --- |
+| SEC CompanyFacts | US quarterly/annual financials, EPS actual, 과거 기간 fact | 1차 공식 원천 | 무료 공식 API. `data.sec.gov`는 CORS를 지원하지 않으므로 서버리스에서 호출합니다. | https://www.sec.gov/search-filings/edgar-application-programming-interfaces |
+| OpenDART | KR 정기보고서 재무제표, 계정별 원문 숫자 | 1차 공식 원천 | 무료 공식 API 키 필요. 정정 공시로 수치가 바뀔 수 있고 금융감독원은 정확성/완전성을 보장하지 않는다고 안내합니다. | https://opendart.fss.or.kr/guide/main.do?apiGrpCd=DS003 |
+| FMP | quarterly financials, earnings calendar, EPS/revenue estimate, sector/industry comparison | 컨센서스/산업 비교 후보 | 공식 docs에 free plan 언급은 있으나 실제 한도와 재배포 조건은 확인 필요입니다. | https://site.financialmodelingprep.com/developer/docs |
+| Finnhub | earnings calendar, EPS/revenue estimates, company fundamentals, peers | 컨센서스 후보 | estimates 계열은 premium 표시가 있어 무료 사용 가능 여부 확인 필요입니다. | https://finnhub.io/docs/api |
+| Alpha Vantage | earnings history, earnings estimates, earnings calendar, income/cash flow statements | EPS/예상치 후보 | 무료 API key를 제공하지만 `EARNINGS_ESTIMATES`는 Trending 표시라 한도/요금 확인 필요입니다. | https://www.alphavantage.co/documentation/ |
+| Twelve Data | earnings actual/estimate, earnings calendar, income statement, cash flow | 글로벌 보조 후보 | earnings/calendar는 Grow/Venture 이상으로 표시되어 기본 무료 후보로 보기는 어렵습니다. | https://twelvedata.com/docs/analysis/revenue-estimate |
+| KIS | KR 가격, 재무비율, 추정실적, 종목정보 | 한국 보조 후보 | 계좌/인증과 시세정보 재배포 제한이 있어 공개 웹서비스 기본 데이터로 바로 쓰기 어렵습니다. | https://apiportal.koreainvestment.com/apiservice-category |
+| 공식 IR/press release/8-K | guidance, management outlook | 가이던스 우선 후보 | 구조화 비용이 높아 자동화 전 수동 검증 또는 별도 큐레이션이 안전합니다. | 회사 IR, SEC 8-K, DART 공정공시 |
+
+### 추천 구현 순서
+
+1. 1차 구현: 현재 SEC/OpenDART 공식 데이터에서 같은 지표의 전년 동기와 직전 분기 후보를 API 응답에 추가합니다. 화면에는 `매출은 늘었나요?`, `돈은 더 남았나요?`, `현금은 들어왔나요?` 3개 카드만 유지하고 YoY/QoQ는 작은 보조 문구로만 표시합니다.
+2. 2차 구현: EPS 실제값을 고급 보기에서 안정화합니다. US는 SEC `EarningsPerShareDiluted/Basic`, KR은 OpenDART EPS 계정 매핑 audit 후 연결합니다. 기본 카드로 올리기 전에는 `더 깊게 보기`에 둡니다.
+3. 3차 구현: FMP, Finnhub, Alpha Vantage 중 하나를 골라 컨센서스 데이터 품질, 요금, 재배포 조건을 검토합니다. 실제 연결 전에는 `consensusSource`, `estimatePeriod`, `estimateType`, `analystCount`, `asOf` 필드를 설계합니다.
+4. 4차 구현: 가이던스는 공식 IR/press release/8-K/DART 공정공시 기반 별도 데이터로 처리합니다. 자동 추출보다 운영자가 검증한 `회사 제시 전망` 카드로 시작합니다.
+
+### API 응답 확장 초안
+
+실제 구현 시 `/api/financials`는 기존 `metrics.revenue: number | null` 형태를 유지하면서, 새 필드는 별도 객체로 추가하는 방식이 안전합니다. 기존 화면을 깨지 않기 위해 v1 필드는 그대로 둡니다.
+
+```ts
+comparisonMetrics: {
+  revenue?: {
+    current: { value: number; fiscalYear: string; fiscalPeriod: string; unit: string; sourceTag: string };
+    priorYear?: { value: number; fiscalYear: string; fiscalPeriod: string; sourceTag: string };
+    priorQuarter?: { value: number; fiscalYear: string; fiscalPeriod: string; sourceTag: string };
+    yoyPct?: number;
+    qoqPct?: number;
+    comparisonStatus: 'ready' | 'partial' | 'not-comparable';
+    note: string;
+  };
+}
+```
+
+주의할 점:
+
+- `sourceTag`에는 SEC concept 또는 OpenDART `account_id/account_nm`을 남깁니다.
+- US는 `form`, `fp`, `fy`, `end`, `filed`, 기간 길이를 함께 저장합니다.
+- KR은 `bsns_year`, `reprt_code`, `fs_div`, `sj_div`, `account_id`, `account_nm`, 사용한 금액 필드를 함께 저장합니다.
+- 비교 대상이 없거나 기간이 맞지 않으면 퍼센트를 만들지 않고 `not-comparable`로 둡니다.
+
+### 재무 쉽게 보기 v2 카드 초안
+
+기본 화면은 계속 3개 카드만 유지합니다.
+
+| 카드 질문 | 실제값 | 보조 비교 | 예상 대비 | 출처 note |
+| --- | --- | --- | --- | --- |
+| 매출은 늘었나요? | 매출 | YoY 우선, 가능하면 QoQ | 더 깊게 보기 | SEC/OpenDART 기준 보고서 |
+| 돈은 더 남았나요? | 영업이익 | YoY 우선, 가능하면 QoQ | 더 깊게 보기 | 영업이익 계정 기준 |
+| 현금은 들어왔나요? | 영업현금흐름 | YoY 우선, QoQ는 보수적으로 | 표시 보류 | 현금흐름표 기간 기준 |
+
+더 깊게 보기 후보:
+
+- `기대보다 잘했나요?`: EPS 실제값, EPS/매출 컨센서스 대비. 외부 API와 출처가 확인된 뒤에만 표시합니다.
+- `다음엔 어떨까요?`: 다음 분기/연간 가이던스. 공식 IR/press release 기반 수동 검증부터 시작합니다.
+- `비슷한 회사와 비교하면요?`: sector/industry/peer 비교. FMP/Finnhub/KIS 등 보조 데이터의 표본과 계산식을 표시합니다.
+
+문구 원칙:
+
+- `좋다/나쁘다`보다 `늘었나요?`, `남았나요?`, `들어왔나요?`, `기대보다 높았나요?`처럼 확인 질문으로 씁니다.
+- `어닝 서프라이즈니까 매수`, `가이던스 상향이라 급등 예상` 같은 투자 추천 표현은 금지합니다.
+- 숫자 과노출을 막기 위해 기본 카드에는 실제값 1개, 비교 문구 1개, 출처 note 1개만 둡니다.
+- 컨센서스와 가이던스는 공식 원문 숫자가 아니라 기대치/전망이므로 기본 카드보다 고급 보기에서 시작합니다.
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 재무 쉽게 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `재무 쉽게 보기`, `같이 볼 기업 보기`.
