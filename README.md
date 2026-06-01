@@ -908,6 +908,26 @@ weekLabel:
 - 기본 질문형 카드는 현재 `얼마나 팔았나요?`, `팔고 돈이 남았나요?`, `현금이 들어왔나요?` 3개입니다.
 - `src/data.ts`의 fallback 필드는 `revenue`, `revenueUnit`, `revenueBasis`, `growthBasis`, `opMargin`, `debtRatio`, `corpCode`, `cik`, `fiscalYear`, `fiscalPeriod`, `filingDate`처럼 문자열 중심입니다. fallback은 기간 비교 계산에 쓰면 안 됩니다.
 
+### 재무 API 연결 누락 기업 조사표
+
+2026-06-01 코드 기준 조사입니다. 배포 URL 직접 호출은 JSON 대신 HTML이 섞여 나온 이력이 있어, 아래 판단은 `src/data.ts`의 식별자, `src/services/financials.ts`의 호출 조건, `api/financials.ts`의 지표 선택 조건, `src/App.tsx`의 렌더링 조건만 기준으로 합니다. API key 또는 env 값은 기록하지 않습니다.
+
+| companyId | 회사명 | country | cik 또는 corpCode 존재 여부 | API 호출 가능 여부 | 현재 숫자 표시 여부 | 원인 | 다음 조치 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `us-semiconductors-nvidia` | NVIDIA | US | 있음 | 가능 | 조건부 표시 | CIK가 있어 `/api/financials`에 `cik`가 전달되고, 10-K/10-Q fact 선택 대상입니다. 응답 `sourceStatus`가 `direct` 또는 `partial`일 때만 `api-live` 숫자가 표시됩니다. | 배포 `/api/financials`가 JSON으로 안정 응답하는지 라우팅과 환경 상태를 별도 확인합니다. |
+| `ai-datacenter-dell` | Dell | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-K라 현재 SEC 선택 로직 대상입니다. 응답이 실패하거나 `direct/partial`이 아니면 fallback이 유지됩니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-micron` | Micron | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-sk-hynix` | SK하이닉스 | KR | 있음 | 가능 | 조건부 표시 | corpCode가 있어 OpenDART 호출 조건을 통과합니다. OpenDART 계정 alias가 매출, 영업이익, 순이익, 영업현금흐름 중 일부를 찾으면 `direct/partial`로 표시됩니다. | 회사별 OpenDART 계정 매핑을 점검합니다. |
+| `ai-datacenter-microsoft` | Microsoft | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-google` | Google / Alphabet | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-broadcom` | Broadcom | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-amd` | AMD | US | 없음 | 불가 | 아니오 | 이 `companyId`에는 CIK가 없어 `fetchUSFinancialsFromApi`가 API 호출 전에 `null`을 반환합니다. 별도 `us-semiconductors-amd` 레코드에는 CIK가 있지만, 식별자를 추정 복사하지 않습니다. | 공식 식별자 검증 후 이 `companyId`에 CIK를 추가할지 결정합니다. 이번 작업에서는 추가하지 않습니다. |
+| `ai-datacenter-supermicro` | Super Micro | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-tsmc` | TSMC | US | 있음 | 가능 | 아니오 | CIK는 있으나 데이터의 보고서 타입이 20-F입니다. 현재 `api/financials.ts`의 `rankedFacts`는 10-Q/10-K만 선택해 20-F fact를 지표 후보에서 제외합니다. | 외국기업 20-F/6-K fact 선택 지원 여부를 별도 설계하고 검증합니다. |
+| `ai-datacenter-asml` | ASML | US | 있음 | 가능 | 아니오 | CIK는 있으나 데이터의 보고서 타입이 20-F입니다. 현재 SEC 선택 로직이 10-Q/10-K만 허용합니다. | 외국기업 20-F/6-K fact 선택 지원 여부를 별도 설계하고 검증합니다. |
+| `ai-datacenter-vertiv` | Vertiv | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
+| `ai-datacenter-samsung` | 삼성전자 | KR | 있음 | 가능 | 조건부 표시 | corpCode가 있어 OpenDART 호출 조건을 통과합니다. OpenDART 계정 alias가 주요 항목을 찾으면 `direct/partial`로 표시됩니다. | 회사별 OpenDART 계정 매핑을 점검합니다. |
+
 ### 현재 가능한 것과 빠진 것
 
 - 현재 코드만으로 안정적으로 표시 가능한 값은 최신 또는 선택된 단일 기간의 `매출`, `영업이익`, `영업현금흐름`입니다. US는 `SEC CompanyFacts`, KR은 `OpenDART` 연결 상태가 `direct` 또는 `partial`일 때만 공식 숫자로 봅니다.
