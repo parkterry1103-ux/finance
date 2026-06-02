@@ -1181,13 +1181,18 @@ function beginnerIndustryMetrics(company: Company, displayMetrics: CompanyDispla
   ];
 }
 
+function isPendingFinancialValue(value: string) {
+  const trimmed = value.trim();
+  return !trimmed || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(trimmed) || /^\d+(?:\.\d+)?%$/.test(trimmed);
+}
+
 function beginnerMetricValueLabel(value: string) {
-  if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '공식 데이터 연결 필요';
+  if (isPendingFinancialValue(value)) return '공식 데이터 연결 필요';
   return value;
 }
 
 function financialMetricSourceNote(value: string, summary: FinancialStatementSummary) {
-  if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '값 확인 전, 지표 의미만 표시';
+  if (isPendingFinancialValue(value)) return '값 확인 전, 지표 의미만 표시';
   if (!isConnectedFinancialSummary(summary)) return '연결된 데이터 기준';
   if (summary.source === 'OpenDART') return 'OpenDART 원문 · 공시 기준';
   if (summary.source === 'SEC CompanyFacts') return /20-F/i.test(summary.reportType) ? 'SEC 20-F 원문 기준' : 'SEC 원문 기준';
