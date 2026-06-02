@@ -2774,7 +2774,6 @@ type StockAutopsyPicksPageProps = {
   onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
-  onOpenSmartMoney: () => void;
   marketPrices: MarketPrice[];
 };
 
@@ -2869,7 +2868,6 @@ function StockAutopsyPicksPage({
   onOpenAnalysis,
   onOpenPick,
   onOpenPicks,
-  onOpenSmartMoney,
   marketPrices,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
@@ -2935,6 +2933,9 @@ function StockAutopsyPicksPage({
       if (label === 'Amazon / AWS') return companies.find((company) => company.id === 'ai-datacenter-amazon');
       if (label === 'Microsoft') return companies.find((company) => company.id === 'ai-datacenter-microsoft');
       return relatedPickCompanies.find((company) => company.name === label || company.legalName === label || company.ticker === label);
+    };
+    const openPickMarketFlow = () => {
+      if (detailPick.relatedSupplyChainId) onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId);
     };
     const storyCards = [
       {
@@ -3026,6 +3027,25 @@ function StockAutopsyPicksPage({
               <h1>{storyQuestion}</h1>
               <strong>{storyAnswer}</strong>
               <p>왜 움직였는지 먼저 봅니다.</p>
+              <div className="pick-story-actions" aria-label="Pick 주요 이동">
+                {relatedCompany ? (
+                  <button type="button" className="pick-primary-action" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
+                    <BarChart3 size={16} />
+                    숫자 3개 보기
+                  </button>
+                ) : detailPick.relatedSupplyChainId ? (
+                  <button type="button" className="pick-primary-action" onClick={openPickMarketFlow}>
+                    <Network size={16} />
+                    시장 흐름 보기
+                  </button>
+                ) : null}
+                {relatedCompany && detailPick.relatedSupplyChainId ? (
+                  <button type="button" onClick={openPickMarketFlow}>
+                    <Network size={16} />
+                    시장 흐름 보기
+                  </button>
+                ) : null}
+              </div>
             </div>
             <div className="pick-story-cover" aria-label="Pick 요약">
               {relatedCompany ? (
@@ -3130,34 +3150,19 @@ function StockAutopsyPicksPage({
               </div>
             </details>
 
-            <details>
-              <summary>
-                <span>더 깊게 보기</span>
-                <ChevronDown size={15} />
-              </summary>
-              <div className="pick-drawer-actions">
-                <button type="button" onClick={() => detailPick.relatedSupplyChainId && onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId)}>
-                  시장 흐름 보기
-                </button>
-                {relatedCompany ? (
+            {relatedCompany ? (
+              <details>
+                <summary>
+                  <span>더 깊게 보기</span>
+                  <ChevronDown size={15} />
+                </summary>
+                <div className="pick-drawer-actions">
                   <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
                     기업 해설 보기
                   </button>
-                ) : (
-                  <span className="pick-disabled-action">기업 해설 연결 준비 중</span>
-                )}
-                {relatedCompany ? (
-                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
-                    재무 쉽게 보기
-                  </button>
-                ) : (
-                  <span className="pick-disabled-action">재무제표 연결 준비 중</span>
-                )}
-                <button type="button" onClick={onOpenSmartMoney}>
-                  기관 동향 보기
-                </button>
-              </div>
-            </details>
+                </div>
+              </details>
+            ) : null}
           </section>
         </main>
       </div>
@@ -4942,14 +4947,6 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
-  function openSmartMoneyFromPick() {
-    window.history.pushState({}, '', '/ko/');
-    setRoute(`${window.location.pathname}${window.location.search}`);
-    window.setTimeout(() => {
-      document.getElementById('smart-money')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
-  }
-
   function openOwnershipReports() {
     window.history.pushState({}, '', '/ko/ownership');
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -5025,7 +5022,6 @@ function App() {
         onOpenAnalysis={openAnalysis}
         onOpenPick={openPick}
         onOpenPicks={openPicks}
-        onOpenSmartMoney={openSmartMoneyFromPick}
         marketPrices={marketPrices}
       />
     );
@@ -5384,7 +5380,7 @@ function App() {
                 onClick={() => selectedCompany && openAnalysis(selectedCompany, 'financial-easy-view')}
               >
                 <Database size={18} />
-                {selectedIsMainListed ? '재무 쉽게 보기' : '관계 참고용'}
+                {selectedIsMainListed ? '숫자 3개 보기' : '관계 참고용'}
               </button>
               <button type="button" className="icon-action text-action detail-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
                 <PanelRightOpen size={18} />
@@ -5587,7 +5583,7 @@ function App() {
                               기업 해설 보기
                             </button>
                             <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                              재무 쉽게 보기
+                              숫자 3개 보기
                             </button>
                           </>
                         ) : (
@@ -5903,7 +5899,7 @@ function App() {
                     {selectedIsMainListed && (
                       <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
                         <Database size={15} />
-                        재무 쉽게 보기
+                        숫자 3개 보기
                       </button>
                     )}
                     {isAiRelationshipMap && (
