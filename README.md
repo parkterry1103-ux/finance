@@ -568,6 +568,76 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 이 endpoint도 서버에서 Supabase를 읽고, service role key는 프론트에 노출하지 않습니다.
 
+### 가격 데이터 최신성 및 환율 환산 조사
+
+2026-06-02 코드 조사 기준입니다. 이번 섹션은 운영 진단 메모이며 가격값, 환산값, API 로직은 수정하지 않습니다.
+
+현재 가격 데이터 구조:
+
+- 읽기 경로는 `src/App.tsx`가 `fetchMarketPrices()`를 1회 호출하고, `src/services/prices.ts`가 `/api/market-prices?limit=200` 응답을 `src/data.ts`의 `mockMarketPrices`와 병합하는 구조입니다.
+- 공개 endpoint인 `api/market-prices.js`는 Supabase `market_prices`를 `as_of desc, created_at desc`로 조회하고, `company_id + ticker` 기준으로 중복을 제거합니다. Supabase 환경변수가 없거나 조회가 실패하면 가격 없음 상태를 반환합니다.
+- 쓰기 경로는 `scripts/sync-prices.ts`입니다. 기본 source는 Yahoo Finance chart endpoint best-effort 조회이고, 실패 시 `PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`, 로컬 `data/prices.json` 순서로 수동 import를 시도합니다.
+- `PRICE_SYNC_SOURCE=import-only`이면 Yahoo 조회를 건너뛰고 import만 사용합니다. `PRICE_SYNC_SOURCE=manual-only`이면 Yahoo rows가 비어 있고, import fallback이 없으면 새 가격 row가 생성되지 않습니다.
+- 로컬 저장소에는 `data/prices.json`이 없고 `data/prices.example.json`만 있습니다. 따라서 배포 환경에서 import URL이 없거나 실패하면 Yahoo 조회 성공 여부가 가격 최신성을 좌우합니다.
+- `src/data.ts`의 `mockMarketPrices`에는 2026-05-15 기준 mock 가격이 있으며, 실제 Supabase 가격이 없을 때만 fallback/pending 표시를 보강하는 용도입니다. 이 값을 최신 가격처럼 업데이트하면 안 됩니다.
+- 현재 `MarketPrice.currency` 타입과 표시 helper는 주가 기준으로 `KRW` 또는 `USD`만 직접 처리합니다. TSMC/ASML 재무 데이터의 `TWD`/`EUR`는 재무 API 쪽 통화 표시 문제이며, 가격 helper에 바로 섞지 않는 편이 안전합니다.
+
+업데이트 지연 원인 후보:
+
+- Vercel Cron 설정은 `vercel.json`에 `/api/sync/prices` 평일 08:30 UTC로 들어 있습니다. [Vercel Cron 공식 문서](https://vercel.com/docs/cron-jobs/) 기준 Cron은 production deployment URL로 GET 요청을 보내며, `CRON_SECRET` 환경변수가 있으면 `Authorization: Bearer ...` 헤더를 보냅니다. 이 프로젝트의 endpoint도 같은 헤더 또는 query secret을 요구합니다.
+- Cron은 설정만으로 충분하지 않습니다. Vercel 프로젝트의 Cron Jobs가 비활성화되었는지, production redeploy 후 cron이 반영되었는지, Hobby 플랜 시간 정밀도와 실행 로그가 정상인지 확인해야 합니다.
+- `/api/sync/prices`는 `CRON_SECRET`이 없거나 다르면 401을 반환합니다. Vercel Production env에 `CRON_SECRET`이 빠졌거나 Preview/Production 값이 달라도 sync가 멈출 수 있습니다.
+- Supabase 쓰기는 `SUPABASE_URL`과 `SUPABASE_SERVICE_ROLE_KEY`가 있어야 실제 upsert됩니다. 이 값이 없으면 스크립트는 rows prepared 상태로 끝나고 DB 최신 `as_of`는 갱신되지 않습니다.
+- Yahoo Finance chart 요청이 전체 또는 다수 ticker에서 실패하고, `PRICE_IMPORT_URL`/`MARKET_PRICES_IMPORT_URL`/`data/prices.json` fallback이 없으면 sync 결과는 `skipped` 또는 `partial`이 됩니다.
+- `market_prices` upsert 기준은 `ticker + source + as_of`입니다. source/asOf가 계속 같은 수동 import를 반복하면 새 기준일이 늘지 않습니다.
+- `api/market-prices.js`는 최신 row를 읽기만 하므로, 2026-05-29 이후 화면이 멈췄다면 1차 확인 대상은 Supabase `market_prices`의 최대 `as_of`와 `sync_runs`의 `/api/sync/prices` 실행 결과입니다.
+- GitHub Actions 대안 워크플로는 `npm run sync:all`을 평일 스케줄로 실행하지만 현재 env에는 `MARKET_PRICES_IMPORT_URL`만 전달하고 `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`는 전달하지 않습니다. Actions를 쓰는 경우 secrets와 실제 실행 로그를 별도로 확인해야 합니다.
+
+`asOf` 표시 필요성:
+
+- 현재 `PriceBadge`는 title에 `source · asOf`를 넣고 작은 글씨에 `status · 기준 · formatPriceAsOf(asOf)`를 표시합니다. 그러나 사용자에게 "가격 기준일"이라는 명시적 라벨은 없습니다.
+- 다음 구현에서는 가격 카드와 재무 카드 모두 원문 기준일을 분리해 표시해야 합니다. 예: `가격 기준일 05/29 17:30`, `환율 기준일 05/29`, `SEC 20-F 원문 기준`.
+- `asOf`가 없거나 파싱되지 않으면 빈 날짜 대신 `가격 기준일 확인 필요`처럼 솔직한 상태를 표시해야 합니다.
+
+환율 환산 필요성:
+
+- 현재 앱은 한국 주가는 원화, 미국 주가는 달러로 표시하고, 재무 원문은 OpenDART/SEC 원문 통화를 우선합니다.
+- TSMC는 TWD, ASML은 EUR 재무 fact가 확인된 상태라 한국 사용자에게 KRW 참고 환산값이 있으면 이해가 쉬워집니다.
+- 다만 환산값은 투자 판단용 확정 숫자가 아니라 표시 보조입니다. 원 통화 값을 기본으로 두고, KRW 환산은 `참고 환산` 또는 tooltip/보조 텍스트로만 둡니다.
+- USD/KRW, TWD/KRW, EUR/KRW가 필요합니다. API가 KRW quote를 직접 주지 않으면 USD 또는 EUR 기준 cross rate 계산식과 기준일을 함께 저장해야 합니다.
+
+환율 API 후보와 env 후보:
+
+- [Frankfurter](https://frankfurter.dev/docs/): 공개 문서 기준 무료/open-source이며 ECB 등 기관 reference rate 기반, 최신/과거 rate endpoint를 제공합니다. 일별 reference rate 성격이라 "참고 환산"에 적합하지만 실시간 FX가 아닙니다. 후보 env: `FX_RATES_PROVIDER=frankfurter`, `FX_RATES_BASE=KRW 또는 USD`, `FX_RATES_IMPORT_URL`.
+- [ExchangeRate-API](https://www.exchangerate-api.com/docs/overview): standard/pair conversion endpoint와 historical data를 제공하는 상용 API 후보입니다. key와 요금제, 재배포 조건을 확인해야 합니다. 후보 env: `EXCHANGE_RATE_API_KEY`, `FX_RATES_PROVIDER=exchangerate-api`.
+- [한국은행 ECOS](https://ecos.bok.or.kr/api/#/): 한국 원화 기준 설명에는 신뢰도가 높지만 API key와 통계 코드/항목 코드 확정이 필요합니다. 후보 env: `BOK_ECOS_API_KEY`, `FX_RATES_PROVIDER=bok-ecos`.
+- 수동 import: 초기에는 `FX_RATES_IMPORT_URL` 또는 `data/fx-rates.json`에 `{ base, quote, rate, asOf, source }` 형태를 넣고 서버에서 cache/import하는 방식이 가장 안전합니다.
+- 기존 `.env.example`에는 환율 전용 env가 없습니다. 가격 sync env(`PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`)와 섞지 말고 별도 이름을 써야 합니다.
+
+안전한 표시 방식:
+
+- 가격: 원 통화 금액을 기본으로 유지합니다. 예: `TWD 1,234`, `EUR 987`, `USD 123`, `82,400원`.
+- 환산: 같은 줄의 보조 정보 또는 tooltip에 `약 56,000원 · 참고 환산 · 환율 기준일 2026-05-29`처럼 표시합니다.
+- 환율 기준일이 가격/재무 기준일보다 오래됐으면 환산을 숨기거나 `환율 기준일 오래됨` 상태를 표시합니다.
+- TWD/EUR/USD/KRW를 한 카드에서 비교할 때는 통화별 원문 값과 환산값을 분리하고, 환산값으로 PER/PBR/성장률 같은 지표를 임의 계산하지 않습니다.
+
+추천 구현 순서:
+
+1. 가격 데이터 source/asOf를 명시적으로 표시합니다.
+2. 가격 업데이트가 멈춘 원인을 Supabase `sync_runs`, `market_prices max(as_of)`, Vercel Cron 로그, GitHub Actions 로그 순서로 확인하고 수정합니다.
+3. 환율 API 후보와 라이선스/요금/재배포 조건을 확정합니다.
+4. 재무 카드에 원 통화 값을 기본으로 두고, KRW 참고 환산값을 보조로 표시합니다.
+5. 환율 기준일과 source를 함께 표시합니다.
+6. 환산값에는 `참고용`, `원문 통화 기준 우선` 문구를 추가합니다.
+
+구현 시 주의사항:
+
+- 가격값, 등락률, 환산값을 임의 생성하지 않습니다.
+- 환율 API는 클라이언트에서 직접 호출하지 말고 서버리스/cache/import 계층에서 호출합니다.
+- 환율 기준일, 가격 기준일, 재무 보고서 기준일을 서로 다른 날짜로 관리합니다.
+- `src/data.ts` mock 가격은 최신 가격 데이터가 아니라 fallback/pending 표시용 예시로 유지합니다.
+- 가격 API와 재무 API를 한 번에 섞어 고치지 않습니다. 가격 freshness 수정 후 환율 표시를 별도 작업으로 진행합니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
