@@ -921,7 +921,7 @@ weekLabel:
 | `ai-datacenter-microsoft` | Microsoft | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
 | `ai-datacenter-google` | Google / Alphabet | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
 | `ai-datacenter-broadcom` | Broadcom | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
-| `ai-datacenter-amd` | AMD | US | 없음 | 불가 | 아니오 | 이 `companyId`에는 CIK가 없어 `fetchUSFinancialsFromApi`가 API 호출 전에 `null`을 반환합니다. 별도 `us-semiconductors-amd` 레코드에는 CIK가 있지만, 식별자를 추정 복사하지 않습니다. | 공식 식별자 검증 후 이 `companyId`에 CIK를 추가할지 결정합니다. 이번 작업에서는 추가하지 않습니다. |
+| `ai-datacenter-amd` | AMD | US | 있음 | 가능 | 조건부 표시 | SEC EDGAR에서 Advanced Micro Devices Inc.의 CIK가 `0000002488`로 확인되어 실제 라우팅 `companyId`에 `cik: '2488'`을 보강했습니다. 응답 `sourceStatus`가 `direct` 또는 `partial`일 때만 `api-live` 숫자가 표시됩니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. TSMC/ASML 20-F 지원은 별도 후속 작업으로 둡니다. |
 | `ai-datacenter-supermicro` | Super Micro | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
 | `ai-datacenter-tsmc` | TSMC | US | 있음 | 가능 | 아니오 | CIK는 있으나 데이터의 보고서 타입이 20-F입니다. 현재 `api/financials.ts`의 `rankedFacts`는 10-Q/10-K만 선택해 20-F fact를 지표 후보에서 제외합니다. | 외국기업 20-F/6-K fact 선택 지원 여부를 별도 설계하고 검증합니다. |
 | `ai-datacenter-asml` | ASML | US | 있음 | 가능 | 아니오 | CIK는 있으나 데이터의 보고서 타입이 20-F입니다. 현재 SEC 선택 로직이 10-Q/10-K만 허용합니다. | 외국기업 20-F/6-K fact 선택 지원 여부를 별도 설계하고 검증합니다. |

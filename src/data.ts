@@ -5654,6 +5654,7 @@ const aiRelationshipCompanies: Company[] = [
     relationshipConfidence: '산업상 관련',
     sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
     reportUrl: 'https://www.sec.gov/Archives/edgar/data/0000002488/000000248826000021/amd-20251227.htm',
+    cik: '2488',
     reportType: '10-K',
     fiscalYear: '2025',
     fiscalPeriod: 'FY',
