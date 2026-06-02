@@ -930,7 +930,15 @@ weekLabel:
 
 ### TSMC/ASML 20-F 재무 연결 조사
 
-2026-06-02 코드와 SEC CompanyFacts 원문 기준 사전 조사입니다. 이번 단계에서는 구현하지 않고, 다음 구현 요청을 만들 때 필요한 원칙만 남깁니다. API key 또는 env 값은 기록하지 않습니다.
+2026-06-02 코드와 SEC CompanyFacts 원문 기준 사전 조사 및 1차 구현 기록입니다. API key 또는 env 값은 기록하지 않습니다.
+
+#### 1차 구현 결과
+
+- `api/financials.ts`는 `ai-datacenter-tsmc`에만 `ifrs-full` 20-F annual selector를 적용하고, TWD 단위 fact만 선택합니다.
+- `api/financials.ts`는 `ai-datacenter-asml`에만 `us-gaap` 20-F annual selector를 적용하고, EUR 단위 fact만 선택합니다.
+- 프론트는 20-F 응답의 통화를 USD로 가정하지 않고 TWD/EUR로 표시하며, source note는 `SEC 20-F 원문 기준`으로 분리합니다.
+- TSMC/ASML 20-F 응답은 YoY/QoQ comparison을 반환하지 않아 보조 비교 문구가 숨겨집니다.
+- selector로 확정되지 않는 metric은 `null`로 유지해 기존 fallback/`공식 데이터 연결 필요` 표시를 유지합니다.
 
 #### 현재 문제 요약
 

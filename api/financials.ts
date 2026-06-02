@@ -24,6 +24,7 @@ type SecFact = {
   filed?: string;
   frame?: string;
   val?: number;
+  unit?: string;
 };
 
 type SecConceptFacts = {
@@ -34,6 +35,7 @@ type CompanyFactsPayload = {
   cik?: string | number;
   facts?: {
     'us-gaap'?: Record<string, SecConceptFacts | undefined>;
+    'ifrs-full'?: Record<string, SecConceptFacts | undefined>;
   };
 };
 
@@ -41,6 +43,7 @@ type SelectedMetric = {
   value: number;
   fact: SecFact;
   concept: string;
+  unit: string | null;
 };
 
 type DartAccountRow = {
@@ -108,6 +111,43 @@ const SEC_CONCEPTS = {
   ],
 };
 
+type SecMetricKey = keyof typeof SEC_CONCEPTS;
+type SecFacts = Record<string, SecConceptFacts | undefined>;
+type SecSelectedMetrics = Record<SecMetricKey, SelectedMetric | null>;
+type SecTaxonomy = 'us-gaap' | 'ifrs-full';
+
+const SEC_20F_IFRS_CONCEPTS: Record<SecMetricKey, string[]> = {
+  revenue: ['Revenue', 'RevenueFromContractsWithCustomers'],
+  operatingIncome: ['ProfitLossFromOperatingActivities'],
+  netIncome: ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent'],
+  operatingCashFlow: ['CashFlowsFromUsedInOperatingActivities'],
+  totalLiabilities: ['Liabilities'],
+  stockholdersEquity: ['Equity', 'EquityAttributableToOwnersOfParent'],
+  assetsCurrent: ['CurrentAssets'],
+  liabilitiesCurrent: ['CurrentLiabilities'],
+  interestExpense: ['FinanceCosts'],
+  capitalExpenditures: ['PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities'],
+  eps: ['DilutedEarningsLossPerShare', 'BasicEarningsLossPerShare'],
+  depreciationAndAmortization: ['DepreciationExpense'],
+};
+
+const SEC_20F_COMPANIES: Record<string, {
+  taxonomy: SecTaxonomy;
+  concepts: Record<SecMetricKey, string[]>;
+  preferredCurrency: string;
+}> = {
+  'ai-datacenter-tsmc': {
+    taxonomy: 'ifrs-full',
+    concepts: SEC_20F_IFRS_CONCEPTS,
+    preferredCurrency: 'TWD',
+  },
+  'ai-datacenter-asml': {
+    taxonomy: 'us-gaap',
+    concepts: SEC_CONCEPTS,
+    preferredCurrency: 'EUR',
+  },
+};
+
 const DART_ACCOUNT_ALIASES = {
   revenue: ['매출액', '수익(매출액)', '영업수익', '매출'],
   operatingIncome: ['영업이익', '영업이익(손실)'],
@@ -164,23 +204,72 @@ function compareFacts(a: SecFact, b: SecFact) {
 }
 
 function rankedFacts(units?: Record<string, SecFact[] | undefined>) {
+  const entries = Object.entries(units ?? {});
   const preferredUnit = units?.USD;
-  const facts = preferredUnit?.length ? preferredUnit : Object.values(units ?? {}).flatMap((items) => items ?? []);
+  const selectedEntries = preferredUnit?.length ? [['USD', preferredUnit] as const] : entries;
+  const facts = selectedEntries.flatMap(([unit, items]) => (items ?? []).map((fact) => ({ ...fact, unit })));
   return facts
     .filter(validFact)
     .filter((fact) => fact.form === '10-Q' || fact.form === '10-K')
     .sort(compareFacts);
 }
 
+function normalizeSecUnit(value?: string | null) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function secUnitCurrency(value?: string | null) {
+  const normalized = normalizeSecUnit(value);
+  if (!normalized) return null;
+  return normalized.split('/')[0] || normalized;
+}
+
+function secUnitMatchesCurrency(unit: string, currency: string) {
+  return secUnitCurrency(unit) === normalizeSecUnit(currency);
+}
+
+function compareAnnual20FFacts(a: SecFact, b: SecFact) {
+  const byFiled = dateValue(b.filed) - dateValue(a.filed);
+  if (byFiled !== 0) return byFiled;
+  return dateValue(b.end) - dateValue(a.end);
+}
+
+function rankedAnnual20FFacts(units?: Record<string, SecFact[] | undefined>, preferredCurrency?: string) {
+  const entries = Object.entries(units ?? {}).filter(([unit]) =>
+    preferredCurrency ? secUnitMatchesCurrency(unit, preferredCurrency) : true
+  );
+  return entries
+    .flatMap(([unit, items]) => (items ?? []).map((fact) => ({ ...fact, unit })))
+    .filter(validFact)
+    .filter((fact) => fact.form === '20-F' && fact.fp === 'FY')
+    .sort(compareAnnual20FFacts);
+}
+
 function selectMetric(
-  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  facts: SecFacts | undefined,
   concepts: string[],
 ): SelectedMetric | null {
   const candidates = concepts.flatMap((concept, conceptIndex) =>
     rankedFacts(facts?.[concept]?.units).map((fact) => ({ concept, conceptIndex, fact })),
   );
   const selected = candidates.sort((a, b) => compareFacts(a.fact, b.fact) || a.conceptIndex - b.conceptIndex)[0];
-  return selected?.fact.val !== undefined ? { value: selected.fact.val, fact: selected.fact, concept: selected.concept } : null;
+  return selected?.fact.val !== undefined
+    ? { value: selected.fact.val, fact: selected.fact, concept: selected.concept, unit: selected.fact.unit ?? null }
+    : null;
+}
+
+function selectAnnual20FMetric(
+  facts: SecFacts | undefined,
+  concepts: string[],
+  preferredCurrency: string,
+): SelectedMetric | null {
+  const candidates = concepts.flatMap((concept, conceptIndex) =>
+    rankedAnnual20FFacts(facts?.[concept]?.units, preferredCurrency).map((fact) => ({ concept, conceptIndex, fact })),
+  );
+  const selected = candidates.sort((a, b) => compareAnnual20FFacts(a.fact, b.fact) || a.conceptIndex - b.conceptIndex)[0];
+  return selected?.fact.val !== undefined
+    ? { value: selected.fact.val, fact: selected.fact, concept: selected.concept, unit: selected.fact.unit ?? null }
+    : null;
 }
 
 function positiveMetric(metric: SelectedMetric | null) {
@@ -239,7 +328,7 @@ function previousQuarterFp(fp?: string) {
 }
 
 function factsForSelectedMetric(
-  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  facts: SecFacts | undefined,
   metric: SelectedMetric | null,
 ) {
   if (!metric) return [];
@@ -247,7 +336,7 @@ function factsForSelectedMetric(
 }
 
 function secComparisonForMetric(
-  facts: Record<string, SecConceptFacts | undefined> | undefined,
+  facts: SecFacts | undefined,
   metric: SelectedMetric | null,
 ) {
   if (!metric || typeof metric.fact.fy !== 'number') return undefined;
@@ -269,8 +358,8 @@ function secComparisonForMetric(
 }
 
 function secComparison(
-  facts: Record<string, SecConceptFacts | undefined> | undefined,
-  selected: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>,
+  facts: SecFacts | undefined,
+  selected: SecSelectedMetrics,
 ): FinancialComparison {
   const comparison: FinancialComparison = {};
   const revenue = secComparisonForMetric(facts, selected.revenue);
@@ -283,7 +372,7 @@ function secComparison(
   return comparison;
 }
 
-function rawAvailability(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>) {
+function rawAvailability(metrics: SecSelectedMetrics) {
   return {
     revenue: Boolean(metrics.revenue),
     operatingIncome: Boolean(metrics.operatingIncome),
@@ -300,7 +389,7 @@ function rawAvailability(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetr
   };
 }
 
-function sourceStatusFor(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>) {
+function sourceStatusFor(metrics: SecSelectedMetrics) {
   const primaryCount = [
     metrics.revenue,
     metrics.operatingIncome,
@@ -314,7 +403,7 @@ function sourceStatusFor(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetr
   return 'not-found';
 }
 
-function reportFactFor(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetric | null>) {
+function reportFactFor(metrics: SecSelectedMetrics) {
   return (
     metrics.revenue?.fact ??
     metrics.operatingIncome?.fact ??
@@ -322,6 +411,68 @@ function reportFactFor(metrics: Record<keyof typeof SEC_CONCEPTS, SelectedMetric
     metrics.operatingCashFlow?.fact ??
     Object.values(metrics).find(Boolean)?.fact
   );
+}
+
+function secCurrencyFromSelected(metrics: SecSelectedMetrics) {
+  const monetaryMetrics = [
+    metrics.revenue,
+    metrics.operatingIncome,
+    metrics.netIncome,
+    metrics.operatingCashFlow,
+    metrics.totalLiabilities,
+    metrics.stockholdersEquity,
+    metrics.assetsCurrent,
+    metrics.liabilitiesCurrent,
+    metrics.interestExpense,
+    metrics.capitalExpenditures,
+    metrics.depreciationAndAmortization,
+  ];
+  const currencies = [
+    ...new Set(
+      monetaryMetrics
+        .map((metric) => secUnitCurrency(metric?.unit))
+        .filter((currency): currency is string => Boolean(currency)),
+    ),
+  ];
+  return currencies.length === 1 ? currencies[0] : null;
+}
+
+function selectSecMetrics(facts: SecFacts | undefined): SecSelectedMetrics {
+  return {
+    revenue: selectMetric(facts, SEC_CONCEPTS.revenue),
+    operatingIncome: selectMetric(facts, SEC_CONCEPTS.operatingIncome),
+    netIncome: selectMetric(facts, SEC_CONCEPTS.netIncome),
+    operatingCashFlow: selectMetric(facts, SEC_CONCEPTS.operatingCashFlow),
+    totalLiabilities: selectMetric(facts, SEC_CONCEPTS.totalLiabilities),
+    stockholdersEquity: selectMetric(facts, SEC_CONCEPTS.stockholdersEquity),
+    assetsCurrent: selectMetric(facts, SEC_CONCEPTS.assetsCurrent),
+    liabilitiesCurrent: selectMetric(facts, SEC_CONCEPTS.liabilitiesCurrent),
+    interestExpense: selectMetric(facts, SEC_CONCEPTS.interestExpense),
+    capitalExpenditures: selectMetric(facts, SEC_CONCEPTS.capitalExpenditures),
+    eps: selectMetric(facts, SEC_CONCEPTS.eps),
+    depreciationAndAmortization: selectMetric(facts, SEC_CONCEPTS.depreciationAndAmortization),
+  };
+}
+
+function selectAnnual20FMetrics(
+  facts: SecFacts | undefined,
+  concepts: Record<SecMetricKey, string[]>,
+  preferredCurrency: string,
+): SecSelectedMetrics {
+  return {
+    revenue: selectAnnual20FMetric(facts, concepts.revenue, preferredCurrency),
+    operatingIncome: selectAnnual20FMetric(facts, concepts.operatingIncome, preferredCurrency),
+    netIncome: selectAnnual20FMetric(facts, concepts.netIncome, preferredCurrency),
+    operatingCashFlow: selectAnnual20FMetric(facts, concepts.operatingCashFlow, preferredCurrency),
+    totalLiabilities: selectAnnual20FMetric(facts, concepts.totalLiabilities, preferredCurrency),
+    stockholdersEquity: selectAnnual20FMetric(facts, concepts.stockholdersEquity, preferredCurrency),
+    assetsCurrent: selectAnnual20FMetric(facts, concepts.assetsCurrent, preferredCurrency),
+    liabilitiesCurrent: selectAnnual20FMetric(facts, concepts.liabilitiesCurrent, preferredCurrency),
+    interestExpense: selectAnnual20FMetric(facts, concepts.interestExpense, preferredCurrency),
+    capitalExpenditures: selectAnnual20FMetric(facts, concepts.capitalExpenditures, preferredCurrency),
+    eps: selectAnnual20FMetric(facts, concepts.eps, preferredCurrency),
+    depreciationAndAmortization: selectAnnual20FMetric(facts, concepts.depreciationAndAmortization, preferredCurrency),
+  };
 }
 
 function emptyRawAvailable() {
@@ -933,23 +1084,14 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
     };
   }
 
-  const facts = secResult.payload.facts?.['us-gaap'];
-  const selected = {
-    revenue: selectMetric(facts, SEC_CONCEPTS.revenue),
-    operatingIncome: selectMetric(facts, SEC_CONCEPTS.operatingIncome),
-    netIncome: selectMetric(facts, SEC_CONCEPTS.netIncome),
-    operatingCashFlow: selectMetric(facts, SEC_CONCEPTS.operatingCashFlow),
-    totalLiabilities: selectMetric(facts, SEC_CONCEPTS.totalLiabilities),
-    stockholdersEquity: selectMetric(facts, SEC_CONCEPTS.stockholdersEquity),
-    assetsCurrent: selectMetric(facts, SEC_CONCEPTS.assetsCurrent),
-    liabilitiesCurrent: selectMetric(facts, SEC_CONCEPTS.liabilitiesCurrent),
-    interestExpense: selectMetric(facts, SEC_CONCEPTS.interestExpense),
-    capitalExpenditures: selectMetric(facts, SEC_CONCEPTS.capitalExpenditures),
-    eps: selectMetric(facts, SEC_CONCEPTS.eps),
-    depreciationAndAmortization: selectMetric(facts, SEC_CONCEPTS.depreciationAndAmortization),
-  };
+  const foreign20FConfig = SEC_20F_COMPANIES[companyId];
+  const facts = secResult.payload.facts?.[foreign20FConfig?.taxonomy ?? 'us-gaap'];
+  const selected = foreign20FConfig
+    ? selectAnnual20FMetrics(facts, foreign20FConfig.concepts, foreign20FConfig.preferredCurrency)
+    : selectSecMetrics(facts);
   const sourceStatus = sourceStatusFor(selected);
   const reportFact = reportFactFor(selected);
+  const currency = foreign20FConfig?.preferredCurrency ?? secCurrencyFromSelected(selected) ?? 'USD';
   const operatingCashFlow = selected.operatingCashFlow?.value ?? null;
   const capitalExpenditures = selected.capitalExpenditures?.value ?? null;
   const freeCashFlow =
@@ -965,10 +1107,15 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
     corpCode,
     source: 'SEC',
     sourceStatus,
-    reportType: reportFact?.form ?? null,
+    reportType: foreign20FConfig ? '20-F' : reportFact?.form ?? null,
     fiscalYear: reportFact?.fy ? String(reportFact.fy) : null,
     fiscalPeriod: reportFact?.fp ?? null,
     asOf: reportFact?.filed ?? null,
+    currency,
+    amountBasis: foreign20FConfig
+      ? `SEC CompanyFacts ${foreign20FConfig.taxonomy} ${currency}`
+      : `SEC CompanyFacts ${currency}`,
+    periodBasis: foreign20FConfig ? 'SEC 20-F annual facts only' : 'SEC 10-K/10-Q CompanyFacts selector',
     metrics: {
       revenue: selected.revenue?.value ?? null,
       operatingIncome: selected.operatingIncome?.value ?? null,
@@ -991,8 +1138,12 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       debtRatio: null,
     },
     rawAvailable: rawAvailability(selected),
-    comparison: secComparison(facts, selected),
-    message: sourceStatus === 'not-found' ? 'No usable SEC CompanyFacts metrics found.' : 'SEC CompanyFacts data loaded.',
+    comparison: foreign20FConfig ? undefined : secComparison(facts, selected),
+    message: sourceStatus === 'not-found'
+      ? 'No usable SEC CompanyFacts metrics found.'
+      : foreign20FConfig
+        ? 'SEC CompanyFacts 20-F annual data loaded. Only the configured foreign issuer and preferred currency facts are selected.'
+        : 'SEC CompanyFacts data loaded.',
     env: {
       secUserAgent: 'present',
       openDartApiKey: hasEnv('OPENDART_API_KEY') ? 'present' : 'missing',

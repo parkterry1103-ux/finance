@@ -106,6 +106,19 @@ function compactUsdMetric(value: number | null | undefined) {
   return compactAmount(value, 'USD');
 }
 
+function compactSecCurrencyMetric(value: number | null | undefined, currency?: string | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
+  const normalizedCurrency = normalizeCurrencyLabel(currency) || 'USD';
+  if (normalizedCurrency === 'USD') return compactAmount(value, 'USD');
+  if (normalizedCurrency === 'KRW') return compactAmount(value, '원');
+
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000_000) return `${normalizedCurrency} ${(value / 1_000_000_000_000).toFixed(1)}T`;
+  if (abs >= 1_000_000_000) return `${normalizedCurrency} ${(value / 1_000_000_000).toFixed(1)}B`;
+  if (abs >= 1_000_000) return `${normalizedCurrency} ${(value / 1_000_000).toFixed(1)}M`;
+  return `${normalizedCurrency} ${value.toLocaleString('en-US')}`;
+}
+
 function normalizeCurrencyLabel(currency?: string | null) {
   const normalized = String(currency ?? '').trim().toUpperCase();
   if (!normalized) return '';
@@ -127,6 +140,17 @@ function formatOpenDartAmount(value: number | null | undefined, currency?: strin
 function compactUsdPerShare(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
   return `$${value.toFixed(2)}`;
+}
+
+function compactSecPerShare(value: number | null | undefined, currency?: string | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return OFFICIAL_DATA_REQUIRED;
+  const normalizedCurrency = normalizeCurrencyLabel(currency) || 'USD';
+  if (normalizedCurrency === 'USD') return compactUsdPerShare(value);
+  return `${normalizedCurrency} ${value.toFixed(2)}`;
+}
+
+function isSec20FResponse(payload: FinancialsApiResponse) {
+  return /20-F/i.test(String(payload.reportType ?? payload.periodBasis ?? ''));
 }
 
 function metric(
@@ -221,27 +245,38 @@ function mapFinancialsApiResponse(
   const eps = apiMetricValue(metrics, 'eps');
   const depreciationAndAmortization = apiMetricValue(metrics, 'depreciationAndAmortization');
   const comparison = payload.comparison;
+  const secCurrency = normalizeCurrencyLabel(payload.currency) || 'USD';
+  const is20F = isSec20FResponse(payload);
+  const secAmountNote = is20F
+    ? `SEC 20-F 원문 ${secCurrency} 기준입니다. annual fact만 표시하고 없는 항목은 fallback을 유지합니다.`
+    : 'SEC CompanyFacts 기준 매출입니다. 세부 사업부 매출은 MD&A에서 함께 확인합니다.';
 
   const metricItems: FinancialMetric[] = [
-    metric('revenue', '매출', compactUsdMetric(revenue), 'SEC CompanyFacts 기준 매출입니다. 세부 사업부 매출은 MD&A에서 함께 확인합니다.', 'USD', apiComparisonValue(comparison, 'revenue')),
-    metric('operatingIncome', '영업이익', compactUsdMetric(operatingIncome), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', 'USD', apiComparisonValue(comparison, 'operatingIncome')),
-    metric('netIncome', '순이익', compactUsdMetric(netIncome), '세금과 금융비용까지 반영한 최종 이익입니다.', 'USD'),
-    metric('cashFlow', '영업현금흐름', compactUsdMetric(operatingCashFlow), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', 'USD', apiComparisonValue(comparison, 'operatingCashFlow')),
+    metric('revenue', '매출', compactSecCurrencyMetric(revenue, secCurrency), secAmountNote, secCurrency, apiComparisonValue(comparison, 'revenue')),
+    metric('operatingIncome', '영업이익', compactSecCurrencyMetric(operatingIncome, secCurrency), '본업 수익성이 실제 이익 금액으로 이어졌는지 봅니다.', secCurrency, apiComparisonValue(comparison, 'operatingIncome')),
+    metric('netIncome', '순이익', compactSecCurrencyMetric(netIncome, secCurrency), '세금과 금융비용까지 반영한 최종 이익입니다.', secCurrency),
+    metric('cashFlow', '영업현금흐름', compactSecCurrencyMetric(operatingCashFlow, secCurrency), '장부상 이익이 실제 현금으로 바뀌는지 확인합니다.', secCurrency, apiComparisonValue(comparison, 'operatingCashFlow')),
     metric('debtRatio', '부채비율', compactRatio(debtToEquity), '자기자본 대비 부채 부담을 보는 안정성 지표입니다.', 'x'),
     metric('currentRatio', '유동비율', compactRatio(currentRatio), '단기 부채를 감당할 유동자산 여력을 봅니다.', 'x'),
     metric('interestCoverage', '이자보상배율', compactRatio(interestCoverage), '영업이익으로 이자비용을 얼마나 감당하는지 봅니다.', 'x'),
-    metric('freeCashFlow', 'FCF', compactUsdMetric(freeCashFlow), '영업현금흐름에서 CAPEX를 뺀 현금 여력입니다.', 'USD'),
-    metric('eps', 'EPS', compactUsdPerShare(eps), '희석 EPS가 있으면 우선 사용하고, 없으면 기본 EPS를 사용합니다.', 'USD/share'),
+    metric('freeCashFlow', 'FCF', compactSecCurrencyMetric(freeCashFlow, secCurrency), '영업현금흐름에서 CAPEX를 뺀 현금 여력입니다.', secCurrency),
+    metric('eps', 'EPS', compactSecPerShare(eps, secCurrency), '희석 EPS가 있으면 우선 사용하고, 없으면 기본 EPS를 사용합니다.', `${secCurrency}/share`),
     metric(
       'depreciationAndAmortization',
       '감가상각비',
-      compactUsdMetric(depreciationAndAmortization),
+      compactSecCurrencyMetric(depreciationAndAmortization, secCurrency),
       '설비와 무형자산 비용이 기간별로 반영되는 금액입니다.',
-      'USD',
+      secCurrency,
     ),
   ];
 
-  const sourceLabel = payload.sourceStatus === 'partial' ? 'SEC 일부 원문 연결됨' : 'SEC 원문 연결됨';
+  const sourceLabel = is20F
+    ? payload.sourceStatus === 'partial'
+      ? 'SEC 20-F 일부 원문 연결됨'
+      : 'SEC 20-F 원문 연결됨'
+    : payload.sourceStatus === 'partial'
+      ? 'SEC 일부 원문 연결됨'
+      : 'SEC 원문 연결됨';
   const reportType = payload.reportType ?? fallback.reportType;
   const fiscalYear = payload.fiscalYear ? String(payload.fiscalYear) : fallback.fiscalYear;
   const filingDate = payload.asOf ?? fallback.filingDate;
@@ -258,11 +293,15 @@ function mapFinancialsApiResponse(
     isApiData: true,
     isFallbackData: false,
     metrics: metricItems,
-    beginnerExplanation: 'SEC CompanyFacts에서 가져온 공식 XBRL 숫자입니다. 세부 해석과 사업부 설명은 기존 MD&A/공시 해설과 함께 봅니다.',
+    beginnerExplanation: is20F
+      ? 'SEC CompanyFacts에서 가져온 20-F annual XBRL 숫자입니다. 통화는 원문 fact 단위를 그대로 표시합니다.'
+      : 'SEC CompanyFacts에서 가져온 공식 XBRL 숫자입니다. 세부 해석과 사업부 설명은 기존 MD&A/공시 해설과 함께 봅니다.',
     keyTakeaway:
       payload.sourceStatus === 'partial'
         ? '일부 공식 숫자가 연결되었습니다. 없는 항목은 가짜 숫자 대신 연결 필요 상태로 유지합니다.'
-        : 'SEC 공식 숫자가 연결되었습니다. 먼저 볼 핵심 지표만 화면에 반영합니다.',
+        : is20F
+          ? 'SEC 20-F annual 숫자가 연결되었습니다. 비교 문구 없이 확실한 지표만 표시합니다.'
+          : 'SEC 공식 숫자가 연결되었습니다. 먼저 볼 핵심 지표만 화면에 반영합니다.',
     fiscalPeriod: payload.fiscalPeriod ?? fallback.fiscalPeriod,
     filingDate,
     sourceStatus: payload.sourceStatus,

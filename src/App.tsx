@@ -1190,7 +1190,7 @@ function financialMetricSourceNote(value: string, summary: FinancialStatementSum
   if (!value || /원문|MD&A|공시|IR|데이터 연결|확인/i.test(value)) return '값 확인 전, 지표 의미만 표시';
   if (!isConnectedFinancialSummary(summary)) return '연결된 데이터 기준';
   if (summary.source === 'OpenDART') return 'OpenDART 원문 · 공시 기준';
-  if (summary.source === 'SEC CompanyFacts') return 'SEC 원문 기준';
+  if (summary.source === 'SEC CompanyFacts') return /20-F/i.test(summary.reportType) ? 'SEC 20-F 원문 기준' : 'SEC 원문 기준';
   return '연결된 데이터 기준';
 }
 
@@ -1240,6 +1240,10 @@ function isConnectedFinancialSummary(summary: FinancialStatementSummary) {
   return summary.isApiData && (summary.sourceStatus === 'direct' || summary.sourceStatus === 'partial');
 }
 
+function isSec20FFinancialSummary(summary: FinancialStatementSummary) {
+  return summary.source === 'SEC CompanyFacts' && /20-F/i.test(summary.reportType);
+}
+
 function shouldDisplayConnectedFinancials(company: Company, summary: FinancialStatementSummary) {
   if (!isConnectedFinancialSummary(summary)) return false;
   if (company.country === 'US') return Boolean(company.cik);
@@ -1281,15 +1285,18 @@ function priorityMetricKeys(label: string, index: number): FinancialMetricItemKe
 function connectedPriorityMetric(
   metricByKey: Map<FinancialMetricItemKey, FinancialMetricItem>,
   keys: FinancialMetricItemKey[],
+  usedKeys?: Set<FinancialMetricItemKey>,
 ) {
   for (const key of keys) {
+    if (usedKeys?.has(key)) continue;
     const metricItem = metricByKey.get(key);
     if (usableFinancialMetricValue(metricItem)) return metricItem;
   }
   return undefined;
 }
 
-function connectedPriorityLabel(label: string, metricItem: FinancialMetricItem) {
+function connectedPriorityLabel(label: string, metricItem: FinancialMetricItem, summary: FinancialStatementSummary) {
+  if (isSec20FFinancialSummary(summary)) return metricItem.label;
   if (metricItem.key === 'operatingIncome' && /영업이익률|영업마진|마진|수익성/.test(label)) return '영업이익';
   return label;
 }
@@ -1311,14 +1318,22 @@ function connectFinancialPriorityMetrics(
   if (!shouldDisplayConnectedFinancials(company, summary)) return metrics;
 
   const metricByKey = new Map(summary.metrics.map((metricItem) => [metricItem.key, metricItem]));
+  const usedKeys = isSec20FFinancialSummary(summary) ? new Set<FinancialMetricItemKey>() : undefined;
+  const sec20FKeys: FinancialMetricItemKey[][] = [
+    ['revenue'],
+    ['operatingIncome'],
+    ['cashFlow'],
+  ];
   return metrics.map((item, index) => {
-    const financialMetric = connectedPriorityMetric(metricByKey, priorityMetricKeys(item.label, index));
+    const candidateKeys = isSec20FFinancialSummary(summary) ? sec20FKeys[index] ?? priorityMetricKeys(item.label, index) : priorityMetricKeys(item.label, index);
+    const financialMetric = connectedPriorityMetric(metricByKey, candidateKeys, usedKeys);
     const value = usableFinancialMetricValue(financialMetric);
     if (!value || !financialMetric) return item;
+    usedKeys?.add(financialMetric.key);
 
     return {
       ...item,
-      label: connectedPriorityLabel(item.label, financialMetric),
+      label: connectedPriorityLabel(item.label, financialMetric, summary),
       value,
       note: connectedPriorityNote(summary, financialMetric),
       comparison: financialMetric.comparison,
@@ -1676,11 +1691,16 @@ function financialFreshnessInfo(
   }
 
   const reportName = [summary.fiscalYear, summary.fiscalPeriod, summary.reportType].filter(Boolean).join(' ') || fallback.reportName;
+  const isSec20F = summary.source === 'SEC CompanyFacts' && /20-F/i.test(summary.reportType);
   const sourceLabel =
     summary.source === 'OpenDART'
       ? summary.sourceStatus === 'partial'
         ? 'OpenDART 일부 원문 연결됨'
         : 'OpenDART 원문 연결됨'
+      : isSec20F
+        ? summary.sourceStatus === 'partial'
+          ? 'SEC 20-F 일부 원문 연결됨'
+          : 'SEC 20-F 원문 연결됨'
       : summary.sourceStatus === 'partial'
         ? 'SEC 일부 연결됨'
         : 'SEC 원문 연결됨';
