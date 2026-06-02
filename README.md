@@ -928,6 +928,61 @@ weekLabel:
 | `ai-datacenter-vertiv` | Vertiv | US | 있음 | 가능 | 조건부 표시 | CIK가 있고 보고서 타입이 10-Q라 현재 SEC 선택 로직 대상입니다. | 배포 API JSON 응답과 SEC 응답 상태를 확인합니다. |
 | `ai-datacenter-samsung` | 삼성전자 | KR | 있음 | 가능 | 조건부 표시 | corpCode가 있어 OpenDART 호출 조건을 통과합니다. OpenDART 계정 alias가 주요 항목을 찾으면 `direct/partial`로 표시됩니다. | 회사별 OpenDART 계정 매핑을 점검합니다. |
 
+### TSMC/ASML 20-F 재무 연결 조사
+
+2026-06-02 코드와 SEC CompanyFacts 원문 기준 사전 조사입니다. 이번 단계에서는 구현하지 않고, 다음 구현 요청을 만들 때 필요한 원칙만 남깁니다. API key 또는 env 값은 기록하지 않습니다.
+
+#### 현재 문제 요약
+
+- `api/financials.ts`는 US 기업에서 `SEC_USER_AGENT + cik`로 SEC CompanyFacts를 조회한 뒤 `payload.facts?.['us-gaap']`만 읽습니다.
+- 현재 `rankedFacts`는 유효 숫자 fact 중 `form === '10-Q' || form === '10-K'`만 통과시킵니다. `20-F`, `20-F/A`, `6-K`는 후보에서 제외됩니다.
+- `formRank`는 10-Q를 10-K보다 먼저 두고, 같은 form 안에서는 `filed`, `end` 최신순으로 고릅니다. 별도 annual/quarterly/TTM 모드는 없습니다.
+- fiscal period는 선택된 fact의 `fy`, `fp`, `filed`, `form`을 그대로 응답의 `fiscalYear`, `fiscalPeriod`, `asOf`, `reportType`에 씁니다.
+- US 매출/영업이익/영업현금흐름 후보는 현재 `SEC_CONCEPTS` 기준으로 `RevenueFromContractWithCustomerExcludingAssessedTax`, `Revenues`, `SalesRevenueNet`, `OperatingIncomeLoss`, `NetCashProvidedByUsedInOperatingActivities`입니다.
+- comparison은 서버에서 같은 concept의 과거 fact를 다시 찾아 계산합니다. YoY는 같은 `form`, 같은 `fp`, 직전 `fy`, 기간 길이 ±10일 이내일 때만 계산하고, QoQ는 선택 fact가 `10-Q`이고 `fp`가 Q2 또는 Q3일 때 직전 분기만 찾습니다. 20-F용 comparison 규칙은 없습니다.
+
+#### 기업별 현황표
+
+| companyId | 회사명 | country | CIK 존재 여부 | 현재 `/api/financials` 호출 가능 여부 | 현재 숫자가 안 뜨는 이유 | SEC CompanyFacts 20-F annual facts | revenue 후보 tag | operating income 후보 tag | operating cash flow 후보 tag | EPS 참고 tag | 연결 시 주의점 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `ai-datacenter-tsmc` | TSMC | US | 있음 | URL 구성 가능 | 코드상 CIK는 있어 호출 조건은 통과하지만, SEC 원문 taxonomy가 `ifrs-full` 중심입니다. 현재 API는 `facts['us-gaap']`만 읽고, `rankedFacts`도 20-F/6-K를 제외해 선택 가능한 metric이 없습니다. | 있음. `ifrs-full`에 20-F 기반 annual fact가 있고 6-K fact도 섞여 있습니다. | `ifrs-full:Revenue`, `ifrs-full:RevenueFromContractsWithCustomers` | `ifrs-full:ProfitLossFromOperatingActivities` | `ifrs-full:CashFlowsFromUsedInOperatingActivities` | `ifrs-full:DilutedEarningsLossPerShare`, `ifrs-full:BasicEarningsLossPerShare` | TWD와 USD 단위가 함께 보일 수 있어 표시 통화 기준을 명확히 해야 합니다. 20-F annual만 1차 표시하고, 6-K와 comparison은 제외하는 편이 안전합니다. |
+| `ai-datacenter-asml` | ASML | US | 있음 | URL 구성 가능 | 코드상 CIK는 있어 호출 조건은 통과하지만, SEC CompanyFacts의 주요 fact가 20-F입니다. 현재 `rankedFacts`가 10-Q/10-K만 허용해 20-F fact를 모두 제외합니다. | 있음. `us-gaap`에 20-F 기반 annual fact가 있습니다. | `us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax`, 과거 후보 `us-gaap:SalesRevenueNet` | `us-gaap:OperatingIncomeLoss` | `us-gaap:NetCashProvidedByUsedInOperatingActivities` | `us-gaap:EarningsPerShareDiluted`, `us-gaap:EarningsPerShareBasic` | EUR 단위입니다. 20-F/A 과거 fact와 최신 20-F를 섞지 않도록 form과 filed 기준을 별도로 검증해야 합니다. comparison은 처음에는 숨기는 편이 안전합니다. |
+
+#### 20-F 지원 위험 요소
+
+- 20-F는 보통 연간 보고서입니다. 10-Q 분기 fact나 6-K 중간 보고 fact와 섞어 분기 비교처럼 표시하면 오해가 큽니다.
+- 10-K/10-Q와 form 기준이 달라 기존 YoY/QoQ 계산을 그대로 붙이면 안 됩니다. 특히 QoQ는 20-F에는 적용하지 않습니다.
+- foreign private issuer는 IFRS taxonomy를 쓸 수 있습니다. TSMC는 `ifrs-full` 후보가 필요하므로 `us-gaap` form 필터만 늘리는 구현으로는 부족합니다.
+- ADR/외국기업은 통화와 회계 기준 확인이 필요합니다. TSMC는 TWD/USD, ASML은 EUR 단위가 확인되므로 화면에 통화와 `SEC 20-F 원문 기준`을 분명히 표시해야 합니다.
+- operating income tag가 미국 기업의 `OperatingIncomeLoss`와 다를 수 있습니다. TSMC는 `ProfitLossFromOperatingActivities` 후보를 별도 매핑해야 합니다.
+- operating cash flow tag가 없거나 다른 tag일 수 있습니다. TSMC는 `CashFlowsFromUsedInOperatingActivities` 후보를 별도 매핑해야 합니다.
+- comparison은 처음에는 숨기는 것이 안전합니다. 20-F annual 값과 10-K/10-Q, 6-K 값을 같은 comparison 로직에서 섞지 않습니다.
+
+#### 추천 구현 순서
+
+1. `api/financials.ts`에 구현하기 전, TSMC/ASML만 대상으로 SEC CompanyFacts fixture 또는 dry-run audit을 만들고 taxonomy, concept, unit, form, fp, filed를 표로 확인합니다.
+2. 1차 구현은 TSMC/ASML의 최신 annual 20-F 값만 표시합니다. 표시 대상은 매출, 영업이익, 영업현금흐름 중 확실히 매핑된 항목만 둡니다.
+3. TSMC는 `ifrs-full` 전용 후보 tag를 별도 매핑하고, ASML은 기존 `us-gaap` 후보에 20-F form 허용을 별도 조건으로 붙입니다.
+4. 응답 `reportType` 또는 source label에 `SEC 20-F 원문 기준`을 명시합니다. 통화는 fact unit 기준으로 표시하고, USD로 임의 환산하지 않습니다.
+5. `sourceStatus`는 기존처럼 `direct` 또는 `partial` 기준을 유지하되, 불확실한 metric은 null/fallback으로 둡니다.
+6. comparison YoY/QoQ는 1차 구현에서 반환하지 않습니다. 이후 annual 20-F끼리 같은 taxonomy, concept, unit, 기간 길이, fiscal year가 맞는 경우에만 별도 후속 작업으로 검토합니다.
+
+#### 구현하지 말아야 할 것
+
+- 20-F와 10-Q/10-K 또는 6-K를 같은 `rankedFacts` 우선순위 안에서 섞어 자동 선택하지 않습니다.
+- TSMC `ifrs-full` 값을 `us-gaap`처럼 가장하거나, tag 이름이 비슷하다는 이유만으로 가짜 metric mapping을 만들지 않습니다.
+- 통화 환산, TTM, QoQ, 컨센서스/가이던스, 가격 API 연결을 함께 추가하지 않습니다.
+- EPS는 참고 후보로만 두고, 기본 3개 숫자 카드에 바로 넣지 않습니다.
+- 값이 불확실하면 `partial`로 억지 표시하지 말고 기존 fallback을 유지합니다.
+
+#### 다음 단계 요청문 참고 원칙
+
+- 요청 범위는 `TSMC/ASML annual 20-F 최신값 표시`로 제한합니다.
+- `api/financials.ts`에서 20-F 전용 selector를 기존 10-K/10-Q selector와 분리해 구현하도록 요구합니다.
+- TSMC는 `ifrs-full` taxonomy 지원이 필수이고, ASML은 `us-gaap` 20-F 허용이 핵심이라는 차이를 명시합니다.
+- 첫 배포 QA는 `/ko/analysis/ai-datacenter-tsmc#financial-easy-view`, `/ko/analysis/ai-datacenter-asml#financial-easy-view`, 기존 NVIDIA/Dell/Micron/AMD 회귀를 함께 확인합니다.
+- 성공 기준은 숫자 표시 자체가 아니라 `SEC 20-F 원문 기준`, 통화, fallback, comparison 미표시가 모두 안전하게 동작하는지입니다.
+
 ### 현재 가능한 것과 빠진 것
 
 - 현재 코드만으로 안정적으로 표시 가능한 값은 최신 또는 선택된 단일 기간의 `매출`, `영업이익`, `영업현금흐름`입니다. US는 `SEC CompanyFacts`, KR은 `OpenDART` 연결 상태가 `direct` 또는 `partial`일 때만 공식 숫자로 봅니다.
