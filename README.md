@@ -638,6 +638,102 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 - `src/data.ts` mock 가격은 최신 가격 데이터가 아니라 fallback/pending 표시용 예시로 유지합니다.
 - 가격 API와 재무 API를 한 번에 섞어 고치지 않습니다. 가격 freshness 수정 후 환율 표시를 별도 작업으로 진행합니다.
 
+### 가격 자동 업데이트 런타임 점검
+
+2026-06-03 런타임 점검 기준입니다. 값, secret, 가격 데이터, API 로직은 수정하지 않았고 민감 env 값은 출력하지 않았습니다.
+
+#### 요약 결론
+
+- 가장 강한 원인 후보는 `https://finance1.vercel.app` 공개 alias가 이 저장소의 `주가해부실` Vite 앱이 아니라 다른 정적 페이지를 서빙한다는 점입니다. 루트 HTML의 title은 `Finanzas`이고, 이 저장소의 `dist/index.html` title인 `주가해부실`과 다릅니다.
+- 같은 alias에서 `/api/market-prices`와 `/api/sync/prices`는 모두 404 `NOT_FOUND`입니다. 따라서 이 URL에서 가격이 최신화되지 않는 문제는 Supabase 가격 row 이전에 "공개 alias가 현재 Vercel project/deployment와 연결되어 있지 않음"으로 보는 것이 우선입니다.
+- GitHub Deployments 기준 최신 `Production - finance1` deployment는 `8592f77`에서 `success`입니다. 다만 target URL `finance1-19xghks8w-terrypark-s-projects.vercel.app`은 Vercel Authentication 보호가 걸려 루트와 API를 직접 열람할 수 없습니다.
+- GitHub Actions sync workflow는 최근 schedule run이 성공했지만, public API만으로는 job log와 repository secrets, Supabase `sync_runs` 내용을 볼 수 없어 가격 row가 `success/partial/skipped` 중 무엇이었는지는 확정할 수 없습니다.
+
+#### env 존재 여부
+
+| 항목 | 상태 | 근거 |
+| --- | --- | --- |
+| `CRON_SECRET` | 확인 불가 | 로컬 shell env에는 없음. Vercel Production env는 Vercel API/CLI 인증이 없어 확인 불가 |
+| `SUPABASE_URL` | 확인 불가 | 로컬 shell env에는 없음. Vercel/GitHub secrets는 인증 없이 목록 조회 불가 |
+| `SUPABASE_SERVICE_ROLE_KEY` | 확인 불가 | 로컬 shell env에는 없음. 값은 출력하지 않음 |
+| `PRICE_IMPORT_URL` | 확인 불가 | 로컬 shell env에는 없음. `.github/workflows/sync.yml`에는 현재 전달되지 않음 |
+| `MARKET_PRICES_IMPORT_URL` | 확인 불가 | 로컬 shell env에는 없음. GitHub Actions env에는 secret reference가 있음 |
+| `PRICE_SYNC_SOURCE` | 확인 불가 | 로컬 shell env에는 없음. `.github/workflows/sync.yml`에는 현재 전달되지 않음 |
+| Vercel project env 전체 | 확인 불가 | Vercel env API가 인증 토큰 없음으로 403을 반환함 |
+| GitHub Actions secrets 전체 | 확인 불가 | GitHub secrets API가 인증 없음으로 401을 반환함 |
+
+참고: Vercel env 목록 조회는 [Vercel Environment Variables API](https://vercel.com/docs/rest-api/reference/examples/environment-variables) 인증이 필요하고, GitHub Actions secrets 목록 조회도 [GitHub Actions Secrets API](https://docs.github.com/en/rest/actions/secrets) 인증이 필요합니다.
+
+#### cron route 확인 결과
+
+- `vercel.json`에는 `/api/sync/prices`가 평일 08:30 UTC로 등록되어 있습니다.
+- 실제 함수 파일은 `api/sync/prices.ts`이고, 요청 path와 파일 path는 일치합니다.
+- 이 함수는 `CRON_SECRET`이 없거나 헤더/query secret이 맞지 않으면 401을 반환하도록 되어 있습니다.
+- `Production - finance1` deployment 자체는 GitHub Deployments API에서 `success`로 확인됐습니다.
+- Vercel Cron의 finance1 project 내 활성화 여부, 최근 cron 실행 로그, cron의 성공/실패 메시지는 Vercel dashboard 또는 인증된 Vercel API/CLI 없이는 확인하지 못했습니다.
+
+#### API route 확인 결과
+
+- 앱의 가격 조회 경로는 `src/services/prices.ts`의 `/api/market-prices?limit=200`입니다.
+- 읽기 함수 파일은 `api/market-prices.js`이며 Vercel route는 `/api/market-prices`가 맞습니다.
+- sync 함수 파일은 `api/sync/prices.ts`이며 Vercel route는 `/api/sync/prices`가 맞습니다.
+- 파일 기준 route mismatch는 발견되지 않았습니다.
+- 공개 alias `https://finance1.vercel.app`에서는 루트가 `Finanzas` 정적 페이지로 응답하고 `/api/market-prices`, `/api/sync/prices`는 404입니다. 이 alias는 현재 repo의 Vercel deployment가 아니라 다른 프로젝트 또는 과거 alias에 연결된 것으로 보입니다.
+- GitHub Deployments가 알려준 최신 finance1 target URL은 Vercel Authentication 보호가 걸려 있어 API route가 실제 배포 안에서 실행되는지 직접 확인하지 못했습니다.
+
+#### Supabase 상태
+
+- 로컬에는 `.env.example`만 있고 Supabase URL/key가 없습니다.
+- 공개 alias는 현재 repo API로 연결되지 않아 `/api/market-prices`를 통한 DB 조회가 불가능했습니다.
+- 최신 finance1 deployment target은 Vercel Authentication 보호가 걸려 DB 조회 endpoint에 접근하지 못했습니다.
+- 따라서 `market_prices` 최신 `as_of`, 최근 insert/update 시각, `sync_runs`의 가격 sync 상태는 확인 불가입니다.
+- 다음 확인 SQL 후보:
+
+```sql
+select max(as_of) as latest_price_as_of, max(created_at) as latest_inserted_at
+from market_prices;
+
+select source, status, started_at, ended_at, inserted_count, updated_count, error_message
+from sync_runs
+where source in ('market-prices', 'endpoint-prices')
+order by started_at desc
+limit 20;
+```
+
+#### GitHub Actions 상태
+
+- `.github/workflows/sync.yml`은 `workflow_dispatch`와 평일 schedule 두 개로 구성되어 있고, job은 `npm run sync:all`을 실행합니다.
+- 최근 public run 상태:
+
+| run | event | 상태 | 시작 UTC | head |
+| --- | --- | --- | --- | --- |
+| 32 | schedule | success | 2026-06-02T13:01:35Z | `7c5bfa8` |
+| 31 | schedule | success | 2026-06-01T21:52:35Z | `dcbe636` |
+| 30 | schedule | success | 2026-06-01T19:31:09Z | `dcbe636` |
+| 29 | schedule | success | 2026-05-29T22:56:18Z | `eddbfc1` |
+| 28 | schedule | success | 2026-05-29T18:42:28Z | `eddbfc1` |
+
+- Actions job과 `Sync official financials and trades` step은 success로 끝났습니다.
+- Public API로는 raw log 다운로드가 403이고 secrets 목록이 401이라, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MARKET_PRICES_IMPORT_URL` 실제 존재 여부는 확인하지 못했습니다.
+- 워크플로 env에는 `MARKET_PRICES_IMPORT_URL`은 전달되지만 `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`는 전달되지 않습니다.
+
+#### 5월 29일 이후 업데이트 안 된 원인 후보
+
+1. 공개 alias `finance1.vercel.app`가 현재 repo의 `Production - finance1` deployment가 아니라 다른 정적 앱을 가리킵니다. 이 경우 화면은 현재 repo의 `/api/market-prices`를 호출하지 못합니다.
+2. 올바른 최신 finance1 target URL은 Vercel Authentication 보호가 걸려 있습니다. 공개 서비스로 쓰려면 production domain 연결 또는 protection/bypass 정책 확인이 필요합니다.
+3. GitHub Actions는 성공하지만 Supabase `sync_runs`에서 가격 sync가 `skipped` 또는 `partial`일 수 있습니다. 현재는 DB 접근이 없어 확인하지 못했습니다.
+4. Vercel Cron은 파일상 등록되어 있지만, finance1 project의 실제 cron 활성화/실행 로그는 인증된 Vercel 접근 없이는 확인하지 못했습니다.
+5. Production env에 `CRON_SECRET`, Supabase key, import URL이 없거나 잘못되어 있으면 cron endpoint 또는 DB upsert가 멈출 수 있습니다.
+
+#### 다음 조치
+
+1. Vercel dashboard에서 `finance1.vercel.app`이 이 repo의 `Production - finance1` project에 연결되어 있는지 확인합니다. 현재 관측상 이 alias는 다른 정적 페이지를 서빙합니다.
+2. `Production - finance1`의 deployment protection을 공개 정책에 맞게 조정하거나, 운영자가 접근 가능한 production custom domain을 지정합니다.
+3. Vercel env에서 `CRON_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MARKET_PRICES_IMPORT_URL` 또는 `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE` 존재 여부만 확인합니다. 값은 기록하지 않습니다.
+4. Vercel Cron dashboard에서 `/api/sync/prices` 최근 실행 로그와 HTTP status를 확인합니다.
+5. Supabase에서 위 SQL로 `market_prices max(as_of)`와 `sync_runs` 최신 가격 sync 상태를 확인합니다.
+6. GitHub Actions를 계속 대안으로 쓸 경우 `PRICE_IMPORT_URL`과 `PRICE_SYNC_SOURCE`를 workflow env에 전달할지 별도 작업에서 결정합니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
