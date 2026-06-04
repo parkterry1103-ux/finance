@@ -1,5 +1,6 @@
 import { anchors, companies, marketMovers, mockMarketPrices, stockAutopsyPicks } from '../src/data.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
+import { fetchKisDomesticQuoteRows, isKisDomesticTicker } from './price-sources/kis.js';
 import { envValue, errorMessage, hasSupabaseConfig, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
 
 const REQUIRED_PRICE_TICKERS = [
@@ -81,6 +82,91 @@ function importUrl() {
   return envValue('PRICE_IMPORT_URL') || envValue('MARKET_PRICES_IMPORT_URL');
 }
 
+function normalizeTickerKey(ticker?: string) {
+  return String(ticker ?? '').trim().toUpperCase();
+}
+
+function combinedSourceLabel(labels) {
+  return Array.from(new Set(labels.filter(Boolean))).join('+');
+}
+
+function dedupeRowsByTicker(rows) {
+  const byTicker = new Map();
+  rows.forEach((row) => {
+    const key = normalizeTickerKey(row?.ticker);
+    if (key && !byTicker.has(key)) byTicker.set(key, row);
+  });
+  return Array.from(byTicker.values());
+}
+
+function resultProviderMetrics(provider, attemptedCount, results, skippedCount = 0, skipReason = '') {
+  const providerResults = results.filter((item) => item.provider === provider || (!item.provider && provider === 'import'));
+  return {
+    attemptedCount,
+    successCount: providerResults.filter((item) => item.status === 'success').length,
+    failedCount: providerResults.filter((item) => item.status === 'failed').length,
+    skippedCount,
+    skipReason,
+  };
+}
+
+function emptyProviderMetrics(skippedCount = 0, skipReason = '') {
+  return {
+    attemptedCount: 0,
+    successCount: 0,
+    failedCount: 0,
+    skippedCount,
+    skipReason,
+  };
+}
+
+function targetsMissingRows(targets, rows) {
+  const rowTickers = new Set(rows.map((row) => normalizeTickerKey(row.ticker)));
+  return targets.filter((target) => !rowTickers.has(normalizeTickerKey(target.ticker)));
+}
+
+function maxAsOf(rows) {
+  return rows
+    .map((row) => row.as_of ?? row.asOf)
+    .filter(Boolean)
+    .sort((left, right) => compareAsOf(right, left))[0] ?? null;
+}
+
+function compareAsOf(left, right) {
+  if (!left && !right) return 0;
+  if (!left) return -1;
+  if (!right) return 1;
+  const leftTime = Date.parse(left);
+  const rightTime = Date.parse(right);
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) return leftTime - rightTime;
+  return String(left).localeCompare(String(right));
+}
+
+async function latestMarketPriceAsOf() {
+  if (!hasSupabaseConfig()) return null;
+  try {
+    const url = new URL('/rest/v1/market_prices', envValue('SUPABASE_URL'));
+    url.searchParams.set('select', 'as_of');
+    url.searchParams.set('order', 'as_of.desc,created_at.desc');
+    url.searchParams.set('limit', '1');
+
+    const response = await fetch(url, {
+      headers: {
+        apikey: envValue('SUPABASE_SERVICE_ROLE_KEY'),
+        Authorization: `Bearer ${envValue('SUPABASE_SERVICE_ROLE_KEY')}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) throw new Error(`Supabase market_prices latest query failed: ${response.status}`);
+    const rows = await response.json();
+    return rows?.[0]?.as_of ?? null;
+  } catch (error) {
+    console.warn(`[sync-prices] latest market price as_of check skipped: ${errorMessage(error)}`);
+    return null;
+  }
+}
+
 async function loadImportRows() {
   const importUrlValue = importUrl();
   if (importUrlValue) {
@@ -91,6 +177,7 @@ async function loadImportRows() {
       rows,
       sourceLabel: importUrlValue,
       results: rows.map((row) => ({
+        provider: 'import',
         ticker: row.ticker,
         status: row.ticker ? 'success' : 'failed',
         price: row.price,
@@ -109,6 +196,7 @@ async function loadImportRows() {
       rows,
       sourceLabel: 'data/prices.json',
       results: rows.map((row) => ({
+        provider: 'import',
         ticker: row.ticker,
         status: row.ticker ? 'success' : 'failed',
         price: row.price,
@@ -123,17 +211,70 @@ async function loadImportRows() {
 }
 
 async function loadPriceRows() {
-  if (envValue('PRICE_SYNC_SOURCE') === 'import-only') {
-    return loadImportRows();
+  const syncSource = envValue('PRICE_SYNC_SOURCE');
+  const zeroMetrics = {
+    kis: emptyProviderMetrics(),
+    yahoo: emptyProviderMetrics(),
+    import: emptyProviderMetrics(),
+  };
+
+  if (syncSource === 'import-only' || syncSource === 'manual-only') {
+    const imported = await loadImportRows();
+    return {
+      ...imported,
+      metrics: {
+        ...zeroMetrics,
+        import: resultProviderMetrics('import', imported.rows.length, imported.results),
+      },
+      providerFallbackUsed: Boolean(imported.rows.length),
+    };
   }
 
-  const yahoo = await fetchYahooFinanceRows();
-  if (yahoo.rows.length) return yahoo;
+  const targets = uniquePriceTargets();
+  const domesticTargets = targets.filter((target) => isKisDomesticTicker(target.ticker));
+  const kis = await fetchKisDomesticQuoteRows(domesticTargets);
+  const kisSuccessTickers = new Set(kis.rows.map((row) => normalizeTickerKey(row.ticker)));
+  const yahooTargets = targets.filter((target) => !kisSuccessTickers.has(normalizeTickerKey(target.ticker)));
+  const yahoo = await fetchYahooFinanceRows(yahooTargets);
 
-  const imported = await loadImportRows();
-  if (imported.rows.length) return imported;
+  let imported = { rows: [], sourceLabel: '', results: [] };
+  let importRows = [];
+  let importResults = [];
+  let rows = dedupeRowsByTicker([...kis.rows, ...yahoo.rows]);
+  const missingAfterProviders = targetsMissingRows(targets, rows);
+  const providerFailures = [...kis.results, ...yahoo.results].filter((item) => item.status === 'failed').length;
 
-  return yahoo;
+  if (!rows.length || missingAfterProviders.length || providerFailures) {
+    imported = await loadImportRows();
+    if (imported.rows.length) {
+      const existingTickers = new Set(rows.map((row) => normalizeTickerKey(row.ticker)));
+      importRows = imported.rows.filter((row) => {
+        const key = normalizeTickerKey(row.ticker);
+        return key && !existingTickers.has(key);
+      });
+      const importTickers = new Set(importRows.map((row) => normalizeTickerKey(row.ticker)));
+      importResults = imported.results.filter((item) => importTickers.has(normalizeTickerKey(item.ticker)));
+      rows = dedupeRowsByTicker([...rows, ...importRows]);
+    }
+  }
+
+  return {
+    rows,
+    sourceLabel: combinedSourceLabel([kis.sourceLabel, yahoo.sourceLabel, importRows.length ? imported.sourceLabel : '']),
+    results: [...kis.results, ...yahoo.results, ...importResults],
+    metrics: {
+      kis: {
+        attemptedCount: kis.attemptedCount,
+        successCount: kis.successCount,
+        failedCount: kis.failedCount,
+        skippedCount: kis.skippedCount,
+        skipReason: kis.skipReason,
+      },
+      yahoo: resultProviderMetrics('yahoo-finance-chart', yahooTargets.length, yahoo.results),
+      import: resultProviderMetrics('import', importRows.length, importResults),
+    },
+    providerFallbackUsed: Boolean(importRows.length || yahoo.rows.length < yahooTargets.length || kis.failedCount),
+  };
 }
 function isPriceTicker(ticker?: string) {
   return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장' && (/\.KS$|\.KQ$|^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker)));
@@ -273,9 +414,8 @@ function normalizeYahooRow(target, payload) {
   };
 }
 
-async function fetchYahooFinanceRows() {
+async function fetchYahooFinanceRows(targets = uniquePriceTargets()) {
   if (envValue('PRICE_SYNC_SOURCE') === 'manual-only') return { rows: [], sourceLabel: '', results: [] };
-  const targets = uniquePriceTargets();
   const rows = [];
   const results = [];
 
@@ -294,6 +434,7 @@ async function fetchYahooFinanceRows() {
           const row = normalizeYahooRow(target, await response.json());
           rows.push(row);
           results.push({
+            provider: 'yahoo-finance-chart',
             ticker: target.ticker,
             lookupTicker: target.lookupTicker,
             status: 'success',
@@ -304,7 +445,7 @@ async function fetchYahooFinanceRows() {
           });
         } catch (error) {
           const message = errorMessage(error);
-          results.push({ ticker: target.ticker, lookupTicker: target.lookupTicker, status: 'failed', error: message });
+          results.push({ provider: 'yahoo-finance-chart', ticker: target.ticker, lookupTicker: target.lookupTicker, status: 'failed', error: message });
           console.warn(`[sync-prices] Yahoo chart skipped ${target.ticker} (${target.lookupTicker}): ${message}`);
         }
       }),
@@ -343,11 +484,19 @@ export async function syncPrices() {
   const startedAt = nowIso();
   const targetSummary = priceTargetSummary();
   try {
-    const { rows, sourceLabel, results = [] } = await loadPriceRows();
+    const latestAsOfBefore = await latestMarketPriceAsOf();
+    const loadedPrices = await loadPriceRows();
+    const { rows, sourceLabel, results = [] } = loadedPrices;
+    const metrics: any = loadedPrices.metrics ?? {};
+    const providerMetrics = {
+      kis: metrics.kis ?? emptyProviderMetrics(),
+      yahoo: metrics.yahoo ?? emptyProviderMetrics(),
+      import: metrics.import ?? emptyProviderMetrics(),
+    };
     if (!sourceLabel) {
       const failedCount = results.filter((item) => item.status === 'failed').length;
       const message = failedCount
-        ? `Yahoo Finance chart failed for ${failedCount} tickers and no PRICE_IMPORT_URL/data/prices.json fallback produced rows.`
+        ? `Price providers failed for ${failedCount} attempts and no PRICE_IMPORT_URL/data/prices.json fallback produced rows.`
         : 'No price source produced rows. Frontend keeps mock fallback as example/pending prices.';
       await recordSyncRun({ source: 'market-prices', status: 'skipped', startedAt, errorMessage: message });
       return {
@@ -360,6 +509,9 @@ export async function syncPrices() {
           ...targetSummary,
           successTickerCount: 0,
           failedTickerCount: failedCount,
+          providerMetrics,
+          latest_as_of_before: latestAsOfBefore,
+          latest_as_of_after: latestAsOfBefore,
         },
         results,
         errors: [message],
@@ -380,6 +532,9 @@ export async function syncPrices() {
           ...targetSummary,
           successTickerCount: 0,
           failedTickerCount: results.filter((item) => item.status === 'failed').length,
+          providerMetrics,
+          latest_as_of_before: latestAsOfBefore,
+          latest_as_of_after: latestAsOfBefore,
         },
         results,
         errors: [message],
@@ -406,10 +561,16 @@ export async function syncPrices() {
     }
 
     const result = await upsertRows('market_prices', normalizedRows, ['ticker', 'source', 'as_of']);
+    const latestAsOfAfter = await latestMarketPriceAsOf();
     const failedCount = results.filter((item) => item.status === 'failed').length;
-    const successCount = results.filter((item) => item.status === 'success').length;
-    const status = failedCount > 0 ? 'partial' : 'success';
-    const summary = status === 'partial' ? `Price sync partial: ${normalizedRows.length} rows saved/prepared, ${failedCount} tickers failed.` : '';
+    const successCount = new Set(normalizedRows.map((row) => normalizeTickerKey(row.ticker))).size;
+    const latestDidNotAdvance = Boolean(latestAsOfBefore && latestAsOfAfter && compareAsOf(latestAsOfAfter, latestAsOfBefore) <= 0);
+    const status = failedCount > 0 || latestDidNotAdvance ? 'partial' : 'success';
+    const providerSummary = `KIS ${providerMetrics.kis.successCount}/${providerMetrics.kis.attemptedCount} ok, Yahoo ${providerMetrics.yahoo.successCount}/${providerMetrics.yahoo.attemptedCount} ok`;
+    const latestSummary = latestAsOfBefore || latestAsOfAfter ? `latest_as_of ${latestAsOfBefore ?? 'unknown'} -> ${latestAsOfAfter ?? maxAsOf(normalizedRows) ?? 'unknown'}` : '';
+    const summary = status === 'partial'
+      ? `Price sync partial: ${normalizedRows.length} rows saved/prepared, ${failedCount} provider attempts failed. ${providerSummary}${latestDidNotAdvance ? `, ${latestSummary} unchanged` : latestSummary ? `, ${latestSummary}` : ''}.`
+      : '';
     await recordSyncRun({
       source: 'market-prices',
       status,
@@ -428,6 +589,10 @@ export async function syncPrices() {
         ...targetSummary,
         successTickerCount: successCount,
         failedTickerCount: failedCount,
+        providerMetrics,
+        latest_as_of_before: latestAsOfBefore,
+        latest_as_of_after: latestAsOfAfter,
+        prepared_latest_as_of: maxAsOf(normalizedRows),
       },
       results,
       errors: results.filter((item) => item.status === 'failed').map((item) => `${item.ticker}: ${item.error}`),

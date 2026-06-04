@@ -1157,6 +1157,77 @@ KIS_ACCOUNT_PRODUCT_CODE=
 - 해외주식의 `AUTH` 값 의미와 빈 문자열 사용 가능 범위는 공식 샘플 기준으로는 빈 값 예시가 있으나, 운영 계정/시장별로 재확인해야 합니다.
 - 계좌번호 env는 현재가 조회 endpoint에는 필요 없어 보이지만, KIS 서비스 신청/토큰/향후 주문·잔고 확장 정책에 따라 optional에서 required로 바뀔 수 있습니다.
 
+### KIS 국내주식 가격 sync pilot 구현
+
+2026-06-04 기준으로 국내주식 `.KS`/`.KQ` ticker에 한해 KIS Open API를 Yahoo Finance chart 앞단의 1차 가격 소스로 연결했습니다. 전체 가격 경로 교체가 아니라 domestic pilot이며, 해외주식은 계속 기존 Yahoo/fallback 경로를 사용합니다. Yahoo 기존 코드는 삭제하지 않았고, KIS가 성공한 국내 ticker만 Yahoo 호출 대상에서 제외합니다.
+
+구현 파일:
+
+- `scripts/price-sources/kis.ts`: KIS token 발급, 국내 현재가 조회, ticker 변환, 응답 normalize
+- `scripts/sync-prices.ts`: KIS -> Yahoo -> import fallback 순서 통합, provider별 결과 count, latest `as_of` 전후 guard
+
+국내 ticker 변환:
+
+```text
+005930.KS -> 005930
+000660.KS -> 000660
+091990.KQ -> 091990
+```
+
+KIS 국내 현재가 호출 기준:
+
+- token endpoint: `POST /oauth2/tokenP`
+- 국내 현재가 endpoint: `GET /uapi/domestic-stock/v1/quotations/inquire-price`
+- 국내 현재가 TR_ID: `FHKST01010100`
+- `FID_COND_MRKT_DIV_CODE=J`
+- `FID_INPUT_ISCD=005930` 같은 6자리 국내 종목코드
+
+필요 env:
+
+```bash
+KIS_APP_KEY=
+KIS_APP_SECRET=
+KIS_ENV=production
+KIS_PROD_BASE_URL=https://openapi.koreainvestment.com:9443
+KIS_PAPER_BASE_URL=https://openapivts.koreainvestment.com:29443
+```
+
+`KIS_BASE_URL`이 있으면 `KIS_ENV` 기반 URL보다 우선합니다. `KIS_ENV=production` 또는 `prod`면 실전 URL을 쓰고, 그 외에는 모의 URL을 기본값으로 둡니다. 현재가 조회에는 `KIS_ACCOUNT_NO`, `KIS_ACCOUNT_PRODUCT_CODE`를 사용하지 않습니다.
+
+fallback 흐름:
+
+1. 전체 가격 대상 중 `.KS`/`.KQ` 국내 ticker만 KIS 조회를 먼저 시도합니다.
+2. KIS env가 없으면 KIS는 graceful skip되고 국내 ticker도 Yahoo fallback으로 넘어갑니다.
+3. KIS 성공 ticker는 Yahoo 호출 대상에서 제외합니다.
+4. KIS 실패 국내 ticker와 해외 ticker는 기존 Yahoo Finance chart 경로로 조회합니다.
+5. KIS/Yahoo 이후에도 누락 ticker가 있거나 provider 실패가 있으면 `PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`, `data/prices.json` fallback을 시도해 아직 없는 ticker만 보충합니다.
+6. 그래도 새 row가 없으면 기존 DB row와 프론트 mock/pending fallback이 유지됩니다.
+
+KIS row normalize:
+
+- `source`: `kis-openapi`
+- `currency`: `KRW`
+- `price`: `stck_prpr`
+- `open`: `stck_oprc`
+- `previousClose`: `stck_prdy_clpr`, `prdy_clpr`, `stck_sdpr` 후보 중 사용 가능한 값
+- `change`: `prdy_vrss`와 `prdy_vrss_sign`을 함께 반영
+- `changePercent`: `prdy_ctrt`와 `prdy_vrss_sign`을 함께 반영
+- `priceLabel`: `delayed`
+- `marketStatus`: `delayed`
+- `isDelayed`: `true`
+
+KIS 응답에 영업일과 체결시각이 함께 있으면 `asOf`에 반영합니다. 응답에서 신뢰 가능한 date+time 조합을 찾지 못하면 fetch 시각을 `asOf`로 사용합니다. 가격이 없거나 0 이하, `NaN`이면 row를 만들지 않고 해당 ticker는 Yahoo fallback으로 넘깁니다.
+
+sync status 보강:
+
+- `/api/sync/prices` 응답 summary에 `providerMetrics.kis`, `providerMetrics.yahoo`, `providerMetrics.import`가 포함됩니다.
+- 각 provider metric은 `attemptedCount`, `successCount`, `failedCount`, `skippedCount`, `skipReason`을 담습니다.
+- Supabase env가 있으면 run 시작 전후 `market_prices` latest `as_of`를 읽어 `latest_as_of_before`, `latest_as_of_after`로 응답 summary에 포함합니다.
+- provider 실패가 있거나 DB latest `as_of`가 전진하지 않으면 `success`가 아니라 `partial`로 기록합니다. 현재 `sync_runs.status` schema가 `stale` 값을 허용하지 않으므로 별도 stale status는 migration 전까지 쓰지 않습니다.
+- `sync_runs.error_message`에는 secret, app key, app secret, access token, raw response를 남기지 않고 provider count와 latest `as_of` 요약만 기록합니다.
+
+로컬에서 `KIS_APP_KEY`/`KIS_APP_SECRET`이 없으면 KIS 실제 호출은 하지 않습니다. 이 경우 KIS skip path와 Yahoo/import fallback만 확인하며, 운영 확인은 Vercel Production env 설정 후 Cron 또는 인증된 `/api/sync/prices` 실행 결과로 확인합니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
