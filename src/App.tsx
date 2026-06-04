@@ -2563,7 +2563,6 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
 
   const [activeMarketTab, setActiveMarketTab] = useState(currentWeeklyDigest.marketTabs[0]?.id ?? 'ALL');
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
-  const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
   const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
 
@@ -2659,7 +2658,10 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
             <p className="home-kicker">{currentWeeklyDigest.kicker}</p>
             <h1>{currentWeeklyDigest.headline}</h1>
             <p>{currentWeeklyDigest.subheadline}</p>
-            <p className="home-mvp-note">{currentWeeklyDigest.sourceNote}</p>
+            <p className="home-mvp-note">
+              <span>원문 기준</span>
+              {currentWeeklyDigest.sourceNote}
+            </p>
           </div>
           <article className="weekly-autopsy-card" aria-label="이번 주 대표 해부">
             <div className="weekly-autopsy-topline">
@@ -2668,36 +2670,34 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>{currentWeeklyDigest.featured.theme}</span>
               <span>{featuredMovementLabel}</span>
             </div>
-            <h2>{currentWeeklyDigest.featured.question}</h2>
-            <p>{currentWeeklyDigest.featured.headline}</p>
-            <div className="weekly-autopsy-company">
-              {featuredCompany ? (
-                <CompanyLogo company={featuredCompany} size="medium" />
-              ) : (
-                <span className="company-symbol symbol-dell" aria-hidden="true">DELL</span>
-              )}
+            <div className="weekly-autopsy-story-head">
+              <span className="weekly-autopsy-marker" aria-hidden="true">
+                <FileSearch size={18} />
+              </span>
               <div>
-                <strong>{currentWeeklyDigest.featured.meta}</strong>
-                <small>{currentWeeklyDigest.featured.summary}</small>
+                <p className="weekly-autopsy-meta-line">{currentWeeklyDigest.featured.meta}</p>
+                <h2>{currentWeeklyDigest.featured.question}</h2>
               </div>
             </div>
-            <div className="weekly-autopsy-summary-grid" aria-label="대표 해부 요약">
-              <div>
+            <p className="weekly-autopsy-lead">{currentWeeklyDigest.featured.headline}</p>
+            <p className="weekly-autopsy-body">{currentWeeklyDigest.featured.summary}</p>
+            <div className="weekly-autopsy-reading-list" aria-label="대표 해부 요약">
+              <section>
                 <span>같이 볼 회사</span>
                 <div className="weekly-pill-row">
                   {featuredRelatedCompanies.map((companyName) => (
                     <em key={companyName}>{companyName}</em>
                   ))}
                 </div>
-              </div>
-              <div>
+              </section>
+              <section>
                 <span>숫자 3개</span>
-                <div className="weekly-pill-row">
+                <ol>
                   {currentWeeklyDigest.featured.metricLabels.map((metric) => (
-                    <em key={metric}>{metric}</em>
+                    <li key={metric}>{metric}</li>
                   ))}
-                </div>
-              </div>
+                </ol>
+              </section>
             </div>
             <button type="button" className="weekly-primary-action" onClick={openWeeklyPick}>
               {currentWeeklyDigest.featured.primaryCtaLabel}
