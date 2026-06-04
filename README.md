@@ -646,7 +646,7 @@ https://YOUR_DOMAIN/api/sync/prices?secret=CRON_SECRET값
 
 - 가장 강한 원인 후보는 `https://finance1.vercel.app` 공개 alias가 이 저장소의 `주가해부실` Vite 앱이 아니라 다른 정적 페이지를 서빙한다는 점입니다. 루트 HTML의 title은 `Finanzas`이고, 이 저장소의 `dist/index.html` title인 `주가해부실`과 다릅니다.
 - 같은 alias에서 `/api/market-prices`와 `/api/sync/prices`는 모두 404 `NOT_FOUND`입니다. 따라서 이 URL에서 가격이 최신화되지 않는 문제는 Supabase 가격 row 이전에 "공개 alias가 현재 Vercel project/deployment와 연결되어 있지 않음"으로 보는 것이 우선입니다.
-- GitHub Deployments 기준 최신 `Production - finance1` deployment는 `8592f77`에서 `success`입니다. 다만 target URL `finance1-19xghks8w-terrypark-s-projects.vercel.app`은 Vercel Authentication 보호가 걸려 루트와 API를 직접 열람할 수 없습니다.
+- GitHub Deployments 기준 당시 확인한 `Production - finance1` deployment는 `8592f77`에서 `success`였습니다. 2026-06-04 후속 확인에서는 `ca0fd26`의 `Production - finance1` 배포도 success로 확인됐습니다.
 - GitHub Actions sync workflow는 최근 schedule run이 성공했지만, public API만으로는 job log와 repository secrets, Supabase `sync_runs` 내용을 볼 수 없어 가격 row가 `success/partial/skipped` 중 무엇이었는지는 확정할 수 없습니다.
 
 #### env 존재 여부
@@ -733,6 +733,57 @@ limit 20;
 4. Vercel Cron dashboard에서 `/api/sync/prices` 최근 실행 로그와 HTTP status를 확인합니다.
 5. Supabase에서 위 SQL로 `market_prices max(as_of)`와 `sync_runs` 최신 가격 sync 상태를 확인합니다.
 6. GitHub Actions를 계속 대안으로 쓸 경우 `PRICE_IMPORT_URL`과 `PRICE_SYNC_SOURCE`를 workflow env에 전달할지 별도 작업에서 결정합니다.
+
+### Vercel 프로젝트/도메인 매핑 확인
+
+2026-06-04 공개 URL과 GitHub Deployments API 기준 후속 점검입니다. Vercel CLI/token, GitHub token, Supabase secret은 이 세션에 없었고 값은 출력하지 않았습니다. Vercel project settings, domain/alias 전체 목록, Git 연결 상세 설정은 인증된 Vercel dashboard/API 없이는 직접 확인하지 못했습니다.
+
+#### GitHub remote
+
+- 로컬 branch: `main`
+- remote: `git@github.com:parkterry1103-ux/finance.git`
+- 점검 시작 commit: `ca0fd26d91729d7d54955451b47c585e955c7bfe`
+- 점검 시작 시 `HEAD`, `origin/main`, remote `refs/heads/main`이 모두 `ca0fd26`으로 일치했습니다.
+- 작업트리는 점검 시작 시 clean 상태였습니다. 문서화 후에도 README 외 변경이 없는지 확인합니다.
+
+#### Vercel deployment 상태
+
+GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Production - finance`와 `Production - finance1` 두 환경으로 배포를 만들고 있습니다. 따라서 두 Vercel 프로젝트 또는 환경 모두 이 repo의 main push와 연결되어 있는 것으로 보입니다. 다만 Vercel dashboard의 project Git 설정 자체는 인증 없이는 확인 불가입니다.
+
+| Vercel environment | latest observed SHA | state | target URL | URL 접근 |
+| --- | --- | --- | --- | --- |
+| `Production - finance1` | `ca0fd26` | success | `https://finance1-bzyj5vru1-terrypark-s-projects.vercel.app` | Vercel Authentication 401 |
+| `Production - finance` | `ca0fd26` | success | `https://finance-jdzh1dmbl-terrypark-s-projects.vercel.app` | Vercel Authentication 401 |
+
+#### URL별 응답 결과
+
+| URL | `/` | `/ko/` | `/api/market-prices?limit=1` | `/api/sync/prices` | 판단 |
+| --- | --- | --- | --- | --- | --- |
+| `https://finance1.vercel.app` | 200, title `Finanzas` | 404 `NOT_FOUND` | 404 `NOT_FOUND` | 404 `NOT_FOUND` | 이 repo 앱이 아닙니다. 다른 정적 페이지 또는 다른 프로젝트 alias로 보입니다. |
+| `https://finance1-flax.vercel.app` | 200, title `주가해부실` | 200, title `주가해부실` | 200 JSON, `source: supabase` | 401 JSON `Unauthorized cron request` | 현재 공개 API 확인에 사용할 올바른 base URL입니다. |
+| `https://finance1-bzyj5vru1-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 최신 `Production - finance1` deployment target이나 보호되어 직접 검증 불가입니다. |
+| `https://finance-jdzh1dmbl-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 최신 `Production - finance` deployment target이나 보호되어 직접 검증 불가입니다. |
+| `https://finance.vercel.app` | 307 `/profile` redirect | 308 redirect | 404 Next error | 404 Next error | 이 repo 앱으로 보기 어렵습니다. |
+
+`https://finance1-flax.vercel.app/api/market-prices?limit=1`은 `ok: true`, `source: supabase`로 응답했고, 확인 시 첫 row의 `asOf`는 `2026-06-02T20:04:31.000Z`, source는 `yahoo-finance-chart`였습니다. 가격값은 문서에 기록하지 않습니다.
+
+#### 결론
+
+- `finance1.vercel.app`은 현재 이 repo의 `주가해부실` 앱을 가리키지 않습니다. 이 URL로 가격 API를 확인하면 404가 나는 것이 정상입니다.
+- 실제 주가해부실 공개 URL로 확인된 주소는 `https://finance1-flax.vercel.app`입니다.
+- 앞으로 가격 API 확인 base URL은 `https://finance1-flax.vercel.app`을 사용합니다.
+- 가격 조회 확인: `https://finance1-flax.vercel.app/api/market-prices?limit=1`
+- 가격 sync route 확인: `https://finance1-flax.vercel.app/api/sync/prices`는 인증 없이 401이 나와야 정상입니다.
+- `Production - finance`와 `Production - finance1` 모두 GitHub Deployments에는 최신 commit으로 success가 기록되지만, per-commit target URL은 Vercel Authentication 보호 상태입니다.
+- project 이름, deployment target URL, public alias가 섞여 있어 혼동이 발생했습니다. `finance1-flax.vercel.app`과 `finance1.vercel.app`은 서로 다른 앱을 서빙합니다.
+
+#### 다음 조치
+
+1. Vercel dashboard에서 `finance1.vercel.app` domain이 어느 project에 연결되어 있는지 확인하고, 필요하면 주가해부실 project로 alias를 옮기거나 혼동 방지를 위해 제거합니다.
+2. 운영 공개 URL을 `finance1-flax.vercel.app`로 둘지, 별도 custom domain을 붙일지 결정합니다.
+3. Vercel deployment protection 정책을 확인합니다. per-commit deployment URL은 보호해도 되지만, 운영 public domain은 API 확인이 가능해야 합니다.
+4. Vercel project `finance`와 `finance1`이 모두 같은 GitHub repo main push를 받는 구조가 의도된 것인지 정리합니다. 중복 프로젝트가 필요 없다면 하나로 통합하거나 이름을 바꿉니다.
+5. 가격 freshness와 Supabase `sync_runs` 확인은 `https://finance1-flax.vercel.app` 기준으로 다시 진행합니다.
 
 ### Vercel Cron
 
