@@ -742,18 +742,19 @@ limit 20;
 
 - 로컬 branch: `main`
 - remote: `git@github.com:parkterry1103-ux/finance.git`
-- 점검 시작 commit: `ca0fd26d91729d7d54955451b47c585e955c7bfe`
-- 점검 시작 시 `HEAD`, `origin/main`, remote `refs/heads/main`이 모두 `ca0fd26`으로 일치했습니다.
-- 작업트리는 점검 시작 시 clean 상태였습니다. 문서화 후에도 README 외 변경이 없는지 확인합니다.
+- 최초 점검 시작 commit: `ca0fd26d91729d7d54955451b47c585e955c7bfe`
+- 재개 점검 시작 commit: `6b7bae11ccd08d8609f338703a8cf69ef63c3624`
+- 재개 점검 시작 시 `HEAD`, `origin/main`, remote `refs/heads/main`이 모두 `6b7bae1`으로 일치했습니다.
+- 작업트리는 재개 점검 시작 시 clean 상태였습니다. 문서화 후에도 README 외 변경이 없는지 확인합니다.
 
 #### Vercel deployment 상태
 
-GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Production - finance`와 `Production - finance1` 두 환경으로 배포를 만들고 있습니다. 따라서 두 Vercel 프로젝트 또는 환경 모두 이 repo의 main push와 연결되어 있는 것으로 보입니다. 다만 Vercel dashboard의 project Git 설정 자체는 인증 없이는 확인 불가입니다.
+GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Production - finance`와 `Production - finance1` 두 환경으로 배포를 만들고 있습니다. 따라서 두 Vercel 프로젝트 또는 환경 모두 이 repo의 main push와 연결되어 있는 것으로 보입니다. 다만 Vercel dashboard의 project Git 설정 자체는 인증 없이는 확인 불가입니다. 2026-06-04 10:12 UTC 재확인에서는 `Production - finance1`의 최신 deployment status만 공개 API로 확인했고, 추가 status 조회는 GitHub unauthenticated API rate limit에 막혔습니다.
 
 | Vercel environment | latest observed SHA | state | target URL | URL 접근 |
 | --- | --- | --- | --- | --- |
-| `Production - finance1` | `ca0fd26` | success | `https://finance1-bzyj5vru1-terrypark-s-projects.vercel.app` | Vercel Authentication 401 |
-| `Production - finance` | `ca0fd26` | success | `https://finance-jdzh1dmbl-terrypark-s-projects.vercel.app` | Vercel Authentication 401 |
+| `Production - finance1` | `6b7bae1` | success | `https://finance1-iut2s0oi6-terrypark-s-projects.vercel.app` | Vercel Authentication 401 |
+| `Production - finance` | `6b7bae1` | deployment record observed | 공개 status target URL은 재확인 불가 | 추가 status 조회가 GitHub unauthenticated API rate limit으로 제한됨 |
 
 #### URL별 응답 결과
 
@@ -761,8 +762,8 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 | --- | --- | --- | --- | --- | --- |
 | `https://finance1.vercel.app` | 200, title `Finanzas` | 404 `NOT_FOUND` | 404 `NOT_FOUND` | 404 `NOT_FOUND` | 이 repo 앱이 아닙니다. 다른 정적 페이지 또는 다른 프로젝트 alias로 보입니다. |
 | `https://finance1-flax.vercel.app` | 200, title `주가해부실` | 200, title `주가해부실` | 200 JSON, `source: supabase` | 401 JSON `Unauthorized cron request` | 현재 공개 API 확인에 사용할 올바른 base URL입니다. |
-| `https://finance1-bzyj5vru1-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 최신 `Production - finance1` deployment target이나 보호되어 직접 검증 불가입니다. |
-| `https://finance-jdzh1dmbl-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 최신 `Production - finance` deployment target이나 보호되어 직접 검증 불가입니다. |
+| `https://finance1-iut2s0oi6-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 미확인 | 401 Vercel Authentication | 미확인 | 최신 `Production - finance1` deployment target이나 보호되어 직접 검증 불가입니다. |
+| `https://finance-jdzh1dmbl-terrypark-s-projects.vercel.app` | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 401 Vercel Authentication | 이전 관측 `Production - finance` deployment target이며 보호되어 직접 검증 불가입니다. |
 | `https://finance.vercel.app` | 307 `/profile` redirect | 308 redirect | 404 Next error | 404 Next error | 이 repo 앱으로 보기 어렵습니다. |
 
 `https://finance1-flax.vercel.app/api/market-prices?limit=1`은 `ok: true`, `source: supabase`로 응답했고, 확인 시 첫 row의 `asOf`는 `2026-06-02T20:04:31.000Z`, source는 `yahoo-finance-chart`였습니다. 가격값은 문서에 기록하지 않습니다.
@@ -787,7 +788,7 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 
 ### 가격 데이터 freshness 및 sync 상태 확인
 
-2026-06-04 09:42 UTC 운영 API 재확인 기준입니다. 코드, API, 가격 sync 로직, 데이터, secret, 외부 서비스 설정은 수정하지 않았습니다. 가격값은 문서에 기록하지 않고 freshness와 source만 기록합니다.
+2026-06-04 10:12 UTC 운영 API 재확인 기준입니다. 코드, API, 가격 sync 로직, 데이터, secret, 외부 서비스 설정은 수정하지 않았습니다. 가격값은 문서에 기록하지 않고 freshness와 source만 기록합니다.
 
 #### 기준 URL
 
@@ -800,7 +801,6 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 | API | status | top-level source | prices count | 최신 `asOf` | 가장 오래된 `asOf` | row source |
 | --- | --- | --- | ---: | --- | --- | --- |
 | `/api/market-prices?limit=1` | 200 | `supabase` | 1 | `2026-06-02T20:04:31.000Z` | `2026-06-02T20:04:31.000Z` | `yahoo-finance-chart` 1 |
-| `/api/market-prices?limit=20` | 200 | `supabase` | 20 | `2026-06-02T20:04:31.000Z` | `2026-06-02T20:00:02.000Z` | `yahoo-finance-chart` 20 |
 | `/api/market-prices?limit=200` | 200 | `supabase` | 81 | `2026-06-02T20:04:31.000Z` | `2026-06-02T06:30:01.000Z` | `yahoo-finance-chart` 81 |
 | `/api/sync/prices` | 401 | n/a | n/a | n/a | n/a | `Unauthorized cron request` |
 
@@ -825,7 +825,7 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 | `000660.KS` | 200 | `000660.KS` | 연결됨 | `2026-06-02T06:30:28.000Z` | `yahoo-finance-chart` | `KRW` | ticker query는 2 rows 반환 |
 | `005930.KS` | 200 | `005930.KS` | 연결됨 | `2026-06-02T06:30:12.000Z` | `yahoo-finance-chart` | `KRW` | `change`/`changePercent` 0 |
 
-이번 표의 모든 주요 ticker는 `2026-06-02` 기준입니다. 2026-06-04 09:42 UTC 기준으로는 2026-06-03 장마감 이후 가격이 아직 운영 DB에 보이지 않습니다. 따라서 "일부 ticker만 stale"이라기보다 현재 관측 가능한 가격 row 전체가 6월 2일에 머물러 있습니다. 다만 5월 29일 이후 업데이트가 전혀 안 된 것으로 보였던 원인은 잘못된 URL인 `finance1.vercel.app`을 확인한 영향이 큽니다. 올바른 URL에는 6월 2일 row가 들어 있습니다.
+이번 표의 모든 주요 ticker는 `2026-06-02` 기준입니다. 2026-06-04 10:12 UTC 기준으로는 2026-06-03 장마감 이후 가격이 아직 운영 DB에 보이지 않습니다. 따라서 "일부 ticker만 stale"이라기보다 현재 관측 가능한 가격 row 전체가 6월 2일에 머물러 있습니다. 다만 5월 29일 이후 업데이트가 전혀 안 된 것으로 보였던 원인은 잘못된 URL인 `finance1.vercel.app`을 확인한 영향이 큽니다. 올바른 URL에는 6월 2일 row가 들어 있습니다.
 
 #### API 응답 구조와 프론트 기대 필드
 
@@ -859,7 +859,9 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 - `.github/workflows/sync.yml`은 `workflow_dispatch`와 평일 schedule 두 개를 사용합니다: `15 9 * * 1-5`, `15 */6 * * 1-5`.
 - job은 Node 20, `npm ci`, `npm run sync:all`을 실행합니다. 즉 가격 sync만의 주 경로라기보다 재무/거래/가격을 모두 돌리는 대안 또는 보조 경로입니다.
 - workflow env에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `MARKET_PRICES_IMPORT_URL` secret reference가 있습니다. `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`는 전달하지 않습니다.
-- GitHub Actions 공개 API 기준 최근 run은 성공입니다.
+- GitHub Actions 공개 API와 공개 run page 기준 최근 run은 성공입니다.
+- 공개 run page에서 run 번호, schedule trigger 시각, status, total duration, job 이름은 보입니다.
+- 공개 run page는 비로그인 상태에서 logs 영역에 sign-in 요구를 표시합니다. 따라서 `npm run sync:all` 내부의 `sync:prices` JSON 출력, Supabase upsert 성공/실패, `skipped`/`partial` 여부는 공개 비인증으로 확인하지 못했습니다.
 
 | run number | event | conclusion | created UTC | head |
 | --- | --- | --- | --- | --- |
@@ -869,11 +871,11 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 | 33 | schedule | success | `2026-06-02T20:28:26Z` | `ca0fd26` |
 | 32 | schedule | success | `2026-06-02T13:01:35Z` | `7c5bfa8` |
 
-Actions run success는 프로세스가 끝났다는 뜻이지, 가격 row가 최신으로 upsert되었다는 증거는 아닙니다. `scripts/sync-prices.ts`는 Yahoo 전체 실패, Supabase env 누락, Supabase upsert 실패 상황에서도 결과 JSON을 남기고 process가 0으로 끝날 수 있습니다. 따라서 Actions 성공과 운영 `market_prices` 최신성은 `sync_runs`로 함께 확인해야 합니다.
+Actions run success는 `npm run sync:all` 프로세스가 non-zero exit 없이 끝났다는 뜻이지, 가격 row가 최신으로 upsert되었다는 증거는 아닙니다. `scripts/sync-prices.ts`는 Yahoo 전체 실패, Supabase env 누락, Supabase upsert 실패 상황에서도 결과 JSON을 남기고 process가 0으로 끝날 수 있습니다. 따라서 Actions 성공과 운영 `market_prices` 최신성은 `sync_runs`로 함께 확인해야 합니다.
 
 #### Supabase 직접 확인 가능 여부
 
-로컬 shell env에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`, `PRICE_SYNC_SOURCE`가 설정되어 있지 않았습니다. 로컬 파일은 `.env.example`만 있습니다. 따라서 직접 DB 접속은 하지 않았고, secret 값도 출력하지 않았습니다.
+로컬 shell env에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `PRICE_IMPORT_URL`, `MARKET_PRICES_IMPORT_URL`, `PRICE_SYNC_SOURCE`, `VERCEL_TOKEN`, `GITHUB_TOKEN`이 설정되어 있지 않았습니다. 로컬 파일은 `.env.example`만 있습니다. `gh`, `vercel`, `supabase` CLI도 로컬 PATH에 없습니다. 따라서 직접 DB 접속과 dashboard/API 인증 조회는 하지 않았고, secret 값도 출력하지 않았습니다.
 
 확인용 SQL 후보:
 
@@ -917,21 +919,22 @@ limit 20;
 | 일부 ticker stale | 아님 | 관측 가능한 81개 row와 주요 ticker 모두 `2026-06-02`입니다. 일부가 아니라 전체 stale에 가깝습니다. |
 | cron 문제 | 가능성 있음 | Vercel Cron path는 맞지만 최근 실행 성공 여부를 공개 API로 확인하지 못했습니다. |
 | secret 문제 | 가능성 있음 | `/api/sync/prices` 보호는 정상입니다. 실제 Cron/수동 호출에서 `CRON_SECRET`이 빠지거나 다르면 sync는 401입니다. |
-| Yahoo fetch 문제 | 가능성 있음 | Actions 성공 후에도 row가 안 늘었으므로 Yahoo 실패 후 `skipped/partial`일 수 있습니다. `sync_runs` 확인 필요. |
-| Supabase upsert 문제 | 가능성 있음 | fetch가 됐지만 DB write가 skip/failed일 수 있습니다. `sync_runs`와 Function Logs 확인 필요. |
+| Yahoo fetch 문제 | 가능성 있음 | Actions 성공 후에도 row가 안 늘었으므로 Yahoo 실패 후 `skipped` 또는 `partial`일 수 있습니다. `sync_runs` 확인 필요. |
+| Supabase upsert 문제 | 가장 유력한 후보군 | 공개 API는 6월 2일 row를 읽지만, 그 이후 Actions success가 있어도 row가 갱신되지 않았습니다. 트리거 이후의 write 경로, 즉 Supabase env 누락/권한/REST upsert 실패 또는 `sync_runs` 기록 실패를 먼저 봐야 합니다. |
 | 도메인 문제 | 확인됨 | `finance1.vercel.app`은 이 앱이 아니며 API가 404입니다. 다만 올바른 URL에서도 6월 2일 이후 갱신 여부는 별도 문제입니다. |
 
 #### 최종 판단
 
-올바른 운영 URL 기준으로 가격 API와 Supabase 읽기 경로는 살아 있고, fallback/import가 아니라 `yahoo-finance-chart` row를 반환합니다. 그러나 2026-06-04 09:42 UTC 기준 최신 `asOf`가 `2026-06-02T20:04:31.000Z`라서 2026-06-03 장마감 이후 row가 보이지 않습니다. 병목은 프론트 읽기보다 가격 쓰기 경로에 있습니다. 1차 후보는 Vercel Cron 실행/인증, GitHub Actions 내 `sync:prices` 결과, Yahoo fetch 결과, Supabase upsert 결과입니다.
+올바른 운영 URL 기준으로 가격 API와 Supabase 읽기 경로는 살아 있고, fallback/import가 아니라 `yahoo-finance-chart` row를 반환합니다. 그러나 2026-06-04 10:12 UTC 기준 최신 `asOf`가 `2026-06-02T20:04:31.000Z`라서 2026-06-03 장마감 이후 row가 보이지 않습니다. 병목은 프론트 읽기보다 가격 쓰기 경로에 있습니다. 현재 가장 유력한 후보군은 트리거 이후 가격 sync write 경로입니다. 즉 Yahoo fetch가 `skipped`/`partial`로 끝났거나, Supabase env/권한/upsert 문제로 DB write가 반영되지 않았을 가능성을 먼저 확인해야 합니다.
 
 #### 다음 액션
 
-1. Vercel dashboard에서 `/api/sync/prices` Cron 최근 실행 시각, HTTP status, function log를 확인합니다.
-2. Supabase SQL Editor에서 위 SQL로 `market_prices` 최신 `as_of`와 `sync_runs` 최신 `market-prices`/`endpoint-prices` 상태를 확인합니다.
-3. Actions run이 success여도 가격 sync 결과가 `skipped`, `partial`, `failed`였는지 로그 또는 `sync_runs`로 확인합니다.
-4. `SNOW`, `AAPL`의 `market_prices.company_id`가 비어 있는 원인을 확인하고, 별도 UI/API 작업에서 매핑 보강 여부를 결정합니다.
-5. 별도 UI 작업에서 가격 배지에 `가격 기준일` 라벨을 명시해 날짜가 작게 숨어 보이지 않게 합니다.
+1. Vercel dashboard에서 `finance1` project의 Cron Jobs가 활성 상태인지, `/api/sync/prices`의 2026-06-04 08:30 UTC 실행 여부, HTTP status, function log, production alias가 `finance1-flax.vercel.app`로 연결되는지 확인합니다.
+2. Vercel env에서 `CRON_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MARKET_PRICES_IMPORT_URL` 또는 `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`의 존재 여부만 확인합니다. 값은 기록하지 않습니다.
+3. Supabase SQL Editor에서 위 SQL로 `market_prices` 최신 `as_of`와 `sync_runs` 최신 `market-prices`/`endpoint-prices` 상태, `inserted_count`, `updated_count`, `error_message`를 확인합니다.
+4. GitHub Actions run이 success여도 가격 sync 결과가 `skipped`, `partial`, `failed`였는지 authenticated log 또는 Supabase `sync_runs`로 확인합니다.
+5. `SNOW`, `AAPL`의 `market_prices.company_id`가 비어 있는 원인을 확인하고, 별도 UI/API 작업에서 매핑 보강 여부를 결정합니다.
+6. 별도 UI 작업에서 가격 배지에 `가격 기준일` 라벨을 명시해 날짜가 작게 숨어 보이지 않게 합니다.
 
 ### Vercel Cron
 
