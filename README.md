@@ -1283,6 +1283,59 @@ Supabase 확인 결과:
 3. 실행 후 Supabase SQL Editor에서 `005930.KS`, `000660.KS`의 `source`, `currency`, `as_of`와 `sync_runs` 최신 status를 확인합니다.
 4. GitHub Actions를 KIS 검증 경로로 쓰려면 workflow env에 KIS env 이름을 추가해야 합니다. 이번 운영 검증에서는 코드/API/package/lock 파일을 추가 수정하지 않았습니다.
 
+#### KIS Cron 이후 운영 재확인
+
+확인 일시: 2026-06-04 15:12 UTC / 2026-06-04 23:12 CST 기준입니다.
+
+Vercel project/deployment:
+
+- project: `finance1`
+- 운영 기준 domain: `https://finance1-flax.vercel.app`
+- KIS pilot 구현 commit `fc08ce8`은 GitHub commit status 기준 `Vercel - finance1` deployment `success`입니다.
+- KIS 운영 검증 문서화 commit `5baa023`도 GitHub commit status 기준 `Vercel - finance1` deployment `success`입니다.
+- 사용자 확인 기준 Production env에는 `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_ENV=production`, `KIS_PROD_BASE_URL`이 있습니다.
+- Codex는 KIS app key, app secret, access token, CRON_SECRET, Supabase key 값을 열람하거나 출력하지 않았습니다.
+- 로컬에는 Vercel CLI와 `.vercel/project.json`이 없어 dashboard env 이름 존재 여부와 Cron execution log는 직접 확인하지 못했습니다.
+
+Cron/function 실행 확인:
+
+- `https://finance1-flax.vercel.app/api/sync/prices`를 secret 없이 호출하면 401 `Unauthorized cron request`입니다. 보호 route 동작으로 정상입니다.
+- `vercel.json`의 가격 Cron schedule은 `30 8 * * 1-5`입니다.
+- 확인 시점은 2026-06-04 15:12 UTC이고, KIS 구현 commit의 `finance1` 배포 완료 시각은 2026-06-04 15:03:48 UTC입니다. 따라서 같은 날 08:30 UTC 정기 Cron은 KIS 코드 배포 전에 이미 지난 상태입니다.
+- 공개 경로로는 Vercel dashboard의 최근 Cron status code, function log, timeout 여부를 확인할 수 없었습니다.
+- GitHub Actions 최신 scheduled run은 2026-06-04 11:38 UTC에 이전 commit `79b9921` 기준으로 실행되었습니다. KIS 구현 commit 이후 GitHub Actions run은 없고, 현재 workflow env에도 KIS env가 전달되지 않아 KIS 검증 경로로 쓰지 않았습니다.
+
+Supabase 확인 결과:
+
+- Supabase dashboard/SQL 세션은 이번 확인에서 직접 접근하지 못했습니다.
+- 공개 운영 API가 Supabase `market_prices`를 읽으므로 `/api/market-prices?limit=200` 결과를 read-through 확인으로 사용했습니다.
+- `sync_runs` 최신 status와 error summary는 공개 endpoint가 없어 확인하지 못했습니다.
+
+운영 API 확인 결과:
+
+- endpoint: `https://finance1-flax.vercel.app/api/market-prices?limit=200`
+- status: 200
+- row count: 81
+- latest `asOf`: `2026-06-02T20:04:31.000Z`
+- source 분포: `yahoo-finance-chart` 81 rows
+- `005930.KS`: source `yahoo-finance-chart`, currency `KRW`, price `360500`, asOf `2026-06-02T06:30:12.000Z`
+- `000660.KS`: source `yahoo-finance-chart`, currency `KRW`, price `2360000`, asOf `2026-06-02T06:30:28.000Z`
+- API 기준으로는 `005930.KS`, `000660.KS` 모두 아직 `kis-openapi`로 갱신되지 않았습니다.
+
+최종 판단:
+
+- 현재 분류는 `Cron 실행 대기`입니다.
+- KIS 코드와 문서화 commit은 Production에 배포되었지만, KIS 코드 배포 이후 정기 가격 Cron이 아직 도래하지 않았습니다.
+- 운영 API에는 아직 KIS row가 없고 기존 Yahoo stale row만 있습니다.
+- KIS token 문제, endpoint 권한 문제, parse/normalize 문제, Supabase upsert 문제, API read 문제는 sync 실행 후에만 판정할 수 있습니다.
+
+다음 액션:
+
+1. 다음 Vercel 가격 Cron인 2026-06-05 08:30 UTC 이후 다시 `/api/market-prices?limit=200`을 확인합니다.
+2. Vercel dashboard에서 `/api/sync/prices` 최근 Cron execution status code와 function log를 확인합니다.
+3. Supabase SQL Editor에서 `market_prices`의 `005930.KS`, `000660.KS` source/as_of/currency와 `sync_runs` 최신 status/error summary를 확인합니다.
+4. 더 빠른 검증이 필요하면 Vercel dashboard에서 secret 노출 없이 `/api/sync/prices`를 수동 실행할 수 있는지 확인합니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
