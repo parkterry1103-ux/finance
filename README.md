@@ -1857,6 +1857,188 @@ comparisonMetrics: {
 - 숫자 과노출을 막기 위해 기본 카드에는 실제값 1개, 비교 문구 1개, 출처 note 1개만 둡니다.
 - 컨센서스와 가이던스는 공식 원문 숫자가 아니라 기대치/전망이므로 기본 카드보다 고급 보기에서 시작합니다.
 
+## 재무 쉽게 보기 v3 시각화 개편 설계
+
+이번 단계는 코드/API/data 구조 변경 없이 설계만 정리합니다. 목표는 기존 `매출`, `영업이익`, `영업현금흐름` 숫자 3개를 없애는 것이 아니라, 초보자가 절대값보다 `비율`, `변화`, `흐름`을 먼저 이해하도록 정보 계층을 바꾸는 것입니다.
+
+### 왜 절대값 카드만으로 부족한가
+
+현재 기업 해설 페이지의 `재무 쉽게 보기`는 `src/App.tsx`의 `financial-learning-card` 안에서 렌더링됩니다. 헤더는 이미 `숫자는 마지막 확인입니다.`라는 방향을 갖고 있지만, 실제 중심 UI는 `financial-priority-grid`의 3개 숫자 카드입니다.
+
+현재 흐름:
+
+- `fetchFinancialsByCompany(company)`가 `FinancialStatementSummary`를 만들고 `financialSummary` state에 저장합니다.
+- `connectFinancialPriorityMetrics()`가 산업별 fallback 지표를 공식 API 지표로 치환합니다.
+- `financialNumberCards`는 3개 카드로 렌더링되며 질문은 `얼마나 팔았나요?`, `팔고 돈이 남았나요?`, `현금이 들어왔나요?`입니다.
+- 각 카드에는 `beginnerMetricValueLabel(metric.value)`, `financialComparisonNote(metric.comparison)`, `financialMetricSourceNote()`가 표시됩니다.
+- `숫자 더 보기` details 안에는 한 줄 결론, 카드별 설명, 좋은 신호/조심할 신호, 다음 분기 확인 항목, `전체 지표 보기`, `손익·현금흐름 보기`, `공시 보기`, `원문 보고서 보기` 버튼이 있습니다.
+- `전체 지표 보기`와 `재무제표 해설 더 보기`는 같은 기업 해설 페이지 하단의 details로 유지되어 있습니다.
+
+문제는 `80.2B`, `5.1B`, `6.5B` 같은 절대값이 커 보여도 사용자가 바로 판단하기 어렵다는 점입니다. 초보자에게 먼저 필요한 질문은 `얼마나 컸나`보다 `매출 대비 얼마나 남겼나`, `전보다 나아졌나`, `이익이 현금으로 이어졌나`입니다.
+
+### 현재 재무 API와 프론트에서 쓸 수 있는 필드
+
+`api/financials.ts` 응답은 raw numeric `metrics`를 제공합니다. 공개 API 샘플 확인 기준으로 US NVIDIA와 KR 삼성전자 모두 아래 필드가 존재할 수 있습니다.
+
+| 필드 | 현재 API 응답 | 현재 프론트 summary | v3 판단 |
+| --- | --- | --- | --- |
+| `metrics.revenue` | number/null | `FinancialMetric.value` 문자열 | API raw 값 기준 계산 가능. 프론트에서는 문자열 parse 또는 raw 보존 확장 필요 |
+| `metrics.operatingIncome` | number/null | 문자열 | 영업이익률 계산에 필요 |
+| `metrics.operatingCashFlow` / `cashFlow` | number/null | `cashFlow` 문자열 | 현금흐름/영업이익 비율 계산에 필요 |
+| `metrics.freeCashFlow` | number/null | 고급 metric 문자열 | FCF 보조 시각화 가능하나 기본 3개에는 보류 |
+| `metrics.netIncome` | number/null | 고급 metric 문자열 | 순이익 보조 가능, 기본 질문에는 보류 |
+| `metrics.capitalExpenditures` | number/null | 고급 metric 문자열 | FCF 계산/설명에 쓰이지만 기본 화면에서는 과함 |
+| `comparison.revenue.yoy/qoq` | number/null | metric comparison으로 일부 전달 | YoY/QoQ pill 가능. 단 QoQ는 현재 null인 경우 많음 |
+| `comparison.operatingIncome.yoy/qoq` | number/null | metric comparison으로 일부 전달 | 영업이익 성장 pill 가능 |
+| `comparison.operatingCashFlow.yoy/qoq` | number/null | metric comparison으로 일부 전달 | 현금흐름 변화 pill 가능 |
+| `fiscalYear`, `fiscalPeriod`, `reportType`, `asOf` | 존재 | `fiscalYear`, `fiscalPeriod`, `reportType`, `filingDate`로 전달 | source/asOf badge polish 가능 |
+| `sourceStatus`, `currency`, `amountBasis`, `periodBasis` | 존재 | 일부만 문자열 note에 반영 | 기준 단위와 데이터 상태 표시 가능 |
+| 최근 4분기 배열 | 없음 | 없음 | API 확장 필요 |
+| 과거 분기별 `revenue/operatingIncome` pair | 없음 | 없음 | 영업이익률 변화 계산에는 API 확장 필요 |
+
+중요 제약:
+
+- `/api/financials`는 raw number를 주지만 `src/services/financials.ts`가 이를 `FinancialStatementSummary.metrics[]`의 문자열 `value`로 변환합니다. v3 1차에서 프론트만 고치면 문자열에서 숫자를 역파싱해야 하므로 통화/단위별 오류가 생길 수 있습니다.
+- 안전한 1차 구현은 `FinancialStatementSummary`에 raw metric을 보존하는 확장 또는 `src/services/financials.ts` 내부에서 계산된 derived view model을 만드는 것입니다. 이번 문서는 설계만 기록하고 데이터 구조는 바꾸지 않습니다.
+- fallback financials는 `src/data.ts`의 문자열 값입니다. fallback 값으로 영업이익률, YoY/QoQ, 현금 전환 비율을 계산하지 않습니다.
+
+### v3 정보 계층
+
+상단 요약:
+
+- 제목: `숫자는 마지막 확인입니다`
+- subtitle: `이야기가 실제 돈과 수익성으로 이어졌는지 봅니다`
+- source/asOf badge: `SEC 원문 기준 · FY2027 Q1 · 2026.05.20 확인`, `OpenDART 원문 기준 · 2026 Q1 · 2026.05.15 확인`
+- 데이터가 없으면 `공식 데이터 연결 필요`, `원문 연결 준비 중`, `fallback 해설 기준`을 명확히 표시합니다.
+
+핵심 해석 3개:
+
+1. `수익성이 좋아졌나요?`
+   - 주 지표: `영업이익률 = operatingIncome / revenue`
+   - 보조: 영업이익 YoY/QoQ가 있으면 작은 pill
+   - 시각화: 매출 bar 안에 영업이익이 차지하는 비율을 작은 horizontal ratio bar로 표시
+
+2. `이익이 현금으로 이어졌나요?`
+   - 주 지표: `영업현금흐름 / 영업이익`
+   - 보조: 영업현금흐름이 영업이익보다 큰지/작은지 확인 문구
+   - 시각화: 두 개의 막대 또는 `현금흐름이 이익의 약 n%` ratio bar
+
+3. `성장이 이익으로 연결됐나요?`
+   - 주 지표: 매출 YoY와 영업이익 YoY 비교
+   - 보조: 둘 다 있으면 `매출 +85.2% / 영업이익 +147.4%`처럼 비교
+   - 시각화: before/after mini comparison bar 또는 나란한 변화 pill
+
+기존 숫자 3개 카드:
+
+- 아래쪽에 `기준 숫자` 섹션으로 유지합니다.
+- `매출`, `영업이익`, `영업현금흐름`은 큰 숫자 카드가 아니라 해석 카드의 supporting fact로 낮춥니다.
+- 숫자 카드에는 `값`, `기준 보고서`, `작년 같은 기간보다/직전 분기보다`만 짧게 둡니다.
+
+### 미니 시각화 방향
+
+복잡한 차트보다 1초 안에 읽히는 도표를 우선합니다.
+
+- horizontal mini bar: 영업이익률, 현금흐름/영업이익 비율에 사용합니다.
+- ratio bar: `매출 중 남은 이익`, `이익 대비 현금흐름`처럼 분모/분자를 명확히 표시합니다.
+- before/after mini comparison bar: YoY/QoQ가 있는 지표만 사용합니다.
+- sparkline: 최근 4분기 배열이 생긴 뒤에만 사용합니다.
+- gauge, 점수, 등급, 복잡한 라인 차트는 보류합니다. 투자 판단처럼 보일 수 있습니다.
+
+### 데이터 가능/불가능 분류
+
+즉시 가능:
+
+- API raw `revenue`와 `operatingIncome`이 모두 있을 때 영업이익률 계산
+- API raw `operatingCashFlow`와 `operatingIncome`이 모두 있을 때 현금흐름/영업이익 비율 계산
+- 기존 `comparison.yoy/qoq`가 있는 매출, 영업이익, 영업현금흐름에 작은 pill 표시
+- `sourceStatus`, `reportType`, `fiscalYear`, `fiscalPeriod`, `asOf`, `currency` 기반 source/asOf badge 개선
+- 기존 3개 숫자 카드를 하단 supporting facts로 낮추기
+
+API 또는 view model 확장 필요:
+
+- 전분기 대비 영업이익률 변화: 현재와 직전 분기의 `revenue + operatingIncome` pair가 필요합니다.
+- 최근 4분기 sparkline: 현재 API는 period 배열을 반환하지 않습니다.
+- 매출 증가율과 영업이익률 변화의 정확한 시계열 비교: 같은 기간 기준의 과거 pair가 필요합니다.
+- company별 historical quarterly chart: SEC/OpenDART source별 form, fp, report code, 기간 길이 normalization이 필요합니다.
+- raw numeric을 프론트 summary에 안전하게 보존하는 구조: 현재 `FinancialMetric.value`는 문자열입니다.
+
+보류:
+
+- PER/PBR, ROE, 컨센서스, 가이던스, valuation 점수
+- `좋음/나쁨`을 색이나 점수로 단정하는 UI
+- 복잡한 라인 차트, 레이더 차트, 큰 dashboard grid
+- fallback 문자열 숫자로 계산하는 모든 파생 지표
+
+### 초보자용 문구 후보
+
+기존 질문:
+
+- `얼마나 팔았나요?`
+- `팔고 돈이 남았나요?`
+- `현금이 들어왔나요?`
+
+v3 후보:
+
+- `팔아서 얼마나 남겼나요?`
+- `전보다 수익성이 좋아졌나요?`
+- `이익이 실제 현금으로 들어왔나요?`
+- `성장이 이익으로 이어졌나요?`
+- `매출은 늘었는데 비용도 같이 늘었나요?`
+- `현금흐름이 이익을 따라오고 있나요?`
+
+문구 원칙:
+
+- `좋다/나쁘다` 단정 대신 `확인할 부분`, `볼 포인트`, `흐름`을 씁니다.
+- `매수`, `매도`, `급등 예상`, `확정 수혜`, `점수` 표현은 쓰지 않습니다.
+- 상승/하락 색은 보조로만 쓰고, 빨강/파랑 과다 사용은 피합니다.
+
+### 디자인 방향
+
+DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shadow, single blue accent를 따릅니다.
+
+- 배경은 warm paper canvas, 카드 표면은 white surface 중심으로 둡니다.
+- 차트는 카드 안 장식이 아니라 해석을 돕는 24~44px 높이의 작은 bar로 둡니다.
+- 숫자는 크되, 해석 문구와 질문 제목이 먼저 읽히도록 headline hierarchy를 조정합니다.
+- blue accent는 source badge, selected bar, CTA에만 제한합니다.
+- 빨강/파랑 대비는 변화 pill에만 작게 사용하고 전체 화면 분위기를 dashboard처럼 만들지 않습니다.
+- 모바일에서는 모든 chart가 1열로 접히고, 긴 통화 문자열은 줄바꿈되어 가로 overflow가 없어야 합니다.
+
+### 전체 지표와 재무제표 해설 분리 방향
+
+현재 `전체 지표 보기`, `재무제표 해설 더 보기`, `공시 보기`, `원문 보고서 보기`는 같은 기업 해설 페이지 하단에 details로 남아 있습니다. 정보는 유용하지만 기업 해설의 첫 경험을 무겁게 만듭니다.
+
+추천 방향:
+
+- 기업 해설 페이지에는 v3 재무 요약 시각화와 기준 숫자 3개만 남깁니다.
+- `전체 지표 보기`는 CTA 카드로 바꾸고 상세는 `/ko/analysis/{companyId}/financials` 후보로 분리합니다.
+- 재무 용어 설명과 재무제표 읽는 법은 `/ko/learn/financials` 같은 공부 페이지로 분리합니다.
+- 긴 재무제표 해설은 기존 내용을 삭제하지 말고 상세 페이지 또는 접힌 CTA 뒤로 이동합니다.
+- 1차에서는 라우트 추가 없이 기업 해설 하단 details를 유지하되, 기본 화면에서는 CTA만 보이게 계층을 낮춥니다.
+
+### 구현 단계 제안
+
+1차 구현:
+
+- API raw metrics가 있는 경우 영업이익률을 계산합니다.
+- 영업현금흐름/영업이익 비율을 계산합니다.
+- mini bar와 ratio bar를 추가합니다.
+- source/asOf badge를 `source · fiscalYear/fiscalPeriod · asOf` 형태로 다듬습니다.
+- 기존 숫자 3개 카드는 하단 `기준 숫자`로 낮춥니다.
+- fallback 상태에서는 계산을 숨기고 `공식 데이터 연결 필요`를 표시합니다.
+
+2차 구현:
+
+- 전분기 대비 영업이익률 변화 계산을 위해 API 응답에 현재/직전 분기 `revenue + operatingIncome` pair를 추가합니다.
+- 최근 4분기 sparkline을 위한 period array를 추가합니다.
+- `전체 지표 보기`와 `재무제표 해설 더 보기`를 공부 페이지 또는 기업별 재무 상세 페이지 CTA로 분리합니다.
+
+3차 구현:
+
+- `/ko/analysis/{companyId}/financials` 상세 페이지를 만듭니다.
+- SEC/OpenDART/20-F source별 chart normalization을 정리합니다.
+- 국내/해외 기업의 report period, currency, amount basis를 통일된 chart model로 변환합니다.
+- 컨센서스, PER/PBR, valuation은 공식/외부 source와 재배포 조건이 확인될 때까지 별도 후보로 유지합니다.
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
