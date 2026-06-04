@@ -982,6 +982,181 @@ limit 20;
 4. 가격 sync 결과가 `success`여도 `asOf`가 이전 영업일이면 stale로 표시하거나 실패/partial로 다루는 guard를 별도 작업에서 검토합니다.
 5. 수동 복구가 필요하면 secret 값을 노출하지 않는 방식으로 `/api/sync/prices`를 인증 호출하거나, Supabase SQL로 `sync_runs`와 `market_prices max(as_of)`를 즉시 재확인합니다.
 
+### 한국투자증권 Open API 가격 sync 연결 조사
+
+2026-06-04 코드/문서 조사 기준입니다. 이번 단계에서는 KIS Open API를 실제 운영에 연결하지 않았고, 코드/API/data/package/lock 파일과 운영 DB/API write를 수정하지 않았습니다. secret 값은 출력하거나 문서에 기록하지 않습니다.
+
+참고 근거:
+
+- [KIS Developers API 포털](https://apiportal.koreainvestment.com/apiservice-apiservice)
+- [KIS Developers 서비스 이용안내](https://apiportal.koreainvestment.com/about-howto)
+- [한국투자증권 공식 GitHub 샘플 저장소](https://github.com/koreainvestment/open-trading-api)
+- [국내주식 현재가 샘플](https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/domestic_stock/inquire_price)
+- [해외주식 현재체결가 샘플](https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/overseas_stock/price)
+- [해외주식 현재가상세 샘플](https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/overseas_stock/price_detail)
+
+#### 현재 가격 sync 구조
+
+- `scripts/sync-prices.ts`가 쓰기 경로입니다. `/api/sync/prices`는 `CRON_SECRET` 인증 후 이 스크립트의 `syncPrices()`를 실행합니다.
+- 가격 조회 대상은 고정 `REQUIRED_PRICE_TICKERS`, `mockMarketPrices`, `marketMovers`, `stockAutopsyPicks`, `anchors`, `companies`를 합쳐 만듭니다.
+- `companies`는 `inferCompanyListing(company)` 결과가 `isPriceSyncTarget`일 때만 포함됩니다. 즉 상장으로 추정되고 거래 가능한 ticker가 있어야 합니다.
+- ticker 필터는 `.KS`, `.KQ`, 또는 영문 ticker 패턴을 허용하고 `WATCH`, `비상장`은 제외합니다.
+- Yahoo 조회용 alias는 `BRK.B -> BRK-B`, `SQ -> XYZ`입니다. 같은 lookup ticker는 dedupe하며, 이미 들어간 대상에 `companyId`가 없고 나중 대상에 `companyId`가 있으면 보강합니다.
+- Yahoo 호출은 ticker 8개 단위 chunk로 병렬 실행합니다. URL은 `https://query1.finance.yahoo.com/v8/finance/chart/{lookupTicker}?range=5d&interval=1d`이고, `SEC_USER_AGENT` 값 또는 기본 User-Agent를 보냅니다.
+- Yahoo 응답은 `regularMarketPrice` 또는 마지막 `quote.close`를 `price`로 쓰고, `regularMarketOpen`이 있으면 open 대비, 없으면 previous close 대비로 `change`와 `changePercent`를 계산합니다.
+- 저장 필드는 `company_id`, `ticker`, `market`, `price`, `open`, `previous_close`, `close`, `change`, `change_percent`, `currency`, `price_label`, `market_status`, `as_of`, `source`, `is_delayed`, `created_at`입니다.
+- Yahoo row의 `source`는 `yahoo-finance-chart`, `as_of`는 `regularMarketTime`이 있으면 그 값, 없으면 sync 실행 시각입니다.
+- Supabase upsert key는 `market_prices(ticker, source, as_of)`입니다. `companies` 보강 upsert는 `id` 기준입니다.
+- `/api/market-prices`는 Supabase `market_prices`를 `as_of desc, created_at desc`로 읽고 `companyId`, `ticker`, `market`, `price`, `open`, `previousClose`, `close`, `change`, `changePercent`, `currency`, `priceLabel`, `marketStatus`, `asOf`, `source`, `isDelayed`로 정규화합니다.
+- 프론트 `src/services/prices.ts`는 위 필드를 기대하며, 서버 row가 없거나 실패할 때만 `src/data.ts`의 `mockMarketPrices`를 fallback/pending 표시용으로 병합합니다.
+
+#### Yahoo 429 및 fallback 동작
+
+- ticker별 Yahoo 호출이 429 등으로 실패하면 해당 ticker 결과만 `failed`로 기록하고 warn 로그를 남깁니다. 현재 재시도, backoff, chunk 간 delay, provider 전환은 없습니다.
+- Yahoo에서 하나라도 row가 나오면 `loadPriceRows()`는 그 row 묶음을 즉시 사용합니다. 일부 ticker가 실패해도 import fallback은 실패 ticker만 보충하지 않습니다.
+- Yahoo rows가 0개일 때만 import fallback을 시도합니다.
+- `PRICE_SYNC_SOURCE=import-only`이면 Yahoo를 건너뛰고 import만 사용합니다.
+- `PRICE_SYNC_SOURCE=manual-only`이면 Yahoo rows가 비고, 이어서 import fallback이 있으면 사용합니다.
+- import URL은 `PRICE_IMPORT_URL`을 우선하고, 없으면 `MARKET_PRICES_IMPORT_URL`을 봅니다.
+- import URL은 JSON 배열, `{ rows: [...] }`, `{ data: [...] }`, 또는 CSV를 허용합니다.
+- import URL이 없거나 rows가 없으면 로컬 `data/prices.json`을 읽습니다. 현재 저장소에는 `data/prices.example.json`만 있고 실제 `data/prices.json`은 없습니다.
+- fallback rows도 `ticker`가 있어야 저장 대상이 됩니다. `source`가 없으면 `manual-price-import`, `asOf/as_of`가 없으면 실행 시각으로 채웁니다.
+
+운영에서 fallback이 새 가격 row를 만들지 못한 후보:
+
+- Vercel `finance1` env 검색에서 `MARKET_PRICES_IMPORT_URL`, `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE` 이름이 없었습니다.
+- GitHub Actions workflow는 `MARKET_PRICES_IMPORT_URL` secret reference만 전달하고 `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`는 전달하지 않습니다. secret 값 존재 여부는 값 없이 별도 확인이 필요합니다.
+- GitHub Actions 최신 가격 sync 로그에는 `Yahoo chart 429`가 다수 표시됐고, 최종 요약에 `no PRICE_IMPORT_URL/data/prices.json fallback produced rows`가 있었습니다.
+- 저장소에는 실제 `data/prices.json`이 없으므로 배포/Actions 환경에서 import URL이 비어 있으면 로컬 fallback도 rows를 만들 수 없습니다.
+- Yahoo가 일부라도 성공하는 run에서는 import fallback이 실행되지 않으므로, 일부 ticker 429는 import로 보충되지 않습니다.
+- import URL이 존재하더라도 같은 `ticker + source + as_of`를 반복하면 최신 기준일이 전진하지 않습니다.
+
+#### stale인데 success처럼 보일 수 있는 이유
+
+- 현재 sync status는 `failedCount > 0`이면 `partial`, 아니면 `success`입니다. `as_of`가 이전 영업일인지, sync 전후 `max(as_of)`가 전진했는지는 보지 않습니다.
+- Yahoo가 오래된 `regularMarketTime`을 반환해도 row 자체는 정상 rows로 처리됩니다.
+- `upsertRows()`는 Supabase REST 응답의 실제 insert/update count를 읽지 않고 payload 길이를 `inserted`처럼 반환합니다. 따라서 같은 `ticker + source + as_of` 충돌 merge여도 `inserted_count`가 row 수처럼 기록될 수 있습니다.
+- `sync_runs`에는 현재 `latest_as_of_before`, `latest_as_of_after`, `attempted_count`, `fetched_count`, `stale_count`가 없어서 "성공했지만 최신 기준일이 그대로"인 상태를 구분하기 어렵습니다.
+
+#### KIS Open API 확인 내용
+
+- 접근토큰 발급은 `POST /oauth2/tokenP`입니다. 공식 포털 기준 실전 Domain은 `https://openapi.koreainvestment.com:9443`, 모의 Domain은 `https://openapivts.koreainvestment.com:29443`입니다.
+- 개인 client credentials 방식의 token body는 `grant_type=client_credentials`, `appkey`, `appsecret`입니다. 포털 설명상 개인 접근토큰은 24시간 유효하고, 6시간 이내 재호출 시 기존 토큰이 반환될 수 있습니다.
+- 공식 샘플 `kis_devlp.yaml`도 실전 `prod=https://openapi.koreainvestment.com:9443`, 모의 `vps=https://openapivts.koreainvestment.com:29443`를 사용합니다.
+- REST 호출 공통 header는 `authorization: Bearer ...`, `appkey`, `appsecret`, `tr_id`, `custtype: P`, 필요 시 `tr_cont` 구조입니다.
+- 국내주식 현재가 REST endpoint는 `GET /uapi/domestic-stock/v1/quotations/inquire-price`, TR_ID는 `FHKST01010100`입니다.
+- 국내주식 현재가 필수 params는 `FID_COND_MRKT_DIV_CODE`와 `FID_INPUT_ISCD`입니다. 샘플 기준 `FID_COND_MRKT_DIV_CODE=J`는 KRX, `NX`는 NXT, `UN`은 통합이고, `FID_INPUT_ISCD`는 `005930` 같은 6자리 국내 종목코드입니다.
+- 해외주식 현재체결가 REST endpoint는 `GET /uapi/overseas-price/v1/quotations/price`, TR_ID는 `HHDFS00000300`입니다.
+- 해외주식 현재가상세 REST endpoint는 `GET /uapi/overseas-price/v1/quotations/price-detail`, TR_ID는 `HHDFS76200200`입니다. 상세 endpoint는 `curr`, `open`, `last`, `base`, `t_rate`, 원화환산 필드 등을 줄 수 있어 currency 보강 후보입니다.
+- 해외주식 params는 `AUTH`, `EXCD`, `SYMB`입니다. 샘플은 `AUTH=""`, `EXCD=NAS`, `SYMB=AAPL`을 사용합니다. `price_detail` 예시는 `NYS`, `NAS`, `AMS`, `HKS`, `TSE`, `SHS`, `SZS`, `HSX`, `HNX`, `BAY`, `BAQ`, `BAA` 같은 거래소 코드를 언급합니다.
+- 현재가 조회 endpoint 자체에는 `CANO`, `ACNT_PRDT_CD` 같은 계좌번호 파라미터가 없습니다. 다만 Open API 서비스 신청, token 발급, 주문/잔고/체결통보 확장에는 계좌와 HTS ID가 필요할 수 있습니다.
+- 국내 현재가 샘플은 "실시간 시세를 원하면 웹소켓 API를 활용"하라고 안내합니다. 즉 REST 현재가는 UI에서 계속 `지연 가능` 또는 `최신/종가` 상태를 보수적으로 표시해야 합니다.
+- 해외 실시간지연체결가 샘플은 무료시세/지연시세 조건을 설명합니다. 미국은 0분 지연으로 제공될 수 있고, 홍콩/베트남/중국/일본은 15분 지연으로 설명되어 있습니다. 다만 REST 현재체결가의 정확한 지연/재배포 약관은 운영자가 KIS 약관과 API 포털에서 추가 확인해야 합니다.
+- 공식 GitHub README는 `EGW00201` 초당 거래건수 초과와 모의투자 REST 호출 제한이 낮다는 점을 언급합니다. endpoint별 정확 quota는 이번 조사에서 확정하지 못했습니다.
+
+#### KIS 적용 전략
+
+- Yahoo를 삭제하지 않습니다. KIS를 primary 후보로 추가하고, Yahoo는 secondary/fallback으로 유지합니다.
+- 1차 pilot은 국내주식 `.KS`, `.KQ` 일부 ticker가 가장 안전합니다. 현재 앱의 국내 ticker는 Yahoo 표기라서 KIS 호출 전 `005930.KS -> 005930`, `042700.KS -> 042700`, `058470.KQ -> 058470`처럼 변환하면 됩니다.
+- 국내주식 KIS rows는 `source=kis-domestic-quote`, `currency=KRW`, `price=stck_prpr`, `change=prdy_vrss`, `changePercent=prdy_ctrt`, `open=stck_oprc`, `previousClose` 또는 `close` 후보는 `stck_sdpr`/전일종가 성격 필드를 실제 응답으로 확인한 뒤 매핑합니다.
+- 국내 `asOf`는 KIS 현재가 응답의 영업일/체결시각 필드를 우선 확인해야 합니다. 필드 확인이 안 되면 sync 실행시각을 쓰되 `priceLabel=delayed`, `isDelayed=true`로 둡니다.
+- 해외주식 KIS 우선도 가능하지만, 1차에는 조심스럽게 pilot만 권장합니다. `NASDAQ`/`NYSE` 같은 현재 market 값을 KIS `EXCD=NAS/NYS/AMS`로 바꾸는 symbol mapping이 필요합니다.
+- 해외 `BRK-B`, `BRK.B`, ADR, OTC, 주간거래 symbol은 KIS `SYMB`와 Yahoo lookup ticker가 다를 수 있으므로 자동 변환보다 명시 mapping이 필요합니다.
+- 해외 KIS rows는 `source=kis-overseas-quote`, `price=last`, `change=diff`, `changePercent=rate`, `previousClose=base`, `currency=curr` 또는 exchange mapping 기반 currency로 정규화합니다.
+- 전체 교체 전에 pilot 대상 예시는 `005930.KS`, `000660.KS`, `042700.KS` 또는 국내 core 5개입니다. 해외는 `NVDA`, `AAPL`, `DELL`처럼 KIS `EXCD/SYMB`가 명확한 ticker만 별도 pilot로 둡니다.
+- source별 stale guard를 추가한 뒤, KIS와 Yahoo를 같은 `market_prices` 테이블에 저장하되 `source`를 분리합니다. 프론트는 최신 `asOf`와 source 우선순위로 선택할 수 있게 합니다.
+
+권장 fallback 순서:
+
+1. KIS quote adapter: 국내 pilot 또는 명시 mapping이 있는 해외 ticker
+2. Yahoo Finance chart: KIS 미지원, KIS 실패, 해외 mapping 미확정 ticker
+3. `PRICE_IMPORT_URL`
+4. `MARKET_PRICES_IMPORT_URL`
+5. `data/prices.json`
+6. 기존 DB row 유지 후 stale 표시
+7. 프론트 mock price는 실제 가격이 아니라 `가격 준비 중`/pending 표시 보조로만 사용
+
+#### 필요한 env 이름
+
+`.env.example`에는 실제 값을 넣지 않고 이름만 추가합니다.
+
+```bash
+KIS_APP_KEY=
+KIS_APP_SECRET=
+KIS_ENV=
+KIS_BASE_URL=
+KIS_PAPER_BASE_URL=
+KIS_PROD_BASE_URL=
+KIS_ACCOUNT_NO=
+KIS_ACCOUNT_PRODUCT_CODE=
+```
+
+- `KIS_APP_KEY`, `KIS_APP_SECRET`: 서버 전용입니다. 프론트 `VITE_` prefix를 붙이지 않습니다.
+- `KIS_ENV`: `paper`/`prod` 또는 `vps`/`prod`처럼 운영 정책에서 하나로 고정합니다.
+- `KIS_PROD_BASE_URL`: 기본값 후보 `https://openapi.koreainvestment.com:9443`
+- `KIS_PAPER_BASE_URL`: 기본값 후보 `https://openapivts.koreainvestment.com:29443`
+- `KIS_BASE_URL`: 명시 override가 필요할 때만 사용합니다. 없으면 `KIS_ENV`로 prod/paper URL을 선택합니다.
+- `KIS_ACCOUNT_NO`, `KIS_ACCOUNT_PRODUCT_CODE`: 현재가 조회만으로는 필수 파라미터가 아니므로 optional입니다. 주문/잔고/체결통보 확장 또는 계좌연결형 인증으로 넓힐 때 필요합니다.
+
+#### token 관리 계획
+
+- token은 서버에서만 발급하고 저장합니다. 응답 JSON, 로그, `sync_runs.error_message`에 token, app key, app secret을 남기지 않습니다.
+- 한 sync run 안에서는 token을 한 번만 발급/재사용합니다. ticker마다 token을 발급하면 안 됩니다.
+- 접근토큰 응답의 `access_token_token_expired` 또는 `expires_in`을 기준으로 만료 5~10분 전에는 새 token을 발급합니다.
+- Vercel serverless는 메모리 cache가 보장되지 않으므로 첫 구현은 "daily sync run마다 1회 발급"으로 충분한지 확인합니다. 호출 주기가 늘면 Supabase/Vercel KV 같은 서버 전용 cache를 별도 설계합니다.
+- KIS 포털 설명상 잦은 token 발급은 기존 token 반환 또는 제한 정책과 연결될 수 있으므로, token 발급 실패는 가격 실패와 분리해 `error_summary`에 요약만 남깁니다.
+
+#### symbol mapping 계획
+
+- 현재 앱 ticker는 Yahoo/화면 표기 기준입니다. KIS용 lookup symbol을 별도 필드 또는 mapping table로 둡니다.
+- 국내: `.KS`, `.KQ` suffix를 제거해 6자리 `FID_INPUT_ISCD`로 변환합니다. `FID_COND_MRKT_DIV_CODE`는 1차 `J`로 두고, NXT/통합 가격이 필요해지면 `NX`/`UN`을 명시합니다.
+- 해외: `market`/`exchange`를 KIS `EXCD`로 변환합니다. 1차 mapping은 `NASDAQ -> NAS`, `NYSE -> NYS`, `AMEX -> AMS`입니다.
+- 해외 `SYMB`는 화면 ticker와 다를 수 있습니다. class share, ADR, OTC, 주간거래, Yahoo alias가 있는 ticker는 명시 mapping 없이는 KIS 조회 대상에서 제외합니다.
+- mapping은 `src/data.ts`의 화면 데이터와 분리해도 됩니다. 예: sync 전용 `priceSymbolMappings` 또는 DB table 후보를 두고, `ticker`, `provider`, `lookupSymbol`, `exchangeCode`, `currency`, `enabled`, `notes`를 관리합니다.
+
+#### sync status 개선안
+
+현재 `sync_runs.status` check constraint는 `success`, `partial`, `failed`, `skipped`만 허용합니다. stale을 별도 status로 저장하려면 schema migration이 필요합니다. 다음 코드 변경 단계에서 아래 기준을 제안합니다.
+
+| status | 기준 |
+| --- | --- |
+| `success` | 대상이 있고, provider fetch가 성공했으며, `latest_as_of_after`가 `latest_as_of_before`보다 전진했거나 fresh threshold 안에 있고, 실패/오래된 row가 허용 범위 이내 |
+| `partial` | 일부 ticker는 fetch/upsert 성공했지만 일부 실패, 일부 stale, 일부 provider fallback 사용 |
+| `stale` | provider 호출은 끝났지만 새 기준일 row가 없거나 `latest_as_of_after <= latest_as_of_before`, 또는 모든 fetched row가 freshness threshold 밖 |
+| `failed` | provider/token/network/DB write 오류로 새 row도 fallback row도 준비하지 못했고, run 자체가 비정상 종료 |
+| `skipped` | 의도적으로 비활성화, 대상 0개, 필수 env 부재로 실행하지 않음 |
+
+추가 기록 후보:
+
+- `attempted_count`: 이번 run에서 조회하려 한 ticker 수
+- `fetched_count`: provider에서 정상 row를 받은 ticker 수
+- `upserted_count`: DB에 실제 upsert 요청한 row 수. 가능하면 Supabase 응답 count 또는 사전 dedupe 기준으로 "준비 row 수"와 구분합니다.
+- `stale_count`: 응답은 받았지만 기준일이 fresh threshold 밖인 ticker 수
+- `failed_count`: provider별 실패 ticker 수
+- `latest_as_of_before`: run 시작 전 `market_prices max(as_of)`
+- `latest_as_of_after`: run 종료 후 `market_prices max(as_of)`
+- `error_summary`: 긴 raw response 대신 provider별 요약. 예: `KIS token failed`, `Yahoo 429: 81 tickers`, `import rows missing ticker`, `latest_as_of unchanged`
+
+구현 시에는 `inserted_count`를 "성공적으로 최신화된 row 수"처럼 쓰지 말고, `upserted_count`와 `latest_as_of_after`를 함께 봐야 합니다.
+
+#### 구현 단계 제안
+
+1. 코드 변경 없이 운영 env에 `PRICE_IMPORT_URL` 또는 `MARKET_PRICES_IMPORT_URL`을 추가해 Yahoo 429 때 수동 fallback이 실제 rows를 만드는지 먼저 검증합니다.
+2. 가격 sync 결과에 `latest_as_of_before/after`를 계산하는 read-only guard를 추가하고, stale이면 `success`가 아니라 `stale` 또는 `partial`로 기록하는 migration을 설계합니다.
+3. KIS token 발급 helper와 provider adapter를 서버/sync 전용으로 추가합니다. token과 secret은 로그에 남기지 않습니다.
+4. 국내 ticker 3~5개 pilot을 KIS primary로 돌리고 Yahoo를 secondary로 둡니다.
+5. KIS 국내 응답 필드에서 `price`, `open`, `previousClose`, `change`, `changePercent`, `asOf` mapping을 실제 응답으로 확정합니다.
+6. 해외 ticker는 `EXCD/SYMB/currency` mapping이 있는 일부만 pilot합니다.
+7. provider별 결과와 stale 상태가 안정화되면 전체 국내주식으로 확대하고, 이후 해외 KIS 확대 여부를 약관/지연시세 조건과 함께 결정합니다.
+
+#### 확인 불가 및 추가 확인 필요
+
+- KIS API 포털의 상세 response 표는 SPA 동작 때문에 일부만 확인했습니다. 실제 구현 전 portal에서 국내 현재가/해외 현재체결가/해외 현재가상세의 최신 response field와 TR_ID를 다시 확인해야 합니다.
+- REST 현재가의 재배포 가능 범위, 공개 웹서비스 표시 가능 범위, 유료/무료/지연시세 조건은 KIS 약관과 서비스 신청 화면에서 운영자가 확인해야 합니다.
+- endpoint별 정확 rate limit은 이번 조사에서 확정하지 못했습니다. 최소한 provider별 throttle, 429/EGW backoff, chunk delay를 구현해야 합니다.
+- 해외주식의 `AUTH` 값 의미와 빈 문자열 사용 가능 범위는 공식 샘플 기준으로는 빈 값 예시가 있으나, 운영 계정/시장별로 재확인해야 합니다.
+- 계좌번호 env는 현재가 조회 endpoint에는 필요 없어 보이지만, KIS 서비스 신청/토큰/향후 주문·잔고 확장 정책에 따라 optional에서 required로 바뀔 수 있습니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
