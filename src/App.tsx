@@ -1270,6 +1270,193 @@ type FinancialPriorityMetric = {
   note: string;
   comparison?: FinancialMetric['comparison'];
 };
+type FinancialComparisonPill = {
+  label: string;
+  value: string;
+};
+type FinancialComparisonBar = {
+  label: string;
+  value: string;
+  width: number;
+  direction: 'up' | 'down' | 'flat';
+};
+type FinancialInsightCard = {
+  title: string;
+  value: string;
+  note: string;
+  detail: string;
+  status: 'ready' | 'pending';
+  barPercent?: number;
+  barLabel?: string;
+  comparisonPills?: FinancialComparisonPill[];
+  comparisonBars?: FinancialComparisonBar[];
+};
+
+function financialMetricByKey(summary: FinancialStatementSummary, key: FinancialMetricItemKey) {
+  return summary.metrics.find((item) => item.key === key);
+}
+
+function parseCompactFinancialValue(value?: string) {
+  if (!value || isPendingFinancialValue(value)) return null;
+  const text = String(value).trim();
+  if (!text || /공식 데이터 연결 필요|확인 필요|원문|fallback/i.test(text)) return null;
+  const match = text.replace(/,/g, '').match(/[-+]?\d+(?:\.\d+)?/);
+  if (!match || match.index === undefined) return null;
+
+  const numeric = Number(match[0]);
+  if (!Number.isFinite(numeric)) return null;
+
+  const compactText = text.replace(/,/g, '');
+  const suffix = compactText.slice(match.index + match[0].length).trim().toUpperCase()[0] ?? '';
+  let multiplier = 1;
+  if (compactText.includes('조')) multiplier = 1_000_000_000_000;
+  else if (compactText.includes('억')) multiplier = 100_000_000;
+  else if (compactText.includes('만')) multiplier = 10_000;
+  else if (suffix === 'T') multiplier = 1_000_000_000_000;
+  else if (suffix === 'B') multiplier = 1_000_000_000;
+  else if (suffix === 'M') multiplier = 1_000_000;
+  else if (suffix === 'K') multiplier = 1_000;
+
+  const sign = /\(|△/.test(text) ? -1 : 1;
+  return Math.abs(numeric) * multiplier * (numeric < 0 ? -1 : sign);
+}
+
+function financialMetricNumericValue(summary: FinancialStatementSummary, key: FinancialMetricItemKey) {
+  const metricItem = financialMetricByKey(summary, key);
+  const value = parseCompactFinancialValue(metricItem?.value);
+  return value === null ? null : { metricItem, value };
+}
+
+function safePercent(numerator: number | null, denominator: number | null) {
+  if (
+    typeof numerator !== 'number' ||
+    typeof denominator !== 'number' ||
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    numerator <= 0 ||
+    denominator <= 0
+  ) {
+    return null;
+  }
+  return (numerator / denominator) * 100;
+}
+
+function clampPercent(value?: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
+
+function formatFinancialPercent(value: number) {
+  if (!Number.isFinite(value)) return '확인 필요';
+  if (Math.abs(value) >= 100) return `${value.toFixed(0)}%`;
+  return `${value.toFixed(1)}%`;
+}
+
+function financialComparisonPills(metricItem: FinancialMetricItem | undefined, label: string) {
+  const pills: FinancialComparisonPill[] = [];
+  if (typeof metricItem?.comparison?.yoy === 'number' && Number.isFinite(metricItem.comparison.yoy)) {
+    pills.push({ label: `${label} YoY`, value: comparisonPercentLabel(metricItem.comparison.yoy) });
+  }
+  if (typeof metricItem?.comparison?.qoq === 'number' && Number.isFinite(metricItem.comparison.qoq)) {
+    pills.push({ label: `${label} QoQ`, value: comparisonPercentLabel(metricItem.comparison.qoq) });
+  }
+  return pills;
+}
+
+function preferredGrowthComparison(revenueMetric?: FinancialMetricItem, operatingIncomeMetric?: FinancialMetricItem) {
+  const revenueYoy = revenueMetric?.comparison?.yoy;
+  const operatingIncomeYoy = operatingIncomeMetric?.comparison?.yoy;
+  if (typeof revenueYoy === 'number' && Number.isFinite(revenueYoy) && typeof operatingIncomeYoy === 'number' && Number.isFinite(operatingIncomeYoy)) {
+    return { label: '작년 같은 기간', revenue: revenueYoy, operatingIncome: operatingIncomeYoy };
+  }
+
+  const revenueQoq = revenueMetric?.comparison?.qoq;
+  const operatingIncomeQoq = operatingIncomeMetric?.comparison?.qoq;
+  if (typeof revenueQoq === 'number' && Number.isFinite(revenueQoq) && typeof operatingIncomeQoq === 'number' && Number.isFinite(operatingIncomeQoq)) {
+    return { label: '직전 분기', revenue: revenueQoq, operatingIncome: operatingIncomeQoq };
+  }
+
+  return null;
+}
+
+function comparisonDirection(value: number): FinancialComparisonBar['direction'] {
+  if (value > 0) return 'up';
+  if (value < 0) return 'down';
+  return 'flat';
+}
+
+function financialSourceBadgeItems(summary: FinancialStatementSummary, freshness: ReturnType<typeof financialFreshnessInfo>) {
+  const isConnected = isConnectedFinancialSummary(summary);
+  const currency = summary.metrics
+    .map((metricItem) => metricItem.unit)
+    .find((unit) => unit && !/share|x/i.test(unit) && !/원문 단위/i.test(unit));
+  const reportBadge = isConnected ? [summary.fiscalYear, summary.fiscalPeriod, summary.reportType].filter(Boolean).join(' ') : freshness.reportName;
+  const items = [
+    isConnected ? summary.sourceLabel : freshness.sourceLabel,
+    reportBadge,
+    isConnected && summary.filingDate ? `${summary.filingDate} 확인` : freshness.filingDate,
+    isConnected ? currency : '',
+  ];
+
+  return Array.from(new Set(items.filter((item) => item && !/확인 필요|fallback/i.test(String(item))).map(String)));
+}
+
+function buildFinancialInsightCards(company: Company, summary: FinancialStatementSummary): FinancialInsightCard[] {
+  const canCalculate = shouldDisplayConnectedFinancials(company, summary);
+  const revenue = canCalculate ? financialMetricNumericValue(summary, 'revenue') : null;
+  const operatingIncome = canCalculate ? financialMetricNumericValue(summary, 'operatingIncome') : null;
+  const operatingCashFlow = canCalculate ? financialMetricNumericValue(summary, 'cashFlow') : null;
+  const operatingMargin = safePercent(operatingIncome?.value ?? null, revenue?.value ?? null);
+  const cashConversion = safePercent(operatingCashFlow?.value ?? null, operatingIncome?.value ?? null);
+  const growthComparison = canCalculate ? preferredGrowthComparison(revenue?.metricItem, operatingIncome?.metricItem) : null;
+  const maxGrowth = growthComparison ? Math.max(Math.abs(growthComparison.revenue), Math.abs(growthComparison.operatingIncome), 1) : 1;
+
+  return [
+    {
+      title: '팔아서 얼마나 남겼나요?',
+      value: operatingMargin === null ? '공식 데이터 연결 필요' : `영업이익률 ${formatFinancialPercent(operatingMargin)}`,
+      note: operatingMargin === null ? '매출과 영업이익을 함께 확인할 수 있을 때 계산합니다.' : '매출 중 영업이익으로 남은 비율입니다.',
+      detail: operatingMargin === null ? '값 확인 전, 지표 의미만 표시합니다.' : '수익성은 매출 규모보다 먼저 확인할 흐름입니다.',
+      status: operatingMargin === null ? 'pending' : 'ready',
+      barPercent: operatingMargin === null ? undefined : clampPercent(operatingMargin),
+      barLabel: operatingMargin === null ? undefined : `매출 대비 영업이익률 ${formatFinancialPercent(operatingMargin)}`,
+      comparisonPills: operatingMargin === null ? [] : financialComparisonPills(operatingIncome?.metricItem, '영업이익').slice(0, 1),
+    },
+    {
+      title: '이익이 현금으로 이어졌나요?',
+      value: cashConversion === null ? '공식 데이터 연결 필요' : `현금흐름 ${formatFinancialPercent(cashConversion)}`,
+      note: cashConversion === null ? '영업이익이 0 이하이거나 현금흐름 값이 없으면 계산하지 않습니다.' : '영업이익과 실제 들어온 현금을 비교합니다.',
+      detail: cashConversion === null ? '차트 대신 원문 숫자 연결 상태를 먼저 확인합니다.' : `현금흐름이 영업이익의 ${formatFinancialPercent(cashConversion)} 수준입니다.`,
+      status: cashConversion === null ? 'pending' : 'ready',
+      barPercent: cashConversion === null ? undefined : clampPercent(cashConversion),
+      barLabel: cashConversion === null ? undefined : `영업이익 대비 현금흐름 ${formatFinancialPercent(cashConversion)}`,
+      comparisonPills: cashConversion === null ? [] : financialComparisonPills(operatingCashFlow?.metricItem, '현금흐름').slice(0, 1),
+    },
+    {
+      title: '성장이 이익으로 연결됐나요?',
+      value: growthComparison ? `${growthComparison.label} 변화` : '비교 데이터 연결 필요',
+      note: growthComparison ? '매출 변화와 영업이익 변화를 같은 기준으로 나란히 봅니다.' : '매출과 이익의 변화율을 함께 볼 수 있을 때 더 정확히 판단할 수 있습니다.',
+      detail: growthComparison ? `매출 ${comparisonPercentLabel(growthComparison.revenue)} · 영업이익 ${comparisonPercentLabel(growthComparison.operatingIncome)}` : '현재 화면에서는 가능한 comparison만 표시합니다.',
+      status: growthComparison ? 'ready' : 'pending',
+      comparisonBars: growthComparison
+        ? [
+            {
+              label: '매출',
+              value: comparisonPercentLabel(growthComparison.revenue),
+              width: clampPercent((Math.abs(growthComparison.revenue) / maxGrowth) * 100),
+              direction: comparisonDirection(growthComparison.revenue),
+            },
+            {
+              label: '영업이익',
+              value: comparisonPercentLabel(growthComparison.operatingIncome),
+              width: clampPercent((Math.abs(growthComparison.operatingIncome) / maxGrowth) * 100),
+              direction: comparisonDirection(growthComparison.operatingIncome),
+            },
+          ]
+        : [],
+    },
+  ];
+}
 
 function priorityMetricKeys(label: string, index: number): FinancialMetricItemKey[] {
   if (/CAPEX|가동률/.test(label)) return ['capitalExpenditures', 'cashFlow', 'revenue'];
@@ -3373,6 +3560,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const explainerMetrics = beginnerIndustryMetrics(company, displayMetrics);
   const financialPriorityMetrics = connectFinancialPriorityMetrics(company, financialSummary, explainerMetrics);
   const financialDataFreshness = financialFreshnessInfo(company, primaryReportLink, financialSummary, dataFreshness, sourceStatusShort);
+  const financialSourceBadges = financialSourceBadgeItems(financialSummary, financialDataFreshness);
+  const financialInsightCards = buildFinancialInsightCards(company, financialSummary);
   const explainerSignals = beginnerSignalSet(company);
   const relatedLinks = links.filter((link) => link.source === company.id || link.target === company.id);
   const relatedCompanies = relatedLinks
@@ -3662,8 +3851,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <div className="analysis-overview-head financial-learning-head">
             <div>
               <span className="analysis-market-pill">재무 쉽게 보기 · {marketDisplayLabel(company)}</span>
-              <h2>숫자는 마지막 확인입니다.</h2>
-              <p>이야기가 실제 돈으로 이어졌는지 3개만 봅니다.</p>
+              <h2>숫자는 마지막 확인입니다</h2>
+              <p>이야기가 실제 돈과 수익성으로 이어졌는지 봅니다.</p>
             </div>
             <div className="analysis-overview-side">
               <span className={`analysis-source-pill ${financialDataFreshness.sourceClass}`}>{financialDataFreshness.sourceLabel}</span>
@@ -3672,14 +3861,59 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <span>공시일: {financialDataFreshness.filingDate}</span>
                 <em>{financialDataFreshness.status}</em>
               </div>
+              {financialSourceBadges.length ? (
+                <div className="financial-source-badge-row" aria-label="재무 원문 기준 요약">
+                  {financialSourceBadges.map((badge) => <span key={badge}>{badge}</span>)}
+                </div>
+              ) : null}
               <small className="analysis-report-meta">{primaryReportLink.statusDetail}</small>
             </div>
           </div>
 
+          <section className="financial-visual-summary" aria-label="재무 핵심 흐름 시각 요약">
+            {financialInsightCards.map((card) => (
+              <article className={`financial-insight-card ${card.status}`} key={card.title}>
+                <span className="financial-insight-eyebrow">{card.status === 'ready' ? '공식 숫자 기준' : '계산 대기'}</span>
+                <h3>{card.title}</h3>
+                <strong>{card.value}</strong>
+                <p>{card.note}</p>
+                {card.status === 'ready' && typeof card.barPercent === 'number' ? (
+                  <div className="financial-ratio-visual" aria-label={card.barLabel ?? card.value}>
+                    <div className="financial-ratio-track">
+                      <span style={{ width: `${card.barPercent}%` }} />
+                    </div>
+                    <small>{card.detail}</small>
+                  </div>
+                ) : null}
+                {card.status === 'ready' && card.comparisonBars?.length ? (
+                  <div className="financial-comparison-bars" aria-label={card.detail}>
+                    {card.comparisonBars.map((item) => (
+                      <div className={`financial-comparison-row ${item.direction}`} key={item.label}>
+                        <span>{item.label}</span>
+                        <div className="financial-comparison-track">
+                          <i style={{ width: `${item.width}%` }} />
+                        </div>
+                        <b>{item.value}</b>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {card.comparisonPills?.length ? (
+                  <div className="financial-insight-pill-row">
+                    {card.comparisonPills.map((pill) => (
+                      <span key={`${card.title}-${pill.label}`}>{pill.label} {pill.value}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {card.status === 'pending' ? <small className="financial-insight-muted">{card.detail}</small> : null}
+              </article>
+            ))}
+          </section>
+
           <section className="financial-priority-card">
             <div className="section-title">
               <BarChart3 size={16} />
-              <span>먼저 볼 숫자 3개</span>
+              <span>기준 숫자 3개</span>
             </div>
             <div className="financial-priority-grid">
               {financialNumberCards.map((metric, index) => (

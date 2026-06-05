@@ -2039,6 +2039,44 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 국내/해외 기업의 report period, currency, amount basis를 통일된 chart model로 변환합니다.
 - 컨센서스, PER/PBR, valuation은 공식/외부 source와 재배포 조건이 확인될 때까지 별도 후보로 유지합니다.
 
+### v3 1차 구현 결과
+
+확인 일시: 2026-06-05
+
+이번 구현은 API/data 구조를 바꾸지 않고 기업 해설 페이지의 `재무 쉽게 보기` 정보 계층만 조정했습니다.
+
+구현한 것:
+
+- 상단 문구를 `숫자는 마지막 확인입니다` / `이야기가 실제 돈과 수익성으로 이어졌는지 봅니다.`로 정리했습니다.
+- 기존 숫자 3개 카드 위에 해석 카드 3개를 추가했습니다: `팔아서 얼마나 남겼나요?`, `이익이 현금으로 이어졌나요?`, `성장이 이익으로 연결됐나요?`
+- 현재 summary에 연결된 공식 숫자가 있을 때 `영업이익률 = operatingIncome / revenue`, `현금흐름/영업이익 = operatingCashFlow / operatingIncome`을 계산합니다.
+- 계산 가능한 값은 CSS div 기반 mini ratio bar로 표시하고, 100% 초과 값은 bar만 100%로 clamp하며 label은 실제 비율을 유지합니다.
+- 기존 `comparison.yoy/qoq`가 있는 지표는 작은 pill 또는 mini comparison row로만 표시합니다.
+- source/report/asOf/currency badge를 작게 묶어 표시합니다.
+- 기존 `매출`, `영업이익`, `영업현금흐름` 숫자 3개 카드는 `기준 숫자 3개`로 이름을 낮춰 아래쪽에 유지했습니다.
+- fallback 또는 공식 데이터 미연결 상태에서는 계산과 차트를 숨기고 `공식 데이터 연결 필요`, `값 확인 전, 지표 의미만 표시합니다.` 문구를 보여줍니다.
+
+현재 API로 가능한 것:
+
+- 공식 API summary가 연결된 기업의 영업이익률 계산
+- 영업현금흐름/영업이익 비율 계산
+- 기존 YoY/QoQ comparison 기반 변화 pill 표시
+- SEC/OpenDART source, report type, fiscal period, asOf, currency badge 표시
+
+아직 API 또는 view model 확장이 필요한 것:
+
+- 직전 분기 대비 영업이익률 변화
+- 최근 4분기 sparkline
+- 매출 증가율과 영업이익률 변화의 정확한 시계열 비교
+- raw numeric metric을 프론트 summary에 보존하는 구조
+- 기업별 재무 상세 페이지와 source별 chart normalization
+
+다음 단계:
+
+- 2차에서 `/api/financials` 응답 또는 view model에 현재/직전 분기 pair와 최근 period array를 추가합니다.
+- `전체 지표 보기`, `재무제표 해설 더 보기`는 당장 삭제하지 않고 상세/학습 페이지 분리 후보로 유지합니다.
+- 로컬 Vite 단독 실행은 서버리스 `/api/financials`가 붙지 않으면 공식 데이터 미연결 UI를 확인하는 용도로 사용합니다.
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
