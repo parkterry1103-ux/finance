@@ -22249,3 +22249,164 @@ button.flow-stage-company-chip:focus-visible {
     padding: 12px;
   }
 }
+
+/* Market map connection audit: distinguish analysis-ready companies from reference nodes. */
+.connection-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.summary-main > .connection-badge-row {
+  flex: 1 0 100%;
+}
+
+.connection-status-badge,
+.connection-mini-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: default;
+  pointer-events: none;
+}
+
+.connection-status-badge.complete {
+  color: #0f766e;
+  border-color: rgba(20, 184, 166, 0.2);
+  background: #ecfdf5;
+}
+
+.connection-status-badge.partial {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.connection-status-badge.reference,
+.connection-mini-badge.reference {
+  color: #475569;
+  border-color: rgba(148, 163, 184, 0.24);
+  background: #f8fafc;
+}
+
+.connection-status-badge.planned,
+.connection-mini-badge.planned {
+  color: #7c2d12;
+  border-color: rgba(251, 146, 60, 0.22);
+  background: #fff7ed;
+}
+
+.supply-node.connection-reference,
+.supply-node.connection-planned,
+.company-row-card.connection-reference,
+.company-row-card.connection-planned,
+.korea-listed-item.connection-reference,
+.korea-listed-item.connection-planned {
+  border-style: dashed !important;
+}
+
+.supply-node.connection-reference,
+.supply-node.connection-planned {
+  background: #fbfdff !important;
+}
+
+.supply-node.connection-reference .node-name,
+.supply-node.connection-planned .node-name {
+  color: #334155 !important;
+}
+
+.supply-node .node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.supply-node .connection-mini-badge {
+  min-height: 20px;
+  padding: 0 6px;
+  font-size: 9.5px;
+}
+
+.role-badge.role-planned {
+  color: #7c2d12;
+  background: #fff7ed;
+}
+
+.role-badge.role-reference {
+  color: #475569;
+  background: #f8fafc;
+}
+
+.flow-focus-disabled,
+.explainer-disabled-action,
+.analysis-link-button.pending,
+.korea-listed-actions .company-row-disabled {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 9px;
+  color: #64748b !important;
+  background: #f8fafc !important;
+  box-shadow: none !important;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: default;
+}
+
+.explainer-primary-actions .explainer-disabled-action {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.relationship-selected-company-card .connection-badge-row,
+.flow-focus-company-card .connection-badge-row {
+  margin-top: 2px;
+}
+
+.korea-listed-item .connection-badge-row {
+  margin-top: -2px;
+}
+
+.korea-listed-actions {
+  flex-wrap: wrap;
+}
+
+.company-row-card.connection-reference .company-row-main em,
+.company-row-card.connection-planned .company-row-main em {
+  color: #64748b;
+  background: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .connection-status-badge,
+  .connection-mini-badge {
+    white-space: normal;
+  }
+
+  .flow-focus-disabled,
+  .explainer-disabled-action,
+  .analysis-link-button.pending,
+  .korea-listed-actions .company-row-disabled {
+    width: 100%;
+  }
+}

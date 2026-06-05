@@ -132,6 +132,47 @@ const aiCoreCompanyIds = new Set([
   'ai-datacenter-vertiv',
 ]);
 
+type MarketMapConnectionLevel = 'complete' | 'partial' | 'reference' | 'planned';
+
+const aiCompleteConnectionIds = new Set([
+  'ai-datacenter-dell',
+  'us-semiconductors-nvidia',
+  'ai-datacenter-sk-hynix',
+  'ai-datacenter-amd',
+  'ai-datacenter-tsmc',
+  'ai-datacenter-asml',
+  'ai-datacenter-micron',
+  'ai-datacenter-broadcom',
+  'ai-datacenter-microsoft',
+  'ai-datacenter-google',
+  'ai-datacenter-supermicro',
+  'ai-datacenter-vertiv',
+  'ai-datacenter-samsung',
+]);
+
+const aiReferenceOnlyIds = new Set([
+  'ai-datacenter-amazon',
+  'ai-datacenter-intel',
+  'ai-datacenter-marvell',
+  'ai-datacenter-arista',
+  'ai-datacenter-eaton',
+  'ai-datacenter-schneider',
+]);
+
+const aiPlannedConnectionIds = new Set([
+  'ai-datacenter-hanmi',
+  'ai-datacenter-leeno',
+  'ai-datacenter-isc',
+  'ai-datacenter-wonikips',
+  'ai-datacenter-soulbrain',
+]);
+
+const aiAuditedMarketMapIds = new Set([
+  ...aiCompleteConnectionIds,
+  ...aiReferenceOnlyIds,
+  ...aiPlannedConnectionIds,
+]);
+
 const aiFirstLookIds = [
   'us-semiconductors-nvidia',
   'ai-datacenter-tsmc',
@@ -345,6 +386,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   const { company, isSelected, isDimmed, isExpanded, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
   const symbol = companySymbol(company);
+  const connection = companyConnectionState(company);
   const compactStage =
     company.sectorId === aiRelationshipSectorId && company.anchorId === aiRelationshipAnchorId
       ? aiStageColumns[aiStageColumn(company)] ?? companyValueChainStage(company)
@@ -356,7 +398,8 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
         'supply-node',
         `tier-${company.tier}`,
         `role-${role.className}`,
-        isMainListedCompany(company) ? 'listed-node' : 'reference-node',
+        connection.canOpenAnalysis ? 'listed-node' : 'reference-node',
+        `connection-${connection.level}`,
         isSelected ? 'selected' : '',
         isDimmed ? 'dimmed' : '',
     ].join(' ')}
@@ -398,6 +441,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
       </div>
       <div className="node-meta">
         <span>{compactStage}</span>
+        {!connection.canOpenAnalysis && <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>}
       </div>
       <Handle type="source" position={Position.Right} className="node-handle" />
     </div>
@@ -551,11 +595,83 @@ function isMainListedCompany(company: Company) {
   return inferCompanyListing(company).isInvestmentAnalyzable;
 }
 
+function isAuditedAiMarketMapCompany(company: Company) {
+  return company.sectorId === aiRelationshipSectorId && aiAuditedMarketMapIds.has(company.id);
+}
+
+function companyConnectionState(company: Company): {
+  level: MarketMapConnectionLevel;
+  label: string;
+  detail: string;
+  badges: string[];
+  canOpenAnalysis: boolean;
+  canOpenFinancials: boolean;
+} {
+  if (isAuditedAiMarketMapCompany(company)) {
+    if (aiCompleteConnectionIds.has(company.id)) {
+      return {
+        level: 'complete',
+        label: '기업해설 연결',
+        detail: '기업해설과 공식 재무 숫자 연결을 함께 확인할 수 있습니다.',
+        badges: ['기업해설 연결', '재무 연결'],
+        canOpenAnalysis: true,
+        canOpenFinancials: true,
+      };
+    }
+
+    if (aiReferenceOnlyIds.has(company.id)) {
+      return {
+        level: 'reference',
+        label: '시장 흐름 참고',
+        detail: '전체 관계를 이해하기 위한 참고 기업입니다. 현재 화면에서는 상세 해설로 이동하지 않습니다.',
+        badges: ['시장 흐름 참고'],
+        canOpenAnalysis: false,
+        canOpenFinancials: false,
+      };
+    }
+
+    return {
+      level: 'planned',
+      label: '해설 준비 중',
+      detail: '후순위 연결 후보입니다. 현재는 관계도에서 흐름 참고용으로만 표시합니다.',
+      badges: ['해설 준비 중'],
+      canOpenAnalysis: false,
+      canOpenFinancials: false,
+    };
+  }
+
+  if (isMainListedCompany(company)) {
+    return {
+      level: 'partial',
+      label: '기업해설 연결',
+      detail: '기업해설은 열 수 있지만 공식 재무 연결 상태는 회사별로 확인이 필요합니다.',
+      badges: ['기업해설 연결', '재무 확인 필요'],
+      canOpenAnalysis: true,
+      canOpenFinancials: false,
+    };
+  }
+
+  return {
+    level: 'reference',
+    label: '시장 흐름 참고',
+    detail: '시장 흐름 이해를 위한 참고 기업입니다. 공식 재무 화면으로 이동하지 않습니다.',
+    badges: ['시장 흐름 참고'],
+    canOpenAnalysis: false,
+    canOpenFinancials: false,
+  };
+}
+
 function canOpenCompanyAnalysis(company?: Company) {
-  return Boolean(company && isMainListedCompany(company));
+  return Boolean(company && companyConnectionState(company).canOpenAnalysis);
+}
+
+function canOpenCompanyFinancials(company?: Company) {
+  return Boolean(company && companyConnectionState(company).canOpenFinancials);
 }
 
 function companyScopeLabel(company: Company) {
+  const connection = companyConnectionState(company);
+  if (isAuditedAiMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.label;
   const listing = inferCompanyListing(company);
   if (listing.listed) return '상장기업';
   if (listing.listingStatus === 'unknown') return '상장 여부 확인 필요';
@@ -565,6 +681,9 @@ function companyScopeLabel(company: Company) {
 }
 
 function companyScopeDetail(company: Company) {
+  const connection = companyConnectionState(company);
+  if (isAuditedAiMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.detail;
+  if (isAuditedAiMarketMapCompany(company) && connection.level === 'complete') return '시장지도, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
   const listing = inferCompanyListing(company);
   if (listing.listed) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
   if (listing.listingStatus === 'unknown') return '상장 여부와 공시 연결을 먼저 확인해야 합니다. 확인 전에는 관계 이해용으로 봅니다.';
@@ -892,13 +1011,23 @@ type ListingFilter = 'all' | 'listed' | 'reference';
 
 function companyRoleProfile(company: Company) {
   const stage = companyValueChainStage(company);
-  if (!isMainListedCompany(company)) {
+  const connection = companyConnectionState(company);
+  if (connection.level === 'planned') {
     return {
-      primary: '비상장 참고',
+      primary: '해설 준비 중',
+      secondary: '후순위 연결 후보',
+      className: 'planned',
+      filterGroup: 'reference' as RoleFilter,
+      explanation: '관계도 보조 기업입니다. 공식 해설과 재무 연결은 나중에 검토합니다.',
+    };
+  }
+  if (connection.level === 'reference') {
+    return {
+      primary: '시장 흐름 참고',
       secondary: '관계 참고용',
       className: 'reference',
       filterGroup: 'reference' as RoleFilter,
-      explanation: '공시 확인이 어려운 보조 노드입니다.',
+      explanation: '전체 흐름을 이해하기 위한 참고 노드입니다.',
     };
   }
   if (company.id === 'us-semiconductors-nvidia') {
@@ -975,8 +1104,8 @@ function companyRoleProfile(company: Company) {
 
 function matchesRoleFilter(company: Company, roleFilter: RoleFilter) {
   if (roleFilter === 'all') return true;
-  if (roleFilter === 'listed') return isMainListedCompany(company);
-  if (roleFilter === 'reference') return !isMainListedCompany(company);
+  if (roleFilter === 'listed') return canOpenCompanyAnalysis(company);
+  if (roleFilter === 'reference') return !canOpenCompanyAnalysis(company);
   return companyRoleProfile(company).filterGroup === roleFilter;
 }
 
@@ -3492,6 +3621,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   const recentMover = marketMovers.find((mover) => mover.companyId === company.id);
   const recentMovementSummary = recentMover?.reason ?? `${company.analystSignal} ${company.investmentView}`;
   const companyPrice = getPriceForCompany(company, marketPrices);
+  const companyCanOpenFinancials = canOpenCompanyFinancials(company);
   const sourceStatusShort =
     primaryReportLink.status === 'direct'
       ? '원문 보고서 연결됨'
@@ -3699,10 +3829,17 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </section>
 
           <div className="explainer-primary-actions">
-            <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
-              <CircleDollarSign size={15} />
-              숫자 3개 보기
-            </button>
+            {companyCanOpenFinancials ? (
+              <button type="button" onClick={() => scrollToAnalysisSection('financial-easy-view')}>
+                <CircleDollarSign size={15} />
+                숫자 3개 보기
+              </button>
+            ) : (
+              <span className="explainer-disabled-action">
+                <CircleDollarSign size={15} />
+                재무 연결 준비 중
+              </span>
+            )}
             <button type="button" onClick={() => onBack(company)}>
               <Network size={15} />
               시장 흐름 보기
@@ -4302,7 +4439,7 @@ function App() {
     const matchesStage = stageFilter === 'all' || companyValueChainStage(company) === stageFilter;
     const matchesListing =
       listingFilter === 'all' ||
-      (listingFilter === 'listed' ? isMainListedCompany(company) : !isMainListedCompany(company));
+      (listingFilter === 'listed' ? canOpenCompanyAnalysis(company) : !canOpenCompanyAnalysis(company));
     const matchesRole = !isAiRelationshipMap || matchesRoleFilter(company, roleFilter);
     const matchesCoreMode =
       !isAiRelationshipMap ||
@@ -4318,7 +4455,7 @@ function App() {
       showReferenceNodes ||
       flowViewMode === 'reference' ||
       roleFilter === 'reference' ||
-      isMainListedCompany(company) ||
+      canOpenCompanyAnalysis(company) ||
       company.id === selectedCompanyId;
     const matchesVerificationVisibility =
       !isAiRelationshipMap ||
@@ -4384,7 +4521,9 @@ function App() {
   const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
   const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
   const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
+  const selectedConnectionState = selectedCompany ? companyConnectionState(selectedCompany) : null;
   const selectedCanOpenAnalysis = canOpenCompanyAnalysis(selectedCompany);
+  const selectedCanOpenFinancials = canOpenCompanyFinancials(selectedCompany);
   const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const selectedDirectLinks = selectedCompany
@@ -4412,11 +4551,11 @@ function App() {
     const priorityA =
       (aiCoreLinkIds.has(a.link.id) ? 0 : 20) +
       (firstLookA >= 0 ? firstLookA : 10) +
-      (isMainListedCompany(a.company) ? 0 : 6);
+      (canOpenCompanyAnalysis(a.company) ? 0 : 6);
     const priorityB =
       (aiCoreLinkIds.has(b.link.id) ? 0 : 20) +
       (firstLookB >= 0 ? firstLookB : 10) +
-      (isMainListedCompany(b.company) ? 0 : 6);
+      (canOpenCompanyAnalysis(b.company) ? 0 : 6);
     return priorityA - priorityB;
   });
   const incomingConnectionCards = prioritizedSelectedConnectionCards.filter((item) => item.direction === 'incoming').slice(0, 2);
@@ -4516,7 +4655,7 @@ function App() {
   const routeCategoryCompanyId = routeCategoryId ? routeParams.get('company') ?? undefined : undefined;
   const routePickId = routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
-  const analysisCompany = routeCompany ?? selectedCompany;
+  const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
   const isPicksRoute = Boolean(routePickMatch);
@@ -4631,7 +4770,7 @@ function App() {
 
   function openFlowCompanyAnalysis(company: Company) {
     focusCompany(company.id);
-    openAnalysis(company);
+    if (canOpenCompanyAnalysis(company)) openAnalysis(company);
   }
 
   function selectFlowStage(stageName: string) {
@@ -4908,6 +5047,11 @@ function App() {
   }, [flowViewMode, isAiRelationshipMap, selectedCompany?.id, shouldShowRelationshipCanvas]);
 
   function openAnalysis(company: Company, anchor?: string) {
+    if (!canOpenCompanyAnalysis(company)) {
+      if (groupCompanies.some((item) => item.id === company.id)) focusCompany(company.id);
+      else openCompanyMap(company);
+      return;
+    }
     window.history.pushState({}, '', analysisPath(company, anchor));
     setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
     if (anchor) {
@@ -5082,7 +5226,7 @@ function App() {
     return <FinancialLearningPage onHome={openHome} />;
   }
 
-  if (isAnalysisRoute && analysisCompany) {
+  if (isAnalysisRoute && analysisCompany && canOpenCompanyAnalysis(analysisCompany)) {
     return (
       <ReactFlowProvider>
         <AnalysisPage
@@ -5348,8 +5492,9 @@ function App() {
             </div>
             {visibleCompanies.map((company) => {
               const role = companyRoleProfile(company);
+              const connection = companyConnectionState(company);
               return (
-                <div className={`company-row-card ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
+                <div className={`company-row-card connection-${connection.level} ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
                   <button
                     className="company-row"
                     onClick={() => focusCompany(company.id)}
@@ -5363,12 +5508,12 @@ function App() {
                     </span>
                     <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
                   </button>
-                  {isMainListedCompany(company) ? (
+                  {connection.canOpenAnalysis ? (
                     <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
-                      재무·공시 보기
+                      {connection.canOpenFinancials ? '재무·공시 보기' : '기업 해설 보기'}
                     </button>
                   ) : (
-                    <span className="company-row-disabled">관계 참고용</span>
+                    <span className="company-row-disabled">{connection.label}</span>
                   )}
                 </div>
               );
@@ -5428,17 +5573,17 @@ function App() {
               <button
                 type="button"
                 className="icon-action text-action"
-                disabled={!selectedIsMainListed}
-                onClick={() => selectedCompany && openAnalysis(selectedCompany, 'financial-easy-view')}
+                disabled={!selectedCanOpenFinancials}
+                onClick={() => selectedCompany && selectedCanOpenFinancials && openAnalysis(selectedCompany, 'financial-easy-view')}
               >
                 <Database size={18} />
-                {selectedIsMainListed ? '숫자 3개 보기' : '관계 참고용'}
+                {selectedCanOpenFinancials ? '숫자 3개 보기' : selectedCanOpenAnalysis ? '재무 준비 중' : '관계 참고용'}
               </button>
               <button type="button" className="icon-action text-action detail-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
                 <PanelRightOpen size={18} />
                 {isDetailCollapsed ? '상세 열기' : '상세 접기'}
               </button>
-              {selectedReportLink && selectedIsMainListed && (
+              {selectedReportLink && selectedCanOpenAnalysis && (
                 <ReportAction
                   reportLink={selectedReportLink}
                   className="topbar-report-action"
@@ -5458,7 +5603,7 @@ function App() {
                   }
                 />
               )}
-              {selectedCompany && !selectedIsMainListed && <span className="topbar-reference-note">비상장 / 공시 확인 어려움</span>}
+              {selectedCompany && !selectedCanOpenAnalysis && <span className="topbar-reference-note">{selectedConnectionState?.label ?? '시장 흐름 참고'}</span>}
             </div>
           </header>
 
@@ -5484,12 +5629,19 @@ function App() {
                       <span>선택 기업</span>
                       <strong>{selectedCompany.name}</strong>
                       <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      {selectedConnectionState && (
+                        <div className="connection-badge-row">
+                          {selectedConnectionState.badges.map((badge) => (
+                            <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
+                          ))}
+                        </div>
+                      )}
                       {selectedCanOpenAnalysis ? (
                         <button type="button" onClick={() => openAnalysis(selectedCompany)}>
                           기업 해설 보기
                         </button>
                       ) : (
-                        <em>기업 해설 준비 중</em>
+                        <em>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</em>
                       )}
                     </div>
                   )}
@@ -5614,6 +5766,13 @@ function App() {
                       {activeFlowStageCard && <em className="flow-active-stage-label">{activeFlowStageCard.stage}</em>}
                       <strong>{selectedCompany.name}</strong>
                       <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      {selectedConnectionState && (
+                        <div className="connection-badge-row">
+                          {selectedConnectionState.badges.map((badge) => (
+                            <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
+                          ))}
+                        </div>
+                      )}
                       <dl className="flow-focus-qa" aria-label="선택 기업 핵심 질문">
                         <div>
                           <dt>이 회사는 뭐 해요?</dt>
@@ -5634,12 +5793,16 @@ function App() {
                             <button type="button" onClick={() => openAnalysis(selectedCompany)}>
                               기업 해설 보기
                             </button>
-                            <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                              숫자 3개 보기
-                            </button>
+                            {selectedCanOpenFinancials ? (
+                              <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
+                                숫자 3개 보기
+                              </button>
+                            ) : (
+                              <span className="flow-focus-disabled">재무 연결 준비 중</span>
+                            )}
                           </>
                         ) : (
-                          <span className="flow-focus-disabled">기업 해설 준비 중</span>
+                          <span className="flow-focus-disabled">{selectedConnectionState?.label ?? '시장 흐름 참고'}</span>
                         )}
                       </div>
                     </div>
@@ -5687,18 +5850,28 @@ function App() {
                   <div className="korea-listed-grid">
                     {aiKoreaListedPreview.map((company) => {
                       const reportLink = getPrimaryReportLink(company);
+                      const connection = companyConnectionState(company);
                       return (
-                        <article key={company.id} className="korea-listed-item">
+                        <article key={company.id} className={`korea-listed-item connection-${connection.level}`}>
                           <div>
                             <strong>{company.name}</strong>
                             <small>{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</small>
                           </div>
+                          <div className="connection-badge-row">
+                            {connection.badges.map((badge) => (
+                              <span key={badge} className={`connection-status-badge ${connection.level}`}>{badge}</span>
+                            ))}
+                          </div>
                           <p>{companyBusinessSummary(company)}</p>
                           <span>{company.relationshipSummary ?? companyCustomerSummary(company)}</span>
                           <div className="korea-listed-actions">
-                            <button type="button" onClick={() => openAnalysis(company)}>기업 해설 보기</button>
+                            {connection.canOpenAnalysis ? (
+                              <button type="button" onClick={() => openAnalysis(company)}>기업 해설 보기</button>
+                            ) : (
+                              <span className="company-row-disabled">{connection.label}</span>
+                            )}
                             <button type="button" onClick={() => openCompanyMap(company)}>시장 흐름 보기</button>
-                            <ReportAction reportLink={reportLink} className="mini-report-action" iconSize={13} />
+                            {connection.canOpenAnalysis && <ReportAction reportLink={reportLink} className="mini-report-action" iconSize={13} />}
                           </div>
                         </article>
                       );
@@ -5935,25 +6108,37 @@ function App() {
               <div className="detail-card summary">
                 <div className="summary-main">
                   {selectedRole && <span className={`role-badge large role-${selectedRole.className}`}>{selectedRole.primary}</span>}
-                  <span className={`scope-pill ${selectedIsMainListed ? 'listed' : 'reference'}`}>{companyScopeLabel(selectedCompany)}</span>
+                  <span className={`scope-pill ${selectedCanOpenAnalysis ? 'listed' : 'reference'}`}>{companyScopeLabel(selectedCompany)}</span>
+                  {selectedConnectionState && (
+                    <div className="connection-badge-row">
+                      {selectedConnectionState.badges.map((badge) => (
+                        <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
+                      ))}
+                    </div>
+                  )}
                   {selectedRole && <p className="role-explanation">{selectedRole.explanation}</p>}
                   <strong>{companyBusinessSummary(selectedCompany)}</strong>
                   <p>{companyScopeDetail(selectedCompany)}</p>
-                  {selectedIsMainListed ? (
+                  {selectedCanOpenAnalysis ? (
                     <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
                       <FileSearch size={15} />
                       기업 해설 보기
                     </button>
                   ) : (
-                    <span className="reference-status-card">주가·기관 보유·공식 재무분석은 상장기업 중심으로 제공합니다.</span>
+                    <span className="reference-status-card">{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
                   )}
                   <div className="summary-action-row">
-                    {selectedIsMainListed && (
+                    {selectedCanOpenFinancials ? (
                       <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
                         <Database size={15} />
                         숫자 3개 보기
                       </button>
-                    )}
+                    ) : selectedCanOpenAnalysis ? (
+                      <span className="analysis-link-button pending" aria-disabled="true">
+                        <Database size={15} />
+                        재무 연결 준비 중
+                      </span>
+                    ) : null}
                     {isAiRelationshipMap && (
                       <button type="button" className="analysis-link-button" onClick={() => toggleCompanyExpansion(selectedCompany.id)}>
                         <Network size={15} />
@@ -5967,8 +6152,8 @@ function App() {
                       <ChevronDown size={14} />
                     </summary>
                     <div>
-                      {selectedReportLink && selectedIsMainListed && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
-                      {selectedReportLink && selectedIsMainListed && (
+                      {selectedReportLink && selectedCanOpenAnalysis && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
+                      {selectedReportLink && selectedCanOpenAnalysis && (
                         <div className={`report-state-note ${selectedReportLink.status}`}>
                           <strong>{selectedReportLink.statusLabel}</strong>
                           <span>{selectedReportLink.statusDetail}</span>
@@ -6025,7 +6210,7 @@ function App() {
                 </article>
               </div>
 
-              {selectedBeginnerMetrics.length > 0 && (
+              {selectedCanOpenFinancials && selectedBeginnerMetrics.length > 0 && (
                 <div className="detail-card beginner-metrics-compact">
                   <div className="section-title">
                     <BarChart3 size={16} />
@@ -6075,7 +6260,7 @@ function App() {
                 )}
               </div>
 
-              {selectedIsMainListed ? (
+              {selectedCanOpenFinancials ? (
                 <>
                   <div className="finance-grid">
                     <div className="finance-item">
@@ -6105,8 +6290,8 @@ function App() {
                 </>
               ) : (
                 <div className="reference-finance-note">
-                  <strong>공식 재무정보 확인 어려움</strong>
-                  <p>비상장 또는 공시 연결 전 기업은 출처 없는 매출·영업이익률·부채비율을 표시하지 않습니다.</p>
+                  <strong>{selectedCanOpenAnalysis ? '재무 연결 준비 중' : selectedConnectionState?.label ?? '시장 흐름 참고'}</strong>
+                  <p>{selectedConnectionState?.detail ?? '출처 없는 매출·영업이익률·부채비율을 표시하지 않습니다.'}</p>
                 </div>
               )}
 
