@@ -4198,10 +4198,6 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
       title: '영업현금흐름',
       body: '장부상 이익이 실제 현금 흐름으로 이어졌는지 봅니다. 이익과 현금흐름이 함께 움직이는지가 중요합니다.',
     },
-    {
-      title: 'YoY / QoQ',
-      body: 'YoY는 작년 같은 기간, QoQ는 직전 분기와 비교합니다. 계절성이 큰 업종은 YoY를 함께 보는 편이 자연스럽습니다.',
-    },
   ];
 
   return (
@@ -4209,7 +4205,7 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
       <header className="pick-nav financial-learn-nav">
         <div className="breadcrumb" aria-label="현재 위치">
           <button type="button" onClick={onHome}>홈</button>
-          <strong>재무 공부</strong>
+          <strong>숫자 읽기</strong>
         </div>
         <button type="button" className="ghost-action" onClick={onHome}>
           <Network size={15} />
@@ -4236,8 +4232,8 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
         <section className="financial-learn-note">
           <CheckCircle size={18} />
           <div>
-            <strong>전체 지표는 핵심 흐름을 본 뒤에 봅니다</strong>
-            <p>부채비율, FCF, EPS 같은 지표는 2차 회사별 상세 페이지에서 더 조용하게 분리할 후보입니다.</p>
+            <strong>비교는 그다음입니다</strong>
+            <p>YoY/QoQ, 부채비율, FCF, EPS는 핵심 3개를 본 뒤에 확인합니다.</p>
           </div>
         </section>
       </main>

@@ -22052,3 +22052,200 @@ button.flow-stage-company-chip:focus-visible {
     gap: 5px;
   }
 }
+
+/* QA polish: keep financial explainers compact and aligned with the light company UI. */
+.story-analysis-shell .financial-visual-summary {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.story-analysis-shell .financial-insight-card,
+.story-analysis-shell .financial-insight-card.pending {
+  gap: 8px;
+  min-height: 196px;
+  padding: 16px;
+  border-color: rgba(37, 99, 235, 0.11);
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.045);
+}
+
+.story-analysis-shell .financial-insight-card.pending {
+  background: #fbfdff;
+}
+
+.story-analysis-shell .financial-insight-eyebrow,
+.story-analysis-shell .financial-source-badge-row span,
+.story-analysis-shell .financial-insight-pill-row span,
+.story-analysis-shell .financial-insight-muted {
+  padding: 4px 7px;
+  font-size: 10.5px;
+}
+
+.story-analysis-shell .financial-insight-card h3 {
+  font-size: 18px;
+}
+
+.story-analysis-shell .financial-insight-card strong {
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+
+.story-analysis-shell .financial-ratio-track,
+.story-analysis-shell .financial-comparison-track {
+  height: 7px;
+  background: #e8eef7;
+}
+
+.story-analysis-shell .financial-ratio-track span,
+.story-analysis-shell .financial-comparison-track i {
+  background: #5b8def;
+}
+
+.story-analysis-shell .financial-priority-card {
+  padding: 12px;
+}
+
+.story-analysis-shell .financial-priority-grid article {
+  min-height: 146px;
+  padding: 12px;
+}
+
+.story-analysis-shell .financial-priority-grid article strong {
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+
+.story-analysis-shell .financial-detail-cta-card {
+  padding: 12px 14px;
+}
+
+.story-analysis-shell .financial-detail-cta-card h2 {
+  margin: 5px 0 4px;
+  font-size: 17px;
+}
+
+.story-analysis-shell .financial-detail-cta-actions button,
+.story-analysis-shell .compact-deep-action,
+.story-analysis-shell .compact-deep-muted {
+  min-height: 32px;
+}
+
+.story-analysis-shell .analysis-compact-deep-card {
+  gap: 10px;
+  padding: 14px;
+}
+
+.story-analysis-shell .compact-deep-head h2 {
+  font-size: clamp(17px, 2vw, 21px);
+}
+
+.story-analysis-shell .compact-deep-list article {
+  min-height: 52px;
+  padding: 9px 10px;
+  background: #fcfdff;
+}
+
+.financial-learn-shell {
+  background: #f8fafc;
+}
+
+.financial-learn-nav {
+  min-height: 52px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.financial-learn-main {
+  max-width: 760px;
+  gap: 10px;
+  padding: 10px 0 34px;
+}
+
+.financial-learn-hero {
+  gap: 6px;
+  padding: 22px 0 6px;
+}
+
+.financial-learn-hero h1 {
+  font-size: clamp(28px, 3.8vw, 38px);
+}
+
+.financial-learn-hero p,
+.financial-learn-guide p,
+.financial-learn-note p {
+  font-size: 12.5px;
+}
+
+.financial-learn-guide article {
+  padding: 13px 15px;
+}
+
+.financial-learn-note {
+  padding: 13px 15px;
+}
+
+@media (max-width: 820px) {
+  .financial-learn-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+  }
+
+  .financial-learn-nav .ghost-action {
+    min-height: 34px;
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .story-analysis-shell .financial-insight-card,
+  .story-analysis-shell .financial-insight-card.pending {
+    min-height: 0;
+    padding: 13px;
+  }
+
+  .story-analysis-shell .financial-priority-card {
+    padding: 10px;
+  }
+
+  .story-analysis-shell .financial-priority-grid article {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .story-analysis-shell .financial-priority-grid article strong {
+    font-size: 24px;
+  }
+
+  .story-analysis-shell .financial-detail-cta-card {
+    padding: 12px;
+  }
+
+  .story-analysis-shell .compact-deep-list article {
+    gap: 8px;
+    min-height: 0;
+    padding: 9px;
+  }
+
+  .story-analysis-shell .compact-deep-action,
+  .story-analysis-shell .compact-deep-muted {
+    min-height: 29px;
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+
+  .financial-learn-nav {
+    position: static;
+    width: min(100% - 22px, 760px);
+  }
+
+  .financial-learn-hero {
+    padding-top: 16px;
+  }
+
+  .financial-learn-guide article,
+  .financial-learn-note {
+    padding: 12px;
+  }
+}
