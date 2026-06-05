@@ -68,8 +68,8 @@ type FinancialsApiResponse = {
   message?: string;
 };
 
-const API_TIMEOUT_MS = 10000;
-const KR_API_TIMEOUT_MS = 30000;
+const API_TIMEOUT_MS = 30000;
+const KR_API_TIMEOUT_MS = 60000;
 const OFFICIAL_DATA_REQUIRED = '공식 데이터 연결 필요';
 
 function envValue(key: string) {
@@ -218,6 +218,8 @@ async function fetchJsonWithTimeout(url: string, timeoutMs = API_TIMEOUT_MS): Pr
       },
     });
     if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.toLowerCase().includes('application/json')) return null;
     return (await response.json()) as FinancialsApiResponse;
   } catch {
     return null;
@@ -293,6 +295,18 @@ function mapFinancialsApiResponse(
     isApiData: true,
     isFallbackData: false,
     metrics: metricItems,
+    rawMetrics: {
+      revenue,
+      operatingIncome,
+      netIncome,
+      operatingCashFlow,
+      debtToEquity,
+      currentRatio,
+      interestCoverage,
+      freeCashFlow,
+      eps,
+      depreciationAndAmortization,
+    },
     beginnerExplanation: is20F
       ? 'SEC CompanyFacts에서 가져온 20-F annual XBRL 숫자입니다. 통화는 원문 fact 단위를 그대로 표시합니다.'
       : 'SEC CompanyFacts에서 가져온 공식 XBRL 숫자입니다. 세부 해석과 사업부 설명은 기존 MD&A/공시 해설과 함께 봅니다.',
@@ -305,6 +319,9 @@ function mapFinancialsApiResponse(
     fiscalPeriod: payload.fiscalPeriod ?? fallback.fiscalPeriod,
     filingDate,
     sourceStatus: payload.sourceStatus,
+    currency: secCurrency,
+    amountBasis: payload.amountBasis ?? undefined,
+    periodBasis: payload.periodBasis ?? undefined,
   };
 }
 
@@ -366,6 +383,18 @@ function mapKoreanFinancialsApiResponse(
     isApiData: true,
     isFallbackData: false,
     metrics: metricItems,
+    rawMetrics: {
+      revenue,
+      operatingIncome,
+      netIncome,
+      operatingCashFlow,
+      debtToEquity,
+      currentRatio,
+      interestCoverage,
+      capitalExpenditures,
+      freeCashFlow,
+      depreciationAndAmortization,
+    },
     beginnerExplanation: 'OpenDART에서 가져온 공식 재무제표 원문 숫자입니다. 금액은 API가 재스케일링하지 않은 공시 기준 수치로 표시합니다.',
     keyTakeaway:
       payload.sourceStatus === 'partial'
@@ -374,6 +403,9 @@ function mapKoreanFinancialsApiResponse(
     fiscalPeriod: payload.fiscalPeriod ?? fallback.fiscalPeriod,
     filingDate,
     sourceStatus: payload.sourceStatus,
+    currency: normalizeCurrencyLabel(payload.currency) || undefined,
+    amountBasis: payload.amountBasis ?? undefined,
+    periodBasis: payload.periodBasis ?? undefined,
   };
 }
 

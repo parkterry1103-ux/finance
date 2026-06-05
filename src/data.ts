@@ -212,6 +212,20 @@ export interface FinancialMetric {
   keyTakeaway: string;
 }
 
+export interface FinancialRawMetricSet {
+  revenue?: number | null;
+  operatingIncome?: number | null;
+  netIncome?: number | null;
+  operatingCashFlow?: number | null;
+  debtToEquity?: number | null;
+  currentRatio?: number | null;
+  interestCoverage?: number | null;
+  capitalExpenditures?: number | null;
+  freeCashFlow?: number | null;
+  eps?: number | null;
+  depreciationAndAmortization?: number | null;
+}
+
 export interface FinancialStatementSummary {
   companyId: string;
   status: CompanyFinancialStatus;
@@ -223,8 +237,12 @@ export interface FinancialStatementSummary {
   isApiData: boolean;
   isFallbackData: boolean;
   metrics: FinancialMetric[];
+  rawMetrics?: FinancialRawMetricSet;
   beginnerExplanation: string;
   keyTakeaway: string;
+  currency?: string;
+  amountBasis?: string;
+  periodBasis?: string;
   reportUrl?: string;
   sourceDirectUrl?: string;
   sourceSearchUrl?: string;

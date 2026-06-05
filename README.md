@@ -263,6 +263,34 @@ UI 적용 규칙:
 
 이번 MVP에서는 산업 평균 PER/PBR/마진을 화면에 표시하지 않습니다. 출처가 검증된 API를 연결하기 전까지 `산업 평균 데이터 연결 필요`, `경쟁사 비교 데이터 연결 필요` 상태를 유지하고, 가격 데이터로 PER/PBR을 임의 계산하지 않습니다.
 
+### 재무 API direct 응답 프론트 fallback 표시 수정
+
+2026-06-05 기준으로 운영 `https://finance1-flax.vercel.app/api/financials`는 완전 연결 기업에 대해 `country`, `companyId`, `cik` 또는 `corpCode`가 함께 전달될 때 `sourceStatus: direct`와 raw numeric `metrics`를 반환합니다. `companyId`만 단독으로 호출하면 일부 기업은 placeholder/not-found가 될 수 있으므로, 프론트 호출은 회사 식별자를 함께 보냅니다.
+
+fallback처럼 보인 원인은 두 가지였습니다.
+
+- 로컬 Vite 단독 실행에서는 `/api/financials`가 서버리스 JSON이 아니라 `api/financials.ts` 모듈로 응답할 수 있어 프론트 fetch가 null로 떨어졌습니다. 로컬 QA용 Vite proxy를 `https://finance1-flax.vercel.app/api/financials`에 연결해 같은 URL 경로로 JSON을 받도록 했습니다.
+- 재무 쉽게 보기 v3 계산은 API raw numeric 대신 compact string을 역파싱했습니다. API direct 응답의 `revenue`, `operatingIncome`, `operatingCashFlow` 등 raw metric을 `FinancialStatementSummary.rawMetrics`에 보존하고, 영업이익률/현금흐름 비율 계산은 raw numeric을 우선 사용합니다.
+
+정상으로 인정하는 응답은 `sourceStatus: direct` 또는 `sourceStatus: partial`입니다. US SEC 응답은 `SEC CompanyFacts`, `10-Q`/`10-K`/`20-F`, `currency`, `asOf`, `fiscalYear`, `fiscalPeriod`, `comparison`을 가능한 범위에서 사용합니다. KR 응답은 `OpenDART`, `corpCode`, `OpenDART 1분기보고서 CFS` 같은 report label, `KRW`, `comparison`을 사용합니다. API가 direct라도 일부 숫자가 없으면 해당 카드만 `공식 데이터 연결 필요`로 남기고, 없는 값을 만들지 않습니다.
+
+확인한 완전 연결 기업:
+
+- Dell, NVIDIA, SK하이닉스, AMD, TSMC, ASML, Micron, Broadcom, Microsoft, Google / Alphabet, Super Micro, Vertiv, 삼성전자
+
+확인 결과:
+
+- 13개 모두 운영 API에서 `sourceStatus: direct`와 `revenue`, `operatingIncome`, `operatingCashFlow` raw numeric을 반환합니다.
+- Dell, NVIDIA, AMD, Microsoft, Super Micro, Vertiv는 로컬 프록시 화면에서 영업이익률/현금흐름 비율/비교 카드가 표시되는 것을 확인했습니다.
+- TSMC와 ASML은 20-F 숫자와 통화(TWD/EUR)를 표시하고, comparison이 없는 성장 카드는 대기 상태로 남기는 것이 정상입니다.
+- SK하이닉스와 삼성전자는 OpenDART direct 숫자와 원화 compact 표시를 확인했습니다. OpenDART cold 응답은 길 수 있어 KR timeout은 60초로 둡니다.
+- 원익IPS 같은 준비 중 기업과 존재하지 않는 분석 route는 기업 해설 shell로 들어가지 않도록 유지합니다.
+
+남은 TODO:
+
+- 로딩 중에는 fallback 문구 대신 `공식 숫자 확인 중` 계열 상태를 별도 표시하는 개선을 검토합니다.
+- OpenDART 응답 시간을 줄이려면 운영 캐시 또는 사전 sync 경로를 별도 작업으로 검토합니다.
+
 후보 조사는 “공식 재무 원문은 SEC/OpenDART 우선, 외부 API는 산업·peer 비교 보조” 원칙으로만 정리합니다. 실제 연결 시에는 서버리스 함수에서 호출하고, 화면에는 `출처`, `기준일`, `계산 방식`, `표본 범위`를 함께 표시해야 합니다.
 
 | 후보 | 쓸 수 있는 데이터 | 적용 범위 | MVP 판단 | 구현 위치 후보 |

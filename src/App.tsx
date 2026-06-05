@@ -1403,6 +1403,7 @@ function usableFinancialMetricValue(metric?: FinancialStatementSummary['metrics'
 
 type FinancialMetricItem = FinancialStatementSummary['metrics'][number];
 type FinancialMetricItemKey = FinancialMetricItem['key'];
+type FinancialRawMetricKey = keyof NonNullable<FinancialStatementSummary['rawMetrics']>;
 type FinancialPriorityMetric = {
   label: string;
   value: string;
@@ -1435,6 +1436,20 @@ function financialMetricByKey(summary: FinancialStatementSummary, key: Financial
   return summary.metrics.find((item) => item.key === key);
 }
 
+const rawMetricKeyByFinancialMetricKey: Partial<Record<FinancialMetricItemKey, FinancialRawMetricKey>> = {
+  revenue: 'revenue',
+  operatingIncome: 'operatingIncome',
+  netIncome: 'netIncome',
+  cashFlow: 'operatingCashFlow',
+  debtRatio: 'debtToEquity',
+  capitalExpenditures: 'capitalExpenditures',
+  currentRatio: 'currentRatio',
+  interestCoverage: 'interestCoverage',
+  freeCashFlow: 'freeCashFlow',
+  eps: 'eps',
+  depreciationAndAmortization: 'depreciationAndAmortization',
+};
+
 function parseCompactFinancialValue(value?: string) {
   if (!value || isPendingFinancialValue(value)) return null;
   const text = String(value).trim();
@@ -1462,6 +1477,9 @@ function parseCompactFinancialValue(value?: string) {
 
 function financialMetricNumericValue(summary: FinancialStatementSummary, key: FinancialMetricItemKey) {
   const metricItem = financialMetricByKey(summary, key);
+  const rawKey = rawMetricKeyByFinancialMetricKey[key];
+  const rawValue = rawKey ? summary.rawMetrics?.[rawKey] : undefined;
+  if (typeof rawValue === 'number' && Number.isFinite(rawValue)) return { metricItem, value: rawValue };
   const value = parseCompactFinancialValue(metricItem?.value);
   return value === null ? null : { metricItem, value };
 }
@@ -1472,8 +1490,7 @@ function safePercent(numerator: number | null, denominator: number | null) {
     typeof denominator !== 'number' ||
     !Number.isFinite(numerator) ||
     !Number.isFinite(denominator) ||
-    numerator <= 0 ||
-    denominator <= 0
+    denominator === 0
   ) {
     return null;
   }
