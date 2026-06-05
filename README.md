@@ -2088,14 +2088,20 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 회사 설명, 질문 카드, 시장 흐름 CTA
 - `재무 쉽게 보기 v3` 해석 카드 3개와 `기준 숫자 3개`
 - 짧은 `숫자 더 보기` 보조 drawer
-- 공시/원문 보고서/관계/기관 동향/뉴스 details
-- `숫자를 더 공부하고 싶다면` CTA 카드
+- 공시/원문 보고서/관계/기관 동향/뉴스를 하나로 묶은 compact `더 깊게 보기`
+- 작고 조용한 `숫자 읽는 법` CTA 카드
 
 분리한 것:
 
 - 기본 기업해설 하단에서 `전체 지표 보기`와 `재무제표 해설 더 보기` 긴 details를 제거했습니다.
 - 새 route `/ko/learn/financials`를 추가해 매출, 영업이익, 영업현금흐름, 영업이익률, 현금흐름/영업이익 비율, YoY/QoQ, 전체 지표를 언제 보는지 설명합니다.
 - 기업해설의 재무 CTA와 `숫자 더 보기` drawer는 `/ko/learn/financials`로 연결합니다.
+
+보정한 것:
+
+- `재무 쉽게 보기 v3` 해석 카드를 다크 카드가 아닌 흰색/연한 blue-tint 문서형 카드로 바꿨습니다.
+- `/ko/learn/financials`는 큰 학습 랜딩이 아니라 `숫자 3개 읽는 법` compact 참고 페이지로 줄였습니다.
+- `MD&A / Risk Factors`, `원문 보고서`, `관련 기업 관계`, `관련 보유·거래`, `관련 뉴스`는 개별 긴 accordion 대신 하나의 compact 목록으로 낮췄습니다.
 
 아직 남은 2차 작업:
 

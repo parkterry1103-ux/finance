@@ -67,10 +67,7 @@ import {
   WeeklyDigestRecentItem,
 } from './data';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
-import {
-  externalDisclosureLinks,
-  resolveCompanyFilingLinks,
-} from './services/filings';
+import { resolveCompanyFilingLinks } from './services/filings';
 import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
@@ -515,6 +512,15 @@ function picksPath(pick?: StockAutopsyPick) {
 
 function financialLearningPath() {
   return '/ko/learn/financials';
+}
+
+const analysisRouteAliases: Record<string, string> = {
+  'ai-datacenter-nvidia': 'us-semiconductors-nvidia',
+};
+
+function resolveAnalysisRouteCompanyId(companyId?: string | null) {
+  if (!companyId) return undefined;
+  return analysisRouteAliases[companyId] ?? companyId;
 }
 
 const prominentInstitutionFilters = [
@@ -3457,7 +3463,6 @@ function StockAutopsyPicksPage({
 function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onOpenFinancialLearning, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const dataFreshness = dataFreshnessInfo(company, primaryReportLink);
-  const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.sourceType !== 'api-docs' && !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
   const displayMetrics = disclosureAnalysis.displayMetrics;
   const isKorea = company.country === 'KR';
@@ -3782,7 +3787,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
               </section>
               <div className="explainer-action-row">
                 <ReportAction reportLink={primaryReportLink} className="explainer-report-action" iconSize={15} label="공시 원문 보기" />
-                <button type="button" onClick={() => scrollToAnalysisSection('relationship-details')}>
+                <button type="button" onClick={() => scrollToAnalysisSection('compact-deep-dive')}>
                   <FileSearch size={15} />
                   관계 출처 보기
                 </button>
@@ -3790,7 +3795,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                   <ArrowRight size={15} />
                   관련 기업 보기
                 </button>
-                <button type="button" onClick={() => scrollToAnalysisSection('trade-report-details')}>
+                <button type="button" onClick={() => scrollToAnalysisSection('compact-deep-dive')}>
                   <CircleDollarSign size={15} />
                   기관 동향 보기
                 </button>
@@ -3938,14 +3943,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
               <div className="financial-more-actions financial-learning-actions" aria-label="재무 숫자 더 공부하기">
                 <button type="button" onClick={onOpenFinancialLearning}>
-                  재무 공부 페이지 보기
+                  숫자 읽는 법 보기
                 </button>
-                <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
-                  공시 보기
-                </button>
-                <button type="button" onClick={() => scrollToAnalysisSection('source-report-details')}>
-                  원문 보고서 보기
-                </button>
+                <span>원문과 뉴스는 아래 더 깊게 보기에서 조용히 확인합니다.</span>
               </div>
             </div>
           </details>
@@ -3953,261 +3953,87 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
         <section className="analysis-card financial-detail-cta-card" aria-label="재무 상세 학습 페이지 안내">
           <div>
-            <span className="analysis-market-pill">재무 상세는 따로 보기</span>
-            <h2>숫자를 더 공부하고 싶다면</h2>
-            <p>전체 지표와 재무제표 읽는 법은 기업해설 흐름 밖에 따로 정리했습니다. 여기서는 핵심 요약을 먼저 보고, 필요할 때만 공부 페이지로 넘어갑니다.</p>
+            <span className="analysis-market-pill">숫자 읽는 법</span>
+            <h2>숫자 읽는 법이 궁금하다면</h2>
+            <p>매출, 영업이익률, 현금흐름을 보는 순서만 짧게 정리했습니다.</p>
           </div>
           <div className="financial-detail-cta-actions">
             <button type="button" onClick={onOpenFinancialLearning}>
               <BookOpen size={16} />
-              재무 공부 페이지 보기
+              숫자 읽는 법 보기
               <ArrowRight size={15} />
             </button>
-            <small>회사별 전체 지표 상세 페이지는 2차에서 분리합니다.</small>
           </div>
         </section>
 
-        <div className="analysis-detail-stack">
-          <details className="analysis-card analysis-disclosure-section" id="disclosure-analysis-details">
-            <summary>
-              <span>
-                <FileSearch size={16} />
-                <strong>{isKorea ? '공시·감사 분석 더 보기' : 'MD&A / Risk Factors 더 보기'}</strong>
-                <small>{isKorea ? '감사·검토 기록과 미래 반영 포인트를 봅니다.' : '경영진 설명, 위험요인, SEC 해설을 봅니다.'}</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="section-title">
-                <FileSearch size={16} />
-                <span>{disclosureAnalysis.isCurated ? '공시 원문 해석' : '회사별 공시 검증 상태'}</span>
-              </div>
-              <div className="analysis-status-row">
-                <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
-                  {primaryReportLink.statusLabel}
-                </span>
-                <small>{primaryReportLink.statusDetail}</small>
-              </div>
-              <p className="source-status-copy">{sourceStatusCopy}</p>
-              <div className="filing-brief-body">
-                <span>{disclosureAnalysis.reportDate}</span>
-                <strong>{disclosureAnalysis.headline}</strong>
-                <p>{disclosureAnalysis.verdict}</p>
-                {primaryReportLink.isNavigable ? (
-                  <a href={primaryReportLink.url} target="_blank" rel="noreferrer">
-                    {primaryReportLink.label}
-                    <ExternalLink size={14} />
-                  </a>
-                ) : (
-                  <span className="filing-source-pending">
-                    {primaryReportLink.label}
-                    <FileSearch size={14} />
-                  </span>
-                )}
-              </div>
+        <section className="analysis-card analysis-compact-deep-card" id="compact-deep-dive" aria-label="더 깊게 보기">
+          <div className="compact-deep-head">
+            <span className="analysis-market-pill">더 깊게 보기</span>
+            <h2>필요할 때만 원문과 보조 정보를 확인합니다</h2>
+            <p>기업해설 기본 화면은 핵심 설명과 재무 요약만 남기고, 원문·관계·뉴스는 짧은 참고 목록으로 낮췄습니다.</p>
+          </div>
 
-              <div className="analysis-divider" />
+          <div className="compact-deep-list">
+            <article id="source-report-details">
+              <FileSearch size={16} />
+              <div>
+                <strong>원문 보고서</strong>
+                <p>{sourceStatusShort} · {primaryReportLink.statusDetail}</p>
+              </div>
+              <ReportAction reportLink={primaryReportLink} className="compact-deep-action" iconSize={14} label="원문 보기" />
+            </article>
 
-              <div className="section-title">
-                <ShieldAlert size={16} />
-                <span>{isKorea ? '감사·검토 기록' : 'MD&A / 경영진 해설'}</span>
+            <article id="disclosure-analysis-details">
+              <ShieldAlert size={16} />
+              <div>
+                <strong>{isKorea ? '공시·감사 포인트' : 'MD&A / Risk Factors'}</strong>
+                <p>{disclosureAnalysis.reportDate} · {disclosureAnalysis.headline}</p>
               </div>
-              <ul className="plain-list">
-                {disclosureAnalysis.auditNotes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
+              <span className="compact-deep-muted">{watchPoints[0] ?? sourceStatusCopy}</span>
+            </article>
 
-              <div className="analysis-divider" />
+            <article id="relationship-details">
+              <Network size={16} />
+              <div>
+                <strong>관련 기업 관계</strong>
+                <p>{companyValueChainStage(company)} · {relatedCompanies.length ? `${relatedCompanies.length}개 함께 보기` : '관계 정리 중'}</p>
+              </div>
+              <button type="button" className="compact-deep-action" onClick={() => onBack(company)}>
+                시장 흐름
+                <ArrowRight size={14} />
+              </button>
+            </article>
 
-              <div className="section-title">
-                <Target size={16} />
-                <span>{isKorea ? '미래 반영 포인트' : 'Risk Factors / 미래 반영 포인트'}</span>
+            <article id="trade-report-details">
+              <CircleDollarSign size={16} />
+              <div>
+                <strong>보유·거래 보고</strong>
+                <p>{companyTrades.length ? `${companyTrades.length}건 공개 보고 참고` : '현재 확인된 공개 보고 없음'}</p>
               </div>
-              <ul className="plain-list">
-                {watchPoints.map((point) => (
-                  <li key={point}>{point}</li>
-                ))}
-              </ul>
-            </div>
-          </details>
+              <span className="compact-deep-muted">참고용 공개자료</span>
+            </article>
 
-          <details className="analysis-card analysis-disclosure-section" id="source-report-details">
-            <summary>
-              <span>
-                <FileSearch size={16} />
-                <strong>원문 보고서 확인</strong>
-                <small>{sourceStatusShort}</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="analysis-status-row">
-                <span className={`analysis-status-pill ${primaryReportLink.status === 'direct' ? 'complete' : 'pending'}`}>
-                  {sourceStatusShort}
-                </span>
-                <small>{primaryReportLink.statusDetail}</small>
+            <article>
+              <Newspaper size={16} />
+              <div>
+                <strong>관련 뉴스</strong>
+                <p>
+                  {newsState.status === 'success'
+                    ? `${newsState.items.length}건 수집됨`
+                    : newsState.status === 'loading'
+                      ? '뉴스 수집 중'
+                      : newsState.status === 'empty'
+                        ? '최근 24시간 신뢰 도메인 뉴스 없음'
+                        : '뉴스 API 확인 필요'}
+                </p>
               </div>
-              <div className="report-meta-grid" aria-label="원문 보고서 기준 정보">
-                {reportMetaItems(company).map((item) => (
-                  <div key={item.label}>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className="disclosure-list">
-                {primaryReportLink.isNavigable ? (
-                  <a
-                    href={primaryReportLink.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={primaryReportLink.isDirect ? 'direct-report-link' : 'pending-report-link'}
-                  >
-                    <strong>{primaryReportLink.label}</strong>
-                    <span>{primaryReportLink.note}</span>
-                    <ExternalLink size={14} />
-                  </a>
-                ) : (
-                  <div className="pending-report-link report-status-card">
-                    <strong>{primaryReportLink.label}</strong>
-                    <span>{primaryReportLink.note}</span>
-                    <FileSearch size={14} />
-                  </div>
-                )}
-                {disclosureLinks.map((link) => (
-                  <a href={link.url} key={link.label} target="_blank" rel="noreferrer">
-                    <strong>{link.label}</strong>
-                    <span>{link.note}</span>
-                    <ExternalLink size={14} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </details>
-
-          <details className="analysis-card analysis-disclosure-section" id="relationship-details">
-            <summary>
-              <span>
-                <Network size={16} />
-                <strong>관련 기업 관계 보기</strong>
-                <small>이 회사가 어느 산업 흐름에 있는지 봅니다.</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="analysis-supply-box">
-                <div>
-                  <span>무엇을 파는 회사인가</span>
-                  <strong>{productText(company)}</strong>
-                  <p>{companyBusinessSummary(company)}</p>
-                </div>
-                <div>
-                  <span>밸류체인 위치</span>
-                  <strong>{companyValueChainStage(company)}</strong>
-                  <p>{companyCustomerSummary(company)}</p>
-                </div>
-                <div>
-                  <span>경제적 해자</span>
-                  <strong>{companyMoatSummary(company).title}</strong>
-                  <p>{companyMoatSummary(company).explanation}</p>
-                </div>
-                <button type="button" onClick={() => onBack(company)}>
-                  시장 흐름 보기
-                  <ArrowRight size={15} />
-                </button>
-              </div>
-            </div>
-          </details>
-
-          <details className="analysis-card analysis-disclosure-section" id="trade-report-details">
-            <summary>
-              <span>
-                <CircleDollarSign size={16} />
-                <strong>관련 보유·거래 보고</strong>
-                <small>13F 분기 보유 보고와 내부자·국회의원 공개 거래 보고를 참고합니다.</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              {companyTrades.length === 0 ? (
-                <div className="trade-empty">아직 확인된 보유·거래 보고가 없습니다. 현재 공개 자료 기준으로 관련 보고가 확인되지 않았습니다.</div>
-              ) : (
-                <div className="related-trade-list">
-                  {companyTrades.slice(0, 4).map((move) => (
-                    <article key={move.id}>
-                      <div>
-                        <strong>{move.investorName}</strong>
-                        <span>{move.investorTypeLabel} · {publicReportActionLabel(move)}</span>
-                      </div>
-                      <p>{move.beginnerExplanation}</p>
-                      <small>
-                        공개일 {move.disclosedDate}
-                        {move.tradeDateOptional
-                          ? ` · ${publicReportDateLabel(move)} ${move.tradeDateOptional}`
-                          : ` · ${publicReportDateLabel(move)} 확인 필요`}
-                        {' · '}
-                        {move.sourceLabel}
-                      </small>
-                    </article>
-                  ))}
-                </div>
-              )}
-              <div className="home-note">
-                <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
-                <p>국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.</p>
-                <p>보유·거래 보고는 투자 권유가 아닌 참고용 데이터입니다.</p>
-              </div>
-            </div>
-          </details>
-
-          <details className="analysis-card analysis-disclosure-section">
-            <summary>
-              <span>
-                <Newspaper size={16} />
-                <strong>관련 뉴스 보기</strong>
-                <small>실적과 공시를 이해할 때 같이 볼 기사입니다.</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="news-header">
-                <div className="section-title">
-                  <Newspaper size={16} />
-                  <span>관련 뉴스</span>
-                </div>
-                <button type="button" className="refresh-action" onClick={onRefreshNews} disabled={newsState.status === 'loading'}>
-                  <RefreshCw size={14} />
-                  새로고침
-                </button>
-              </div>
-              <div className="analysis-news-list">
-                {newsState.status === 'loading' && <div className="news-empty">뉴스 수집 중</div>}
-                {newsState.status === 'empty' && <div className="news-empty">최근 24시간 신뢰 도메인 뉴스가 없습니다.</div>}
-                {newsState.status === 'error' && <div className="news-empty">뉴스 API 확인 필요</div>}
-                {newsState.status === 'success' &&
-                  newsState.items.slice(0, 5).map((item) => (
-                    <a className="news-item" href={item.url} key={item.url} target="_blank" rel="noreferrer">
-                      <span>
-                        <Newspaper size={14} />
-                        {item.domain || item.source}
-                      </span>
-                      <strong>{item.title}</strong>
-                      <div className="news-keyword-row">
-                        {newsKeywords(company).map((keyword) => (
-                          <em key={keyword}>{keyword}</em>
-                        ))}
-                      </div>
-                      <small>
-                        {formatNewsDate(item.seendate)}
-                        <ExternalLink size={12} />
-                      </small>
-                    </a>
-                  ))}
-              </div>
-            </div>
-          </details>
-        </div>
+              <button type="button" className="compact-deep-action muted" onClick={onRefreshNews} disabled={newsState.status === 'loading'}>
+                <RefreshCw size={14} />
+                새로고침
+              </button>
+            </article>
+          </div>
+        </section>
       </main>
     </div>
   );
@@ -4362,38 +4188,19 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
   const coreItems = [
     {
       title: '매출',
-      kicker: '얼마나 팔았나요?',
-      body: '회사가 상품이나 서비스를 팔아 만든 전체 규모입니다. 다만 매출만 커도 비용이 같이 커지면 남는 돈은 작을 수 있습니다.',
-      point: '매출은 출발점입니다. 다음에는 이 매출에서 얼마나 남겼는지 봅니다.',
+      body: '회사가 얼마나 팔았는지 보는 출발점입니다. 매출만 커도 비용이 같이 커지면 남는 돈은 작을 수 있습니다.',
     },
     {
-      title: '영업이익',
-      kicker: '본업에서 남긴 돈',
-      body: '본업으로 벌고 본업 비용을 뺀 뒤 남은 돈입니다. 재무 쉽게 보기에서는 영업이익을 매출과 나눠 영업이익률로도 봅니다.',
-      point: '영업이익률은 매출 중 실제로 본업 이익으로 남은 비율입니다.',
+      title: '영업이익률',
+      body: '영업이익을 매출로 나눈 비율입니다. 회사 크기보다 본업 수익성이 어떤 흐름인지 볼 때 씁니다.',
     },
     {
       title: '영업현금흐름',
-      kicker: '현금이 실제로 들어왔나요?',
-      body: '장부상 이익이 실제 현금 흐름으로 이어졌는지 보는 숫자입니다. 이익은 있는데 현금흐름이 따라오지 않으면 이유를 따로 확인합니다.',
-      point: '현금흐름/영업이익 비율은 이익이 현금으로 바뀌는 흐름을 보는 보조 지표입니다.',
-    },
-  ];
-  const readingSteps = [
-    '먼저 매출이 어느 정도인지 확인합니다.',
-    '그다음 영업이익률로 본업 수익성을 봅니다.',
-    '마지막으로 영업현금흐름이 이익을 따라오는지 봅니다.',
-  ];
-  const comparisonItems = [
-    {
-      label: 'YoY',
-      title: '작년 같은 기간 대비',
-      body: '계절성이 있는 회사는 직전 분기보다 작년 같은 기간과 비교하는 편이 더 자연스러울 수 있습니다.',
+      body: '장부상 이익이 실제 현금 흐름으로 이어졌는지 봅니다. 이익과 현금흐름이 함께 움직이는지가 중요합니다.',
     },
     {
-      label: 'QoQ',
-      title: '직전 분기 대비',
-      body: '최근 흐름이 빠르게 바뀌는지 볼 때 씁니다. 단, 계절 효과가 큰 업종은 함께 조심해서 봅니다.',
+      title: 'YoY / QoQ',
+      body: 'YoY는 작년 같은 기간, QoQ는 직전 분기와 비교합니다. 계절성이 큰 업종은 YoY를 함께 보는 편이 자연스럽습니다.',
     },
   ];
 
@@ -4412,69 +4219,25 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
 
       <main className="financial-learn-main">
         <section className="financial-learn-hero">
-          <span className="home-kicker">재무 쉽게 보기</span>
-          <h1>재무제표를 처음 볼 때 보는 숫자</h1>
-          <p>주가해부실에서는 먼저 세 가지를 봅니다. 많이 팔았는지, 팔고 남겼는지, 현금이 들어왔는지. 전체 지표는 그다음에 천천히 봅니다.</p>
+          <span className="home-kicker">재무 숫자 참고</span>
+          <h1>숫자 3개 읽는 법</h1>
+          <p>기업해설에서 보는 매출, 영업이익률, 현금흐름의 순서를 짧게 정리했습니다.</p>
         </section>
 
-        <section className="financial-learn-card-grid" aria-label="처음 볼 재무 숫자">
+        <section className="financial-learn-guide" aria-label="재무 숫자 읽는 법">
           {coreItems.map((item) => (
-            <article className="financial-learn-card" key={item.title}>
-              <span>{item.kicker}</span>
-              <h2>{item.title}</h2>
+            <article key={item.title}>
+              <span>{item.title}</span>
               <p>{item.body}</p>
-              <small>{item.point}</small>
             </article>
           ))}
-        </section>
-
-        <section className="financial-learn-panel" aria-label="재무 숫자 읽는 순서">
-          <div>
-            <span className="section-title"><BookOpen size={16} />읽는 순서</span>
-            <h2>숫자를 한꺼번에 보지 않습니다</h2>
-            <p>기업해설 페이지에서는 핵심 요약만 먼저 보여줍니다. 더 깊은 지표는 수익성, 현금흐름, 비교 기준을 이해한 뒤 보는 편이 읽기 쉽습니다.</p>
-          </div>
-          <ol className="financial-learn-steps">
-            {readingSteps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="financial-learn-two-column" aria-label="비율과 비교 기준 설명">
-          <article>
-            <span className="section-title"><BarChart3 size={16} />비율로 보기</span>
-            <h2>영업이익률과 현금흐름 비율</h2>
-            <p>절대 금액은 회사 크기에 따라 달라집니다. 그래서 영업이익 / 매출, 영업현금흐름 / 영업이익처럼 비율로 바꿔 보면 흐름을 더 쉽게 비교할 수 있습니다.</p>
-          </article>
-          <article>
-            <span className="section-title"><CircleDollarSign size={16} />전체 지표는 언제 보나요?</span>
-            <h2>핵심 흐름을 본 뒤에 봅니다</h2>
-            <p>부채비율, 유동비율, FCF, EPS 같은 지표는 더 깊게 공부할 때 유용합니다. 기본 기업해설 페이지에서는 판단을 서두르지 않도록 핵심 숫자와 흐름을 먼저 둡니다.</p>
-          </article>
-        </section>
-
-        <section className="financial-learn-comparison" aria-label="YoY와 QoQ 설명">
-          <div>
-            <span className="section-title"><LineChart size={16} />변화율 읽기</span>
-            <h2>YoY와 QoQ는 비교 기준입니다</h2>
-          </div>
-          <div className="financial-learn-comparison-grid">
-            {comparisonItems.map((item) => (
-              <article key={item.label}>
-                <strong>{item.label}</strong>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </article>
-            ))}
-          </div>
         </section>
 
         <section className="financial-learn-note">
           <CheckCircle size={18} />
           <div>
-            <strong>기업해설 페이지에는 요약만 남깁니다</strong>
-            <p>회사별 전체 지표 표와 긴 재무제표 해설은 2차에서 별도 상세 페이지로 분리할 후보입니다. 1차에서는 공부 페이지로 개념을 먼저 분리했습니다.</p>
+            <strong>전체 지표는 핵심 흐름을 본 뒤에 봅니다</strong>
+            <p>부채비율, FCF, EPS 같은 지표는 2차 회사별 상세 페이지에서 더 조용하게 분리할 후보입니다.</p>
           </div>
         </section>
       </main>
@@ -4752,7 +4515,7 @@ function App() {
     routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
   const routeOwnershipMatch = routePath.match(/^\/ko\/ownership(?:\/)?$/) ?? routePath.match(/^\/ownership-trades(?:\/)?$/);
   const routeFinancialLearnMatch = routePath.match(/^\/ko\/learn\/financials\/?$/);
-  const routeAnalysisCompanyId = routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company');
+  const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? routeParams.get('company') ?? undefined : undefined;
   const routePickId = routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
