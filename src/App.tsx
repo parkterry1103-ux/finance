@@ -513,6 +513,10 @@ function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
 
+function financialLearningPath() {
+  return '/ko/learn/financials';
+}
+
 const prominentInstitutionFilters = [
   'Berkshire Hathaway',
   'ARK',
@@ -2721,6 +2725,7 @@ type AnalysisPageProps = {
   onHome: () => void;
   onBack: (company?: Company) => void;
   onOpenAnalysis: (company: Company, anchor?: string) => void;
+  onOpenFinancialLearning: () => void;
   onRefreshNews: () => void;
   marketPrices: MarketPrice[];
 };
@@ -3449,13 +3454,12 @@ function StockAutopsyPicksPage({
   );
 }
 
-function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onRefreshNews, marketPrices }: AnalysisPageProps) {
+function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onOpenFinancialLearning, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const dataFreshness = dataFreshnessInfo(company, primaryReportLink);
   const disclosureLinks = externalDisclosureLinks(company).filter((link) => link.sourceType !== 'api-docs' && !(primaryReportLink.isDirect && link.url === primaryReportLink.url));
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
   const displayMetrics = disclosureAnalysis.displayMetrics;
-  const insights = disclosureAnalysis.insights;
   const isKorea = company.country === 'KR';
   const watchPoints = disclosureAnalysis.watchPoints;
   const [financialSummary, setFinancialSummary] = useState<FinancialStatementSummary>(() => buildFallbackFinancials(company));
@@ -3478,59 +3482,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     };
   }, [company]);
 
-  const metricByKey = new Map(financialSummary.metrics.map((metric) => [metric.key, metric]));
-  const revenueMetric = metricByKey.get('revenue');
-  const operatingIncomeMetric = metricByKey.get('operatingIncome');
-  const netIncomeMetric = metricByKey.get('netIncome');
-  const cashFlowMetric = metricByKey.get('cashFlow');
-  const debtRatioMetric = metricByKey.get('debtRatio');
-  const operatingMarginMetric = metricByKey.get('operatingMargin');
-  const shouldUseConnectedFinancials = shouldDisplayConnectedFinancials(company, financialSummary);
-  const shouldUseSummaryMetrics = company.country === 'KR' ? financialSummary.isApiData : shouldUseConnectedFinancials;
-  const analysisRevenueDisplay = revenueDisplayForCompany(company, displayMetrics);
   const beginnerConclusion = beginnerInterpretation(disclosureAnalysis, company);
   const firstWatchPoint = watchPoints[0] ?? '다음 공시에서 매출, 현금흐름, 부채가 같은 방향으로 개선되는지 확인합니다.';
-  const hasDetailedFinancialAnalysis = Boolean(getCompanyFilingAnalysis(company));
-  const missingFinancialValue = missingFinancialValueLabel(company, hasDetailedFinancialAnalysis);
-  const quickMetrics = [
-    {
-      label: '매출',
-      value: shouldUseSummaryMetrics && revenueMetric ? revenueMetric.value : analysisRevenueDisplay.primary,
-      note:
-        shouldUseSummaryMetrics && revenueMetric
-          ? `${revenueMetric.beginnerExplanation} · ${revenueMetric.unit ?? sourceUnitShort(displayMetrics.revenueUnit, company.country)}`
-          : analysisRevenueDisplay.sourceUnit,
-    },
-    {
-      label: operatingIncomeMetric ? '영업이익' : '영업마진',
-      value: shouldUseSummaryMetrics ? operatingIncomeMetric?.value ?? displayMetrics.opMargin : displayMetrics.opMargin,
-      note:
-        shouldUseSummaryMetrics && operatingIncomeMetric
-          ? operatingIncomeMetric.beginnerExplanation
-          : '영업이익 금액은 원문 해설에서 확인하고, 첫 화면에서는 본업 수익성 비율을 먼저 봅니다.',
-    },
-    {
-      label: '순이익',
-      value: shouldUseSummaryMetrics ? netIncomeMetric?.value ?? missingFinancialValue : missingFinancialValue,
-      note:
-        shouldUseSummaryMetrics && netIncomeMetric
-          ? netIncomeMetric.beginnerExplanation
-          : '세금과 비용까지 반영한 최종 이익입니다. 숫자가 없으면 원문을 실제 금액처럼 꾸미지 않습니다.',
-    },
-    {
-      label: '현금흐름',
-      value: shouldUseSummaryMetrics ? cashFlowMetric?.value ?? missingFinancialValue : missingFinancialValue,
-      note:
-        shouldUseSummaryMetrics && cashFlowMetric
-          ? cashFlowMetric.beginnerExplanation
-          : '실제로 현금이 들어오고 나가는 흐름입니다. 이익과 같이 움직이는지 봅니다.',
-    },
-    {
-      label: debtRatioMetric ? '부채비율' : '영업마진',
-      value: shouldUseSummaryMetrics ? debtRatioMetric?.value ?? operatingMarginMetric?.value ?? displayMetrics.debtRatio : displayMetrics.debtRatio,
-      note: debtRatioMetric?.beginnerExplanation ?? operatingMarginMetric?.beginnerExplanation ?? '빚 부담과 본업 수익성을 같이 봅니다.',
-    },
-  ];
   const recentMover = marketMovers.find((mover) => mover.companyId === company.id);
   const recentMovementSummary = recentMover?.reason ?? `${company.analystSignal} ${company.investmentView}`;
   const companyPrice = getPriceForCompany(company, marketPrices);
@@ -3596,7 +3549,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
-  const financialMetricBranches = buildMetricBranchGroups({ company, displayMetrics, quickMetrics, financialSummary });
   const financialNumberCards = financialPriorityMetrics.slice(0, 3).map((metric, index) => ({
     ...metric,
     question: financialQuestionTitle(index),
@@ -3984,12 +3936,9 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 <small>{recentMovementSummary}</small>
               </div>
 
-              <div className="financial-more-actions" aria-label="재무제표 상세 보기">
-                <button type="button" onClick={() => scrollToAnalysisSection('financial-metric-branches')}>
-                  전체 지표 보기
-                </button>
-                <button type="button" onClick={() => scrollToAnalysisSection('financial-analysis-details')}>
-                  손익·현금흐름 보기
+              <div className="financial-more-actions financial-learning-actions" aria-label="재무 숫자 더 공부하기">
+                <button type="button" onClick={onOpenFinancialLearning}>
+                  재무 공부 페이지 보기
                 </button>
                 <button type="button" onClick={() => scrollToAnalysisSection('disclosure-analysis-details')}>
                   공시 보기
@@ -4002,79 +3951,23 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           </details>
         </section>
 
+        <section className="analysis-card financial-detail-cta-card" aria-label="재무 상세 학습 페이지 안내">
+          <div>
+            <span className="analysis-market-pill">재무 상세는 따로 보기</span>
+            <h2>숫자를 더 공부하고 싶다면</h2>
+            <p>전체 지표와 재무제표 읽는 법은 기업해설 흐름 밖에 따로 정리했습니다. 여기서는 핵심 요약을 먼저 보고, 필요할 때만 공부 페이지로 넘어갑니다.</p>
+          </div>
+          <div className="financial-detail-cta-actions">
+            <button type="button" onClick={onOpenFinancialLearning}>
+              <BookOpen size={16} />
+              재무 공부 페이지 보기
+              <ArrowRight size={15} />
+            </button>
+            <small>회사별 전체 지표 상세 페이지는 2차에서 분리합니다.</small>
+          </div>
+        </section>
+
         <div className="analysis-detail-stack">
-          <details className="analysis-card analysis-disclosure-section financial-branch-section" id="financial-metric-branches">
-            <summary>
-              <span>
-                <BarChart3 size={16} />
-                <strong>전체 지표 보기</strong>
-                <small>수익성, 성장성, 안정성, 현금흐름, 밸류에이션을 단계적으로 펼쳐 봅니다.</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="metric-branch-grid">
-                {financialMetricBranches.map((group) => (
-                  <details className="metric-branch-card" key={group.title}>
-                    <summary>
-                      <span>
-                        <strong>{group.title}</strong>
-                        <small>{group.summary}</small>
-                      </span>
-                      <ChevronDown size={15} />
-                    </summary>
-                    <div className="metric-branch-items">
-                      {group.items.map((metric) => (
-                        <article className="metric-detail-card" key={metric.name}>
-                          <div>
-                            <span>{metric.name}</span>
-                            <strong className={financialDetailValueClass(metric.value)}>{metric.value}</strong>
-                          </div>
-                          <div className="metric-detail-grid">
-                            <p><b>비교 기준</b>{metric.benchmark}</p>
-                            <p><b>한 줄 해석</b>{metric.interpretation}</p>
-                            <p><b>왜 보는지</b>{metric.why}</p>
-                            <p><b>주의할 점</b>{metric.caution}</p>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </div>
-          </details>
-
-          <details className="analysis-card analysis-disclosure-section" id="financial-analysis-details">
-            <summary>
-              <span>
-                <CircleDollarSign size={16} />
-                <strong>재무제표 해설 더 보기</strong>
-                <small>손익계산서, 현금흐름표, 재무상태표 해설을 펼쳐 봅니다.</small>
-              </span>
-              <ChevronDown size={16} />
-            </summary>
-            <div className="analysis-detail-content">
-              <div className="section-title">
-                <BarChart3 size={16} />
-                <span>{disclosureAnalysis.isCurated ? '재무제표 해설' : '초보자용 공시 확인 포인트'}</span>
-              </div>
-              <div className="insight-grid">
-                {insights.map((insight, index) => (
-                  <article className="insight-card" key={insight.title}>
-                    <span>{insight.kicker}</span>
-                    <strong>{insight.title}</strong>
-                    <div className="so-what-list">
-                      <p><b>무슨 일이 있었나</b>{insight.body}</p>
-                      <p><b>그래서 왜 중요한가</b>{insight.point}</p>
-                      <p><b>앞으로 볼 것</b>{watchPoints[index] ?? '다음 공시에서 같은 흐름이 숫자로 이어지는지 확인합니다.'}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </details>
-
           <details className="analysis-card analysis-disclosure-section" id="disclosure-analysis-details">
             <summary>
               <span>
@@ -4461,6 +4354,134 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
   );
 }
 
+type FinancialLearningPageProps = {
+  onHome: () => void;
+};
+
+function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
+  const coreItems = [
+    {
+      title: '매출',
+      kicker: '얼마나 팔았나요?',
+      body: '회사가 상품이나 서비스를 팔아 만든 전체 규모입니다. 다만 매출만 커도 비용이 같이 커지면 남는 돈은 작을 수 있습니다.',
+      point: '매출은 출발점입니다. 다음에는 이 매출에서 얼마나 남겼는지 봅니다.',
+    },
+    {
+      title: '영업이익',
+      kicker: '본업에서 남긴 돈',
+      body: '본업으로 벌고 본업 비용을 뺀 뒤 남은 돈입니다. 재무 쉽게 보기에서는 영업이익을 매출과 나눠 영업이익률로도 봅니다.',
+      point: '영업이익률은 매출 중 실제로 본업 이익으로 남은 비율입니다.',
+    },
+    {
+      title: '영업현금흐름',
+      kicker: '현금이 실제로 들어왔나요?',
+      body: '장부상 이익이 실제 현금 흐름으로 이어졌는지 보는 숫자입니다. 이익은 있는데 현금흐름이 따라오지 않으면 이유를 따로 확인합니다.',
+      point: '현금흐름/영업이익 비율은 이익이 현금으로 바뀌는 흐름을 보는 보조 지표입니다.',
+    },
+  ];
+  const readingSteps = [
+    '먼저 매출이 어느 정도인지 확인합니다.',
+    '그다음 영업이익률로 본업 수익성을 봅니다.',
+    '마지막으로 영업현금흐름이 이익을 따라오는지 봅니다.',
+  ];
+  const comparisonItems = [
+    {
+      label: 'YoY',
+      title: '작년 같은 기간 대비',
+      body: '계절성이 있는 회사는 직전 분기보다 작년 같은 기간과 비교하는 편이 더 자연스러울 수 있습니다.',
+    },
+    {
+      label: 'QoQ',
+      title: '직전 분기 대비',
+      body: '최근 흐름이 빠르게 바뀌는지 볼 때 씁니다. 단, 계절 효과가 큰 업종은 함께 조심해서 봅니다.',
+    },
+  ];
+
+  return (
+    <div className="financial-learn-shell">
+      <header className="pick-nav financial-learn-nav">
+        <div className="breadcrumb" aria-label="현재 위치">
+          <button type="button" onClick={onHome}>홈</button>
+          <strong>재무 공부</strong>
+        </div>
+        <button type="button" className="ghost-action" onClick={onHome}>
+          <Network size={15} />
+          홈
+        </button>
+      </header>
+
+      <main className="financial-learn-main">
+        <section className="financial-learn-hero">
+          <span className="home-kicker">재무 쉽게 보기</span>
+          <h1>재무제표를 처음 볼 때 보는 숫자</h1>
+          <p>주가해부실에서는 먼저 세 가지를 봅니다. 많이 팔았는지, 팔고 남겼는지, 현금이 들어왔는지. 전체 지표는 그다음에 천천히 봅니다.</p>
+        </section>
+
+        <section className="financial-learn-card-grid" aria-label="처음 볼 재무 숫자">
+          {coreItems.map((item) => (
+            <article className="financial-learn-card" key={item.title}>
+              <span>{item.kicker}</span>
+              <h2>{item.title}</h2>
+              <p>{item.body}</p>
+              <small>{item.point}</small>
+            </article>
+          ))}
+        </section>
+
+        <section className="financial-learn-panel" aria-label="재무 숫자 읽는 순서">
+          <div>
+            <span className="section-title"><BookOpen size={16} />읽는 순서</span>
+            <h2>숫자를 한꺼번에 보지 않습니다</h2>
+            <p>기업해설 페이지에서는 핵심 요약만 먼저 보여줍니다. 더 깊은 지표는 수익성, 현금흐름, 비교 기준을 이해한 뒤 보는 편이 읽기 쉽습니다.</p>
+          </div>
+          <ol className="financial-learn-steps">
+            {readingSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="financial-learn-two-column" aria-label="비율과 비교 기준 설명">
+          <article>
+            <span className="section-title"><BarChart3 size={16} />비율로 보기</span>
+            <h2>영업이익률과 현금흐름 비율</h2>
+            <p>절대 금액은 회사 크기에 따라 달라집니다. 그래서 영업이익 / 매출, 영업현금흐름 / 영업이익처럼 비율로 바꿔 보면 흐름을 더 쉽게 비교할 수 있습니다.</p>
+          </article>
+          <article>
+            <span className="section-title"><CircleDollarSign size={16} />전체 지표는 언제 보나요?</span>
+            <h2>핵심 흐름을 본 뒤에 봅니다</h2>
+            <p>부채비율, 유동비율, FCF, EPS 같은 지표는 더 깊게 공부할 때 유용합니다. 기본 기업해설 페이지에서는 판단을 서두르지 않도록 핵심 숫자와 흐름을 먼저 둡니다.</p>
+          </article>
+        </section>
+
+        <section className="financial-learn-comparison" aria-label="YoY와 QoQ 설명">
+          <div>
+            <span className="section-title"><LineChart size={16} />변화율 읽기</span>
+            <h2>YoY와 QoQ는 비교 기준입니다</h2>
+          </div>
+          <div className="financial-learn-comparison-grid">
+            {comparisonItems.map((item) => (
+              <article key={item.label}>
+                <strong>{item.label}</strong>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="financial-learn-note">
+          <CheckCircle size={18} />
+          <div>
+            <strong>기업해설 페이지에는 요약만 남깁니다</strong>
+            <p>회사별 전체 지표 표와 긴 재무제표 해설은 2차에서 별도 상세 페이지로 분리할 후보입니다. 1차에서는 공부 페이지로 개념을 먼저 분리했습니다.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 function App() {
   const [selectedCountry, setSelectedCountry] = useState<CountryId>('KR');
   const [selectedSectorId, setSelectedSectorId] = useState('kr-semiconductors');
@@ -4730,6 +4751,7 @@ function App() {
     routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
     routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
   const routeOwnershipMatch = routePath.match(/^\/ko\/ownership(?:\/)?$/) ?? routePath.match(/^\/ownership-trades(?:\/)?$/);
+  const routeFinancialLearnMatch = routePath.match(/^\/ko\/learn\/financials\/?$/);
   const routeAnalysisCompanyId = routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company');
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? routeParams.get('company') ?? undefined : undefined;
@@ -4740,6 +4762,7 @@ function App() {
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
   const isPicksRoute = Boolean(routePickMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
+  const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
   const newsCompany = isAnalysisRoute && analysisCompany ? analysisCompany : selectedCompany;
   const newsSector = isAnalysisRoute && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
@@ -5211,6 +5234,12 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openFinancialLearning() {
+    window.history.pushState({}, '', financialLearningPath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function changeCountry(countryId: CountryId) {
     const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
     const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
@@ -5290,6 +5319,10 @@ function App() {
     return <OwnershipReportsPage onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />;
   }
 
+  if (isFinancialLearnRoute) {
+    return <FinancialLearningPage onHome={openHome} />;
+  }
+
   if (isAnalysisRoute && analysisCompany) {
     return (
       <ReactFlowProvider>
@@ -5300,6 +5333,7 @@ function App() {
           onHome={openHome}
           onBack={closeAnalysis}
           onOpenAnalysis={openAnalysis}
+          onOpenFinancialLearning={openFinancialLearning}
           onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
           marketPrices={marketPrices}
         />
