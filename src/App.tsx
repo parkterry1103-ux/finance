@@ -2621,35 +2621,181 @@ function ReportAction({
   );
 }
 
-function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; compact?: boolean }) {
-  if (price === undefined) {
-    return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 불러오는 중</span>;
+function priceSourceInfo(source?: string) {
+  const normalized = String(source ?? '').trim().toLowerCase();
+  if (!normalized) {
+    return {
+      shortLabel: '출처 확인 중',
+      fullLabel: '가격 출처 확인 중',
+      className: 'unknown',
+    };
   }
-  const direction = priceDirection(price);
-  if (!price) {
-    return <span className={`price-badge pending ${compact ? 'compact' : ''}`}>가격 준비 중</span>;
+  if (normalized.includes('kis-openapi')) {
+    return {
+      shortLabel: '한국투자',
+      fullLabel: '한국투자증권 Open API',
+      className: 'kis',
+    };
   }
-  const display = priceDisplay(price);
-
-  return (
-    <span className={`price-badge ${direction} ${compact ? 'compact' : ''}`} title={`${price.source} · ${price.asOf}`}>
-      <strong>{display.amount}</strong>
-      {display.percent && <em>{display.percent}</em>}
-      <small>{[display.status, display.basis, formatPriceAsOf(price.asOf)].filter(Boolean).join(' · ')}</small>
-    </span>
-  );
+  if (normalized.includes('yahoo-finance-chart')) {
+    return {
+      shortLabel: 'Yahoo',
+      fullLabel: 'Yahoo Finance chart',
+      className: 'yahoo',
+    };
+  }
+  if (/fallback|import|manual|mock|example/.test(normalized)) {
+    return {
+      shortLabel: '보조',
+      fullLabel: '보조 가격 데이터',
+      className: 'fallback',
+    };
+  }
+  return {
+    shortLabel: '출처 확인 중',
+    fullLabel: source || '가격 출처 확인 중',
+    className: 'unknown',
+  };
 }
 
-function formatPriceAsOf(value?: string) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('ko-KR', {
+function parsePriceAsOf(value?: string) {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+
+  const kstMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?\s*KST$/i);
+  if (kstMatch) {
+    const date = new Date(`${kstMatch[1]}T${kstMatch[2]}${kstMatch[3] ?? ':00'}+09:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const easternMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})(:\d{2})?\s*(ET|EST|EDT)$/i);
+  if (easternMatch) {
+    const year = Number(easternMatch[1]);
+    const month = Number(easternMatch[2]);
+    const day = Number(easternMatch[3]);
+    const zone = easternMatch[6].toUpperCase();
+    const offset = zone === 'EDT' ? '-04:00' : zone === 'EST' ? '-05:00' : easternOffsetForDate(year, month, day);
+    const date = new Date(`${easternMatch[1]}-${easternMatch[2]}-${easternMatch[3]}T${easternMatch[4]}${easternMatch[5] ?? ':00'}${offset}`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const normalized = trimmed.replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}(?::\d{2})?)([+-]\d{2}:?\d{2})$/, '$1T$2$3');
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function nthWeekdayOfMonth(year: number, monthIndex: number, weekday: number, nth: number) {
+  const firstDay = new Date(Date.UTC(year, monthIndex, 1)).getUTCDay();
+  return 1 + ((weekday - firstDay + 7) % 7) + (nth - 1) * 7;
+}
+
+function easternOffsetForDate(year: number, month: number, day: number) {
+  const secondSundayInMarch = nthWeekdayOfMonth(year, 2, 0, 2);
+  const firstSundayInNovember = nthWeekdayOfMonth(year, 10, 0, 1);
+  const dateKey = Date.UTC(year, month - 1, day);
+  const dstStart = Date.UTC(year, 2, secondSundayInMarch);
+  const dstEnd = Date.UTC(year, 10, firstSundayInNovember);
+  return dateKey >= dstStart && dateKey < dstEnd ? '-04:00' : '-05:00';
+}
+
+function kstParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-  });
+    hour12: false,
+  }).formatToParts(date);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: byType.year ?? '',
+    month: byType.month ?? '',
+    day: byType.day ?? '',
+    hour: byType.hour ?? '',
+    minute: byType.minute ?? '',
+  };
+}
+
+function formatPriceAsOf(value?: string) {
+  const date = parsePriceAsOf(value);
+  if (!date) return '기준일 확인 중';
+  const parts = kstParts(date);
+  return `기준 ${parts.month}.${parts.day}`;
+}
+
+function formatPriceAsOfFull(value?: string) {
+  const date = parsePriceAsOf(value);
+  if (!date) return '주가 기준일 확인 중';
+  const parts = kstParts(date);
+  return `주가 기준 ${parts.year}.${parts.month}.${parts.day} ${parts.hour}:${parts.minute} KST`;
+}
+
+function priceFreshnessInfo(value?: string) {
+  const date = parsePriceAsOf(value);
+  if (!date) return { label: '기준일 확인 중', className: 'unknown' };
+  const diffDays = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
+  if (diffDays <= 2) return { label: '최신', className: 'fresh' };
+  if (diffDays <= 5) return { label: '업데이트 지연', className: 'delayed' };
+  return { label: '오래된 가격', className: 'stale' };
+}
+
+function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; compact?: boolean }) {
+  if (price === undefined) {
+    return (
+      <span className={`price-badge pending ${compact ? 'compact' : ''}`}>
+        <strong>가격 불러오는 중</strong>
+        <span className="price-meta-line">
+          <span className="price-meta-source unknown">출처 확인 중</span>
+          <span>기준일 확인 중</span>
+        </span>
+      </span>
+    );
+  }
+  const direction = priceDirection(price);
+  if (!price) {
+    return (
+      <span className={`price-badge pending ${compact ? 'compact' : ''}`}>
+        <strong>가격 준비 중</strong>
+        <span className="price-meta-line">
+          <span className="price-meta-source unknown">출처 확인 중</span>
+          <span>기준일 확인 중</span>
+        </span>
+      </span>
+    );
+  }
+  const display = priceDisplay(price);
+  const source = priceSourceInfo(price.source);
+  const freshness = priceFreshnessInfo(price.asOf);
+  const freshnessIsQuiet = freshness.className === 'fresh' || freshness.className === 'unknown';
+  const freshnessLabel = freshness.className === 'unknown' ? '' : freshness.label;
+  const title = [source.fullLabel, formatPriceAsOfFull(price.asOf), freshnessLabel].filter(Boolean).join(' · ');
+  const ariaLabel = [
+    display.amount,
+    display.percent,
+    source.fullLabel,
+    formatPriceAsOfFull(price.asOf),
+    freshnessLabel,
+  ].filter(Boolean).join(', ');
+
+  return (
+    <span
+      className={`price-badge ${direction} ${compact ? 'compact' : ''}`}
+      title={title}
+      aria-label={ariaLabel}
+    >
+      <strong>{display.amount}</strong>
+      {display.percent && <em>{display.percent}</em>}
+      <small className="price-status-line">{[display.status, display.basis].filter(Boolean).join(' · ')}</small>
+      <span className="price-meta-line">
+        <span className={`price-meta-source ${source.className}`}>{source.shortLabel}</span>
+        <span>{formatPriceAsOf(price.asOf)}</span>
+        {!freshnessIsQuiet && <span className={`price-freshness ${freshness.className}`}>{freshness.label}</span>}
+      </span>
+    </span>
+  );
 }
 
 function isQuarterlyHoldingReport(move: SmartMoneyMove) {
@@ -2901,6 +3047,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     summary: string;
     relatedCompanies: string[];
     company?: Company;
+    price?: MarketPrice | null;
     isComingSoon?: boolean;
     onOpen?: () => void;
   };
@@ -2909,6 +3056,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
   const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
+  const featuredPickPrice = featuredPick ? getPriceForPick(featuredPick, marketPrices) : null;
 
   const openWeeklyPick = () => {
     if (featuredPick) {
@@ -2954,6 +3102,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
       summary: item.summary,
       relatedCompanies,
       company,
+      price: isComingSoon ? null : pick ? getPriceForPick(pick, marketPrices) : company ? getPriceForCompany(company, marketPrices) : null,
       isComingSoon,
       onOpen: openItem,
     };
@@ -3014,6 +3163,11 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>{currentWeeklyDigest.featured.theme}</span>
               <span>{featuredMovementLabel}</span>
             </div>
+            {featuredPick ? (
+              <div className="weekly-price-row">
+                <PriceBadge price={featuredPickPrice} compact />
+              </div>
+            ) : null}
             <div className="weekly-autopsy-story-head">
               <span className="weekly-autopsy-marker" aria-hidden="true">
                 <FileSearch size={18} />
@@ -3056,6 +3210,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>최근 해부</span>
               <h2>이번 주 피드</h2>
               <p>크게 움직인 종목을 시장과 테마별로 짧게 모았습니다.</p>
+              <small className="price-source-note">주가는 종목별 출처와 기준일이 다를 수 있습니다.</small>
             </div>
           </div>
           <div className="market-tab-row" role="tablist" aria-label="최근 해부 시장 구분">
@@ -3081,6 +3236,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
                       <span>{item.theme}</span>
                       {item.movement ? <span>{item.movement}</span> : null}
                     </div>
+                    {!item.isComingSoon ? <PriceBadge price={item.price} compact /> : null}
                     <h3>{item.title}</h3>
                     <p>{item.summary}</p>
                   </div>
@@ -3262,6 +3418,7 @@ function StockAutopsyPicksPage({
     const relatedCompany = pickMainCompany(detailPick);
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
     const relatedPickCompanies = pickRelatedCompanyList(detailPick).slice(0, 3);
+    const detailPickPrice = getPriceForPick(detailPick, marketPrices);
     const watchMetricCards = pickWatchMetricCards(detailPick, relatedCompany).slice(0, 3);
     const signalSet = pickSignalSet(detailPick, relatedCompany);
     const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
@@ -3393,6 +3550,9 @@ function StockAutopsyPicksPage({
               <span className={`pick-move ${detailPick.movementDirection}`}>
                 {detailPick.ticker} · {pickMarketLabel(detailPick)}
               </span>
+              <div className="pick-story-price-row">
+                <PriceBadge price={detailPickPrice} compact />
+              </div>
               <h1>{storyQuestion}</h1>
               <strong>{storyAnswer}</strong>
               <p>왜 움직였는지 먼저 봅니다.</p>

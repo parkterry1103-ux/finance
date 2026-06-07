@@ -116,6 +116,33 @@
 - 재무제표·공시 분석 화면을 핵심 숫자와 한 줄 결론 중심으로 먼저 보여주고, 기존 해설은 접힘 섹션으로 보존
 - 인스타그램 카드뉴스 유입용 `주가해부실 Pick` 페이지 추가: `/ko/picks`, `/picks`, `/stock-autopsy-picks`
 
+## 가격 기준일/source UI 강화
+
+가격은 종목마다 수집 경로와 기준 시점이 다를 수 있으므로, 숫자만 보여주면 초보 사용자가 최신성이나 출처를 오해하기 쉽습니다. 이번 UI는 가격 API, KIS, sync 경로를 바꾸지 않고 이미 들어온 `source`, `asOf`, `currency`를 `PriceBadge`에서 더 읽기 좋게 드러냅니다.
+
+source label 규칙은 다음과 같습니다.
+
+- `kis-openapi` -> `한국투자`
+- `yahoo-finance-chart` -> `Yahoo`
+- 기타 fallback/import/manual/mock/example 계열 -> `보조`
+- 그 외 값 또는 빈 값 -> `출처 확인 중`
+
+`asOf`는 KST 기준으로 해석해 compact 날짜를 표시합니다. 배지 본문은 `기준 06.05`처럼 짧게 보여주고, 전체 기준일/시간은 hover title과 접근성 label에서 `주가 기준 2026.06.05 15:30 KST`처럼 제공합니다.
+
+stale 판단 기준은 단순 calendar day 기준입니다.
+
+- 0~2일: 정상 상태이며 별도 freshness 배지를 숨깁니다.
+- 3~5일: `업데이트 지연` 배지를 조용하게 표시합니다.
+- 6일 이상: `오래된 가격` 배지를 표시합니다.
+
+적용 위치는 `PriceBadge` 공통, 기업해설 상단, 시장지도 선택 카드, Pick 목록/상세, 홈 대표 해부 카드, 홈 최근 해부 카드입니다. 가격이 없거나 기준일이 없을 때는 `가격 준비 중`, `출처 확인 중`, `기준일 확인 중`으로 낮춰 표시하고 같은 문구가 freshness 배지에서 반복되지 않게 합니다.
+
+남은 TODO:
+
+- 거래일 기준 stale 판단
+- source 상세 tooltip
+- 해외 KIS 확장
+
 ## Local
 
 UI만 확인할 때:
