@@ -1426,6 +1426,56 @@ Supabase 확인 결과:
 3. Supabase SQL Editor에서 `market_prices`의 `005930.KS`, `000660.KS` source/as_of/currency와 `sync_runs` 최신 status/error summary를 확인합니다.
 4. 더 빠른 검증이 필요하면 Vercel dashboard에서 secret 노출 없이 `/api/sync/prices`를 수동 실행할 수 있는지 확인합니다.
 
+#### KIS 국내주식 pilot Cron 이후 가격 업데이트 검증
+
+확인 일시: 2026-06-07 06:39 UTC / 2026-06-07 14:39 CST 기준입니다.
+
+Vercel project/Cron 확인:
+
+- project: `finance1`
+- 운영 기준 domain: `https://finance1-flax.vercel.app`
+- Vercel dashboard에서 `finance1-flax.vercel.app`이 `finance1` project에 연결된 것을 확인했습니다.
+- Production env 이름은 `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_ENV`, `KIS_PROD_BASE_URL`이 존재합니다. 값은 열람하거나 출력하지 않았습니다.
+- dashboard project state에서 Cron 설정은 enabled 상태로 보이며, `disabledAt`은 `null`입니다.
+- `/api/sync/prices` Cron path와 schedule `30 8 * * 1-5`가 project state와 `vercel.json`에서 일치합니다.
+- `https://finance1-flax.vercel.app/api/sync/prices`를 secret 없이 직접 호출하면 401 `Unauthorized cron request`입니다. 보호 route 동작으로 정상입니다.
+- Vercel Logs UI는 이번 세션에서 최근 30분 범위만 확인 가능해 2026-06-05 09:17 UTC 실행의 HTTP status code를 직접 확인하지 못했습니다. 해당 시간대 성공 여부는 아래 Supabase `sync_runs`로 확인했습니다.
+
+Supabase 확인 결과:
+
+- `market_prices`에는 `updated_at` 컬럼이 없고 `created_at` 컬럼이 있어, 요청 SQL의 `updated_at`은 `created_at`으로 대체해 확인했습니다.
+- `005930.KS`: 최신 row는 source `kis-openapi`, price `329000`, currency `KRW`, `as_of = 2026-06-05T09:17:04.270Z`, `created_at = 2026-06-05 09:17:13.727+00`입니다.
+- `000660.KS`: 최신 row는 source `kis-openapi`, price `2070000`, currency `KRW`, `as_of = 2026-06-05T09:17:04.869Z`, `created_at = 2026-06-05 09:17:13.727+00`입니다.
+- 두 ticker 모두 기존 Yahoo row의 `as_of = 2026-06-02`보다 최신으로 전진했습니다.
+- 두 ticker의 source 집계는 `kis-openapi` 2 rows, latest `as_of = 2026-06-05T09:17:04.869Z`; `yahoo-finance-chart` 20 rows, latest `as_of = 2026-06-02T06:30:28.000Z`입니다.
+- `sync_runs` 최신 가격 run은 `market-prices`, status `success`, `started_at = 2026-06-05 09:17:01.911+00`, `ended_at = 2026-06-05 09:17:16.236+00`, `inserted_count = 81`, `updated_count = 0`, error 없음입니다.
+
+운영 API 확인 결과:
+
+- endpoint: `https://finance1-flax.vercel.app/api/market-prices?limit=200`
+- status: 200
+- row count: 81
+- latest `asOf`: `2026-06-05T09:17:13.089Z`
+- oldest `asOf`: `2026-06-04T19:59:59.000Z`
+- source 분포: `kis-openapi` 45 rows, `yahoo-finance-chart` 36 rows
+- `kis-openapi` row가 운영 API에도 존재합니다.
+- `005930.KS`: source `kis-openapi`, currency `KRW`, price `329000`, asOf `2026-06-05T09:17:04.270Z`, marketStatus `delayed`
+- `000660.KS`: source `kis-openapi`, currency `KRW`, price `2070000`, asOf `2026-06-05T09:17:04.869Z`, marketStatus `delayed`
+
+최종 판단:
+
+- 현재 분류는 `KIS 성공`입니다.
+- `005930.KS`, `000660.KS` 모두 `kis-openapi`로 갱신되었고, asOf가 기존 2026-06-02 Yahoo row보다 최신으로 전진했습니다.
+- Supabase DB와 운영 API read-through가 같은 KIS row를 보여주므로 `Supabase upsert 문제`와 `API read 문제` 증거는 없습니다.
+- KIS token 발급 실패, 국내 현재가 endpoint 권한 문제, parse/normalize 문제 증거도 없습니다.
+- Vercel Cron의 해당 실행 HTTP status code 자체는 dashboard log 범위 제약 때문에 직접 확인하지 못했지만, `sync_runs` 성공 기록과 운영 API 갱신 결과가 실행 성공을 뒷받침합니다.
+
+다음 액션:
+
+1. 다음 평일 Cron 이후에도 `005930.KS`, `000660.KS`가 `kis-openapi`로 유지되고 asOf가 전진하는지 모니터링합니다.
+2. Vercel에서 과거 Logs/Observability 범위를 열 수 있는 권한 또는 플랜이 확보되면 2026-06-05 09:17 UTC 전후 `/api/sync/prices` HTTP status code를 별도 확인합니다.
+3. 국내 pilot을 확대하기 전에는 `market_prices`의 KIS source count, `sync_runs.market-prices` status, Yahoo fallback count를 함께 확인합니다.
+
 ### Vercel Cron
 
 `vercel.json`에 아래 Cron이 포함되어 있습니다. Vercel Cron 시간은 UTC 기준입니다.
