@@ -3360,7 +3360,7 @@ function pickRelatedCompanyList(pick: StockAutopsyPick) {
 }
 
 function pickWatchMetricCards(pick: StockAutopsyPick, company?: Company) {
-  if (pick.watchMetrics?.length) return pick.watchMetrics.map((metric) => ({ ...metric, value: '값은 재무제표 해설에서 확인' }));
+  if (pick.watchMetrics?.length) return pick.watchMetrics.map((metric) => ({ ...metric, value: '원문 확인' }));
   if (!company) {
     return [
       { label: '매출 성장률', note: '이슈가 실제 판매 증가로 이어졌는지 봅니다.', value: '데이터 연결 필요' },

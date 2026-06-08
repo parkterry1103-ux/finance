@@ -16443,6 +16443,10 @@ body,
   background: rgba(12, 25, 48, 0.76);
 }
 
+.pick-story-drawers details:first-child {
+  grid-column: span 3;
+}
+
 .pick-story-drawers summary {
   display: flex;
   min-height: 56px;
@@ -16518,6 +16522,9 @@ body,
   display: grid;
   gap: 4px;
   min-width: 0;
+  height: auto;
+  align-content: start;
+  overflow: visible;
   padding: 10px;
   border: 1px solid rgba(191, 219, 254, 0.16);
   border-radius: 16px;
@@ -16528,9 +16535,12 @@ body,
 .pick-drawer-metric-grid span,
 .pick-drawer-metric-grid small {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: initial;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+  line-height: 1.42;
 }
 
 .pick-drawer-metric-grid strong {
@@ -16542,6 +16552,10 @@ body,
 .pick-drawer-metric-grid small {
   color: var(--story-card-body);
   font-size: 11px;
+}
+
+.pick-drawer-metric-grid small {
+  line-height: 1.48;
 }
 
 /* Company explainer picture-book question cards. */
@@ -16940,6 +16954,10 @@ body,
 
   .pick-story-drawers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pick-story-drawers details:first-child {
+    grid-column: 1 / -1;
   }
 }
 
