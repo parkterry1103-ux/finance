@@ -1727,6 +1727,16 @@ weekLabel:
 6. `marketMapItems`에는 실제 연결이 있는 산업만 `active`와 `href`를 넣고, 준비 중 항목은 `status: 'coming-soon'`만 둡니다.
 7. 숫자 3개는 SEC/OpenDART, 회사 IR, 공시 원문처럼 확인 가능한 기준으로만 고릅니다.
 
+### 이번 주 조사 콘텐츠 업데이트
+
+2026년 6월 둘째 주 콘텐츠는 Marvell, LG전자, Taylor Morrison 3개 흐름으로 반영했습니다.
+
+- Marvell: Marvell과 NVIDIA의 NVLink Fusion 공식 발표를 바탕으로 AI 데이터센터 연결 반도체, 맞춤형 XPU, 광통신/인터커넥트 수요 맥락을 Pick에 추가했습니다. Marvell은 기존 AI 반도체 관계도에서는 `지도 참고 기업`으로 유지하며, 빈 기업해설이나 숫자 3개 페이지로 보내지 않습니다.
+- LG전자: LG전자 뉴스룸의 AI 데이터센터 냉각/HVAC 자료를 바탕으로 AI 서버 증가가 전력, 냉각, 공조 인프라로 번지는 흐름을 Pick 카드 중심으로 정리했습니다. 기존 기업 데이터가 없으므로 기업해설/숫자 CTA는 활성화하지 않습니다.
+- Taylor Morrison: Taylor Morrison과 Berkshire Hathaway의 현금 인수 발표를 바탕으로 AI 테마와 별개의 인수 프리미엄, 주택경기, 승인 절차 체크포인트를 Pick 카드 중심으로 정리했습니다.
+- 정적 콘텐츠에는 주가, 등락률, 재무 숫자를 하드코딩하지 않았습니다. 가격과 기준일은 `PriceBadge`와 `/api/market-prices` 응답이 표시합니다.
+- 연결되지 않은 기업은 준비 중 또는 참고 상태로 처리합니다. 완전 연결 기업만 `기업해설 보기`와 `숫자 3개 보기` CTA를 노출하고, 지도 참고 기업은 시장 흐름 확인만 허용합니다.
+
 ### 운영 예시: 2026년 5월 마지막 주
 
 - 이번 주 종목은 Dell, Snowflake, Micron입니다.

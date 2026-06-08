@@ -189,6 +189,7 @@ const aiCoreLinkIds = new Set([
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-tsmc',
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-sk-hynix',
   'ai-v01-us-semiconductors-nvidia-ai-datacenter-vertiv',
+  'ai-v01-us-semiconductors-nvidia-ai-datacenter-marvell',
   'ai-v01-ai-datacenter-asml-ai-datacenter-tsmc',
   'ai-v01-ai-datacenter-asml-ai-datacenter-samsung',
 ]);
@@ -3416,6 +3417,10 @@ function StockAutopsyPicksPage({
 
   if (detailPick) {
     const relatedCompany = pickMainCompany(detailPick);
+    const relatedCompanyConnection = relatedCompany ? companyConnectionState(relatedCompany) : null;
+    const relatedCompanyCanOpenAnalysis = canOpenCompanyAnalysis(relatedCompany);
+    const relatedCompanyCanOpenFinancials = canOpenCompanyFinancials(relatedCompany);
+    const hasPickMarketFlow = Boolean(detailPick.relatedSupplyChainId);
     const reportLink = relatedCompany ? getPrimaryReportLink(relatedCompany) : null;
     const relatedPickCompanies = pickRelatedCompanyList(detailPick).slice(0, 3);
     const detailPickPrice = getPriceForPick(detailPick, marketPrices);
@@ -3434,25 +3439,28 @@ function StockAutopsyPicksPage({
       ? 'Dell은 왜 또 급등했을까?'
       : isDellAiServerDemandPick
       ? 'AI 서버가 늘면 Dell은 왜 같이 움직일까?'
-      : `${detailPick.companyName}은 왜 같이 움직일까?`;
+      : detailPick.title ?? `${detailPick.companyName}은 왜 같이 움직일까?`;
     const storyAnswer = isSnowflakeAiDataPick
       ? 'AI는 데이터 플랫폼도 필요합니다.'
       : isDellAiServerEarningsPick
       ? '지난번엔 기대감, 이번엔 숫자 확인'
       : isDellAiServerDemandPick
       ? 'Dell은 AI 서버를 기업에 팝니다.'
-      : '시장 흐름과 연결해 봅니다.';
+      : detailPick.oneLineConclusion ?? '시장 흐름과 연결해 봅니다.';
     const storyRelatedLabels = isSnowflakeAiDataPick
       ? ['Amazon / AWS', 'Microsoft', 'Datadog']
       : isDellAiServerPick
       ? ['NVIDIA', 'Super Micro', 'Vertiv']
-      : relatedPickCompanies.map((company) => company.name).slice(0, 3);
+      : detailPick.relatedCompanyIds?.length
+        ? relatedPickCompanies.map((company) => company.name).slice(0, 3)
+        : (detailPick.connectedLeaders.length ? detailPick.connectedLeaders : detailPick.relatedCompanies).slice(0, 3);
     const storyMetricLabels = isSnowflakeAiDataPick
       ? ['매출', '제품 매출 가이던스', '대형 고객 / 사용량']
       : isDellAiServerEarningsPick
       ? ['매출', 'AI 서버 주문 / 백로그', '가이던스']
-      : ['매출', '영업이익', '현금흐름'];
+      : detailPick.watchMetrics?.map((metric) => metric.label).slice(0, 3) ?? ['매출', '영업이익', '현금흐름'];
     const storyCompanyByLabel = (label: string) => {
+      if (!isSnowflakeAiDataPick && !isDellAiServerPick && !detailPick.relatedCompanyIds?.length) return undefined;
       if (label === 'NVIDIA') return companies.find((company) => company.id === 'us-semiconductors-nvidia');
       if (label === 'Super Micro') return companies.find((company) => company.id === 'ai-datacenter-supermicro');
       if (label === 'Vertiv') return companies.find((company) => company.id === 'ai-datacenter-vertiv');
@@ -3472,7 +3480,7 @@ function StockAutopsyPicksPage({
           ? '실적 발표 후 Dell이 크게 움직였습니다.'
           : isDellAiServerDemandPick
           ? 'AI 서버 수요가 주목받았습니다.'
-          : '시장 이슈가 주목받았습니다.',
+          : detailPick.reasonSummary,
         badge: '오늘 이슈',
         icon: <Newspaper size={34} />,
       },
@@ -3484,7 +3492,7 @@ function StockAutopsyPicksPage({
           ? 'AI 서버 수요가 주문과 전망 숫자로 확인됐기 때문입니다.'
           : isDellAiServerDemandPick
           ? 'Dell은 AI 서버를 팝니다.'
-          : `${detailPick.companyName}을 함께 봅니다.`,
+          : detailPick.beginnerSummary,
         badge: isSnowflakeAiDataPick ? '데이터 플랫폼' : isDellAiServerPick ? 'AI 서버' : flowStage,
         icon: <Cloud size={34} />,
       },
@@ -3510,7 +3518,7 @@ function StockAutopsyPicksPage({
           ? 'GPU, 서버 경쟁사, 전력·냉각 인프라를 함께 봅니다.'
           : isDellAiServerDemandPick
           ? 'GPU, 서버, 전력 회사를 봅니다.'
-          : '연결된 회사 3개만 봅니다.',
+          : storyRelatedLabels.length ? `${storyRelatedLabels.slice(0, 3).join(', ')}를 함께 봅니다.` : '관련 회사를 무리하게 연결하지 않습니다.',
         badge: '3개만',
         icon: <Target size={34} />,
         chips: storyRelatedLabels,
@@ -3522,7 +3530,7 @@ function StockAutopsyPicksPage({
           ? '매출, 제품 매출 가이던스, 대형 고객·사용량을 봅니다.'
           : isDellAiServerEarningsPick
           ? '매출, AI 서버 주문·백로그, 가이던스를 봅니다.'
-          : '팔렸는지, 남겼는지, 현금이 들어왔는지 봅니다.',
+          : `${storyMetricLabels.join(', ')}를 봅니다.`,
         badge: '핵심 지표',
         icon: <BarChart3 size={34} />,
         chips: storyMetricLabels,
@@ -3557,18 +3565,23 @@ function StockAutopsyPicksPage({
               <strong>{storyAnswer}</strong>
               <p>왜 움직였는지 먼저 봅니다.</p>
               <div className="pick-story-actions" aria-label="Pick 주요 이동">
-                {relatedCompany ? (
+                {relatedCompany && relatedCompanyCanOpenFinancials ? (
                   <button type="button" className="pick-primary-action" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
                     <BarChart3 size={16} />
                     숫자 3개 보기
                   </button>
-                ) : detailPick.relatedSupplyChainId ? (
+                ) : relatedCompany && relatedCompanyCanOpenAnalysis ? (
+                  <button type="button" className="pick-primary-action" onClick={() => onOpenAnalysis(relatedCompany)}>
+                    <FileSearch size={16} />
+                    기업 해설 보기
+                  </button>
+                ) : hasPickMarketFlow ? (
                   <button type="button" className="pick-primary-action" onClick={openPickMarketFlow}>
                     <Network size={16} />
                     시장 흐름 보기
                   </button>
                 ) : null}
-                {relatedCompany && detailPick.relatedSupplyChainId ? (
+                {relatedCompany && (relatedCompanyCanOpenAnalysis || relatedCompanyCanOpenFinancials) && hasPickMarketFlow ? (
                   <button type="button" onClick={openPickMarketFlow}>
                     <Network size={16} />
                     시장 흐름 보기
@@ -3679,16 +3692,32 @@ function StockAutopsyPicksPage({
               </div>
             </details>
 
-            {relatedCompany ? (
+            {(relatedCompany && relatedCompanyCanOpenAnalysis) || hasPickMarketFlow ? (
               <details>
                 <summary>
                   <span>더 깊게 보기</span>
                   <ChevronDown size={15} />
                 </summary>
                 <div className="pick-drawer-actions">
-                  <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
-                    기업 해설 보기
-                  </button>
+                  {relatedCompany && relatedCompanyCanOpenAnalysis ? (
+                    <button type="button" onClick={() => onOpenAnalysis(relatedCompany)}>
+                      기업 해설 보기
+                    </button>
+                  ) : relatedCompanyConnection ? (
+                    <span className="pick-disabled-action">{relatedCompanyConnection.label}</span>
+                  ) : null}
+                  {relatedCompany && relatedCompanyCanOpenFinancials ? (
+                    <button type="button" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
+                      숫자 3개 보기
+                    </button>
+                  ) : relatedCompanyCanOpenAnalysis && relatedCompanyConnection ? (
+                    <span className="pick-disabled-action">{relatedCompanyConnection.detail}</span>
+                  ) : null}
+                  {hasPickMarketFlow ? (
+                    <button type="button" onClick={openPickMarketFlow}>
+                      시장 흐름 보기
+                    </button>
+                  ) : null}
                 </div>
               </details>
             ) : null}
