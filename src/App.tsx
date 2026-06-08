@@ -5450,6 +5450,31 @@ function App() {
     );
   }
 
+  if (isAnalysisRoute) {
+    const fallbackConnection = analysisCompany ? companyConnectionState(analysisCompany) : null;
+    return (
+      <div className="pick-shell story-dark-shell story-pick-shell">
+        <header className="pick-nav">
+          <button type="button" onClick={openHome}>홈</button>
+          <button type="button" onClick={() => openCategory(analysisCompany?.sectorId ?? 'us-semiconductors', analysisCompany?.id)}>
+            시장 흐름 지도
+          </button>
+        </header>
+        <main className="pick-empty">
+          <h1>{analysisCompany ? `${analysisCompany.name} 해설 준비 중` : '기업 해설을 찾을 수 없습니다.'}</h1>
+          <p>
+            {analysisCompany
+              ? `${fallbackConnection?.label ?? '해설 준비 중'} 상태입니다. 빈 분석 화면 대신 시장 흐름 지도에서 관계만 확인할 수 있습니다.`
+              : '아직 등록되지 않은 기업입니다. 시장 흐름 지도에서 연결된 기업을 다시 선택해주세요.'}
+          </p>
+          <button type="button" onClick={() => openCategory(analysisCompany?.sectorId ?? 'us-semiconductors', analysisCompany?.id)}>
+            시장 흐름에서 보기
+          </button>
+        </main>
+      </div>
+    );
+  }
+
   if (!isCategoryRoute) {
     return (
       <LandingPage

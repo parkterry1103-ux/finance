@@ -2287,6 +2287,34 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 기존 재무제표 해설 내용을 회사별 상세 또는 학습 페이지로 재배치
 - source별 재무 상세 시각화 고도화
 
+### 운영 전체 QA 결과
+
+확인 일시: 2026-06-08 19:33 CST
+
+운영 가격 API `/api/market-prices?limit=200`은 200 응답, 83개 row, source 분포 `kis-openapi` 46개와 `yahoo-finance-chart` 37개로 확인했습니다. KIS 가격은 2026-06-08 기준, Yahoo 주요 미국주는 2026-06-05 기준으로 표시됩니다. 운영 홈 `/`와 `/ko/`는 충분히 대기하면 `가격 불러오는 중`이 남지 않고 Yahoo/한국투자 source와 기준일 badge로 바뀝니다.
+
+재무 API는 프론트 방식 파라미터(`country`, `companyId`, `cik` 또는 `corpCode`)로 대표 기업을 확인했습니다. SK하이닉스와 삼성전자는 `OpenDART/direct` 응답에서 매출, 영업이익, 영업현금흐름 raw numeric을 받았고, 운영/로컬 화면 모두 최종 렌더에서 영업이익률과 현금흐름 비율을 표시했습니다. 초기 fallback 렌더에서는 잠깐 `공식 데이터 연결 필요`가 보일 수 있으나 OpenDART 응답 후 사라지는 것을 확인했습니다.
+
+발견/수정:
+
+- `/ko/analysis/ai-datacenter-wonikips`, `/ko/analysis/not-a-real-company` 같은 준비 중 또는 잘못된 analysis route가 홈을 조용히 렌더링하던 fallback 품질 이슈를 수정했습니다.
+- 수정 후 준비 중 기업은 `해설 준비 중`, 미등록 기업은 `기업 해설을 찾을 수 없습니다.` 안내와 `시장 흐름에서 보기` CTA를 보여줍니다.
+- SK하이닉스/삼성전자 OpenDART direct 표시 문제는 현재 운영 API와 프론트 변환에서 재현되지 않았습니다. raw numeric은 view model에 보존되고 v3 카드가 사용합니다.
+
+QA 페이지:
+
+- `/`, `/ko/`, `/ko/picks`
+- Marvell, LG전자, Taylor Morrison, Dell Pick 상세
+- `/ko/category/us-semiconductors`
+- `/ko/analysis/ai-datacenter-dell`, `/ko/analysis/us-semiconductors-nvidia`, `/ko/analysis/ai-datacenter-sk-hynix`, `/ko/analysis/ai-datacenter-samsung`, `/ko/analysis/ai-datacenter-tsmc`, `/ko/analysis/ai-datacenter-asml`
+- `/ko/analysis/ai-datacenter-wonikips`, `/ko/analysis/not-a-real-company`
+- 모바일 390px 홈, Pick 목록, 시장지도, SK하이닉스 분석, 원익IPS fallback
+
+남은 TODO:
+
+- 로컬 Vite 단독 실행에는 `/api/market-prices` 프록시가 없어서 가격 화면은 mock/fallback badge로 안정됩니다. 운영 가격 badge 검증은 배포 URL에서 계속 확인합니다.
+- OpenDART 응답은 수십 초 걸릴 수 있으므로, 재무 카드 QA는 초기 fallback이 아니라 응답 후 최종 상태를 기준으로 봅니다.
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
