@@ -22736,3 +22736,100 @@ button.flow-stage-company-chip:focus-visible {
     max-width: min(100%, 232px);
   }
 }
+
+/* Pick detail text overflow audit: detail cards should grow with readable copy. */
+.story-pick-shell .pick-detail-page,
+.story-pick-shell .pick-detail-page :is(section, article, details, summary, div) {
+  min-width: 0;
+}
+
+.story-pick-shell .pick-detail-page article {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.story-pick-shell .pick-detail-page .pick-story-card > p,
+.story-pick-shell .pick-detail-page .pick-story-card > h2,
+.story-pick-shell .pick-detail-page .pick-drawer-body p,
+.story-pick-shell .pick-detail-page .pick-drawer-list span,
+.story-pick-shell .pick-detail-page .pick-drawer-metric-grid :is(strong, span, small) {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.story-pick-shell .pick-detail-page .pick-story-card {
+  grid-template-rows: auto auto auto auto auto;
+  align-content: start;
+  height: auto;
+  min-height: 0;
+}
+
+.story-pick-shell .pick-detail-page .pick-story-card p {
+  display: block;
+}
+
+.story-pick-shell .pick-detail-page .pick-drawer-list span,
+.story-pick-shell .pick-detail-page .pick-drawer-sources a,
+.story-pick-shell .pick-detail-page .pick-drawer-sources .compact-report-action,
+.story-pick-shell .pick-detail-page .pick-drawer-sources .pick-disabled-action,
+.story-pick-shell .pick-detail-page .pick-drawer-actions button,
+.story-pick-shell .pick-detail-page .pick-drawer-actions .pick-disabled-action {
+  height: auto;
+  min-width: 0;
+  min-height: 36px;
+  padding-block: 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.story-pick-shell .pick-detail-page .pick-story-actions button,
+.story-pick-shell .pick-detail-page .pick-story-chip-row :is(span, button) {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.story-pick-shell .pick-detail-page .pick-drawer-metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.story-pick-shell .pick-detail-page .pick-story-board {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: start;
+}
+
+/* Pick-linked company explanation cards: keep short learning copy readable. */
+.story-analysis-shell .company-explainer-card .company-question-card,
+.story-analysis-shell .company-explainer-card .explainer-metric-card article,
+.story-analysis-shell .company-explainer-card .company-deep-summary-grid article {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.story-analysis-shell .company-explainer-card :is(.company-question-card p, .explainer-metric-card article p, .company-deep-summary-grid p),
+.story-analysis-shell .company-explainer-card .company-question-card h3,
+.story-analysis-shell .company-explainer-card .company-deep-summary-grid :is(span, strong) {
+  display: block;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.story-analysis-shell .company-explainer-card .company-question-card {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+}

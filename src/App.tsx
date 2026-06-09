@@ -3552,7 +3552,7 @@ function StockAutopsyPicksPage({
           </button>
         </header>
 
-        <main className="pick-detail">
+        <main className="pick-detail pick-detail-page">
           <section className="pick-story-hero">
             <div>
               <span className={`pick-move ${detailPick.movementDirection}`}>
