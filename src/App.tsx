@@ -550,6 +550,10 @@ function categoryPath(sectorId: string, selectedCompanyId?: string) {
   return selectedCompanyId ? `${basePath}?company=${encodeURIComponent(selectedCompanyId)}` : basePath;
 }
 
+function marketMapPath() {
+  return '/ko/market-map';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -3029,13 +3033,13 @@ type AnalysisPageProps = {
 };
 
 type LandingPageProps = {
-  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
+  onOpenMarketMapLibrary: () => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
 };
 
-function LandingPage({ onOpenCategory, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
+function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
@@ -3049,10 +3053,6 @@ function LandingPage({ onOpenCategory, onOpenPicks, onOpenPick, marketPrices }: 
       return;
     }
     onOpenPicks();
-  };
-
-  const openFeaturedMarketMap = () => {
-    onOpenCategory(featuredPick?.relatedSupplyChainId ?? 'us-semiconductors', featuredPick?.relatedCompanyId);
   };
 
   return (
@@ -3076,10 +3076,10 @@ function LandingPage({ onOpenCategory, onOpenPicks, onOpenPick, marketPrices }: 
             Pick
           </a>
           <a
-            href="/ko/category/us-semiconductors"
+            href={marketMapPath()}
             onClick={(event) => {
               event.preventDefault();
-              openFeaturedMarketMap();
+              onOpenMarketMapLibrary();
             }}
           >
             시장 지도
@@ -3163,7 +3163,7 @@ function LandingPage({ onOpenCategory, onOpenPicks, onOpenPick, marketPrices }: 
           <article>
             <span>시장 흐름 지도</span>
             <p>AI 반도체 흐름이 어떻게 연결되는지 보고 싶다면 시장지도를 확인하세요.</p>
-            <button type="button" onClick={openFeaturedMarketMap}>
+            <button type="button" onClick={onOpenMarketMapLibrary}>
               시장 지도 보기
               <ArrowRight size={15} />
             </button>
@@ -3183,6 +3183,12 @@ type StockAutopsyPicksPageProps = {
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
   marketPrices: MarketPrice[];
+};
+
+type MarketMapLibraryPageProps = {
+  onHome: () => void;
+  onOpenPicks: () => void;
+  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
 };
 
 const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
@@ -3269,6 +3275,81 @@ function pickRelationCopy(company: Company, pick: StockAutopsyPick) {
   return `${companyValueChainStage(company)} 흐름에서 같이 볼 기업입니다. 직접 거래 여부는 공시·IR로 확인합니다.`;
 }
 
+function weeklyStockAutopsyPicks() {
+  const weeklyPickIds = new Set(
+    currentWeeklyDigest.recentItems
+      .map((item) => item.pickId)
+      .filter((pickId): pickId is string => Boolean(pickId)),
+  );
+
+  return stockAutopsyPicks.filter((pick) => pick.status !== 'archived' && weeklyPickIds.has(pick.id));
+}
+
+function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
+  if (item.sectorId) return item.sectorId;
+  const categoryMatch = item.href?.match(/\/category\/([^/?#]+)/);
+  return categoryMatch?.[1] ? decodeURIComponent(categoryMatch[1]) : undefined;
+}
+
+function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMapLibraryPageProps) {
+  const marketMapItems = currentWeeklyDigest.marketMapItems;
+  const openMarketMapItem = (item: (typeof marketMapItems)[number]) => {
+    if (item.status !== 'active') return;
+    const sectorId = marketMapItemSectorId(item);
+    if (sectorId) onOpenCategory(sectorId);
+  };
+
+  return (
+    <div className="pick-shell story-dark-shell story-market-map-shell">
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo">
+            <Network size={20} />
+          </span>
+          <strong>주가해부실</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenPicks}>이번 주 Pick</button>
+        </nav>
+      </header>
+
+      <main>
+        <section className="market-map-library-hero">
+          <p className="home-kicker">시장지도 보관함</p>
+          <h1>어떤 시장 흐름을 볼까요?</h1>
+          <p>대표 해부를 본 뒤, 필요한 시장지도만 선택해서 들어갑니다.</p>
+          <small>준비 중 카테고리는 빈 상세 화면으로 보내지 않습니다.</small>
+        </section>
+
+        <section className="market-map-library-grid" aria-label="시장지도 카테고리">
+          {marketMapItems.map((item) => {
+            const isActive = item.status === 'active';
+            return (
+              <article className={`market-map-library-card${isActive ? '' : ' disabled'}`} key={item.title} aria-disabled={!isActive}>
+                <div className="market-map-library-topline">
+                  <span>{isActive ? '상세 지도' : '준비 중'}</span>
+                  {isActive ? <Network size={18} /> : <Lock size={18} />}
+                </div>
+                <h2>{item.title}</h2>
+                <p>{item.note}</p>
+                {isActive ? (
+                  <button type="button" onClick={() => openMarketMapItem(item)}>
+                    지도 보기
+                    <ArrowRight size={15} />
+                  </button>
+                ) : (
+                  <span className="market-map-coming-soon">준비 중</span>
+                )}
+              </article>
+            );
+          })}
+        </section>
+      </main>
+    </div>
+  );
+}
+
 function StockAutopsyPicksPage({
   selectedPickId,
   onHome,
@@ -3280,6 +3361,7 @@ function StockAutopsyPicksPage({
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
   const detailPick = selectedPickId ? selectedPick : undefined;
+  const weeklyPicks = weeklyStockAutopsyPicks();
 
   if (selectedPickId && !detailPick) {
     return (
@@ -3633,7 +3715,7 @@ function StockAutopsyPicksPage({
         </section>
 
         <section className="pick-grid" aria-label="주가해부실 Pick 목록">
-          {stockAutopsyPicks.filter((pick) => pick.status !== 'archived').map((pick) => (
+          {weeklyPicks.map((pick) => (
             <article className="pick-card" key={pick.id}>
               <div className="card-topline">
                 <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
@@ -4732,6 +4814,7 @@ function App() {
   const routeParams = new URLSearchParams(routeQuery);
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
+  const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
   const routePickMatch =
     routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) ??
     routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
@@ -4747,6 +4830,7 @@ function App() {
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
   const isPicksRoute = Boolean(routePickMatch);
+  const isMarketMapRoute = Boolean(routeMarketMapMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -5205,6 +5289,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openMarketMapLibrary() {
+    window.history.pushState({}, '', marketMapPath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
   function openHome() {
     window.history.pushState({}, '', '/ko/');
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -5306,6 +5395,10 @@ function App() {
     );
   }
 
+  if (isMarketMapRoute) {
+    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} />;
+  }
+
   if (isOwnershipRoute) {
     return <OwnershipReportsPage onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />;
   }
@@ -5360,7 +5453,7 @@ function App() {
   if (!isCategoryRoute) {
     return (
       <LandingPage
-        onOpenCategory={openCategory}
+        onOpenMarketMapLibrary={openMarketMapLibrary}
         onOpenPicks={openPicks}
         onOpenPick={openPick}
         marketPrices={marketPrices}

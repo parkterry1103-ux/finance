@@ -7313,35 +7313,27 @@ export const currentWeeklyDigest: WeeklyDigest = {
   ],
   marketMapItems: [
     {
-      title: 'AI 연결 반도체',
+      title: 'AI 반도체 / 데이터센터',
       status: 'active',
       href: '/ko/category/us-semiconductors',
       sectorId: 'us-semiconductors',
-      note: 'NVIDIA, Marvell, Broadcom으로 보는 인터커넥트 흐름',
+      note: 'GPU, 메모리, 파운드리, 전력·냉각으로 이어지는 흐름',
     },
     {
-      title: '데이터센터 냉각/HVAC',
-      status: 'active',
-      href: '/ko/category/us-semiconductors',
-      sectorId: 'us-semiconductors',
-      note: 'GPU, 서버, 전력·냉각을 함께 보는 인프라 흐름',
-    },
-    {
-      title: 'Berkshire 인수 프리미엄',
+      title: '데이터센터 냉각 / 전력 인프라',
       status: 'coming-soon',
-      note: 'Taylor Morrison 현금 인수 발표와 미국 주택경기',
+      note: 'AI 서버가 늘 때 냉각, 공조, 전력 장비가 함께 움직이는 흐름',
     },
     {
-      title: '데이터센터 인프라',
-      status: 'active',
-      href: '/ko/category/us-semiconductors',
-      sectorId: 'us-semiconductors',
-      note: '서버, 네트워크, 전력·냉각을 함께 보는 기존 지도',
+      title: 'M&A / 인수 프리미엄',
+      status: 'coming-soon',
+      note: 'Taylor Morrison처럼 인수 가격과 승인 절차를 따로 보는 흐름',
     },
-    { title: 'AI 데이터 플랫폼', status: 'coming-soon', note: '클라우드 데이터 플랫폼 지도는 별도 준비 중' },
-    { title: '주택건설 / M&A', status: 'coming-soon', note: '금리, 주택경기, 인수 승인 흐름' },
-    { title: '클라우드/SaaS', status: 'coming-soon', note: '클라우드 지출과 소프트웨어 마진' },
-    { title: '사이버보안', status: 'coming-soon', note: '보안 지출과 플랫폼 전환' },
+    {
+      title: '클라우드 / 데이터 플랫폼',
+      status: 'coming-soon',
+      note: 'AI 워크로드가 클라우드와 데이터 플랫폼 수요로 번지는 흐름',
+    },
   ],
 };
 

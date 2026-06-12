@@ -1643,6 +1643,22 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 주간 업데이트 루틴 정리
 - 대표 Pick 자동/수동 지정 규칙 정리
 
+### 홈 CTA 목적지 분리
+
+홈 CTA는 대표 해부에서 바로 복잡한 상세 화면으로 뛰지 않도록 목적지를 단계별로 나눕니다.
+
+- 홈은 대표 해부 1개를 보여주는 첫 진입 화면입니다.
+- `/ko/picks`는 이번 주 Pick만 보여줍니다. 현재 기준은 `currentWeeklyDigest.recentItems`에 들어간 Marvell, LG전자, Taylor Morrison입니다.
+- `/ko/market-map`은 시장지도 카테고리 보관함입니다. 사용자가 볼 흐름을 고른 뒤 상세 지도로 들어갑니다.
+- `/ko/category/us-semiconductors`는 AI 반도체 / 데이터센터 상세 지도입니다. 홈에서 바로 들어가지 않고 `/ko/market-map`의 카테고리 CTA에서 진입합니다.
+- archived 또는 지난 Pick은 `/ko/picks` 목록에 섞지 않습니다. 별도 보관함 route는 2차 과제로 둡니다.
+
+향후 시장지도 카테고리 후보:
+
+- 데이터센터 냉각 / 전력 인프라
+- M&A / 인수 프리미엄
+- 클라우드 / 데이터 플랫폼
+
 ### currentWeeklyDigest 구조
 
 `currentWeeklyDigest`는 홈의 대표 해부와 주간 Pick 운영 정보를 관리하는 데이터입니다. 홈은 `featuredPickId`와 `featured`를 중심으로 보여주고, `recentItems`와 `marketMapItems`는 `/ko/picks` 운영 맥락과 시장지도 연결을 정리하는 보조 데이터로 둡니다.
