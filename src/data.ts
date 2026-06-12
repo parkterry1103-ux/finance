@@ -7272,7 +7272,7 @@ export const currentWeeklyDigest: WeeklyDigest = {
     summary: 'NVIDIA 생태계 기대가 Marvell의 맞춤형 반도체와 인터커넥트 수요로 이어지는지 봅니다.',
     metricLabels: ['AI 커스텀 반도체 매출', '광통신 / 인터커넥트 수요', '실적 연결 여부'],
     primaryCtaLabel: 'Marvell 해부 보기',
-    secondaryCtaLabel: '최근 해부 보기',
+    secondaryCtaLabel: '이번 주 Pick 전체 보기',
   },
   recentItems: [
     {

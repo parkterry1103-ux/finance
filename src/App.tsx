@@ -64,7 +64,6 @@ import {
   sourcePolicies,
   StockAutopsyPick,
   stockAutopsyPicks,
-  WeeklyDigestRecentItem,
 } from './data';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
@@ -3031,30 +3030,15 @@ type AnalysisPageProps = {
 
 type LandingPageProps = {
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
-  onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
 };
 
-function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
-  type RecentAutopsyItem = {
-    id: string;
-    market: CountryId;
-    marketLabel: string;
-    theme: string;
-    movement?: string;
-    title: string;
-    summary: string;
-    relatedCompanies: string[];
-    company?: Company;
-    price?: MarketPrice | null;
-    isComingSoon?: boolean;
-    onOpen?: () => void;
-  };
-
-  const [activeMarketTab, setActiveMarketTab] = useState(currentWeeklyDigest.marketTabs[0]?.id ?? 'ALL');
+function LandingPage({ onOpenCategory, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
+  const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
+  const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
   const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
   const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
   const featuredPickPrice = featuredPick ? getPriceForPick(featuredPick, marketPrices) : null;
@@ -3067,58 +3051,8 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
     onOpenPicks();
   };
 
-  const buildRecentAutopsyItem = (item: WeeklyDigestRecentItem): RecentAutopsyItem | null => {
-    const pick = item.pickId ? stockAutopsyPicks.find((candidate) => candidate.id === item.pickId) : undefined;
-    const company =
-      (item.companyId ? companies.find((candidate) => candidate.id === item.companyId) : undefined) ??
-      (pick ? pickMainCompany(pick) : undefined);
-
-    const isComingSoon = item.target === 'coming-soon';
-    if (!pick && !company && !isComingSoon) return null;
-
-    const market = item.market ?? pick?.market ?? company?.country ?? 'US';
-    const relatedCompanies = (item.relatedCompanies ?? pick?.connectedLeaders ?? []).slice(0, 3);
-    const openItem = () => {
-      if (isComingSoon) return;
-      if (item.target === 'analysis' && company) {
-        onOpenAnalysis(company);
-        return;
-      }
-      if (pick) {
-        onOpenPick(pick);
-        return;
-      }
-      if (company) {
-        onOpenAnalysis(company);
-      }
-    };
-
-    return {
-      id: item.id,
-      market,
-      marketLabel: market === 'KR' ? '한국' : '미국',
-      theme: item.theme,
-      movement: item.movementLabel ?? pick?.movementLabel,
-      title: item.question,
-      summary: item.summary,
-      relatedCompanies,
-      company,
-      price: isComingSoon ? null : pick ? getPriceForPick(pick, marketPrices) : company ? getPriceForCompany(company, marketPrices) : null,
-      isComingSoon,
-      onOpen: openItem,
-    };
-  };
-
-  const recentAutopsies = currentWeeklyDigest.recentItems
-    .map(buildRecentAutopsyItem)
-    .filter((item): item is RecentAutopsyItem => Boolean(item));
-  const filteredRecentAutopsies = activeMarketTab === 'ALL'
-    ? recentAutopsies
-    : recentAutopsies.filter((item) => item.market === activeMarketTab);
-
-  const openDigestMarketMap = (sectorId?: string, href?: string) => {
-    const categoryMatch = href?.match(/\/category\/([^/]+)/);
-    onOpenCategory(sectorId ?? categoryMatch?.[1] ?? 'us-semiconductors');
+  const openFeaturedMarketMap = () => {
+    onOpenCategory(featuredPick?.relatedSupplyChainId ?? 'us-semiconductors', featuredPick?.relatedCompanyId);
   };
 
   return (
@@ -3141,8 +3075,15 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
           >
             Pick
           </a>
-          <a href="#recent-autopsies">최근 해부</a>
-          <a href="#saved-market-maps">시장 지도</a>
+          <a
+            href="/ko/category/us-semiconductors"
+            onClick={(event) => {
+              event.preventDefault();
+              openFeaturedMarketMap();
+            }}
+          >
+            시장 지도
+          </a>
         </nav>
       </header>
 
@@ -3163,6 +3104,7 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               <span>{currentWeeklyDigest.featured.marketLabel}</span>
               <span>{currentWeeklyDigest.featured.theme}</span>
               <span>{featuredMovementLabel}</span>
+              {featuredConnection ? <span>{featuredConnection.label}</span> : null}
             </div>
             {featuredPick ? (
               <div className="weekly-price-row">
@@ -3202,90 +3144,30 @@ function LandingPage({ onOpenCategory, onOpenAnalysis, onOpenPicks, onOpenPick, 
               {currentWeeklyDigest.featured.primaryCtaLabel}
               <ArrowRight size={16} />
             </button>
+            <button type="button" className="weekly-secondary-action" onClick={onOpenPicks}>
+              {currentWeeklyDigest.featured.secondaryCtaLabel}
+              <ArrowRight size={15} />
+            </button>
           </article>
         </section>
 
-        <section className="home-section recent-autopsy-section" id="recent-autopsies">
-          <div className="home-section-head">
-            <div>
-              <span>최근 해부</span>
-              <h2>이번 주 피드</h2>
-              <p>크게 움직인 종목을 시장과 테마별로 짧게 모았습니다.</p>
-              <small className="price-source-note">주가는 종목별 출처와 기준일이 다를 수 있습니다.</small>
-            </div>
-          </div>
-          <div className="market-tab-row" role="tablist" aria-label="최근 해부 시장 구분">
-            {currentWeeklyDigest.marketTabs.map((tab) => (
-              <button
-                type="button"
-                key={tab.id}
-                className={activeMarketTab === tab.id ? 'active' : ''}
-                aria-pressed={activeMarketTab === tab.id}
-                onClick={() => setActiveMarketTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <div className="recent-autopsy-list">
-            {filteredRecentAutopsies.map((item) => (
-              <article className={`recent-autopsy-card${item.isComingSoon ? ' disabled' : ''}`} key={item.id} aria-disabled={item.isComingSoon}>
-                <div className="recent-autopsy-main">
-                  <div className="recent-autopsy-copy">
-                    <div className="autopsy-badge-row">
-                      <span>{item.marketLabel}</span>
-                      <span>{item.theme}</span>
-                      {item.movement ? <span>{item.movement}</span> : null}
-                    </div>
-                    {!item.isComingSoon ? <PriceBadge price={item.price} compact /> : null}
-                    <h3>{item.title}</h3>
-                    <p>{item.summary}</p>
-                  </div>
-                </div>
-                <div className="related-company-strip" aria-label={`${item.title} 같이 볼 회사`}>
-                  {item.relatedCompanies.slice(0, 3).map((companyName) => (
-                    <span key={`${item.id}-${companyName}`}>{companyName}</span>
-                  ))}
-                </div>
-                <button type="button" onClick={item.onOpen} disabled={item.isComingSoon}>
-                  {item.isComingSoon ? '준비 중' : '해부 보기'}
-                  {!item.isComingSoon ? <ArrowRight size={15} /> : null}
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="home-section saved-map-section" id="saved-market-maps">
-          <div className="home-section-head">
-            <div>
-              <span>저장해둘 시장 지도</span>
-              <h2>해부가 쌓이면 다시 보는 보관함</h2>
-              <p>AI 반도체 지도를 중심으로 서버·메모리·데이터센터 흐름을 함께 열어둡니다.</p>
-            </div>
-          </div>
-          <div className="saved-map-grid">
-            {currentWeeklyDigest.marketMapItems.map((map) => {
-              const isActiveMap = map.status === 'active';
-              return (
-              <article className={`saved-map-card${isActiveMap ? '' : ' disabled'}`} key={map.title} aria-disabled={!isActiveMap}>
-                <div>
-                  <strong>{map.title}</strong>
-                  <span>{isActiveMap ? '열림' : '준비 중'}</span>
-                </div>
-                <p>{map.note}</p>
-                {isActiveMap ? (
-                  <button type="button" onClick={() => openDigestMarketMap(map.sectorId, map.href)}>
-                    지도 보기
-                    <ArrowRight size={15} />
-                  </button>
-                ) : (
-                  <small>준비 중</small>
-                )}
-              </article>
-              );
-            })}
-          </div>
+        <section className="home-weekly-cta-strip" aria-label="다음에 볼 곳">
+          <article>
+            <span>이번 주 전체 Pick</span>
+            <p>Marvell, LG전자, Taylor Morrison을 한 번에 보려면 Pick 페이지로 이동하세요.</p>
+            <button type="button" onClick={onOpenPicks}>
+              이번 주 Pick 전체 보기
+              <ArrowRight size={15} />
+            </button>
+          </article>
+          <article>
+            <span>시장 흐름 지도</span>
+            <p>AI 반도체 흐름이 어떻게 연결되는지 보고 싶다면 시장지도를 확인하세요.</p>
+            <button type="button" onClick={openFeaturedMarketMap}>
+              시장 지도 보기
+              <ArrowRight size={15} />
+            </button>
+          </article>
         </section>
 
       </main>
@@ -5479,7 +5361,6 @@ function App() {
     return (
       <LandingPage
         onOpenCategory={openCategory}
-        onOpenAnalysis={openAnalysis}
         onOpenPicks={openPicks}
         onOpenPick={openPick}
         marketPrices={marketPrices}

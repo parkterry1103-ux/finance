@@ -1626,17 +1626,34 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 실제 상세 페이지가 없는 항목은 `coming-soon` 또는 `target: 'analysis'`처럼 상세 연결이 없음을 분명히 처리합니다.
 - 실제 링크가 없는 항목은 `href`를 만들지 않습니다. 빈 링크나 가짜 URL을 넣지 않습니다.
 
+### 홈 단순화: 이번 주 대표 해부 중심
+
+홈은 여러 콘텐츠를 동시에 나열하는 피드가 아니라, 사용자가 이번 주에 먼저 볼 대표 해부 1개를 고르는 랜딩으로 둡니다. 첫 화면은 대표 질문과 대표 Pick 카드에 집중하고, 나머지 탐색은 역할별 페이지로 분리합니다.
+
+- 홈의 역할: 이번 주 대표 해부 1개를 강하게 안내합니다.
+- 전체 Pick 역할: `/ko/picks`에서 Marvell, LG전자, Taylor Morrison 등 이번 주 Pick 전체를 확인합니다.
+- 관계 탐색 역할: 시장지도에서 AI 반도체, 데이터센터, 전력·냉각 흐름을 확인합니다.
+- 보관함/아카이브: 이번 1단계에서는 새로 만들지 않고 2차 과제로 둡니다.
+- 이번 주 대표 Pick: `pick-marvell-nvlink-fusion-ai-interconnect`입니다.
+- Marvell은 `시장 흐름 참고` 기업 상태를 유지하므로 홈 대표 카드에서 기업해설이나 숫자 3개 CTA로 직접 보내지 않습니다.
+
+남은 TODO:
+
+- `/ko/archive` 또는 `/ko/picks/archive` 설계
+- 주간 업데이트 루틴 정리
+- 대표 Pick 자동/수동 지정 규칙 정리
+
 ### currentWeeklyDigest 구조
 
-`currentWeeklyDigest`는 홈의 히어로, 대표 해부, 최근 해부 목록, 시장 지도 미리보기를 한 번에 관리하는 운영 데이터입니다.
+`currentWeeklyDigest`는 홈의 대표 해부와 주간 Pick 운영 정보를 관리하는 데이터입니다. 홈은 `featuredPickId`와 `featured`를 중심으로 보여주고, `recentItems`와 `marketMapItems`는 `/ko/picks` 운영 맥락과 시장지도 연결을 정리하는 보조 데이터로 둡니다.
 
 - `weekLabel`: 이번 주 표기입니다. 예: `2026년 5월 넷째 주`
 - `headline`: 홈 상단에 보이는 이번 주 해부 메시지입니다.
 - `featuredPickId`: 대표 해부로 연결할 Pick ID입니다.
 - `featured`: 대표 해부 카드의 시장, 테마, 질문형 제목, 요약, 버튼 문구를 담습니다.
-- `recentItems`: 이번 주 또는 최근 해부 목록입니다. 현재 홈은 이 배열을 사용합니다.
+- `recentItems`: 이번 주 또는 최근 해부 목록입니다. 홈 첫 화면에 직접 나열하지 않고, 전체 Pick 운영 맥락을 정리하는 보조 데이터로 둡니다.
 - `recentPickIds`: 별도 구현에서 사용할 수 있는 Pick ID 목록 이름입니다. 현재 구현은 `recentItems` 중심입니다.
-- `marketMapItems`: 홈의 시장 지도 미리보기 항목입니다.
+- `marketMapItems`: 시장지도 연결 후보입니다. 홈에서는 대표 시장지도 CTA만 노출하고, 여러 지도 카드는 나열하지 않습니다.
 - `market`: 최근 해부 항목에서 미국/한국을 구분합니다. 값은 `US` 또는 `KR`입니다.
 - `movement`: 운영상 급등/급락/실적/이슈 구분입니다. 실제 필드는 `movementLabel`입니다.
 - `theme`: AI 서버, 전력 인프라, 바이오 같은 테마명입니다.
