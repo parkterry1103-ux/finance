@@ -571,6 +571,10 @@ function resolveAnalysisRouteCompanyId(companyId?: string | null) {
   return analysisRouteAliases[companyId] ?? companyId;
 }
 
+function resolveCategoryRouteCompanyId(companyId?: string | null) {
+  return resolveAnalysisRouteCompanyId(companyId);
+}
+
 const prominentInstitutionFilters = [
   'Berkshire Hathaway',
   'ARK',
@@ -4737,6 +4741,9 @@ function App() {
     selectedConnectionCards.length -
       new Set([...focusPreviousCards, ...focusNextCards].map((item) => item.company.id)).size,
   );
+  const selectedFocusRelatedCards = prioritizedSelectedConnectionCards
+    .filter((item, index, list) => list.findIndex((candidate) => candidate.company.id === item.company.id) === index)
+    .slice(0, 4);
   const selectedRelatedCompanyNames =
     prioritizedSelectedConnectionCards
       .slice(0, 3)
@@ -4780,6 +4787,10 @@ function App() {
     (selectedCompany ? flowStageCards.find((stage) => matchesAiFlowStage(stage.stage, selectedCompany))?.stage ?? null : null);
   const activeFlowStageCard = activeFlowStageName ? flowStageCards.find((stage) => stage.stage === activeFlowStageName) ?? null : null;
   const selectedFlowStageIndex = activeFlowStageName ? flowStageCards.findIndex((stage) => stage.stage === activeFlowStageName) : -1;
+  const selectedCompanyStatusLabel =
+    selectedCompany && selectedCompany.id === selectedAnchor.id
+      ? '섹터 중심 기업'
+      : selectedConnectionState?.label ?? '시장 흐름 참고';
   const aiKoreaListedCompanies = aiKoreaListedPriorityNames
     .map((name) =>
       groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
@@ -4823,7 +4834,7 @@ function App() {
   const routeFinancialLearnMatch = routePath.match(/^\/ko\/learn\/financials\/?$/);
   const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
-  const routeCategoryCompanyId = routeCategoryId ? routeParams.get('company') ?? undefined : undefined;
+  const routeCategoryCompanyId = routeCategoryId ? resolveCategoryRouteCompanyId(routeParams.get('company')) ?? undefined : undefined;
   const routePickId = routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
@@ -5757,7 +5768,7 @@ function App() {
                 <div className="selected-company-context">
                   <span>선택한 기업</span>
                   <strong>{selectedCompany.name}</strong>
-                  {selectedCompany.id === selectedAnchor.id && <em>섹터 중심 기업</em>}
+                  <em>{selectedCompanyStatusLabel}</em>
                 </div>
               )}
             </div>
@@ -5812,15 +5823,98 @@ function App() {
             </div>
           </header>
 
+          {isAiRelationshipMap && selectedCompany && !shouldShowRelationshipCanvas && (
+            <section className="market-detail-focus-grid" aria-label="선택 기업 중심 시장 흐름">
+              <article className="market-detail-selected-card">
+                <div className="market-detail-selected-head">
+                  <CompanyLogo company={selectedCompany} size="large" />
+                  <div>
+                    <span>선택한 기업</span>
+                    <h3>{selectedCompany.name}</h3>
+                    <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                  </div>
+                </div>
+                <div className="connection-badge-row">
+                  <span className={`connection-status-badge ${selectedConnectionState?.level ?? 'reference'}`}>{selectedCompanyStatusLabel}</span>
+                  {activeFlowStageCard && <span className="connection-status-badge reference">{activeFlowStageCard.term}</span>}
+                </div>
+                <p>{companyQuestionProductCopy(selectedCompany)}</p>
+                <strong>{companyQuestionDemandCopy(selectedCompany)}</strong>
+                <div className="market-detail-related-inline" aria-label="같이 볼 회사 요약">
+                  <span>같이 볼 회사</span>
+                  <div>
+                    {selectedFocusRelatedCards.length ? (
+                      selectedFocusRelatedCards.slice(0, 4).map((item) => <b key={item.company.id}>{item.company.name}</b>)
+                    ) : (
+                      <b>직접 연결 기업 정리 중</b>
+                    )}
+                  </div>
+                </div>
+                <div className="market-detail-selected-actions">
+                  {selectedCanOpenAnalysis ? (
+                    <>
+                      <button type="button" onClick={() => openAnalysis(selectedCompany)}>
+                        기업 해설 보기
+                      </button>
+                      {selectedCanOpenFinancials ? (
+                        <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
+                          숫자 3개 보기
+                        </button>
+                      ) : (
+                        <span>재무 연결 준비 중</span>
+                      )}
+                    </>
+                  ) : (
+                    <span>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
+                  )}
+                </div>
+              </article>
+
+              <section className="market-detail-related-card" aria-label="같이 볼 회사">
+                <div className="market-detail-section-head">
+                  <span>같이 볼 회사</span>
+                  <strong>{selectedCompany.name}과 바로 이어지는 기업</strong>
+                  <p>관계는 시장 흐름 이해용입니다. 직접 거래 여부는 공시·IR로 따로 확인합니다.</p>
+                </div>
+                <div className="market-detail-related-list">
+                  {selectedFocusRelatedCards.length ? (
+                    selectedFocusRelatedCards.map((item) => {
+                      const connection = companyConnectionState(item.company);
+                      return (
+                        <article key={item.link.id} className={`connection-${connection.level}`}>
+                          <div>
+                            <strong>{item.company.name}</strong>
+                            <span>{shortRelationshipLabel(item.relationship.type)}</span>
+                          </div>
+                          <p>{item.relationship.demandConnection}</p>
+                          <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>
+                          {connection.canOpenAnalysis ? (
+                            <button type="button" onClick={() => openAnalysis(item.company)}>
+                              기업 해설 보기
+                            </button>
+                          ) : (
+                            <em>{connection.label}</em>
+                          )}
+                        </article>
+                      );
+                    })
+                  ) : (
+                    <p className="market-detail-empty">직접 연결 기업은 아직 정리 중입니다.</p>
+                  )}
+                </div>
+              </section>
+            </section>
+          )}
+
           {isAiRelationshipMap && (
             <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>{shouldShowRelationshipCanvas ? '전체 연결 보기' : '5장 흐름 이야기'}</strong>
+                <strong>{shouldShowRelationshipCanvas ? '전체 연결 보기' : 'compact 5단계 흐름'}</strong>
                 <p>
                   {shouldShowRelationshipCanvas
                     ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
-                    : '대표 기업만 먼저 봅니다.'}
+                    : 'AI 수요 → GPU/AI 칩 → HBM → 파운드리 → 전력/냉각 순서로 봅니다.'}
                 </p>
               </div>
               {shouldShowRelationshipCanvas && (
@@ -5912,14 +6006,14 @@ function App() {
                       aria-label={`${stage.easyTitle} 단계 보기`}
                     >
                       <span>{stage.symbol}</span>
-                      <strong>{stage.easyTitle}</strong>
+                      <strong>{stage.term}</strong>
                       <small>{stage.summary}</small>
-                      <em>전문용어: {stage.term}</em>
+                      <em>{stage.easyTitle}</em>
                     </button>
                     <span className="flow-stage-company-row" aria-label={`${stage.easyTitle} 대표 기업`}>
                       <b>대표 기업</b>
                       <span className="flow-stage-company-chip-row">
-                        {stage.companies.map((company) =>
+                        {stage.companies.slice(0, 2).map((company) =>
                           canOpenCompanyAnalysis(company) ? (
                             <button
                               key={company.id}
@@ -6040,7 +6134,8 @@ function App() {
               )}
 
               <div className="advanced-map-entry">
-                <span>처음에는 5장만 보고, 필요하면 전체 연결을 엽니다.</span>
+                <span>전체 관계를 보고 싶다면</span>
+                <strong>NVIDIA, HBM, 파운드리, 전력/냉각 기업 관계를 한 번에 펼쳐봅니다.</strong>
                 <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
               </div>
 
