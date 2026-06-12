@@ -1633,13 +1633,12 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 홈의 역할: 이번 주 대표 해부 1개를 강하게 안내합니다.
 - 전체 Pick 역할: `/ko/picks`에서 Marvell, LG전자, Taylor Morrison 등 이번 주 Pick 전체를 확인합니다.
 - 관계 탐색 역할: 시장지도에서 AI 반도체, 데이터센터, 전력·냉각 흐름을 확인합니다.
-- 보관함/아카이브: 이번 1단계에서는 새로 만들지 않고 2차 과제로 둡니다.
+- 보관함/아카이브: `/ko/picks/archive`에서 이번 주 Pick에서 내려간 지난 해부를 확인합니다.
 - 이번 주 대표 Pick: `pick-marvell-nvlink-fusion-ai-interconnect`입니다.
 - Marvell은 `시장 흐름 참고` 기업 상태를 유지하므로 홈 대표 카드에서 기업해설이나 숫자 3개 CTA로 직접 보내지 않습니다.
 
 남은 TODO:
 
-- `/ko/archive` 또는 `/ko/picks/archive` 설계
 - 주간 업데이트 루틴 정리
 - 대표 Pick 자동/수동 지정 규칙 정리
 
@@ -1649,15 +1648,31 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 
 - 홈은 대표 해부 1개를 보여주는 첫 진입 화면입니다.
 - `/ko/picks`는 이번 주 Pick만 보여줍니다. 현재 기준은 `currentWeeklyDigest.recentItems`에 들어간 Marvell, LG전자, Taylor Morrison입니다.
+- `/ko/picks/archive`는 이번 주 Pick에서 내려간 지난 해부 보관함입니다.
 - `/ko/market-map`은 시장지도 카테고리 보관함입니다. 사용자가 볼 흐름을 고른 뒤 상세 지도로 들어갑니다.
 - `/ko/category/us-semiconductors`는 AI 반도체 / 데이터센터 상세 지도입니다. 홈에서 바로 들어가지 않고 `/ko/market-map`의 카테고리 CTA에서 진입합니다.
-- archived 또는 지난 Pick은 `/ko/picks` 목록에 섞지 않습니다. 별도 보관함 route는 2차 과제로 둡니다.
+- archived 또는 지난 Pick은 `/ko/picks` 목록에 섞지 않고 `/ko/picks/archive`에서 보조로 제공합니다.
 
 향후 시장지도 카테고리 후보:
 
 - 데이터센터 냉각 / 전력 인프라
 - M&A / 인수 프리미엄
 - 클라우드 / 데이터 플랫폼
+
+### Pick 보관함 route 추가
+
+- `/ko/picks`: 이번 주 Pick 전용입니다. `currentWeeklyDigest.recentItems`에 있는 Pick만 표시합니다.
+- `/ko/picks/archive`: 지난 해부 보관함입니다. `currentWeeklyDigest.recentItems`에 없는 `stockAutopsyPicks`를 최신 `publishedAt` 순으로 표시합니다.
+- 중복 노출 방지 기준: 이번 주 Pick ID set을 먼저 만들고, archive 목록에서는 해당 ID를 제외합니다.
+- archived Pick 상세 접근 유지: `/ko/picks/{pickId}` 상세 route는 `stockAutopsyPicks`에서 직접 찾으므로 `status: 'archived'` 여부와 관계없이 접근 가능합니다.
+- 홈에는 보관함 CTA를 크게 넣지 않고, `/ko/picks` 안에서 `지난 해부 보관함 보기` 보조 링크로만 제공합니다.
+
+남은 TODO:
+
+- 보관함 필터/검색
+- 주차별 그룹
+- 태그별 archive
+- 인스타 게시일/원문 기준 정렬
 
 ### 시장지도 상세 페이지 정보 계층 재구성
 

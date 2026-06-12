@@ -558,6 +558,10 @@ function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
 
+function picksArchivePath() {
+  return '/ko/picks/archive';
+}
+
 function financialLearningPath() {
   return '/ko/learn/financials';
 }
@@ -3181,11 +3185,13 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
 
 type StockAutopsyPicksPageProps = {
   selectedPickId?: string;
+  isArchive?: boolean;
   onHome: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
   onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
+  onOpenPicksArchive: () => void;
   marketPrices: MarketPrice[];
 };
 
@@ -3279,14 +3285,30 @@ function pickRelationCopy(company: Company, pick: StockAutopsyPick) {
   return `${companyValueChainStage(company)} 흐름에서 같이 볼 기업입니다. 직접 거래 여부는 공시·IR로 확인합니다.`;
 }
 
-function weeklyStockAutopsyPicks() {
-  const weeklyPickIds = new Set(
+function currentWeeklyPickIds() {
+  return new Set(
     currentWeeklyDigest.recentItems
       .map((item) => item.pickId)
       .filter((pickId): pickId is string => Boolean(pickId)),
   );
+}
 
-  return stockAutopsyPicks.filter((pick) => pick.status !== 'archived' && weeklyPickIds.has(pick.id));
+function weeklyStockAutopsyPicks() {
+  const seenPickIds = new Set<string>();
+  return currentWeeklyDigest.recentItems
+    .map((item) => (item.pickId ? stockAutopsyPicks.find((pick) => pick.id === item.pickId) : undefined))
+    .filter((pick): pick is StockAutopsyPick => {
+      if (!pick || seenPickIds.has(pick.id)) return false;
+      seenPickIds.add(pick.id);
+      return true;
+    });
+}
+
+function archivedStockAutopsyPicks() {
+  const weeklyPickIds = currentWeeklyPickIds();
+  return stockAutopsyPicks
+    .filter((pick) => !weeklyPickIds.has(pick.id))
+    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
 }
 
 function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
@@ -3356,16 +3378,20 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMap
 
 function StockAutopsyPicksPage({
   selectedPickId,
+  isArchive = false,
   onHome,
   onOpenCategory,
   onOpenAnalysis,
   onOpenPick,
   onOpenPicks,
+  onOpenPicksArchive,
   marketPrices,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
   const detailPick = selectedPickId ? selectedPick : undefined;
   const weeklyPicks = weeklyStockAutopsyPicks();
+  const archivePicks = archivedStockAutopsyPicks();
+  const visiblePicks = isArchive ? archivePicks : weeklyPicks;
 
   if (selectedPickId && !detailPick) {
     return (
@@ -3712,20 +3738,31 @@ function StockAutopsyPicksPage({
 
       <main>
         <section className="pick-hero">
-          <p className="home-kicker">주가해부실 Pick</p>
-          <h1>이번 주 해부 종목</h1>
-          <p>급등·급락한 이유를 시장 흐름과 함께 쉽게 정리했습니다.</p>
-          <small>인스타그램에서 다룬 종목이 어떤 기업들과 연결되는지 확인해보세요.</small>
+          <p className="home-kicker">{isArchive ? '지난 해부' : '주가해부실 Pick'}</p>
+          <h1>{isArchive ? '지난 해부 보관함' : '이번 주 해부 종목'}</h1>
+          <p>
+            {isArchive
+              ? '이번 주 Pick에서 내려간 종목을 모아두었습니다. 가격과 기준일은 각 카드의 배지를 확인하세요.'
+              : '급등·급락한 이유를 시장 흐름과 함께 쉽게 정리했습니다.'}
+          </p>
+          <small>
+            {isArchive
+              ? '보관함의 Pick도 상세 해부와 원문 기준 링크는 그대로 열립니다.'
+              : '인스타그램에서 다룬 종목이 어떤 기업들과 연결되는지 확인해보세요.'}
+          </small>
         </section>
 
-        <section className="pick-grid" aria-label="주가해부실 Pick 목록">
-          {weeklyPicks.map((pick) => (
+        <section className="pick-grid" aria-label={isArchive ? '지난 해부 보관함 목록' : '주가해부실 Pick 목록'}>
+          {visiblePicks.map((pick) => (
             <article className="pick-card" key={pick.id}>
               <div className="card-topline">
                 <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
-                <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
-                  {pick.movementDirection === 'up' ? '상승' : '하락'}
-                </strong>
+                <div className="pick-card-badge-row">
+                  {isArchive ? <span className="pick-archive-badge">보관함</span> : null}
+                  <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
+                    {pick.movementDirection === 'up' ? '상승' : '하락'}
+                  </strong>
+                </div>
               </div>
               <h2>{pick.title}</h2>
               <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
@@ -3758,6 +3795,36 @@ function StockAutopsyPicksPage({
             </article>
           ))}
         </section>
+
+        {isArchive && !visiblePicks.length ? (
+          <section className="pick-empty pick-archive-empty" aria-label="보관함 비어 있음">
+            <h1>아직 보관된 해부가 없습니다.</h1>
+            <p>이번 주 Pick을 먼저 확인해보세요.</p>
+            <button type="button" onClick={onOpenPicks}>
+              이번 주 Pick 보기
+            </button>
+          </section>
+        ) : null}
+
+        {isArchive ? (
+          <section className="pick-archive-link-panel compact">
+            <span>이번 주 해부로 돌아가기</span>
+            <p>현재 주간 Pick은 Marvell, LG전자, Taylor Morrison만 따로 모아두었습니다.</p>
+            <button type="button" onClick={onOpenPicks}>
+              이번 주 Pick 보기
+              <ArrowRight size={15} />
+            </button>
+          </section>
+        ) : (
+          <section className="pick-archive-link-panel">
+            <span>지난 해부를 찾고 있다면</span>
+            <p>예전에 다룬 Pick은 보관함에 모아두었습니다.</p>
+            <button type="button" onClick={onOpenPicksArchive}>
+              지난 해부 보관함 보기
+              <ArrowRight size={15} />
+            </button>
+          </section>
+        )}
       </main>
     </div>
   );
@@ -4826,8 +4893,9 @@ function App() {
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
   const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
+  const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
-    routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) ??
+    (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) : null) ??
     routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
     routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
   const routeOwnershipMatch = routePath.match(/^\/ko\/ownership(?:\/)?$/) ?? routePath.match(/^\/ownership-trades(?:\/)?$/);
@@ -4835,12 +4903,13 @@ function App() {
   const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? resolveCategoryRouteCompanyId(routeParams.get('company')) ?? undefined : undefined;
-  const routePickId = routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
+  const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
   const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
-  const isPicksRoute = Boolean(routePickMatch);
+  const isPickArchiveRoute = Boolean(routePickArchiveMatch);
+  const isPicksRoute = isPickArchiveRoute || Boolean(routePickMatch);
   const isMarketMapRoute = Boolean(routeMarketMapMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
@@ -5315,6 +5384,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openPicksArchive() {
+    window.history.pushState({}, '', picksArchivePath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
   function openPick(pick: StockAutopsyPick) {
     window.history.pushState({}, '', picksPath(pick));
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -5396,11 +5470,13 @@ function App() {
     return (
       <StockAutopsyPicksPage
         selectedPickId={routePickId}
+        isArchive={isPickArchiveRoute}
         onHome={openHome}
         onOpenCategory={openCategory}
         onOpenAnalysis={openAnalysis}
         onOpenPick={openPick}
         onOpenPicks={openPicks}
+        onOpenPicksArchive={openPicksArchive}
         marketPrices={marketPrices}
       />
     );
