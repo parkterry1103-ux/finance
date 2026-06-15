@@ -1962,6 +1962,42 @@ Update weekly picks and QA notes
 - 정적 콘텐츠에는 주가, 등락률, 재무 숫자를 하드코딩하지 않았습니다. 가격과 기준일은 `PriceBadge`와 `/api/market-prices` 응답이 표시합니다.
 - 연결되지 않은 기업은 준비 중 또는 참고 상태로 처리합니다. 완전 연결 기업만 `기업해설 보기`와 `숫자 3개 보기` CTA를 노출하고, 지도 참고 기업은 시장 흐름 확인만 허용합니다.
 
+### 지난주 Pick 4개 추가
+
+확인 일시: 2026-06-15
+
+지난주 콘텐츠 4개를 `stockAutopsyPicks`에 추가했습니다. 홈 대표 Pick과 `/ko/picks`의 이번 주 Pick은 Marvell, LG전자, Taylor Morrison 정책을 유지하고, 이번에 추가한 4개는 `currentWeeklyDigest.recentItems`에 넣지 않아 `/ko/picks/archive` 보관함에 노출됩니다.
+
+추가한 Pick:
+
+| Pick | slug/id | 연결 상태 | archive 노출 | 시장지도 반영 | CTA 정책 |
+| --- | --- | --- | --- | --- | --- |
+| Super Micro Computer / SMCI | `pick-smci-ai-server-funding-dilution` | 완전 연결 | 예 | 기존 AI 반도체 / 데이터센터 지도에서 `ai-datacenter-supermicro` 연결 유지 | `숫자 3개 보기`, `기업해설 보기`, `시장 흐름 보기` |
+| 현대건설 | `pick-hyundai-engineering-reconstruction-expectation` | Pick only | 예 | 이번 작업에서는 새 카테고리 미생성 | 원문/출처와 Pick 내부 설명만 |
+| DraftKings | `pick-draftkings-sports-prediction-platform` | Pick only | 예 | 이번 작업에서는 새 카테고리 미생성 | 원문/출처와 Pick 내부 설명만 |
+| Micron | `pick-micron-ai-memory-hbm-demand` | 완전 연결 | 예 | 기존 AI 반도체 / 데이터센터 지도에서 `ai-datacenter-micron` 연결 유지 | `숫자 3개 보기`, `기업해설 보기`, `시장 흐름 보기` |
+
+source 확인:
+
+- SMCI: Supermicro IR의 2026-06-09 proposed financing 발표와 2026-06-11 pricing 발표를 source link로 넣었습니다.
+- 현대건설: 연합뉴스의 미국·이란 종전 기대와 재건주 움직임 보도, 현대건설 회사 소개를 source link로 넣었습니다.
+- DraftKings: SEC 8-K와 Barron’s 예측시장 보도를 source link로 넣었습니다.
+- Micron: Micron FY26 2Q 실적 발표와 MarketWatch 메모리주 반등 보도를 source link로 넣었습니다.
+
+연결 상태 메모:
+
+- SMCI와 Micron은 기존 company data, ticker, SEC 원문, `/api/financials` 연결 후보, AI 반도체 / 데이터센터 지도 노드가 있으므로 완전 연결 Pick으로 둡니다.
+- 현대건설과 DraftKings는 이번 작업에서 `data.ts` company, 재무 API, 시장지도 카테고리를 새로 만들지 않았으므로 Pick only로 둡니다.
+- 현대건설과 DraftKings에는 가짜 기업해설 CTA나 숫자 3개 CTA를 만들지 않습니다.
+- 가격 숫자는 정적 콘텐츠에 하드코딩하지 않고 기존 `PriceBadge`와 `/api/market-prices` 응답에 맡깁니다.
+
+남은 TODO:
+
+- 재건 / 인프라 카테고리 후보 검토
+- 스포츠·예측 플랫폼 카테고리 후보 검토
+- SMCI 자금조달 이후 희석 부담, 재고, 영업현금흐름 추적
+- Micron HBM 매출, DRAM/NAND 가격, 메모리 가격 사이클 추적
+
 ### 운영 예시: 2026년 5월 마지막 주
 
 - 이번 주 종목은 Dell, Snowflake, Micron입니다.
