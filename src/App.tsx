@@ -3294,10 +3294,9 @@ function archivedStockAutopsyPicks() {
 }
 
 const previousWeekArchivePickIds = new Set([
-  'pick-smci-ai-server-funding-dilution',
-  'pick-hyundai-engineering-reconstruction-expectation',
-  'pick-draftkings-sports-prediction-platform',
-  'pick-micron-ai-memory-hbm-demand',
+  'pick-marvell-nvlink-fusion-ai-interconnect',
+  'pick-lg-electronics-ai-datacenter-cooling',
+  'pick-taylor-morrison-berkshire-acquisition',
 ]);
 
 function archivedStockAutopsyPickGroups() {
@@ -3310,7 +3309,7 @@ function archivedStockAutopsyPickGroups() {
       ? {
           id: 'previous-week',
           title: '지난주 Pick',
-          description: 'AI 서버 자금조달, 중동 재건, 스포츠 플랫폼, 메모리 반등처럼 지난주 시장이 본 흐름입니다.',
+          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄처럼 직전 주차에서 본 흐름입니다.',
           picks: previousWeekPicks,
         }
       : null,

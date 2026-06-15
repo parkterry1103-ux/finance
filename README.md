@@ -1631,11 +1631,11 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 홈은 여러 콘텐츠를 동시에 나열하는 피드가 아니라, 사용자가 이번 주에 먼저 볼 대표 해부 1개를 고르는 랜딩으로 둡니다. 첫 화면은 대표 질문과 대표 Pick 카드에 집중하고, 나머지 탐색은 역할별 페이지로 분리합니다.
 
 - 홈의 역할: 이번 주 대표 해부 1개를 강하게 안내합니다.
-- 전체 Pick 역할: `/ko/picks`에서 Marvell, LG전자, Taylor Morrison 등 이번 주 Pick 전체를 확인합니다.
+- 전체 Pick 역할: `/ko/picks`에서 SMCI, Micron, 현대건설, DraftKings 등 이번 주 Pick 전체를 확인합니다.
 - 관계 탐색 역할: 시장지도에서 AI 반도체, 데이터센터, 전력·냉각 흐름을 확인합니다.
 - 보관함/아카이브: `/ko/picks/archive`에서 이번 주 Pick에서 내려간 지난 해부를 확인합니다.
-- 이번 주 대표 Pick: `pick-marvell-nvlink-fusion-ai-interconnect`입니다.
-- Marvell은 `시장 흐름 참고` 기업 상태를 유지하므로 홈 대표 카드에서 기업해설이나 숫자 3개 CTA로 직접 보내지 않습니다.
+- 이번 주 대표 Pick: `pick-smci-ai-server-funding-dilution`입니다.
+- SMCI는 완전 연결 상태이므로 Pick 상세와 기업해설, 숫자 3개, 시장 흐름을 함께 확인할 수 있습니다.
 
 남은 TODO:
 
@@ -1647,7 +1647,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 홈 CTA는 대표 해부에서 바로 복잡한 상세 화면으로 뛰지 않도록 목적지를 단계별로 나눕니다.
 
 - 홈은 대표 해부 1개를 보여주는 첫 진입 화면입니다.
-- `/ko/picks`는 이번 주 Pick만 보여줍니다. 현재 기준은 `currentWeeklyDigest.recentItems`에 들어간 Marvell, LG전자, Taylor Morrison입니다.
+- `/ko/picks`는 이번 주 Pick만 보여줍니다. 현재 기준은 `currentWeeklyDigest.recentItems`에 들어간 SMCI, Micron, 현대건설, DraftKings입니다.
 - `/ko/picks/archive`는 이번 주 Pick에서 내려간 지난 해부 보관함입니다.
 - `/ko/market-map`은 시장지도 카테고리 보관함입니다. 사용자가 볼 흐름을 고른 뒤 상세 지도로 들어갑니다.
 - `/ko/category/us-semiconductors`는 AI 반도체 / 데이터센터 상세 지도입니다. 홈에서 바로 들어가지 않고 `/ko/market-map`의 카테고리 CTA에서 진입합니다.
@@ -1715,7 +1715,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - `featured`: 대표 해부 카드의 시장, 테마, 질문형 제목, 요약, 버튼 문구를 담습니다.
 - `recentItems`: 이번 주 또는 최근 해부 목록입니다. 홈 첫 화면에 직접 나열하지 않고, 전체 Pick 운영 맥락을 정리하는 보조 데이터로 둡니다.
 - `recentPickIds`: 별도 구현에서 사용할 수 있는 Pick ID 목록 이름입니다. 현재 구현은 `recentItems` 중심입니다.
-- `marketMapItems`: 시장지도 연결 후보입니다. 홈에서는 대표 시장지도 CTA만 노출하고, 여러 지도 카드는 나열하지 않습니다.
+- `marketMapItems`: 시장지도 연결 후보입니다. 홈에서는 큰 시장지도 CTA를 노출하지 않고, nav와 `/ko/market-map`에서 시장지도 진입을 유지합니다.
 - `market`: 최근 해부 항목에서 미국/한국을 구분합니다. 값은 `US` 또는 `KR`입니다.
 - `movement`: 운영상 급등/급락/실적/이슈 구분입니다. 실제 필드는 `movementLabel`입니다.
 - `theme`: AI 서버, 전력 인프라, 바이오 같은 테마명입니다.
@@ -1817,7 +1817,7 @@ weekLabel:
 전체 흐름:
 
 1. 이번 주 대표 이슈를 선정합니다.
-2. 이번 주 Pick 2~4개를 선정합니다. 현재 운영 예시는 Marvell, LG전자, Taylor Morrison입니다.
+2. 이번 주 Pick 2~4개를 선정합니다. 현재 운영 예시는 SMCI, Micron, 현대건설, DraftKings입니다.
 3. 대표 Pick 1개를 선정하고 `currentWeeklyDigest.featuredPickId`와 홈 대표 문구를 맞춥니다.
 4. `/ko/picks`에는 이번 주 Pick만 노출합니다.
 5. 지난 Pick은 `/ko/picks/archive`로 자동 또는 수동 이동되도록 이번 주 Pick ID set에서 제외합니다.
@@ -2002,7 +2002,7 @@ source 확인:
 
 확인 일시: 2026-06-15
 
-홈은 대표 Pick 1개를 먼저 읽는 진입 화면으로 유지합니다. 대표 Marvell 카드 안에서는 `Marvell 해부 보기`만 강하게 남기고, 카드 안의 중복 `이번 주 Pick 전체 보기` CTA는 제거했습니다. 홈 하단에는 `이번 주 Pick 전체 보기` 카드 1개만 남기고, 큰 `시장 지도 보기` 카드는 제거했습니다.
+홈은 대표 Pick 1개를 먼저 읽는 진입 화면으로 유지합니다. 대표 카드 안에서는 해당 대표 Pick의 `해부 보기` CTA만 강하게 남기고, 카드 안의 중복 `이번 주 Pick 전체 보기` CTA는 제거했습니다. 홈 하단에는 `이번 주 Pick 전체 보기` 카드 1개만 남기고, 큰 `시장 지도 보기` 카드는 제거했습니다.
 
 시장지도 기능과 route는 유지합니다. 상단 nav의 `시장 지도`, Pick 상세의 `시장 흐름 보기`, 기업해설 내부의 시장 흐름 이동은 그대로 두며, 홈 하단에서 큰 CTA로만 노출하지 않습니다.
 
@@ -2010,10 +2010,41 @@ Archive grouping 기준:
 
 | 그룹 | 기준 | 포함 Pick |
 | --- | --- | --- |
-| 지난주 Pick | 2026-06-12에 추가한 지난주 콘텐츠 ID 4개를 명시적으로 묶음 | SMCI, 현대건설, DraftKings, Micron |
+| 지난주 Pick | 현재 주차에서 내려간 직전 주차 콘텐츠 ID를 명시적으로 묶음 | Marvell, LG전자, Taylor Morrison |
 | 이전 Pick | 이번 주 Pick도 아니고 지난주 그룹도 아닌 기존 archive Pick | Dell, Snowflake, NVIDIA, 삼성전자 등 기존 보관함 Pick |
 
-지난주 Pick 4개는 `/ko/picks/archive`의 `지난주 Pick` 섹션에 표시합니다. 기존 archive Pick은 `이전 Pick` 섹션으로 내려가며, Pick 카드 자체는 기존 컴포넌트를 재사용해 가격/source/asOf 배지와 연결 상태별 CTA 정책을 유지합니다. `/ko/picks`는 계속 Marvell, LG전자, Taylor Morrison만 노출합니다.
+현재 주차에서 내려간 Pick은 `/ko/picks/archive`의 `지난주 Pick` 섹션에 표시합니다. 기존 archive Pick은 `이전 Pick` 섹션으로 내려가며, Pick 카드 자체는 기존 컴포넌트를 재사용해 가격/source/asOf 배지와 연결 상태별 CTA 정책을 유지합니다. `/ko/picks`는 `currentWeeklyDigest.recentItems`만 노출하고, archive는 이 ID들을 제외합니다.
+
+### 홈 대표 Pick 및 이번 주 Pick 교체
+
+확인 일시: 2026-06-15
+
+홈 대표 Pick을 Marvell에서 SMCI로 교체했습니다. 홈 대표 문구는 AI 서버 주문이 많아도 자금조달 방식과 희석 부담을 함께 봐야 한다는 흐름으로 정리하고, 대표 카드 CTA는 `SMCI 해부 보기`만 강하게 남겼습니다.
+
+`/ko/picks` 현재 주차 Pick:
+
+1. `pick-smci-ai-server-funding-dilution` - Super Micro Computer / SMCI
+2. `pick-micron-ai-memory-hbm-demand` - Micron
+3. `pick-hyundai-engineering-reconstruction-expectation` - 현대건설
+4. `pick-draftkings-sports-prediction-platform` - DraftKings
+
+Archive로 내려간 기존 Pick:
+
+- `pick-marvell-nvlink-fusion-ai-interconnect`
+- `pick-lg-electronics-ai-datacenter-cooling`
+- `pick-taylor-morrison-berkshire-acquisition`
+
+중복 노출 방지 기준:
+
+- `/ko/picks`는 `currentWeeklyDigest.recentItems`에 있는 Pick ID만 표시합니다.
+- `/ko/picks/archive`는 `currentWeeklyDigest.recentItems`에 있는 Pick ID를 제외합니다.
+- archive의 `지난주 Pick` 그룹은 이번 교체로 내려간 Marvell, LG전자, Taylor Morrison을 명시적으로 묶습니다.
+
+CTA 상태:
+
+- SMCI와 Micron은 기존 company data, 분석 route, 재무 쉽게 보기, AI 반도체 / 데이터센터 지도 연결이 있으므로 `기업해설 보기`, `숫자 3개 보기`, `시장 흐름 보기`를 유지합니다.
+- 현대건설과 DraftKings는 Pick only 상태이므로 기업해설/숫자 CTA를 만들지 않고 원문/내부 설명 중심으로 둡니다.
+- 홈 하단의 큰 시장지도 CTA는 계속 노출하지 않고, 상단 nav와 상세 내부 이동만 유지합니다.
 
 남은 TODO:
 
@@ -2022,6 +2053,7 @@ Archive grouping 기준:
 - 카테고리별 archive
 - 재건/인프라 시장지도 카테고리
 - 스포츠·예측 플랫폼 카테고리
+- 주차 교체 시 archive 그룹 ID를 자동으로 갱신하는 validation script
 
 ### 운영 예시: 2026년 5월 마지막 주
 
