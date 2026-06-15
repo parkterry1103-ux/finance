@@ -1806,6 +1806,152 @@ weekLabel:
 6. `marketMapItems`에는 실제 연결이 있는 산업만 `active`와 `href`를 넣고, 준비 중 항목은 `status: 'coming-soon'`만 둡니다.
 7. 숫자 3개는 SEC/OpenDART, 회사 IR, 공시 원문처럼 확인 가능한 기준으로만 고릅니다.
 
+### 주간 Pick 업데이트 루틴
+
+목적:
+
+- 매주 조사한 종목과 이슈를 반영할 때 콘텐츠만 바꾸지 않고 가격 ticker, 재무보고서 연결, 시장지도 분류, CTA 노출 상태를 함께 확인합니다.
+- 핵심 동선은 `/` 또는 `/ko/`의 이번 주 대표 해부 1개, `/ko/picks`의 이번 주 Pick, `/ko/picks/archive`의 지난 해부, `/ko/market-map`과 `/ko/category/...`의 시장지도, `/ko/analysis/...`의 완전 연결 기업해설입니다.
+- `/ko/learn/financials`는 직접 접근 가능한 보조 학습 페이지로 유지하되 주간 Pick의 큰 CTA 목적지로 쓰지 않습니다.
+
+전체 흐름:
+
+1. 이번 주 대표 이슈를 선정합니다.
+2. 이번 주 Pick 2~4개를 선정합니다. 현재 운영 예시는 Marvell, LG전자, Taylor Morrison입니다.
+3. 대표 Pick 1개를 선정하고 `currentWeeklyDigest.featuredPickId`와 홈 대표 문구를 맞춥니다.
+4. `/ko/picks`에는 이번 주 Pick만 노출합니다.
+5. 지난 Pick은 `/ko/picks/archive`로 자동 또는 수동 이동되도록 이번 주 Pick ID set에서 제외합니다.
+6. 각 Pick의 연결 상태를 `완전 연결`, `시장 흐름 참고`, `Pick only`, `준비 중` 중 하나로 결정합니다.
+7. 가격 ticker가 있는지 확인합니다.
+8. 완전 연결 후보는 재무 API 연결 가능 여부를 확인합니다.
+9. 시장지도 카테고리와 기존 노드 관계를 반영할지 결정합니다.
+10. 홈, Pick 상세, 시장지도, 기업해설의 CTA 노출 규칙이 연결 상태와 일치하는지 확인합니다.
+11. 원문, 회사 발표, 공시, 신뢰 가능한 뉴스 링크를 확인합니다.
+12. 운영 페이지와 모바일 390px QA를 진행합니다.
+13. README에 주간 업데이트 내용, 연결 상태, QA 결과를 기록합니다.
+14. 큰 구조 변경이 있으면 별도 TODO로 남기고, 단순 주간 반영이면 같은 주간 기록 안에 묶습니다.
+
+Pick 작성 템플릿:
+
+```text
+Pick 제목:
+slug/id:
+ticker:
+회사명:
+이번 주 움직인 이유:
+한 줄 해석:
+시장 흐름:
+핵심 체크포인트 3개:
+같이 볼 회사:
+가격 ticker 연결:
+재무보고서 연결:
+시장지도 연결:
+연결 상태:
+CTA 정책:
+원문/출처:
+archive 처리:
+```
+
+연결 상태 결정표:
+
+| 상태 | 기준 | CTA 정책 |
+| --- | --- | --- |
+| 완전 연결 | `company` data 있음, ticker 있음, `/api/financials` direct/partial/20-F/OpenDART 가능, 시장지도 연결 가능 | `기업해설 보기`, `숫자 3개 보기`, `시장 흐름 보기` |
+| 시장 흐름 참고 | 시장지도 또는 흐름에는 있지만 재무 API와 analysis page가 아직 없음 | `시장 흐름 보기`만 |
+| Pick only | Pick 상세 콘텐츠만 있고 `data.ts` company와 시장지도 연결이 없음 | 원문 링크와 Pick 내부 설명 중심 |
+| 준비 중 | 이름만 언급되고 상세 연결이 없음 | CTA 없음, 준비 중 badge만 |
+
+가격 체크리스트:
+
+- ticker가 있는지 확인합니다.
+- `/api/market-prices?limit=200`에 해당 ticker가 있는지 확인합니다.
+- source가 `kis-openapi`, `yahoo-finance-chart`, 보조/fallback 중 무엇인지 확인합니다.
+- `asOf`가 최신인지 확인합니다.
+- currency가 종목 시장과 맞는지 확인합니다.
+- stale badge가 필요한지 확인합니다.
+- 국내 주식이면 KIS 대상인지 확인합니다.
+- 해외 주식이면 Yahoo fallback 상태인지 확인합니다.
+- 정적 콘텐츠에 가격 숫자를 하드코딩하지 않고 `PriceBadge`와 가격 API 표시만 사용합니다.
+
+재무 체크리스트:
+
+- 새 회사가 완전 연결 후보인지 먼저 판단합니다.
+- `country`가 맞는지 확인합니다.
+- US 기업은 CIK, KR 기업은 corpCode가 있는지 확인합니다.
+- SEC/OpenDART/20-F source 중 어떤 경로인지 확인합니다.
+- `/api/financials`가 direct 또는 partial로 응답 가능한지 확인합니다.
+- raw numeric `revenue`, `operatingIncome`, `operatingCashFlow`가 있는지 확인합니다.
+- `재무 쉽게 보기 v3`가 표시되는지 확인합니다.
+- 영업이익률 계산이 가능한지 확인합니다.
+- 현금흐름/영업이익 비율 계산이 가능한지 확인합니다.
+- source/asOf/reportType 표시가 맞는지 확인합니다.
+- 재무 숫자를 정적 콘텐츠에 하드코딩하지 않습니다.
+- raw numeric이 없으면 계산 카드와 비율을 억지로 표시하지 않습니다.
+
+시장지도 체크리스트:
+
+- 새 Pick이 기존 카테고리에 들어가는지 확인합니다: AI 반도체 / 데이터센터, 데이터센터 냉각 / 전력 인프라, M&A / 인수 프리미엄, 기타.
+- 기존 노드와 연결 관계가 있는지 확인합니다.
+- 새 노드를 추가해야 하는지 확인합니다.
+- 완전 연결, 참고, 준비 중 중 어떤 상태인지 정합니다.
+- 관계 설명 한 줄을 작성합니다.
+- 기업해설이 없으면 빈 분석 페이지로 이동하지 않게 합니다.
+
+CTA 체크리스트:
+
+- 완전 연결: `기업해설 보기`, `숫자 3개 보기`, `시장 흐름 보기`가 가능해야 합니다.
+- 시장 흐름 참고: `시장 흐름 보기`만 가능해야 합니다.
+- Pick only: 원문 링크와 Pick 내부 설명을 중심으로 둡니다.
+- 준비 중: CTA를 만들지 않고 준비 중 badge만 둡니다.
+- 홈, Pick 상세, 시장지도, 기업해설에서 같은 연결 상태가 다르게 보이지 않는지 확인합니다.
+
+QA 체크리스트:
+
+- `/`
+- `/ko/`
+- `/ko/picks`
+- `/ko/picks/archive`
+- 새 Pick 상세들
+- `/ko/market-map`
+- 관련 `/ko/category/...`
+- 완전 연결 기업해설
+- 준비 중 또는 invalid route
+- 모바일 390px
+
+QA에서 확인할 것:
+
+- 홈 대표 Pick이 명확한지 확인합니다.
+- `/ko/picks`에는 이번 주 Pick만 있는지 확인합니다.
+- archive에 지난 Pick이 있는지 확인합니다.
+- 중복 노출이 없는지 확인합니다.
+- 가격/source/asOf badge가 정상인지 확인합니다.
+- 재무 카드 fallback이 계산 카드처럼 보이지 않는지 확인합니다.
+- CTA가 연결 상태와 일치하는지 확인합니다.
+- 모바일 가로 overflow가 없는지 확인합니다.
+- 투자 조언처럼 보이는 문구가 없는지 확인합니다.
+
+추천 주간 커밋 흐름:
+
+1. `Update weekly research picks`
+2. `Update market map connections`
+3. `Document weekly update QA`
+
+작은 주간 반영이면 한 번에 묶어도 됩니다.
+
+```text
+Update weekly picks and QA notes
+```
+
+남은 TODO:
+
+- 주간 Pick 입력용 JSON/schema 분리
+- 자동 validation script
+- ticker/financial/market map 연결 누락 검사
+- archive 주차별 그룹
+- 카테고리 추가: 데이터센터 냉각 / 전력 인프라
+- 카테고리 추가: M&A / 인수 프리미엄
+- 카테고리 추가: 클라우드 / 데이터 플랫폼
+
 ### 이번 주 조사 콘텐츠 업데이트
 
 2026년 6월 둘째 주 콘텐츠는 Marvell, LG전자, Taylor Morrison 3개 흐름으로 반영했습니다.
