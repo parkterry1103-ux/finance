@@ -2728,6 +2728,32 @@ CTA 규칙:
 - LG전자 냉각 Pick과 category 연결 강화
 - 데이터센터 냉각/전력 카테고리 source 보강
 
+### Vercel production 최신 commit 반영 확인
+
+확인 일시: 2026-06-15 23:53 CST
+
+production domain:
+
+- `https://finance1-flax.vercel.app`
+
+확인 결과:
+
+- GitHub `main` HEAD는 `f9785c7ef266d483d12079be2e04a6f973017c16`입니다.
+- GitHub Deployments 공개 기록에서 `Production – finance1` 최신 deployment는 `6a2d2801488616b49d46f8b9173fa52ca6b5a4b8`입니다.
+- `f9785c7`에 해당하는 `Production – finance1` deployment record는 확인되지 않았습니다.
+- production HTML은 이전 asset `/assets/index-BBGEd0zo.js`, `/assets/index-BrFUWAgj.css`를 계속 반환했습니다.
+- response header는 `x-vercel-cache: HIT`, `last-modified: Mon, 15 Jun 2026 15:07:54 GMT`로 이전 배포 HTML을 가리켰습니다.
+
+원인 판단:
+
+- 브라우저 캐시나 domain alias 문제가 아니라, Vercel `finance1` production deployment가 최신 GitHub main commit을 아직 배포하지 않은 상태로 판단합니다.
+- 로컬에는 Vercel CLI, `.vercel/project.json`, `VERCEL_TOKEN`이 없어 dashboard/CLI/API redeploy를 직접 실행할 수 없습니다.
+
+조치:
+
+- 코드 기능 변경 없이 이 README 기록 커밋을 push해 GitHub main push webhook을 다시 발생시킵니다.
+- push 후 `Production – finance1` deployment가 새 commit으로 생성되는지 확인하고, `finance1-flax.vercel.app` asset 및 새 route를 다시 확인합니다.
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
