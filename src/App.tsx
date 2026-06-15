@@ -117,6 +117,8 @@ const riskClass: Record<RiskLevel, string> = {
 
 const aiRelationshipSectorId = 'us-semiconductors';
 const aiRelationshipAnchorId = 'us-semiconductors-nvidia';
+const datacenterPowerCoolingSectorId = 'datacenter-power-cooling';
+const datacenterPowerCoolingAnchorId = 'datacenter-power-vertiv';
 
 const aiCoreCompanyIds = new Set([
   'ai-datacenter-google',
@@ -170,6 +172,55 @@ const aiAuditedMarketMapIds = new Set([
   ...aiReferenceOnlyIds,
   ...aiPlannedConnectionIds,
 ]);
+
+const datacenterPowerCoolingCompleteIds = new Set(['datacenter-power-vertiv']);
+
+const datacenterPowerCoolingPickOnlyIds = new Set(['datacenter-power-lg-electronics']);
+
+const datacenterPowerCoolingReferenceIds = new Set([
+  'datacenter-power-eaton',
+  'datacenter-power-schneider',
+  'datacenter-power-ai-server-growth',
+  'datacenter-power-power-use-growth',
+  'datacenter-power-power-management',
+  'datacenter-power-cooling-hvac',
+  'datacenter-power-operational-stability',
+  'datacenter-power-investment-validation',
+]);
+
+const datacenterPowerCoolingAuditedIds = new Set([
+  ...datacenterPowerCoolingCompleteIds,
+  ...datacenterPowerCoolingPickOnlyIds,
+  ...datacenterPowerCoolingReferenceIds,
+]);
+
+const datacenterPowerCoolingFlowSteps = [
+  {
+    label: 'AI 서버 증가',
+    detail: 'AI 서비스를 처리할 서버가 늘어납니다.',
+    companyId: 'datacenter-power-ai-server-growth',
+  },
+  {
+    label: '전력 사용 증가',
+    detail: '전력 용량과 안정성 요구가 커집니다.',
+    companyId: 'datacenter-power-power-use-growth',
+  },
+  {
+    label: 'UPS / 전력 관리',
+    detail: '배전, UPS, 전력관리 장비를 확인합니다.',
+    companyId: 'datacenter-power-power-management',
+  },
+  {
+    label: '냉각 / HVAC',
+    detail: '서버 열을 빼내는 냉각 설비를 봅니다.',
+    companyId: 'datacenter-power-cooling-hvac',
+  },
+  {
+    label: '운영 안정성',
+    detail: '수주와 실제 숫자로 기대를 확인합니다.',
+    companyId: 'datacenter-power-operational-stability',
+  },
+];
 
 const aiFirstLookIds = [
   'us-semiconductors-nvidia',
@@ -299,6 +350,16 @@ const companyVisualSymbols: Record<string, { label: string; tone: string }> = {
   'ai-datacenter-isc': { label: 'ISC', tone: 'kr' },
   'ai-datacenter-wonikips': { label: 'WON', tone: 'kr' },
   'ai-datacenter-soulbrain': { label: 'SOL', tone: 'kr' },
+  'datacenter-power-vertiv': { label: 'VRT', tone: 'vertiv' },
+  'datacenter-power-eaton': { label: 'ETN', tone: 'energy' },
+  'datacenter-power-schneider': { label: 'SBG', tone: 'energy' },
+  'datacenter-power-lg-electronics': { label: 'LG', tone: 'kr' },
+  'datacenter-power-ai-server-growth': { label: 'AI', tone: 'neutral' },
+  'datacenter-power-power-use-growth': { label: 'KW', tone: 'energy' },
+  'datacenter-power-power-management': { label: 'UPS', tone: 'energy' },
+  'datacenter-power-cooling-hvac': { label: 'HVAC', tone: 'vertiv' },
+  'datacenter-power-operational-stability': { label: 'OPS', tone: 'neutral' },
+  'datacenter-power-investment-validation': { label: 'CHK', tone: 'neutral' },
 };
 
 function companySymbol(company: Company) {
@@ -563,6 +624,7 @@ function picksArchivePath() {
 
 const analysisRouteAliases: Record<string, string> = {
   'ai-datacenter-nvidia': 'us-semiconductors-nvidia',
+  'ai-datacenter-smci': 'ai-datacenter-supermicro',
 };
 
 function resolveAnalysisRouteCompanyId(companyId?: string | null) {
@@ -606,6 +668,10 @@ function isAuditedAiMarketMapCompany(company: Company) {
   return company.sectorId === aiRelationshipSectorId && aiAuditedMarketMapIds.has(company.id);
 }
 
+function isDatacenterPowerCoolingMarketMapCompany(company: Company) {
+  return company.sectorId === datacenterPowerCoolingSectorId && datacenterPowerCoolingAuditedIds.has(company.id);
+}
+
 function companyConnectionState(company: Company): {
   level: MarketMapConnectionLevel;
   label: string;
@@ -614,6 +680,39 @@ function companyConnectionState(company: Company): {
   canOpenAnalysis: boolean;
   canOpenFinancials: boolean;
 } {
+  if (isDatacenterPowerCoolingMarketMapCompany(company)) {
+    if (datacenterPowerCoolingCompleteIds.has(company.id)) {
+      return {
+        level: 'complete',
+        label: '기업해설 연결',
+        detail: '기업해설과 공식 재무 숫자 연결을 함께 확인할 수 있습니다.',
+        badges: ['기업해설 연결', '재무 연결'],
+        canOpenAnalysis: true,
+        canOpenFinancials: true,
+      };
+    }
+
+    if (datacenterPowerCoolingPickOnlyIds.has(company.id)) {
+      return {
+        level: 'reference',
+        label: 'Pick only',
+        detail: '관련 Pick 상세에서 냉각/HVAC 흐름을 확인합니다. 현재 지도에서는 기업해설이나 숫자 CTA로 이동하지 않습니다.',
+        badges: ['Pick only', '시장 흐름 참고'],
+        canOpenAnalysis: false,
+        canOpenFinancials: false,
+      };
+    }
+
+    return {
+      level: 'reference',
+      label: '시장 흐름 참고',
+      detail: '전력·냉각 흐름을 이해하기 위한 참고 노드입니다. 현재 화면에서는 상세 해설로 이동하지 않습니다.',
+      badges: ['시장 흐름 참고'],
+      canOpenAnalysis: false,
+      canOpenFinancials: false,
+    };
+  }
+
   if (isAuditedAiMarketMapCompany(company)) {
     if (aiCompleteConnectionIds.has(company.id)) {
       return {
@@ -678,6 +777,7 @@ function canOpenCompanyFinancials(company?: Company) {
 
 function companyScopeLabel(company: Company) {
   const connection = companyConnectionState(company);
+  if (isDatacenterPowerCoolingMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.label;
   if (isAuditedAiMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.label;
   const listing = inferCompanyListing(company);
   if (listing.listed) return '상장기업';
@@ -689,12 +789,22 @@ function companyScopeLabel(company: Company) {
 
 function companyScopeDetail(company: Company) {
   const connection = companyConnectionState(company);
+  if (isDatacenterPowerCoolingMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.detail;
+  if (isDatacenterPowerCoolingMarketMapCompany(company) && connection.level === 'complete') return '시장지도, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
   if (isAuditedAiMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.detail;
   if (isAuditedAiMarketMapCompany(company) && connection.level === 'complete') return '시장지도, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
   const listing = inferCompanyListing(company);
   if (listing.listed) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
   if (listing.listingStatus === 'unknown') return '상장 여부와 공시 연결을 먼저 확인해야 합니다. 확인 전에는 관계 이해용으로 봅니다.';
   return '비상장 또는 공시 확인이 어려운 기업입니다. 투자 분석보다 관계 이해용 보조 노드로 봅니다.';
+}
+
+function relatedPickForMarketMapCompany(company?: Company): StockAutopsyPick | undefined {
+  if (!company) return undefined;
+  if (company.id === 'datacenter-power-lg-electronics') {
+    return stockAutopsyPicks.find((pick) => pick.id === 'pick-lg-electronics-ai-datacenter-cooling');
+  }
+  return undefined;
 }
 
 function productText(company: Company) {
@@ -4680,6 +4790,7 @@ function App() {
   const groupCompanies = companies.filter((company) => company.anchorId === selectedAnchor.id);
   const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
   const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
+  const isDatacenterPowerCoolingMap = selectedSector.id === datacenterPowerCoolingSectorId && selectedAnchor.id === datacenterPowerCoolingAnchorId;
   const hasSearchQuery = Boolean(query.trim());
   const expandedConnectedIds = new Set<string>();
   expandedCompanyIds.forEach((companyId) => {
@@ -4786,6 +4897,7 @@ function App() {
   const selectedConnectionState = selectedCompany ? companyConnectionState(selectedCompany) : null;
   const selectedCanOpenAnalysis = canOpenCompanyAnalysis(selectedCompany);
   const selectedCanOpenFinancials = canOpenCompanyFinancials(selectedCompany);
+  const selectedRelatedPick = relatedPickForMarketMapCompany(selectedCompany);
   const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
   const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
   const selectedDirectLinks = selectedCompany
@@ -5845,6 +5957,8 @@ function App() {
                   ? '전체 연결 보기'
                   : isAiRelationshipMap
                     ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?'
+                    : isDatacenterPowerCoolingMap
+                      ? 'AI 서버가 늘면 전력과 냉각도 같이 커집니다'
                     : `${selectedAnchor.name} 기업 관계 지도`}
               </h2>
               <p className="topbar-subcopy">
@@ -5852,6 +5966,8 @@ function App() {
                   ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
                   : isAiRelationshipMap
                   ? '어려운 용어보다 흐름부터 봅니다.'
+                  : isDatacenterPowerCoolingMap
+                  ? 'GPU와 HBM만 보면 AI 인프라의 절반만 보는 것입니다. 데이터센터는 전기를 안정적으로 공급하고 열을 식혀야 돌아갑니다.'
                   : selectedSector.description}
               </p>
               {selectedCompany && (
@@ -6278,6 +6394,40 @@ function App() {
             </section>
           )}
 
+          {isDatacenterPowerCoolingMap && (
+            <section className="sector-flow-card datacenter-power-flow-card" aria-label="데이터센터 냉각과 전력 인프라 핵심 흐름">
+              <div className="sector-flow-copy">
+                <span>주가해부실 · 시장 흐름 지도</span>
+                <strong>AI 서버는 전기를 많이 쓰고 열도 많이 냅니다</strong>
+                <p>그래서 전력 장비와 냉각 설비가 같이 중요해집니다. 회사별 상세 CTA는 실제 연결 상태가 있을 때만 엽니다.</p>
+              </div>
+              <div className="datacenter-power-steps" aria-label="데이터센터 전력 냉각 5단계">
+                {datacenterPowerCoolingFlowSteps.map((step, index) => (
+                  <button
+                    key={step.companyId}
+                    type="button"
+                    className={`datacenter-power-step ${selectedCompany?.id === step.companyId ? 'active' : ''}`}
+                    onClick={() => focusCompany(step.companyId)}
+                  >
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <strong>{step.label}</strong>
+                    <small>{step.detail}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="flow-help-pills" aria-label="데이터센터 전력 냉각 지도 사용 팁">
+                <span>칩 다음 전력</span>
+                <span>전력 다음 냉각</span>
+                <span>마지막은 수주와 숫자 확인</span>
+              </div>
+              <div className="advanced-map-entry datacenter-power-entry">
+                <span>전체 연결 보기</span>
+                <strong>Vertiv, Eaton, Schneider Electric, LG전자를 전력·냉각 흐름 안에서 함께 봅니다.</strong>
+                <button type="button" onClick={fitVisibleMap}>전체 맞춤</button>
+              </div>
+            </section>
+          )}
+
           {shouldShowRelationshipCanvas && (
           <>
           {isAiRelationshipMap && (
@@ -6516,6 +6666,12 @@ function App() {
                     </button>
                   ) : (
                     <span className="reference-status-card">{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
+                  )}
+                  {selectedRelatedPick && !selectedCanOpenAnalysis && (
+                    <button type="button" className="analysis-link-button" onClick={() => openPick(selectedRelatedPick)}>
+                      <FileSearch size={15} />
+                      관련 Pick 보기
+                    </button>
                   )}
                   <div className="summary-action-row">
                     {selectedCanOpenFinancials ? (

@@ -559,6 +559,22 @@ export const sectors: SectorDefinition[] = [
     ]
   },
   {
+    "id": "datacenter-power-cooling",
+    "country": "US",
+    "label": "데이터센터 냉각 / 전력 인프라",
+    "description": "AI 서버가 늘어나면 칩만 필요한 것이 아니라, 전력과 냉각 인프라도 같이 필요합니다.",
+    "newsKeywords": [
+      "AI data center",
+      "data center power",
+      "cooling",
+      "HVAC",
+      "UPS",
+      "Vertiv",
+      "Eaton",
+      "Schneider Electric"
+    ]
+  },
+  {
     "id": "us-ai-cloud-datacenter",
     "country": "US",
     "label": "미국 AI·클라우드",
@@ -1508,6 +1524,20 @@ export const anchors: AnchorCompany[] = [
       "ETN",
       "power management"
     ]
+  },
+  {
+    id: 'datacenter-power-vertiv',
+    country: 'US',
+    sectorId: 'datacenter-power-cooling',
+    rank: 1,
+    name: 'Vertiv',
+    legalName: 'Vertiv Holdings Co.',
+    ticker: 'VRT',
+    exchange: 'NYSE',
+    sector: '데이터센터 전력·냉각',
+    region: 'Ohio',
+    products: ['power equipment', 'cooling infrastructure', 'data center services'],
+    newsKeywords: ['Vertiv', 'VRT', 'data center cooling', 'UPS', 'AI data center power'],
   },
   {
     "id": "us-insurance-financials-berkshire",
@@ -6131,6 +6161,527 @@ const aiRelationshipCompanies: Company[] = [
   }),
 ];
 
+const datacenterPowerCoolingAnchorId = 'datacenter-power-vertiv';
+const datacenterPowerCoolingSectorId = 'datacenter-power-cooling';
+
+type DatacenterPowerCoolingCompanyInput = {
+  id: string;
+  country?: CountryId;
+  name: string;
+  legalName: string;
+  ticker?: string;
+  exchange?: string;
+  listed?: boolean;
+  listingStatus?: ListingStatus;
+  market?: ListingMarket;
+  filingSource?: FilingSourceKind;
+  isInvestmentAnalyzable?: boolean;
+  tier?: CompanyTier;
+  sector: string;
+  region: string;
+  mainProducts: string[];
+  valueChainStage: string;
+  businessSummary: string;
+  mainCustomersOrDemand: string[];
+  relationshipSummary: string;
+  economicMoat: string;
+  moatExplanation: string;
+  investorWatchPoint: string;
+  relationshipType?: string;
+  relationshipConfidence?: string;
+  sourceNotes?: string;
+  riskLevel?: RiskLevel;
+  status?: CompanyStatus;
+  sourceType?: SourceType;
+  sourceSearchUrl?: string;
+  sourceDirectUrl?: string;
+  reportUrl?: string;
+  filingSourceUrl?: string;
+  secAccessionNumber?: string;
+  sourceStatus?: FilingSourceStatus;
+  reportType?: string;
+  fiscalYear?: string;
+  fiscalPeriod?: string;
+  filingDate?: string;
+  cik?: string;
+  layout: Company['layout'];
+};
+
+function makeDatacenterPowerCoolingCompany(input: DatacenterPowerCoolingCompanyInput): Company {
+  const country = input.country ?? 'US';
+  const listed = input.listed ?? Boolean(input.ticker);
+  const exchange = input.exchange ?? (listed ? 'NYSE' : undefined);
+  const market =
+    input.market ??
+    (country === 'KR' && input.ticker?.endsWith('.KS')
+      ? 'KOSPI'
+      : country === 'KR' && input.ticker?.endsWith('.KQ')
+        ? 'KOSDAQ'
+        : exchange ?? (listed ? 'Unknown' : 'Private'));
+  const sourceType = input.sourceType ?? (listed ? 'official' : 'seed-model');
+
+  return {
+    id: input.id,
+    anchorId: datacenterPowerCoolingAnchorId,
+    country,
+    sectorId: datacenterPowerCoolingSectorId,
+    name: input.name,
+    legalName: input.legalName,
+    ticker: input.ticker,
+    exchange,
+    listed,
+    listingStatus: input.listingStatus ?? (listed ? 'listed' : 'no-public-filing'),
+    market,
+    filingSource: input.filingSource ?? (listed ? (country === 'KR' ? 'DART' : 'SEC') : 'none'),
+    isInvestmentAnalyzable: input.isInvestmentAnalyzable ?? listed,
+    tier: input.tier ?? 'tier1',
+    sector: input.sector,
+    region: input.region,
+    products: input.mainProducts,
+    anchorCustomer: input.mainCustomersOrDemand[0] ?? 'AI 데이터센터',
+    revenue: '원문확인',
+    revenueUnit: country === 'KR' ? '원문 기준: 백만원 단위' : 'Source unit: USD',
+    revenueBasis: '고객별 매출 비중은 공식 공시·IR 확인 전까지 숫자로 표시하지 않습니다.',
+    revenueTrend: 0,
+    growthBasis: '성장률은 원문 공시와 실적 발표 기준으로 확인합니다.',
+    opMargin: '원문 확인',
+    debtRatio: '원문 확인',
+    customerConcentration: '공시·IR 기준 확인 필요',
+    analystSignal: '데이터센터 냉각 / 전력 인프라 시장지도 v0.1',
+    investmentView: input.investorWatchPoint,
+    riskLevel: input.riskLevel ?? 'medium',
+    status: input.status ?? 'core',
+    tags: [
+      '데이터센터 냉각 / 전력 인프라',
+      input.valueChainStage,
+      ...(exchange ? [exchange] : []),
+      ...(input.ticker ? [input.ticker] : []),
+    ],
+    notes: input.relationshipSummary,
+    sourceType,
+    sourceNote: input.sourceNotes ?? '직접 고객·매출 비중은 공시·IR 원문으로 확인해야 합니다.',
+    businessSummary: input.businessSummary,
+    mainProducts: input.mainProducts,
+    valueChainStage: input.valueChainStage,
+    mainCustomers: input.mainCustomersOrDemand,
+    mainCustomersOrDemand: input.mainCustomersOrDemand,
+    relationshipSummary: input.relationshipSummary,
+    customerExposure: '고객별 매출 비중은 공식 공시 기준 확인 필요',
+    revenueExposure: '고객별 매출 비중 미공개 또는 확인 필요',
+    moat: input.economicMoat,
+    economicMoat: input.economicMoat,
+    moatExplanation: input.moatExplanation,
+    investorWatchPoint: input.investorWatchPoint,
+    relationshipType: input.relationshipType ?? input.valueChainStage,
+    relationshipConfidence: input.relationshipConfidence ?? '산업상 관련',
+    sourceNotes: input.sourceNotes ?? '직접 고객·납품 관계와 매출 비중은 공시·IR 원문으로 확인해야 합니다.',
+    sourceSearchUrl: input.sourceSearchUrl,
+    sourceDirectUrl: input.sourceDirectUrl,
+    reportUrl: input.reportUrl,
+    filingSourceUrl: input.filingSourceUrl,
+    secAccessionNumber: input.secAccessionNumber,
+    sourceStatus: input.sourceStatus ?? (input.sourceDirectUrl || input.reportUrl ? 'direct' : input.sourceSearchUrl ? 'search-only' : listed ? 'needs-link' : 'no-public-filing'),
+    reportType: input.reportType,
+    fiscalYear: input.fiscalYear,
+    fiscalPeriod: input.fiscalPeriod,
+    filingDate: input.filingDate,
+    cik: input.cik,
+    layout: input.layout,
+  };
+}
+
+const datacenterPowerCoolingCompanies: Company[] = [
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-vertiv',
+    name: 'Vertiv',
+    legalName: 'Vertiv Holdings Co.',
+    ticker: 'VRT',
+    exchange: 'NYSE',
+    tier: 'anchor',
+    sector: '데이터센터 전력·냉각',
+    region: 'Ohio',
+    mainProducts: ['전력 장비', '냉각 인프라', '데이터센터 운영 솔루션'],
+    valueChainStage: '전력 / 냉각 인프라',
+    businessSummary: '데이터센터가 안정적으로 돌아가도록 전력 공급과 냉각 인프라를 제공하는 기업입니다.',
+    mainCustomersOrDemand: ['AI 데이터센터', '전력·냉각 증설 수요'],
+    relationshipSummary: 'AI 서버가 늘면 전력 사용과 발열이 커져 전력·냉각 설비 수요도 함께 확인합니다.',
+    economicMoat: '데이터센터 전력·냉각 운영 경험, 고객 설치 기반',
+    moatExplanation: '데이터센터는 멈추면 손실이 커서 검증된 전력·냉각 장비와 운영 경험이 중요합니다.',
+    investorWatchPoint: '전력·냉각 수주와 마진이 AI 데이터센터 투자와 함께 움직이는지 봅니다.',
+    relationshipType: '데이터센터 전력·냉각',
+    sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Vertiv%20Holdings',
+    sourceDirectUrl: 'https://www.sec.gov/Archives/edgar/data/1674101/000162828026026556/vrt-20260331.htm',
+    reportUrl: 'https://www.sec.gov/Archives/edgar/data/1674101/000162828026026556/vrt-20260331.htm',
+    filingSourceUrl: 'https://www.sec.gov/Archives/edgar/data/1674101/000162828026026556/vrt-20260331.htm',
+    cik: '1674101',
+    secAccessionNumber: '0001628280-26-026556',
+    reportType: '10-Q',
+    fiscalYear: '2026',
+    fiscalPeriod: '1Q',
+    filingDate: '2026-04-22',
+    layout: { column: 2, row: 2 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-eaton',
+    name: 'Eaton',
+    legalName: 'Eaton Corporation plc',
+    ticker: 'ETN',
+    exchange: 'NYSE',
+    sector: '전력 관리 / 전기 장비',
+    region: 'Ireland / US',
+    mainProducts: ['전력관리 장비', '배전 솔루션', '전기 인프라'],
+    valueChainStage: '전력 관리',
+    businessSummary: '데이터센터와 산업 현장에 필요한 전력관리 장비를 공급하는 기업입니다.',
+    mainCustomersOrDemand: ['데이터센터 전력 증설', '전력 인프라 투자'],
+    relationshipSummary: 'AI 데이터센터가 늘면 전력관리와 배전 장비 수요도 함께 봐야 합니다.',
+    economicMoat: '전력 장비 브랜드, 고객 인증, 장기 설치 기반',
+    moatExplanation: '전력 인프라는 안정성이 중요해 검증된 장비와 서비스망이 경쟁력으로 볼 수 있습니다.',
+    investorWatchPoint: '데이터센터 전력 투자와 수주잔고 변화를 봅니다.',
+    relationshipType: '데이터센터 전력',
+    sourceSearchUrl: 'https://www.sec.gov/search-filings?keys=Eaton%20Corporation',
+    layout: { column: 2, row: 3 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-schneider',
+    name: 'Schneider Electric',
+    legalName: 'Schneider Electric SE',
+    ticker: 'SBGSY',
+    exchange: 'OTC',
+    market: 'OTC',
+    filingSource: 'manual',
+    sector: '에너지 관리 / 자동화',
+    region: 'France',
+    mainProducts: ['전력관리', '자동화', '데이터센터 인프라'],
+    valueChainStage: '전력 관리',
+    businessSummary: '데이터센터 전력관리와 자동화 솔루션을 제공하는 기업입니다.',
+    mainCustomersOrDemand: ['데이터센터 전력 효율', '전력관리 수요'],
+    relationshipSummary: 'AI 데이터센터 증설은 전력관리와 자동화 솔루션 수요와 연결될 수 있습니다.',
+    economicMoat: '전력관리 기술, 글로벌 고객 기반, 설치 경험',
+    moatExplanation: '전력관리 시스템은 안정성과 운영 경험이 중요해 기존 고객 기반이 경쟁력으로 볼 수 있습니다.',
+    investorWatchPoint: '데이터센터 전력관리 수요와 글로벌 수주 흐름을 봅니다.',
+    relationshipType: '데이터센터 전력',
+    sourceSearchUrl: 'https://www.se.com/ww/en/about-us/investor-relations/',
+    layout: { column: 2, row: 4 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-lg-electronics',
+    country: 'KR',
+    name: 'LG전자',
+    legalName: 'LG전자',
+    ticker: '066570.KS',
+    exchange: 'KRX',
+    market: 'KOSPI',
+    filingSource: 'DART',
+    sector: 'HVAC / 데이터센터 냉각',
+    region: '서울',
+    mainProducts: ['HVAC', '칠러', '데이터센터 냉각 솔루션'],
+    valueChainStage: '냉각 / HVAC',
+    businessSummary: 'HVAC와 냉각 기술로 데이터센터 열 관리 흐름과 연결해 볼 수 있는 기업입니다.',
+    mainCustomersOrDemand: ['AI 데이터센터 냉각', 'HVAC 수주', '전력 효율'],
+    relationshipSummary: 'AI 서버가 늘면 열 관리가 중요해지고, 냉각·공조 인프라 수요도 함께 확인합니다.',
+    economicMoat: 'HVAC 제품군, 제조 경험, 데이터센터 냉각 솔루션 확장',
+    moatExplanation: '냉각 장비는 안정성과 에너지 효율이 중요해 제품군과 설치 경험이 경쟁력으로 볼 수 있습니다.',
+    investorWatchPoint: '냉각 기대가 실제 데이터센터 HVAC 수주와 실적으로 연결되는지 봅니다.',
+    relationshipType: '냉각 / HVAC',
+    sourceSearchUrl: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=LG%EC%A0%84%EC%9E%90',
+    layout: { column: 2, row: 5 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-ai-server-growth',
+    name: 'AI 서버 증가',
+    legalName: 'AI server demand growth',
+    listed: false,
+    tier: 'tier2',
+    sector: '수요 흐름',
+    region: 'global',
+    mainProducts: ['AI 서버 수요', 'GPU 서버 증설'],
+    valueChainStage: 'AI 서버 증가',
+    businessSummary: 'AI 서비스를 처리할 서버가 늘어나는 출발점입니다.',
+    mainCustomersOrDemand: ['클라우드 AI 서비스', '기업 AI 워크로드'],
+    relationshipSummary: 'AI 서버가 늘수록 전력 사용과 발열 관리 부담이 같이 커집니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 전력·냉각 흐름을 설명하는 단계입니다.',
+    investorWatchPoint: '서버 증설 흐름이 전력과 냉각 수요로 이어지는지 확인합니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 0, row: 0 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-power-use-growth',
+    name: '전력 사용 증가',
+    legalName: 'data center power use growth',
+    listed: false,
+    tier: 'tier2',
+    sector: '전력 수요',
+    region: 'global',
+    mainProducts: ['전력 사용량', '전력 용량 증설'],
+    valueChainStage: '전력 사용 증가',
+    businessSummary: 'GPU 서버가 늘 때 데이터센터의 전력 사용량이 커지는 단계입니다.',
+    mainCustomersOrDemand: ['AI 데이터센터', '전력 용량'],
+    relationshipSummary: '전력 사용 증가는 UPS, 배전, 전력관리 장비와 냉각 설비 수요로 이어질 수 있습니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 전력 인프라 수요를 설명하는 단계입니다.',
+    investorWatchPoint: '전력 용량과 안정성 요구가 장비 수요로 이어지는지 봅니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 0, row: 1 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-power-management',
+    name: 'UPS / 전력 관리',
+    legalName: 'UPS and power management',
+    listed: false,
+    tier: 'tier2',
+    sector: '전력 관리',
+    region: 'global',
+    mainProducts: ['UPS', '배전', '전력관리'],
+    valueChainStage: '전력 관리',
+    businessSummary: '데이터센터 전력을 안정적으로 공급하고 관리하는 장비 단계입니다.',
+    mainCustomersOrDemand: ['데이터센터 전력 안정성', '전기 장비 수요'],
+    relationshipSummary: '전력 사용 증가가 UPS, 배전, 전력관리 장비 수요와 연결됩니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 전력관리 수요를 설명하는 단계입니다.',
+    investorWatchPoint: '전력 장비 수요가 수주와 납품으로 이어지는지 봅니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 1, row: 0 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-cooling-hvac',
+    name: '냉각 / HVAC',
+    legalName: 'cooling and HVAC',
+    listed: false,
+    tier: 'tier2',
+    sector: '냉각 / HVAC',
+    region: 'global',
+    mainProducts: ['칠러', '공조', '열 관리'],
+    valueChainStage: '냉각 / HVAC',
+    businessSummary: 'AI 서버에서 발생하는 열을 식히는 냉각·공조 단계입니다.',
+    mainCustomersOrDemand: ['AI 데이터센터 냉각', '열 관리'],
+    relationshipSummary: '서버 발열이 커질수록 냉각·HVAC와 열 관리 솔루션을 함께 봅니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 냉각 인프라 수요를 설명하는 단계입니다.',
+    investorWatchPoint: '냉각 설비 수요가 실제 프로젝트와 실적으로 연결되는지 봅니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 1, row: 1 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-operational-stability',
+    name: '운영 안정성',
+    legalName: 'data center operational stability',
+    listed: false,
+    tier: 'tier2',
+    sector: '운영 안정성',
+    region: 'global',
+    mainProducts: ['가동률', '전력 안정성', '열 관리'],
+    valueChainStage: '운영 안정성',
+    businessSummary: '전력과 냉각이 맞물려 데이터센터가 안정적으로 돌아가는지 보는 단계입니다.',
+    mainCustomersOrDemand: ['데이터센터 운영', '가동 중단 리스크 관리'],
+    relationshipSummary: '전력관리와 냉각 설비가 함께 작동해야 AI 데이터센터 운영 안정성을 확인할 수 있습니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 운영 안정성을 설명하는 단계입니다.',
+    investorWatchPoint: '장비 수요가 안정적인 운영 요구에서 나오는지 확인합니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 1, row: 2 },
+  }),
+  makeDatacenterPowerCoolingCompany({
+    id: 'datacenter-power-investment-validation',
+    name: '데이터센터 투자 검증',
+    legalName: 'data center investment validation',
+    listed: false,
+    tier: 'tier2',
+    sector: '확인 포인트',
+    region: 'global',
+    mainProducts: ['수주', '매출 반영', '현금흐름'],
+    valueChainStage: '운영 안정성',
+    businessSummary: '전력·냉각 기대가 실제 수주, 매출, 현금흐름으로 이어지는지 확인하는 단계입니다.',
+    mainCustomersOrDemand: ['전력·냉각 수주', '프로젝트 실적 반영'],
+    relationshipSummary: 'AI 인프라 기대를 실제 사업 숫자로 검증하는 참고 노드입니다.',
+    economicMoat: '시장 흐름 설명용 노드',
+    moatExplanation: '상장기업 분석 대상이 아니라 확인 순서를 안내하는 단계입니다.',
+    investorWatchPoint: '기대가 실적 숫자로 확인되는지 원문 보고서에서 봅니다.',
+    riskLevel: 'low',
+    status: 'watch',
+    layout: { column: 2, row: 0 },
+  }),
+];
+
+function makeDatacenterPowerCoolingLink(input: {
+  source: string;
+  target: string;
+  sourceCompany: string;
+  targetCompany: string;
+  relationshipType: string;
+  relationshipDirection: string;
+  description: string;
+  whatIsSold: string;
+  demandConnection: string;
+  confidence?: string;
+  evidenceSummary?: string;
+  sourceUrl?: string;
+  sourceName?: string;
+  sourceDate?: string;
+  dependency?: number;
+}): SupplyLink {
+  return {
+    id: `power-cooling-v01-${input.source}-${input.target}`,
+    anchorId: datacenterPowerCoolingAnchorId,
+    source: input.source,
+    target: input.target,
+    sourceCompany: input.sourceCompany,
+    targetCompany: input.targetCompany,
+    label: input.relationshipType,
+    dependency: input.dependency ?? 0,
+    value: input.confidence ?? '산업상 관련',
+    relationshipType: input.relationshipType,
+    relationshipDirection: input.relationshipDirection,
+    relationshipConfidence: input.confidence ?? '산업상 관련',
+    description: input.description,
+    whatIsSold: input.whatIsSold,
+    demandConnection: input.demandConnection,
+    revenueExposure: '프로젝트별 매출 비중은 공시·IR 기준 확인 필요',
+    revenueExposureStatus: '고객별 매출 비중은 공식 공시 기준 확인 필요',
+    confidence: input.confidence ?? '산업상 관련',
+    evidenceSummary: input.evidenceSummary ?? 'AI 데이터센터 전력·냉각 흐름을 설명하는 산업 구조 기반 관계입니다.',
+    evidenceType: input.sourceUrl ? 'industry-analysis' : 'manual-note',
+    sourceName: input.sourceName ?? (input.sourceUrl ? '관계 근거 원문' : '시장 흐름 메모'),
+    sourceUrl: input.sourceUrl,
+    sourceDate: input.sourceDate ?? '확인 필요',
+    sourceReliability: input.sourceUrl ? 'medium' : 'needs-review',
+    lastVerifiedAt: '2026-06-15',
+    sourceNotes: '직접 납품 관계와 고객별 매출 비중은 공식 공시·IR 원문 확인 전까지 단정하지 않습니다.',
+  };
+}
+
+const datacenterPowerCoolingLinks: SupplyLink[] = [
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-ai-server-growth',
+    target: 'datacenter-power-power-use-growth',
+    sourceCompany: 'AI 서버 증가',
+    targetCompany: '전력 사용 증가',
+    relationshipType: '수요 흐름',
+    relationshipDirection: 'AI 서버 증가 -> 전력 사용 증가',
+    description: 'AI 서버가 늘어나면 데이터센터가 필요한 전력 용량도 함께 커질 수 있습니다.',
+    whatIsSold: '시장 흐름',
+    demandConnection: '서버 증설이 전력 사용량 증가로 이어지는 구조를 보여줍니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-use-growth',
+    target: 'datacenter-power-power-management',
+    sourceCompany: '전력 사용 증가',
+    targetCompany: 'UPS / 전력 관리',
+    relationshipType: '전력 관리 수요',
+    relationshipDirection: '전력 사용 증가 -> UPS / 전력 관리',
+    description: '전력 사용이 늘면 UPS, 배전, 전력관리 장비 수요를 함께 확인합니다.',
+    whatIsSold: 'UPS, 배전, 전력관리 장비',
+    demandConnection: '전력 용량과 안정성 요구가 전력관리 장비 수요로 이어질 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-use-growth',
+    target: 'datacenter-power-cooling-hvac',
+    sourceCompany: '전력 사용 증가',
+    targetCompany: '냉각 / HVAC',
+    relationshipType: '냉각 수요',
+    relationshipDirection: '전력 사용 증가 -> 냉각 / HVAC',
+    description: '전력 사용과 서버 밀도가 높아지면 열을 식히는 냉각·HVAC 설비도 중요해집니다.',
+    whatIsSold: '냉각, HVAC, 열 관리',
+    demandConnection: 'GPU 서버 발열이 냉각 인프라 수요와 연결될 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-management',
+    target: 'datacenter-power-vertiv',
+    sourceCompany: 'UPS / 전력 관리',
+    targetCompany: 'Vertiv',
+    relationshipType: '전력·냉각 인프라',
+    relationshipDirection: '전력 관리 수요 -> Vertiv',
+    description: 'Vertiv는 데이터센터 전력 안정화와 냉각 장비 흐름에서 함께 확인하는 기업입니다.',
+    whatIsSold: '전력 장비, 냉각 인프라, 운영 솔루션',
+    demandConnection: '데이터센터 전력 안정성 요구가 전력·냉각 설비 수요로 이어질 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-management',
+    target: 'datacenter-power-eaton',
+    sourceCompany: 'UPS / 전력 관리',
+    targetCompany: 'Eaton',
+    relationshipType: '전력 관리 / 배전',
+    relationshipDirection: '전력 관리 수요 -> Eaton',
+    description: 'Eaton은 전력 배분과 전기 장비를 통해 데이터센터 전력 흐름을 관리하는 기업으로 참고합니다.',
+    whatIsSold: '전력관리 장비, 배전 솔루션',
+    demandConnection: '데이터센터 전력 증설은 전력관리 장비 수요와 연결될 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-management',
+    target: 'datacenter-power-schneider',
+    sourceCompany: 'UPS / 전력 관리',
+    targetCompany: 'Schneider Electric',
+    relationshipType: '에너지 관리 / 자동화',
+    relationshipDirection: '전력 관리 수요 -> Schneider Electric',
+    description: 'Schneider Electric은 에너지 관리와 자동화 솔루션으로 데이터센터 효율 흐름과 연결됩니다.',
+    whatIsSold: '에너지 관리, 자동화, 전력 인프라',
+    demandConnection: '데이터센터 전력 효율 요구가 에너지 관리 솔루션 수요와 연결될 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-cooling-hvac',
+    target: 'datacenter-power-vertiv',
+    sourceCompany: '냉각 / HVAC',
+    targetCompany: 'Vertiv',
+    relationshipType: '냉각 인프라',
+    relationshipDirection: '냉각 수요 -> Vertiv',
+    description: 'Vertiv는 데이터센터 냉각 인프라와 운영 솔루션 흐름에서도 함께 확인합니다.',
+    whatIsSold: '냉각 인프라',
+    demandConnection: 'AI 서버 발열 관리가 냉각 설비 수요와 연결될 수 있습니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-cooling-hvac',
+    target: 'datacenter-power-lg-electronics',
+    sourceCompany: '냉각 / HVAC',
+    targetCompany: 'LG전자',
+    relationshipType: '냉각 / HVAC',
+    relationshipDirection: '냉각 수요 -> LG전자',
+    description: 'LG전자는 HVAC와 냉각 기술로 데이터센터 열 관리 흐름에 연결됩니다.',
+    whatIsSold: 'HVAC, 칠러, 데이터센터 냉각 솔루션',
+    demandConnection: 'AI 서버 발열 관리가 냉각·공조 인프라 수요와 연결될 수 있습니다.',
+    sourceUrl: 'https://www.lge.co.kr/story/newsroom/235685',
+    sourceName: 'LG전자 뉴스룸',
+    sourceDate: '2026-06-02',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-power-management',
+    target: 'datacenter-power-operational-stability',
+    sourceCompany: 'UPS / 전력 관리',
+    targetCompany: '운영 안정성',
+    relationshipType: '운영 안정성',
+    relationshipDirection: '전력 관리 -> 운영 안정성',
+    description: '전력 공급과 배전 안정성은 데이터센터 운영 안정성을 확인하는 핵심 흐름입니다.',
+    whatIsSold: '운영 안정성',
+    demandConnection: '전력 장애를 줄이는 설비가 데이터센터 운영 안정성과 연결됩니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-cooling-hvac',
+    target: 'datacenter-power-operational-stability',
+    sourceCompany: '냉각 / HVAC',
+    targetCompany: '운영 안정성',
+    relationshipType: '운영 안정성',
+    relationshipDirection: '냉각 / HVAC -> 운영 안정성',
+    description: '냉각 설비는 AI 서버가 안정적으로 돌아가도록 열을 관리하는 흐름입니다.',
+    whatIsSold: '열 관리와 공조 안정성',
+    demandConnection: '과열을 줄이는 냉각 설비가 데이터센터 운영 안정성과 연결됩니다.',
+  }),
+  makeDatacenterPowerCoolingLink({
+    source: 'datacenter-power-operational-stability',
+    target: 'datacenter-power-investment-validation',
+    sourceCompany: '운영 안정성',
+    targetCompany: '데이터센터 투자 검증',
+    relationshipType: '확인 포인트',
+    relationshipDirection: '운영 안정성 -> 데이터센터 투자 검증',
+    description: '전력·냉각 기대는 실제 수주, 매출, 현금흐름으로 확인해야 합니다.',
+    whatIsSold: '수주, 매출 반영, 현금흐름',
+    demandConnection: '인프라 기대가 실제 사업 숫자로 이어지는지 확인하는 단계입니다.',
+  }),
+];
+
 function makeAiRelationshipLink(input: {
   source: string;
   target: string;
@@ -6536,10 +7087,17 @@ function applyCompanyFilingAndOverrides(company: Company): Company {
 }
 
 export const companies = [
-  ...built.generatedCompanies.map(applyCompanyFilingAndOverrides),
+  ...built.generatedCompanies
+    .filter((company) => company.sectorId !== datacenterPowerCoolingSectorId)
+    .map(applyCompanyFilingAndOverrides),
   ...aiRelationshipCompanies.map(applyCompanyFilingAndOverrides),
+  ...datacenterPowerCoolingCompanies.map(applyCompanyFilingAndOverrides),
 ];
-export const links = [...built.generatedLinks, ...aiRelationshipLinks];
+export const links = [
+  ...built.generatedLinks.filter((link) => link.anchorId !== datacenterPowerCoolingAnchorId),
+  ...aiRelationshipLinks,
+  ...datacenterPowerCoolingLinks,
+];
 export const analystOpinions = built.generatedOpinions;
 
 export const financialMetricGuides: Record<FinancialMetricKey, string> = {
@@ -7543,8 +8101,10 @@ export const currentWeeklyDigest: WeeklyDigest = {
     },
     {
       title: '데이터센터 냉각 / 전력 인프라',
-      status: 'coming-soon',
-      note: 'AI 서버가 늘 때 냉각, 공조, 전력 장비가 함께 움직이는 흐름',
+      status: 'active',
+      href: '/ko/category/datacenter-power-cooling',
+      sectorId: 'datacenter-power-cooling',
+      note: 'AI 서버가 늘 때 전력 관리, 냉각, HVAC, 운영 안정성이 함께 움직이는 흐름',
     },
     {
       title: 'M&A / 인수 프리미엄',

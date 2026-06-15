@@ -2681,6 +2681,53 @@ QA 페이지:
 - 로컬 Vite 단독 실행에는 `/api/market-prices` 프록시가 없어서 가격 화면은 mock/fallback badge로 안정됩니다. 운영 가격 badge 검증은 배포 URL에서 계속 확인합니다.
 - OpenDART 응답은 수십 초 걸릴 수 있으므로, 재무 카드 QA는 초기 fallback이 아니라 응답 후 최종 상태를 기준으로 봅니다.
 
+### 데이터센터 냉각 / 전력 인프라 시장지도 추가
+
+확인 일시: 2026-06-15
+
+새 route:
+
+- `/ko/category/datacenter-power-cooling`
+
+`/ko/market-map` 활성화:
+
+- 기존 준비 중 카드였던 `데이터센터 냉각 / 전력 인프라`를 활성 카테고리로 바꿨습니다.
+- `AI 반도체 / 데이터센터` 카테고리는 그대로 유지합니다.
+- `M&A / 인수 프리미엄`, `클라우드 / 데이터 플랫폼`은 계속 준비 중 상태로 둡니다.
+
+핵심 흐름:
+
+```text
+AI 서버 증가 -> 전력 사용 증가 -> UPS / 전력 관리 -> 냉각 / HVAC -> 운영 안정성
+```
+
+포함 회사와 connection status:
+
+- Vertiv (`VRT`): 완전 연결. 기업해설, 숫자 3개, 시장 흐름 CTA를 허용합니다.
+- Eaton (`ETN`): 시장 흐름 참고. 기업해설/숫자 CTA를 열지 않습니다.
+- Schneider Electric (`SBGSY`): 시장 흐름 참고. 기업해설/숫자 CTA를 열지 않습니다.
+- LG전자 (`066570.KS`): Pick only. 관련 LG전자 냉각 Pick 상세만 연결하고 기업해설/숫자 CTA를 열지 않습니다.
+
+CTA 규칙:
+
+- 완전 연결 기업만 `기업 해설 보기`와 `숫자 3개 보기`를 표시합니다.
+- 시장 흐름 참고 노드는 지도 내 설명과 관계 출처 중심으로 둡니다.
+- Pick only는 관련 Pick 상세로만 보냅니다.
+- 준비 중 또는 흐름 설명 노드는 별도 CTA를 만들지 않습니다.
+
+기존 AI 반도체 지도 회귀 확인 포인트:
+
+- `/ko/category/us-semiconductors` route와 query 선택을 유지합니다.
+- `ai-datacenter-nvidia`는 기존 NVIDIA 노드로, `ai-datacenter-smci`는 Supermicro 노드로 안전하게 매핑합니다.
+- ReactFlow 전체 연결 보기와 관계 출처 패널은 기존 공통 구조를 그대로 사용합니다.
+
+남은 TODO:
+
+- Vertiv complete 연결 여부 보강
+- Eaton/Schneider 재무 연결 후보 검토
+- LG전자 냉각 Pick과 category 연결 강화
+- 데이터센터 냉각/전력 카테고리 source 보강
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
