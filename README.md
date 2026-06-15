@@ -2265,7 +2265,7 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 
 추천 방향:
 
-- 기업 해설 페이지에는 v3 재무 요약 시각화와 기준 숫자 3개만 남깁니다.
+- 기업 해설 페이지에는 v3 재무 요약 시각화와 먼저 보는 숫자 3개만 남깁니다.
 - `전체 지표 보기`는 CTA 카드로 바꾸고 상세는 `/ko/analysis/{companyId}/financials` 후보로 분리합니다.
 - 재무 용어 설명과 재무제표 읽는 법은 `/ko/learn/financials` 같은 공부 페이지로 분리합니다.
 - 긴 재무제표 해설은 기존 내용을 삭제하지 말고 상세 페이지 또는 접힌 CTA 뒤로 이동합니다.
@@ -2279,7 +2279,7 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 영업현금흐름/영업이익 비율을 계산합니다.
 - mini bar와 ratio bar를 추가합니다.
 - source/asOf badge를 `source · fiscalYear/fiscalPeriod · asOf` 형태로 다듬습니다.
-- 기존 숫자 3개 카드는 하단 `기준 숫자`로 낮춥니다.
+- 기존 숫자 3개 카드는 하단 `먼저 보는 숫자`로 낮춥니다.
 - fallback 상태에서는 계산을 숨기고 `공식 데이터 연결 필요`를 표시합니다.
 
 2차 구현:
@@ -2309,7 +2309,7 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 계산 가능한 값은 CSS div 기반 mini ratio bar로 표시하고, 100% 초과 값은 bar만 100%로 clamp하며 label은 실제 비율을 유지합니다.
 - 기존 `comparison.yoy/qoq`가 있는 지표는 작은 pill 또는 mini comparison row로만 표시합니다.
 - source/report/asOf/currency badge를 작게 묶어 표시합니다.
-- 기존 `매출`, `영업이익`, `영업현금흐름` 숫자 3개 카드는 `기준 숫자 3개`로 이름을 낮춰 아래쪽에 유지했습니다.
+- 기존 `매출`, `영업이익`, `영업현금흐름` 숫자 3개 카드는 `먼저 보는 숫자 3개`로 이름을 낮춰 아래쪽에 유지했습니다.
 - fallback 또는 공식 데이터 미연결 상태에서는 계산과 차트를 숨기고 `공식 데이터 연결 필요`, `값 확인 전, 지표 의미만 표시합니다.` 문구를 보여줍니다.
 
 현재 API로 가능한 것:
@@ -2337,21 +2337,21 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 
 확인 일시: 2026-06-05
 
-기업해설 페이지가 길고 조잡해 보이던 원인 중 하나였던 `전체 지표 보기`, `재무제표 해설 더 보기` 상세 details를 기본 기업해설 흐름에서 분리했습니다. `재무 쉽게 보기 v3`가 핵심 재무 요약을 담당하므로, 기업해설 페이지에는 시각 요약과 기준 숫자 3개를 남기고 긴 학습성 콘텐츠는 별도 진입으로 보냅니다.
+기업해설 페이지가 길고 조잡해 보이던 원인 중 하나였던 `전체 지표 보기`, `재무제표 해설 더 보기` 상세 details를 기본 기업해설 흐름에서 분리했습니다. `재무 쉽게 보기 v3`가 핵심 재무 요약을 담당하므로, 기업해설 페이지에는 시각 요약과 먼저 보는 숫자 3개를 남기고 긴 학습성 콘텐츠는 별도 진입으로 보냅니다.
 
 기업해설 페이지에 남긴 것:
 
 - 회사 설명, 질문 카드, 시장 흐름 CTA
-- `재무 쉽게 보기 v3` 해석 카드 3개와 `기준 숫자 3개`
+- `재무 쉽게 보기 v3` 해석 카드 3개와 `먼저 보는 숫자 3개`
 - 짧은 `숫자 더 보기` 보조 drawer
 - 공시/원문 보고서/관계/기관 동향/뉴스를 하나로 묶은 compact `더 깊게 보기`
-- 작고 조용한 `숫자 읽는 법` CTA 카드
+- `먼저 보는 숫자 3개` 안의 짧은 inline 도움말
 
 분리한 것:
 
 - 기본 기업해설 하단에서 `전체 지표 보기`와 `재무제표 해설 더 보기` 긴 details를 제거했습니다.
 - 새 route `/ko/learn/financials`를 추가해 매출, 영업이익, 영업현금흐름, 영업이익률, 현금흐름/영업이익 비율, YoY/QoQ, 전체 지표를 언제 보는지 설명합니다.
-- 기업해설의 재무 CTA와 `숫자 더 보기` drawer는 `/ko/learn/financials`로 연결합니다.
+- 기업해설의 큰 학습 CTA와 `숫자 더 보기` drawer의 학습 페이지 버튼은 제거하고, `/ko/learn/financials`는 직접 URL 접근용으로 유지합니다.
 
 보정한 것:
 
@@ -2365,6 +2365,31 @@ DESIGN.md의 warm paper canvas, white surface, hairline border, restrained shado
 - 회사별 전체 지표 table 별도화
 - 기존 재무제표 해설 내용을 회사별 상세 또는 학습 페이지로 재배치
 - source별 재무 상세 시각화 고도화
+
+### 숫자 읽는 법 CTA 축소
+
+확인 일시: 2026-06-15
+
+큰 CTA를 줄인 이유:
+
+- `숫자 읽는 법`은 보조 설명으로 유용하지만 홈, Pick, 시장지도, 기업해설 하단에서 독립 CTA처럼 보이면 주가해부실의 핵심 흐름이 재무 공부 페이지로 분산됩니다.
+- 기본 동선은 이번 주 이슈, Pick 상세, 관련 기업, 시장지도, 기업해설의 재무 숫자 확인에 둡니다.
+
+남긴 위치:
+
+- 기업해설의 `재무 쉽게 보기 v3` 안에서 `먼저 보는 숫자 3개` 영역에만 inline 도움말을 남깁니다.
+- `/ko/learn/financials` route는 삭제하지 않고 직접 URL 접근이 가능하게 유지합니다.
+
+재무 영역 inline 도움말 문구:
+
+```text
+먼저 매출, 영업이익, 영업현금흐름을 보고, 그 다음 영업이익률과 현금흐름 비율을 확인합니다.
+```
+
+남은 TODO:
+
+- `/ko/learn/financials`를 외부 또는 오래된 링크 대응용 compact 참고 페이지로만 유지합니다.
+- 회사별 재무 상세 페이지를 만들 경우에도 홈/주요 CTA가 학습 페이지로 분산되지 않도록 별도 검토합니다.
 
 ### 운영 전체 QA 결과
 

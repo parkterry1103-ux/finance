@@ -22375,6 +22375,40 @@ button.flow-stage-company-chip:focus-visible {
   }
 }
 
+.story-analysis-shell .financial-inline-help {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 2px 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 10px;
+  color: var(--light-text-secondary);
+  background: rgba(239, 246, 255, 0.72);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.story-analysis-shell .financial-inline-help svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #2563eb;
+}
+
+.story-analysis-shell .financial-inline-help span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .story-analysis-shell .financial-inline-help {
+    margin-bottom: 8px;
+    padding: 8px 9px;
+    font-size: 11.5px;
+  }
+}
+
 /* Market map connection audit: distinguish analysis-ready companies from reference nodes. */
 .connection-badge-row {
   display: flex;

@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  BookOpen,
   ChevronDown,
   CircleDollarSign,
   Cloud,
@@ -560,10 +559,6 @@ function picksPath(pick?: StockAutopsyPick) {
 
 function picksArchivePath() {
   return '/ko/picks/archive';
-}
-
-function financialLearningPath() {
-  return '/ko/learn/financials';
 }
 
 const analysisRouteAliases: Record<string, string> = {
@@ -3035,7 +3030,6 @@ type AnalysisPageProps = {
   onHome: () => void;
   onBack: (company?: Company) => void;
   onOpenAnalysis: (company: Company, anchor?: string) => void;
-  onOpenFinancialLearning: () => void;
   onRefreshNews: () => void;
   marketPrices: MarketPrice[];
 };
@@ -3830,7 +3824,7 @@ function StockAutopsyPicksPage({
   );
 }
 
-function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onOpenFinancialLearning, onRefreshNews, marketPrices }: AnalysisPageProps) {
+function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalysis, onRefreshNews, marketPrices }: AnalysisPageProps) {
   const primaryReportLink = getPrimaryReportLink(company);
   const dataFreshness = dataFreshnessInfo(company, primaryReportLink);
   const disclosureAnalysis = buildCompanyDisclosureAnalysis(company, anchor);
@@ -4248,7 +4242,11 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
           <section className="financial-priority-card">
             <div className="section-title">
               <BarChart3 size={16} />
-              <span>기준 숫자 3개</span>
+              <span>먼저 보는 숫자 3개</span>
+            </div>
+            <div className="financial-inline-help">
+              <CheckCircle size={14} />
+              <span>먼저 매출, 영업이익, 영업현금흐름을 보고, 그 다음 영업이익률과 현금흐름 비율을 확인합니다.</span>
             </div>
             <div className="financial-priority-grid">
               {financialNumberCards.map((metric, index) => (
@@ -4318,30 +4316,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                 </div>
                 <small>{recentMovementSummary}</small>
               </div>
-
-              <div className="financial-more-actions financial-learning-actions" aria-label="재무 숫자 더 공부하기">
-                <button type="button" onClick={onOpenFinancialLearning}>
-                  숫자 읽는 법 보기
-                </button>
-                <span>원문과 뉴스는 아래 더 깊게 보기에서 조용히 확인합니다.</span>
-              </div>
             </div>
           </details>
-        </section>
-
-        <section className="analysis-card financial-detail-cta-card" aria-label="재무 상세 학습 페이지 안내">
-          <div>
-            <span className="analysis-market-pill">숫자 읽는 법</span>
-            <h2>숫자 읽는 법이 궁금하다면</h2>
-            <p>매출, 영업이익률, 현금흐름을 보는 순서만 짧게 정리했습니다.</p>
-          </div>
-          <div className="financial-detail-cta-actions">
-            <button type="button" onClick={onOpenFinancialLearning}>
-              <BookOpen size={16} />
-              숫자 읽는 법 보기
-              <ArrowRight size={15} />
-            </button>
-          </div>
         </section>
 
         <section className="analysis-card analysis-compact-deep-card" id="compact-deep-dive" aria-label="더 깊게 보기">
@@ -5399,12 +5375,6 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
-  function openFinancialLearning() {
-    window.history.pushState({}, '', financialLearningPath());
-    setRoute(`${window.location.pathname}${window.location.search}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   function changeCountry(countryId: CountryId) {
     const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
     const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
@@ -5504,7 +5474,6 @@ function App() {
           onHome={openHome}
           onBack={closeAnalysis}
           onOpenAnalysis={openAnalysis}
-          onOpenFinancialLearning={openFinancialLearning}
           onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
           marketPrices={marketPrices}
         />
