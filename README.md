@@ -1998,6 +1998,31 @@ source 확인:
 - SMCI 자금조달 이후 희석 부담, 재고, 영업현금흐름 추적
 - Micron HBM 매출, DRAM/NAND 가격, 메모리 가격 사이클 추적
 
+### Archive 주차 묶음 및 홈 CTA 단순화
+
+확인 일시: 2026-06-15
+
+홈은 대표 Pick 1개를 먼저 읽는 진입 화면으로 유지합니다. 대표 Marvell 카드 안에서는 `Marvell 해부 보기`만 강하게 남기고, 카드 안의 중복 `이번 주 Pick 전체 보기` CTA는 제거했습니다. 홈 하단에는 `이번 주 Pick 전체 보기` 카드 1개만 남기고, 큰 `시장 지도 보기` 카드는 제거했습니다.
+
+시장지도 기능과 route는 유지합니다. 상단 nav의 `시장 지도`, Pick 상세의 `시장 흐름 보기`, 기업해설 내부의 시장 흐름 이동은 그대로 두며, 홈 하단에서 큰 CTA로만 노출하지 않습니다.
+
+Archive grouping 기준:
+
+| 그룹 | 기준 | 포함 Pick |
+| --- | --- | --- |
+| 지난주 Pick | 2026-06-12에 추가한 지난주 콘텐츠 ID 4개를 명시적으로 묶음 | SMCI, 현대건설, DraftKings, Micron |
+| 이전 Pick | 이번 주 Pick도 아니고 지난주 그룹도 아닌 기존 archive Pick | Dell, Snowflake, NVIDIA, 삼성전자 등 기존 보관함 Pick |
+
+지난주 Pick 4개는 `/ko/picks/archive`의 `지난주 Pick` 섹션에 표시합니다. 기존 archive Pick은 `이전 Pick` 섹션으로 내려가며, Pick 카드 자체는 기존 컴포넌트를 재사용해 가격/source/asOf 배지와 연결 상태별 CTA 정책을 유지합니다. `/ko/picks`는 계속 Marvell, LG전자, Taylor Morrison만 노출합니다.
+
+남은 TODO:
+
+- archive 월별/주차별 자동 그룹
+- archive 필터
+- 카테고리별 archive
+- 재건/인프라 시장지도 카테고리
+- 스포츠·예측 플랫폼 카테고리
+
 ### 운영 예시: 2026년 5월 마지막 주
 
 - 이번 주 종목은 Dell, Snowflake, Micron입니다.

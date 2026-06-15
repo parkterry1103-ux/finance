@@ -3146,10 +3146,6 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
               {currentWeeklyDigest.featured.primaryCtaLabel}
               <ArrowRight size={16} />
             </button>
-            <button type="button" className="weekly-secondary-action" onClick={onOpenPicks}>
-              {currentWeeklyDigest.featured.secondaryCtaLabel}
-              <ArrowRight size={15} />
-            </button>
           </article>
         </section>
 
@@ -3159,14 +3155,6 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
             <p>Marvell, LG전자, Taylor Morrison을 한 번에 보려면 Pick 페이지로 이동하세요.</p>
             <button type="button" onClick={onOpenPicks}>
               이번 주 Pick 전체 보기
-              <ArrowRight size={15} />
-            </button>
-          </article>
-          <article>
-            <span>시장 흐름 지도</span>
-            <p>AI 반도체 흐름이 어떻게 연결되는지 보고 싶다면 시장지도를 확인하세요.</p>
-            <button type="button" onClick={onOpenMarketMapLibrary}>
-              시장 지도 보기
               <ArrowRight size={15} />
             </button>
           </article>
@@ -3305,6 +3293,38 @@ function archivedStockAutopsyPicks() {
     .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
 }
 
+const previousWeekArchivePickIds = new Set([
+  'pick-smci-ai-server-funding-dilution',
+  'pick-hyundai-engineering-reconstruction-expectation',
+  'pick-draftkings-sports-prediction-platform',
+  'pick-micron-ai-memory-hbm-demand',
+]);
+
+function archivedStockAutopsyPickGroups() {
+  const archivePicks = archivedStockAutopsyPicks();
+  const previousWeekPicks = archivePicks.filter((pick) => previousWeekArchivePickIds.has(pick.id));
+  const earlierPicks = archivePicks.filter((pick) => !previousWeekArchivePickIds.has(pick.id));
+
+  return [
+    previousWeekPicks.length
+      ? {
+          id: 'previous-week',
+          title: '지난주 Pick',
+          description: 'AI 서버 자금조달, 중동 재건, 스포츠 플랫폼, 메모리 반등처럼 지난주 시장이 본 흐름입니다.',
+          picks: previousWeekPicks,
+        }
+      : null,
+    earlierPicks.length
+      ? {
+          id: 'earlier',
+          title: '이전 Pick',
+          description: '앞서 다룬 기업 해부와 시장 흐름을 모아두었습니다.',
+          picks: earlierPicks,
+        }
+      : null,
+  ].filter((group): group is { id: string; title: string; description: string; picks: StockAutopsyPick[] } => Boolean(group));
+}
+
 function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
   if (item.sectorId) return item.sectorId;
   const categoryMatch = item.href?.match(/\/category\/([^/?#]+)/);
@@ -3385,6 +3405,7 @@ function StockAutopsyPicksPage({
   const detailPick = selectedPickId ? selectedPick : undefined;
   const weeklyPicks = weeklyStockAutopsyPicks();
   const archivePicks = archivedStockAutopsyPicks();
+  const archivePickGroups = isArchive ? archivedStockAutopsyPickGroups() : [];
   const visiblePicks = isArchive ? archivePicks : weeklyPicks;
 
   if (selectedPickId && !detailPick) {
@@ -3715,6 +3736,48 @@ function StockAutopsyPicksPage({
     );
   }
 
+  const renderPickCard = (pick: StockAutopsyPick) => (
+    <article className="pick-card" key={pick.id}>
+      <div className="card-topline">
+        <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
+        <div className="pick-card-badge-row">
+          {isArchive ? <span className="pick-archive-badge">보관함</span> : null}
+          <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
+            {pick.movementDirection === 'up' ? '상승' : '하락'}
+          </strong>
+        </div>
+      </div>
+      <h2>{pick.title}</h2>
+      <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
+      <div className="pick-movement-line">
+        <span>움직임</span>
+        <strong>{pick.movementLabel}</strong>
+      </div>
+      <p>{pick.reasonSummary}</p>
+      <div className="pick-meta-grid">
+        <div>
+          <span>연결된 시장 흐름</span>
+          <strong>{pickFlowLabel(pick)}</strong>
+        </div>
+        <div>
+          <span>흐름 단계</span>
+          <strong>{pickFlowStage(pick)}</strong>
+        </div>
+      </div>
+      <span className="pick-section-kicker inline">같이 볼 기업</span>
+      <div className="pick-chip-row">
+        {pick.connectedLeaders.slice(0, 5).map((leader) => (
+          <span key={leader}>{leader}</span>
+        ))}
+      </div>
+      <p className="pick-helper-copy">{pick.beginnerSummary}</p>
+      <button type="button" className="pick-primary-action" onClick={() => onOpenPick(pick)}>
+        해부 보기
+        <ArrowRight size={16} />
+      </button>
+    </article>
+  );
+
   return (
     <div className="pick-shell story-dark-shell story-pick-shell">
       <header className="pick-nav">
@@ -3736,59 +3799,38 @@ function StockAutopsyPicksPage({
           <h1>{isArchive ? '지난 해부 보관함' : '이번 주 해부 종목'}</h1>
           <p>
             {isArchive
-              ? '이번 주 Pick에서 내려간 종목을 모아두었습니다. 가격과 기준일은 각 카드의 배지를 확인하세요.'
+              ? '이번 주 Pick에서 내려간 종목과 이전 시장 흐름을 모아두었습니다.'
               : '급등·급락한 이유를 시장 흐름과 함께 쉽게 정리했습니다.'}
           </p>
           <small>
             {isArchive
-              ? '보관함의 Pick도 상세 해부와 원문 기준 링크는 그대로 열립니다.'
+              ? '주차별로 묶어 시장이 어떤 이슈를 봤는지 다시 확인할 수 있습니다.'
               : '인스타그램에서 다룬 종목이 어떤 기업들과 연결되는지 확인해보세요.'}
           </small>
         </section>
 
-        <section className="pick-grid" aria-label={isArchive ? '지난 해부 보관함 목록' : '주가해부실 Pick 목록'}>
-          {visiblePicks.map((pick) => (
-            <article className="pick-card" key={pick.id}>
-              <div className="card-topline">
-                <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
-                <div className="pick-card-badge-row">
-                  {isArchive ? <span className="pick-archive-badge">보관함</span> : null}
-                  <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
-                    {pick.movementDirection === 'up' ? '상승' : '하락'}
-                  </strong>
+        {isArchive ? (
+          <section className="pick-archive-groups" aria-label="지난 해부 주차별 목록">
+            {archivePickGroups.map((group) => (
+              <section className="pick-archive-group" key={group.id} aria-labelledby={`archive-group-${group.id}`}>
+                <div className="pick-archive-group-header">
+                  <div>
+                    <h2 id={`archive-group-${group.id}`}>{group.title}</h2>
+                    <p>{group.description}</p>
+                  </div>
+                  <span>{group.picks.length}개</span>
                 </div>
-              </div>
-              <h2>{pick.title}</h2>
-              <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
-              <div className="pick-movement-line">
-                <span>움직임</span>
-                <strong>{pick.movementLabel}</strong>
-              </div>
-              <p>{pick.reasonSummary}</p>
-              <div className="pick-meta-grid">
-                <div>
-                  <span>연결된 시장 흐름</span>
-                  <strong>{pickFlowLabel(pick)}</strong>
+                <div className="pick-grid" aria-label={`${group.title} 목록`}>
+                  {group.picks.map(renderPickCard)}
                 </div>
-                <div>
-                  <span>흐름 단계</span>
-                  <strong>{pickFlowStage(pick)}</strong>
-                </div>
-              </div>
-              <span className="pick-section-kicker inline">같이 볼 기업</span>
-              <div className="pick-chip-row">
-                {pick.connectedLeaders.slice(0, 5).map((leader) => (
-                  <span key={leader}>{leader}</span>
-                ))}
-              </div>
-              <p className="pick-helper-copy">{pick.beginnerSummary}</p>
-              <button type="button" className="pick-primary-action" onClick={() => onOpenPick(pick)}>
-                해부 보기
-                <ArrowRight size={16} />
-              </button>
-            </article>
-          ))}
-        </section>
+              </section>
+            ))}
+          </section>
+        ) : (
+          <section className="pick-grid" aria-label="주가해부실 Pick 목록">
+            {visiblePicks.map(renderPickCard)}
+          </section>
+        )}
 
         {isArchive && !visiblePicks.length ? (
           <section className="pick-empty pick-archive-empty" aria-label="보관함 비어 있음">
