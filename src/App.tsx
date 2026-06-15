@@ -3293,15 +3293,19 @@ function archivedStockAutopsyPicks() {
     .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
 }
 
-const previousWeekArchivePickIds = new Set([
+const previousWeekArchivePickOrder = [
   'pick-marvell-nvlink-fusion-ai-interconnect',
   'pick-lg-electronics-ai-datacenter-cooling',
   'pick-taylor-morrison-berkshire-acquisition',
-]);
+] as const;
+
+const previousWeekArchivePickIds = new Set<string>(previousWeekArchivePickOrder);
 
 function archivedStockAutopsyPickGroups() {
   const archivePicks = archivedStockAutopsyPicks();
-  const previousWeekPicks = archivePicks.filter((pick) => previousWeekArchivePickIds.has(pick.id));
+  const previousWeekPicks = previousWeekArchivePickOrder
+    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
   const earlierPicks = archivePicks.filter((pick) => !previousWeekArchivePickIds.has(pick.id));
 
   return [

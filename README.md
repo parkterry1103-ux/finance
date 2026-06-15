@@ -2055,6 +2055,29 @@ CTA 상태:
 - 스포츠·예측 플랫폼 카테고리
 - 주차 교체 시 archive 그룹 ID를 자동으로 갱신하는 validation script
 
+### Archive 주차 묶음 표시
+
+확인 일시: 2026-06-15
+
+`/ko/picks/archive`는 단순 카드 리스트가 아니라 주차 묶음으로 표시합니다. archive 대상은 `currentWeeklyDigest.recentItems`에 들어간 현재 주차 Pick을 제외한 `stockAutopsyPicks`입니다.
+
+그룹 기준:
+
+| 그룹 | 포함 기준 | 포함 Pick |
+| --- | --- | --- |
+| 지난주 Pick | 직전 현재 주차였던 Pick ID를 명시적 순서로 묶음 | Marvell, LG전자, Taylor Morrison |
+| 이전 Pick | 현재 주차도 아니고 지난주 그룹도 아닌 나머지 archive Pick | Dell, Snowflake, NVIDIA, 삼성전자, 한미반도체, SK하이닉스 등 |
+
+현재 주차 Pick인 SMCI, Micron, 현대건설, DraftKings는 archive 어느 그룹에도 노출하지 않습니다. 기존 Pick card를 그대로 재사용하므로 가격/source/asOf badge, 상세 route, 연결 상태별 CTA 규칙은 유지됩니다.
+
+장기 TODO:
+
+- `weekLabel` 또는 `digestId` 기반 자동 그룹화
+- 월별 archive
+- 카테고리별 archive 필터
+- 검색/태그 필터
+- 주간 업데이트 입력 템플릿과 archive 자동 이동 연결
+
 ### 운영 예시: 2026년 5월 마지막 주
 
 - 이번 주 종목은 Dell, Snowflake, Micron입니다.
