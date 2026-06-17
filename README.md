@@ -143,6 +143,49 @@ stale 판단 기준은 단순 calendar day 기준입니다.
 - source 상세 tooltip
 - 해외 KIS 확장
 
+## 미국주식 Yahoo 가격 업데이트 점검
+
+2026-06-18 00:31 Asia/Shanghai 기준 운영 URL은 `https://finance1-flax.vercel.app`로 확인합니다. `finance1.vercel.app`는 이 작업의 확인 대상이 아닙니다.
+
+운영 API 확인 결과:
+
+- `GET /api/market-prices?limit=200`는 200, `ok: true`, `source: supabase`로 응답했습니다.
+- 응답 row는 83개이며 source 분포는 `kis-openapi` 46개, `yahoo-finance-chart` 37개입니다.
+- currency 분포는 `KRW` 46개, `USD` 37개입니다.
+- 전체 latest `asOf`는 `2026-06-12T09:07:25.134Z`, oldest `asOf`는 `2026-06-11T20:00:00.000Z`입니다.
+- 미국 대표 ticker는 Yahoo source로 남아 있고 기준시각이 2026-06-11 미국장 마감 부근에 머물러 있습니다: `SMCI`, `MU`, `VRT`, `ETN`, `MRVL`, `NVDA`, `DELL`, `MSFT`, `GOOGL`.
+- `DKNG`는 `limit=200` 응답에서 확인되지 않았습니다.
+- 국내 확인 ticker 중 `005930.KS`, `000660.KS`, `066570.KS`는 `kis-openapi`, `KRW`를 유지합니다. `000720.KS`는 `limit=200` 응답에서 확인되지 않았습니다.
+- `GET /api/sync/prices`는 인증 없이 401 `Unauthorized cron request`를 반환합니다. route 존재와 `CRON_SECRET` 보호 상태는 정상입니다.
+
+cron schedule:
+
+- 기존 가격 cron은 `30 8 * * 1-5`입니다. 한국장 마감 후 확인에는 맞지만 미국장 마감 후 별도 갱신이 없어 미국주식 기준시각이 길게 늦어 보일 수 있습니다.
+- 이번 변경으로 `/api/sync/prices` cron을 `30 22 * * 1-5`에도 추가했습니다. 미국장 마감 후 Yahoo close가 반영될 가능성을 높이기 위한 최소 변경입니다.
+
+문제 원인 판단:
+
+- 프론트의 `/api/market-prices` 읽기 경로는 정상입니다. 가격 지연은 API cache보다 `market_prices` write 최신성 문제로 보는 것이 맞습니다.
+- Yahoo chart source는 무료 공개 endpoint라 429가 발생할 수 있고, 이전 진단에서도 다수 ticker `Yahoo chart 429`와 import fallback 부재가 확인되었습니다.
+- 현재 코드의 Yahoo 호출은 여러 ticker를 병렬로 빠르게 호출하므로 429에 취약할 수 있습니다.
+- 단순 calendar day 기준 stale badge는 주말/휴일에 과민할 수 있지만, 이번 운영 데이터는 2026-06-11/12 기준에 머물러 있어 badge 기준만의 문제로 보기는 어렵습니다.
+- 최신 `sync_runs`의 started_at, ended_at, inserted_count, source별 count는 공개 API만으로 확인할 수 없습니다. Vercel/Supabase dashboard 또는 인증된 SQL 접근으로 별도 확인해야 합니다.
+
+수정한 내용:
+
+- `scripts/sync-prices.ts`에서 Yahoo 호출 chunk를 8개 병렬에서 4개 병렬로 낮췄습니다.
+- Yahoo 429 또는 5xx 응답은 한 번 짧게 재시도합니다.
+- chunk 사이에 짧은 지연을 넣어 Yahoo chart endpoint에 대한 burst 요청을 줄였습니다.
+- KIS 국내주식 로직, KIS env, KIS ticker 판별은 수정하지 않았습니다.
+- `vercel.json`에 미국장 마감 후 가격 cron을 추가했습니다.
+
+남은 TODO:
+
+- Vercel Cron 실행 로그에서 `/api/sync/prices`의 실제 08:30/22:30 UTC 실행 성공 여부를 확인합니다.
+- Supabase `sync_runs`에서 최신 `market-prices` run의 status, inserted_count, error_message, provider별 결과를 확인합니다.
+- Yahoo 429가 계속되면 `PRICE_IMPORT_URL` 또는 `MARKET_PRICES_IMPORT_URL` fallback을 운영 환경에 추가합니다.
+- stale badge는 calendar day가 아니라 거래일 기준으로 완화하는 작업을 별도 검토합니다.
+
 ## Local
 
 UI만 확인할 때:

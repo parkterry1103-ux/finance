@@ -197,30 +197,77 @@ const datacenterPowerCoolingAuditedIds = new Set([
 const datacenterPowerCoolingFlowSteps = [
   {
     label: 'AI 서버 증가',
-    detail: 'AI 서비스를 처리할 서버가 늘어납니다.',
+    detail: 'AI 서비스를 처리할 서버가 더 많이 필요해집니다.',
     companyId: 'datacenter-power-ai-server-growth',
+    representativeCompanies: ['SMCI', 'Dell'],
   },
   {
     label: '전력 사용 증가',
-    detail: '전력 용량과 안정성 요구가 커집니다.',
+    detail: '서버가 늘면 전기를 더 많이 쓰고 전력 안정성이 중요해집니다.',
     companyId: 'datacenter-power-power-use-growth',
+    representativeCompanies: ['Eaton', 'Schneider Electric'],
   },
   {
     label: 'UPS / 전력 관리',
-    detail: '배전, UPS, 전력관리 장비를 확인합니다.',
+    detail: '정전이나 전압 불안정에도 데이터센터가 멈추지 않게 관리합니다.',
     companyId: 'datacenter-power-power-management',
+    representativeCompanies: ['Vertiv', 'Eaton'],
   },
   {
     label: '냉각 / HVAC',
-    detail: '서버 열을 빼내는 냉각 설비를 봅니다.',
+    detail: '서버에서 나는 열을 식혀 장비가 안정적으로 돌아가게 합니다.',
     companyId: 'datacenter-power-cooling-hvac',
+    representativeCompanies: ['Vertiv', 'LG전자'],
   },
   {
     label: '운영 안정성',
-    detail: '수주와 실제 숫자로 기대를 확인합니다.',
+    detail: '전력과 냉각이 안정적이어야 실제 데이터센터 투자가 숫자로 확인됩니다.',
     companyId: 'datacenter-power-operational-stability',
+    representativeCompanies: ['Vertiv', 'Schneider Electric'],
   },
 ];
+
+const datacenterPowerCoolingEasyCopy: Record<string, { product: string; demand: string }> = {
+  'datacenter-power-vertiv': {
+    product: '데이터센터가 멈추지 않도록 전력 안정화와 냉각 장비를 제공하는 회사입니다.',
+    demand: 'AI 서버가 늘수록 전력 사용량과 발열이 커지기 때문에 전력·냉각 인프라 수요와 함께 봅니다.',
+  },
+  'datacenter-power-eaton': {
+    product: '전기를 안전하게 나누고 관리하는 전력 장비 회사입니다.',
+    demand: '데이터센터는 대규모 전력을 안정적으로 받아야 하므로 전력 관리 장비가 중요해집니다.',
+  },
+  'datacenter-power-schneider': {
+    product: '에너지 관리와 자동화 솔루션으로 데이터센터 전력 효율을 돕는 회사입니다.',
+    demand: '전력 사용량이 늘수록 에너지 관리와 운영 효율이 중요한 체크포인트가 됩니다.',
+  },
+  'datacenter-power-lg-electronics': {
+    product: 'HVAC와 냉각 기술로 데이터센터 열 관리 흐름에 연결되는 회사입니다.',
+    demand: 'AI 서버는 열을 많이 내기 때문에 냉각 설비와 칠러 같은 장비가 함께 주목받을 수 있습니다.',
+  },
+};
+
+const datacenterPowerCoolingCompanionCompanies: Record<string, Array<{ companyId: string; role: string }>> = {
+  'datacenter-power-vertiv': [
+    { companyId: 'datacenter-power-eaton', role: '전력 관리 장비' },
+    { companyId: 'datacenter-power-schneider', role: '에너지 관리 / 자동화' },
+    { companyId: 'datacenter-power-lg-electronics', role: '냉각 / HVAC' },
+  ],
+  'datacenter-power-eaton': [
+    { companyId: 'datacenter-power-vertiv', role: '데이터센터 전력·냉각 인프라' },
+    { companyId: 'datacenter-power-schneider', role: '전력 효율 / 자동화' },
+    { companyId: 'datacenter-power-lg-electronics', role: '냉각 인프라' },
+  ],
+  'datacenter-power-schneider': [
+    { companyId: 'datacenter-power-eaton', role: '전력 장비' },
+    { companyId: 'datacenter-power-vertiv', role: '데이터센터 인프라 장비' },
+    { companyId: 'datacenter-power-lg-electronics', role: '냉각 / HVAC' },
+  ],
+  'datacenter-power-lg-electronics': [
+    { companyId: 'datacenter-power-vertiv', role: '냉각과 전력 인프라' },
+    { companyId: 'datacenter-power-eaton', role: '전력 관리' },
+    { companyId: 'datacenter-power-schneider', role: '에너지 관리' },
+  ],
+};
 
 const aiFirstLookIds = [
   'us-semiconductors-nvidia',
@@ -625,6 +672,7 @@ function picksArchivePath() {
 const analysisRouteAliases: Record<string, string> = {
   'ai-datacenter-nvidia': 'us-semiconductors-nvidia',
   'ai-datacenter-smci': 'ai-datacenter-supermicro',
+  'datacenter-power-schneider-electric': 'datacenter-power-schneider',
 };
 
 function resolveAnalysisRouteCompanyId(companyId?: string | null) {
@@ -1002,6 +1050,7 @@ function shortCardSentence(text: string, fallback: string) {
 }
 
 function companyQuestionProductCopy(company: Company) {
+  if (datacenterPowerCoolingEasyCopy[company.id]) return datacenterPowerCoolingEasyCopy[company.id].product;
   if (company.id === 'us-semiconductors-nvidia') return 'AI 계산용 칩을 설계합니다.';
   if (company.id === 'ai-datacenter-dell') return 'AI 서버를 기업에 팝니다.';
   if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return 'AI 서버용 메모리를 만듭니다.';
@@ -1010,6 +1059,7 @@ function companyQuestionProductCopy(company: Company) {
 }
 
 function companyQuestionDemandCopy(company: Company) {
+  if (datacenterPowerCoolingEasyCopy[company.id]) return datacenterPowerCoolingEasyCopy[company.id].demand;
   if (company.id === 'us-semiconductors-nvidia') return 'AI 서비스를 만드는 회사들이 씁니다.';
   if (company.id === 'ai-datacenter-dell') return 'AI 서버를 늘리는 기업이 필요합니다.';
   if (company.id === 'ai-datacenter-sk-hynix' || company.id === 'kr-semiconductors-sk-hynix') return 'GPU 서버를 만드는 회사들이 필요합니다.';
@@ -4791,6 +4841,7 @@ function App() {
   const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
   const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
   const isDatacenterPowerCoolingMap = selectedSector.id === datacenterPowerCoolingSectorId && selectedAnchor.id === datacenterPowerCoolingAnchorId;
+  const isStoryMarketMap = isAiRelationshipMap || isDatacenterPowerCoolingMap;
   const hasSearchQuery = Boolean(query.trim());
   const expandedConnectedIds = new Set<string>();
   expandedCompanyIds.forEach((companyId) => {
@@ -4944,13 +4995,44 @@ function App() {
   const selectedFocusRelatedCards = prioritizedSelectedConnectionCards
     .filter((item, index, list) => list.findIndex((candidate) => candidate.company.id === item.company.id) === index)
     .slice(0, 4);
+  const datacenterCompanionCards =
+    selectedCompany && isDatacenterPowerCoolingMap
+      ? (datacenterPowerCoolingCompanionCompanies[selectedCompany.id] ?? [])
+          .map((item) => {
+            const company = companies.find((candidate) => candidate.id === item.companyId);
+            return company ? { ...item, company } : undefined;
+          })
+          .filter((item): item is { companyId: string; role: string; company: Company } => Boolean(item))
+      : [];
+  const selectedMarketRelatedCards =
+    isDatacenterPowerCoolingMap && datacenterCompanionCards.length
+      ? datacenterCompanionCards.map((item) => ({
+          key: item.company.id,
+          company: item.company,
+          label: item.role,
+          description: item.role,
+          connection: companyConnectionState(item.company),
+        }))
+      : selectedFocusRelatedCards.map((item) => ({
+          key: item.link.id,
+          company: item.company,
+          label: shortRelationshipLabel(item.relationship.type),
+          description: item.relationship.demandConnection,
+          connection: companyConnectionState(item.company),
+        }));
   const selectedRelatedCompanyNames =
-    prioritizedSelectedConnectionCards
-      .slice(0, 3)
-      .map((item) => item.company.name)
-      .join(', ') || '직접 연결 기업 정리 중';
+    datacenterCompanionCards.length
+      ? datacenterCompanionCards.map((item) => item.company.name).join(', ')
+      : prioritizedSelectedConnectionCards
+          .slice(0, 3)
+          .map((item) => item.company.name)
+          .join(', ') || '직접 연결 기업 정리 중';
   const selectedRelatedCompanyCopy =
-    prioritizedSelectedConnectionCards.length > 0
+    datacenterCompanionCards.length > 0
+      ? `아래 관계는 직접 계약 관계가 아니라, AI 데이터센터 투자 흐름에서 함께 확인하는 기업들입니다. ${datacenterCompanionCards
+          .map((item) => `${item.company.name}: ${item.role}`)
+          .join(' · ')}`
+      : prioritizedSelectedConnectionCards.length > 0
       ? '같은 수요 흐름에서 함께 확인할 기업입니다. 직접 거래 여부는 공시와 출처로 따로 확인합니다.'
       : '아직 연결 기업이 충분히 정리되지 않았습니다. 전체 연결 보기에서 후보를 더 확인합니다.';
   const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
@@ -5015,8 +5097,9 @@ function App() {
     { value: 'reference', label: '공급망 참고', note: '비상장/보조', tone: 'secondary' },
   ];
   const shouldShowRelationshipCanvas =
-    !isAiRelationshipMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
-  const isAdvancedRelationshipView = isAiRelationshipMap && shouldShowRelationshipCanvas;
+    !isStoryMarketMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
+  const isAdvancedRelationshipView = isStoryMarketMap && shouldShowRelationshipCanvas;
+  const shouldShowReadingTemplate = isStoryMarketMap && !shouldShowRelationshipCanvas;
   const routeHashIndex = route.indexOf('#');
   const routeWithoutHash = routeHashIndex >= 0 ? route.slice(0, routeHashIndex) : route;
   const routeHash = routeHashIndex >= 0 ? decodeURIComponent(route.slice(routeHashIndex + 1)) : '';
@@ -5676,7 +5759,7 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isAiRelationshipMap ? 'ai-mvp-map story-dark-shell' : ''} ${isAiRelationshipMap && !shouldShowRelationshipCanvas ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isStoryMarketMap ? 'ai-mvp-map story-dark-shell' : ''} ${shouldShowReadingTemplate ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -5947,7 +6030,7 @@ function App() {
                 <span>주가해부실</span>
                 <span>기업 관계</span>
                 <span>{selectedSector.label}</span>
-                <strong>{selectedAnchor.name}</strong>
+                <strong>{isStoryMarketMap && selectedCompany ? selectedCompany.name : selectedAnchor.name}</strong>
               </nav>
               <p className="eyebrow">
                 {country.label} · {selectedSector.label}
@@ -5958,7 +6041,7 @@ function App() {
                   : isAiRelationshipMap
                     ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?'
                     : isDatacenterPowerCoolingMap
-                      ? 'AI 서버가 늘면 전력과 냉각도 같이 커집니다'
+                      ? 'AI 서버가 늘면 전기와 열 관리도 같이 커집니다'
                     : `${selectedAnchor.name} 기업 관계 지도`}
               </h2>
               <p className="topbar-subcopy">
@@ -5967,9 +6050,14 @@ function App() {
                   : isAiRelationshipMap
                   ? '어려운 용어보다 흐름부터 봅니다.'
                   : isDatacenterPowerCoolingMap
-                  ? 'GPU와 HBM만 보면 AI 인프라의 절반만 보는 것입니다. 데이터센터는 전기를 안정적으로 공급하고 열을 식혀야 돌아갑니다.'
+                  ? 'GPU와 HBM은 AI 인프라의 앞부분입니다. 실제 데이터센터는 전기를 안정적으로 공급하고, 서버에서 나는 열을 식혀야 계속 돌아갑니다.'
                   : selectedSector.description}
               </p>
+              {isDatacenterPowerCoolingMap && (
+                <p className="topbar-support-copy">
+                  그래서 전력 장비, UPS, 배전, 냉각/HVAC 기업을 함께 봅니다.
+                </p>
+              )}
               {selectedCompany && (
                 <div className="selected-company-context">
                   <span>선택한 기업</span>
@@ -6029,7 +6117,7 @@ function App() {
             </div>
           </header>
 
-          {isAiRelationshipMap && selectedCompany && !shouldShowRelationshipCanvas && (
+          {shouldShowReadingTemplate && selectedCompany && (
             <section className="market-detail-focus-grid" aria-label="선택 기업 중심 시장 흐름">
               <article className="market-detail-selected-card">
                 <div className="market-detail-selected-head">
@@ -6049,8 +6137,8 @@ function App() {
                 <div className="market-detail-related-inline" aria-label="같이 볼 회사 요약">
                   <span>같이 볼 회사</span>
                   <div>
-                    {selectedFocusRelatedCards.length ? (
-                      selectedFocusRelatedCards.slice(0, 4).map((item) => <b key={item.company.id}>{item.company.name}</b>)
+                    {selectedMarketRelatedCards.length ? (
+                      selectedMarketRelatedCards.slice(0, 4).map((item) => <b key={item.company.id}>{item.company.name}</b>)
                     ) : (
                       <b>직접 연결 기업 정리 중</b>
                     )}
@@ -6069,9 +6157,21 @@ function App() {
                       ) : (
                         <span>재무 연결 준비 중</span>
                       )}
+                      {isDatacenterPowerCoolingMap && (
+                        <button type="button" onClick={() => applyFlowViewMode('all')}>
+                          시장 흐름 보기
+                        </button>
+                      )}
                     </>
                   ) : (
-                    <span>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
+                    <>
+                      <span>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
+                      {selectedRelatedPick && (
+                        <button type="button" onClick={() => openPick(selectedRelatedPick)}>
+                          관련 Pick 보기
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </article>
@@ -6079,24 +6179,32 @@ function App() {
               <section className="market-detail-related-card" aria-label="같이 볼 회사">
                 <div className="market-detail-section-head">
                   <span>같이 볼 회사</span>
-                  <strong>{selectedCompany.name}과 바로 이어지는 기업</strong>
-                  <p>관계는 시장 흐름 이해용입니다. 직접 거래 여부는 공시·IR로 따로 확인합니다.</p>
+                  <strong>{selectedCompany.name}과 {isDatacenterPowerCoolingMap ? '시장 흐름상 같이 보는 기업' : '바로 이어지는 기업'}</strong>
+                  <p>
+                    {isDatacenterPowerCoolingMap
+                      ? '아래 관계는 직접 계약 관계가 아니라, AI 데이터센터 투자 흐름에서 함께 확인하는 기업들입니다.'
+                      : '관계는 시장 흐름 이해용입니다. 직접 거래 여부는 공시·IR로 따로 확인합니다.'}
+                  </p>
                 </div>
                 <div className="market-detail-related-list">
-                  {selectedFocusRelatedCards.length ? (
-                    selectedFocusRelatedCards.map((item) => {
-                      const connection = companyConnectionState(item.company);
+                  {selectedMarketRelatedCards.length ? (
+                    selectedMarketRelatedCards.map((item) => {
+                      const connection = item.connection;
                       return (
-                        <article key={item.link.id} className={`connection-${connection.level}`}>
+                        <article key={item.key} className={`connection-${connection.level}`}>
                           <div>
                             <strong>{item.company.name}</strong>
-                            <span>{shortRelationshipLabel(item.relationship.type)}</span>
+                            <span>{item.label}</span>
                           </div>
-                          <p>{item.relationship.demandConnection}</p>
+                          <p>{item.description}</p>
                           <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>
                           {connection.canOpenAnalysis ? (
                             <button type="button" onClick={() => openAnalysis(item.company)}>
                               기업 해설 보기
+                            </button>
+                          ) : item.company.id === 'datacenter-power-lg-electronics' && relatedPickForMarketMapCompany(item.company) ? (
+                            <button type="button" onClick={() => openPick(relatedPickForMarketMapCompany(item.company)!)}>
+                              관련 Pick 보기
                             </button>
                           ) : (
                             <em>{connection.label}</em>
@@ -6345,6 +6453,12 @@ function App() {
                 <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
               </div>
 
+              <div className="advanced-map-entry datacenter-semiconductor-entry">
+                <span>전력과 냉각까지 이어서 보고 싶다면</span>
+                <strong>AI 서버가 늘 때 전력 관리, UPS, 냉각/HVAC 기업이 왜 같이 보이는지 확인합니다.</strong>
+                <button type="button" onClick={() => openCategory(datacenterPowerCoolingSectorId)}>전력·냉각 지도 보기</button>
+              </div>
+
               {flowViewMode === 'kr' && (
               <div className="ai-sector-support-grid">
                 <section className="ai-korea-listed-card" aria-label="AI 반도체 흐름과 연결된 한국 상장기업">
@@ -6399,7 +6513,7 @@ function App() {
               <div className="sector-flow-copy">
                 <span>주가해부실 · 시장 흐름 지도</span>
                 <strong>AI 서버는 전기를 많이 쓰고 열도 많이 냅니다</strong>
-                <p>그래서 전력 장비와 냉각 설비가 같이 중요해집니다. 회사별 상세 CTA는 실제 연결 상태가 있을 때만 엽니다.</p>
+                <p>전력과 냉각은 직접 계약 관계를 뜻하기보다, AI 데이터센터 투자 흐름에서 함께 확인하는 인프라 축입니다.</p>
               </div>
               <div className="datacenter-power-steps" aria-label="데이터센터 전력 냉각 5단계">
                 {datacenterPowerCoolingFlowSteps.map((step, index) => (
@@ -6412,6 +6526,7 @@ function App() {
                     <span>{String(index + 1).padStart(2, '0')}</span>
                     <strong>{step.label}</strong>
                     <small>{step.detail}</small>
+                    <em>대표 기업 예: {step.representativeCompanies.join(', ')}</em>
                   </button>
                 ))}
               </div>
@@ -6421,9 +6536,14 @@ function App() {
                 <span>마지막은 수주와 숫자 확인</span>
               </div>
               <div className="advanced-map-entry datacenter-power-entry">
-                <span>전체 연결 보기</span>
+                <span>전체 관계를 보고 싶다면</span>
                 <strong>Vertiv, Eaton, Schneider Electric, LG전자를 전력·냉각 흐름 안에서 함께 봅니다.</strong>
-                <button type="button" onClick={fitVisibleMap}>전체 맞춤</button>
+                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
+              </div>
+              <div className="advanced-map-entry datacenter-semiconductor-entry">
+                <span>칩 쪽 흐름도 같이 보고 싶다면</span>
+                <strong>GPU, HBM, 파운드리 흐름은 AI 반도체 / 데이터센터 지도에서 확인할 수 있습니다.</strong>
+                <button type="button" onClick={() => openCategory(aiRelationshipSectorId)}>AI 반도체 지도 보기</button>
               </div>
             </section>
           )}

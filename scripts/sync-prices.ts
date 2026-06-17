@@ -23,6 +23,10 @@ const YAHOO_TICKER_ALIASES: Record<string, string> = {
   'BRK.B': 'BRK-B',
   SQ: 'XYZ',
 };
+const YAHOO_CHUNK_SIZE = 4;
+const YAHOO_CHUNK_DELAY_MS = 250;
+const YAHOO_RETRY_COUNT = 1;
+const YAHOO_RETRY_DELAY_MS = 750;
 
 function projectFile(path) {
   const runtime = globalThis as typeof globalThis & { process?: { cwd?: () => string } };
@@ -334,6 +338,14 @@ function chunkArray(items, size) {
   return chunks;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableYahooStatus(status: number) {
+  return status === 429 || status >= 500;
+}
+
 function yahooMarketStatus(marketState, tradingPeriod) {
   const normalized = String(marketState ?? '').toUpperCase();
   if (normalized === 'REGULAR') return 'open';
@@ -419,18 +431,24 @@ async function fetchYahooFinanceRows(targets = uniquePriceTargets()) {
   const rows = [];
   const results = [];
 
-  for (const chunk of chunkArray(targets, 8)) {
+  const yahooChunks = chunkArray(targets, YAHOO_CHUNK_SIZE);
+  for (const [chunkIndex, chunk] of yahooChunks.entries()) {
     await Promise.all(
       chunk.map(async (target) => {
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(target.lookupTicker)}?range=5d&interval=1d`;
         try {
-          const response = await fetch(url, {
-            headers: {
-              Accept: 'application/json',
-              'User-Agent': envValue('SEC_USER_AGENT', 'Mozilla/5.0 finance-supply-chain-app contact@example.com'),
-            },
-          });
-          if (!response.ok) throw new Error(`Yahoo chart ${response.status}`);
+          let response;
+          for (let attempt = 0; attempt <= YAHOO_RETRY_COUNT; attempt += 1) {
+            response = await fetch(url, {
+              headers: {
+                Accept: 'application/json',
+                'User-Agent': envValue('SEC_USER_AGENT', 'Mozilla/5.0 finance-supply-chain-app contact@example.com'),
+              },
+            });
+            if (response.ok || attempt >= YAHOO_RETRY_COUNT || !isRetriableYahooStatus(response.status)) break;
+            await sleep(YAHOO_RETRY_DELAY_MS * (attempt + 1));
+          }
+          if (!response?.ok) throw new Error(`Yahoo chart ${response?.status ?? 'unknown'}`);
           const row = normalizeYahooRow(target, await response.json());
           rows.push(row);
           results.push({
@@ -450,6 +468,7 @@ async function fetchYahooFinanceRows(targets = uniquePriceTargets()) {
         }
       }),
     );
+    if (chunkIndex < yahooChunks.length - 1) await sleep(YAHOO_CHUNK_DELAY_MS);
   }
 
   return { rows, sourceLabel: rows.length ? 'yahoo-finance-chart' : '', results };
