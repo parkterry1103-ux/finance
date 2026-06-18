@@ -3560,6 +3560,7 @@ type ReconstructionInfrastructurePageProps = {
   onOpenMarketMap: () => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
+  onSelectCompany: (companyId: string) => void;
   marketPrices: MarketPrice[];
 };
 
@@ -3569,14 +3570,33 @@ function ReconstructionInfrastructurePage({
   onOpenMarketMap,
   onOpenPicks,
   onOpenPick,
+  onSelectCompany,
   marketPrices,
 }: ReconstructionInfrastructurePageProps) {
   const [showConnections, setShowConnections] = useState(false);
   const map = reconstructionInfrastructureMap;
-  const isKnownCompanyQuery = !requestedCompanyId || map.companyAliases.some((alias) => alias === requestedCompanyId);
-  const selectedCompanyId = map.companyId;
-  const relatedPick = stockAutopsyPicks.find((pick) => pick.id === map.pickId);
-  const selectedPrice = relatedPick ? getPriceForPick(relatedPick, marketPrices) : null;
+  const aliasCompanyId = requestedCompanyId && Object.prototype.hasOwnProperty.call(map.companyAliases, requestedCompanyId)
+    ? map.companyAliases[requestedCompanyId as keyof typeof map.companyAliases]
+    : requestedCompanyId;
+  const selectedCompany = map.companies.find((company) => company.id === aliasCompanyId)
+    ?? map.companies.find((company) => company.id === map.companyId)
+    ?? map.companies[0];
+  const isKnownCompanyQuery = !requestedCompanyId || map.companies.some((company) => company.id === aliasCompanyId);
+  const selectedCompanyId = selectedCompany.id;
+  const relatedCompanies = map.companies.filter((company) => company.id !== selectedCompany.id);
+  const relatedPick = selectedCompany.pickId
+    ? stockAutopsyPicks.find((pick) => pick.id === selectedCompany.pickId)
+    : undefined;
+  const selectedPrice = relatedPick
+    ? getPriceForPick(relatedPick, marketPrices)
+    : getPriceForTicker(selectedCompany.ticker, selectedCompany.id, marketPrices);
+  const candidatePrices = useMemo(
+    () => new Map(map.companies.map((company) => [
+      company.id,
+      getPriceForTicker(company.ticker, company.id, marketPrices),
+    ])),
+    [map.companies, marketPrices],
+  );
   const graphNodes = useMemo<Node[]>(
     () => map.graphNodes.map((node) => ({
       id: node.id,
@@ -3626,29 +3646,34 @@ function ReconstructionInfrastructurePage({
           <strong>{map.hero.note}</strong>
         </section>
 
-        <section className="reconstruction-company-card" aria-label="선택 기업 현대건설">
+        <section className="reconstruction-company-card" aria-label={`선택 기업 ${selectedCompany.name}`}>
           <div className="reconstruction-company-head">
-            <div className="reconstruction-company-mark" aria-hidden="true">HDEC</div>
+            <div className="reconstruction-company-mark" aria-hidden="true">{selectedCompany.mark}</div>
             <div>
               <span>선택 기업</span>
-              <h2>{map.company.name}</h2>
-              <small>{map.company.ticker}</small>
+              <h2>{selectedCompany.name}</h2>
+              <small>{selectedCompany.ticker} · {selectedCompany.exchange}</small>
             </div>
-            <em>{map.company.status}</em>
+            <em>{selectedCompany.status}</em>
           </div>
+          <div className="reconstruction-company-role">{selectedCompany.role}</div>
           <div className="reconstruction-company-body">
             <div>
               <span>이 회사는 뭐 해요?</span>
-              <p>{map.company.description}</p>
+              <p>{selectedCompany.description}</p>
             </div>
             <div>
               <span>왜 이 흐름에 있나요?</span>
-              <p>{map.company.reason}</p>
+              <p>{selectedCompany.reason}</p>
+            </div>
+            <div>
+              <span>같이 볼 회사</span>
+              <p>{relatedCompanies.map((company) => company.name).join(', ')}</p>
             </div>
             <div>
               <span>확인할 점</span>
               <ul>
-                {map.company.checks.map((check) => <li key={check}>{check}</li>)}
+                {selectedCompany.checks.map((check) => <li key={check}>{check}</li>)}
               </ul>
             </div>
           </div>
@@ -3660,21 +3685,36 @@ function ReconstructionInfrastructurePage({
                 <ArrowRight size={15} />
               </button>
             )}
+            {!relatedPick && <span className="reconstruction-reference-action">시장 흐름 참고</span>}
           </div>
         </section>
 
         <section className="reconstruction-related" aria-labelledby="reconstruction-related-title">
           <div className="reconstruction-section-head">
-            <span>같이 볼 흐름</span>
-            <h2 id="reconstruction-related-title">{map.relatedTitle}</h2>
+            <span>같이 볼 회사</span>
+            <h2 id="reconstruction-related-title">{selectedCompany.name}과 같이 볼 회사</h2>
             <p>{map.relatedNote}</p>
           </div>
           <div className="reconstruction-related-grid">
-            {map.relatedFlows.map((flow, index) => (
-              <article key={flow.title}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <strong>{flow.title}</strong>
-                <p>{flow.description}</p>
+            {relatedCompanies.map((company) => (
+              <article key={company.id}>
+                <div className="reconstruction-related-head">
+                  <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
+                  <div>
+                    <strong>{company.name}</strong>
+                    <small>{company.ticker} · {company.exchange}</small>
+                  </div>
+                </div>
+                <div className="reconstruction-related-meta">
+                  <span>{company.role}</span>
+                  <em>{company.status}</em>
+                </div>
+                <p>{company.description}</p>
+                <PriceBadge price={candidatePrices.get(company.id)} compact />
+                <button type="button" onClick={() => onSelectCompany(company.id)}>
+                  시장 흐름에서 보기
+                  <ArrowRight size={14} />
+                </button>
               </article>
             ))}
           </div>
@@ -3691,7 +3731,10 @@ function ReconstructionInfrastructurePage({
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <strong>{step.title}</strong>
                 <p>{step.description}</p>
-                <small>대표 항목: {step.representative}</small>
+                <div className="reconstruction-step-representatives">
+                  <b>대표 예시</b>
+                  {step.representatives.map((representative) => <small key={representative}>{representative}</small>)}
+                </div>
               </article>
             ))}
           </div>
@@ -5764,6 +5807,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openReconstructionCompany(companyId: string) {
+    window.history.pushState({}, '', categoryPath(reconstructionInfrastructureMap.sectorId, companyId));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
   function openMarketMapLibrary() {
     window.history.pushState({}, '', marketMapPath());
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -5884,6 +5932,7 @@ function App() {
           onOpenMarketMap={openMarketMapLibrary}
           onOpenPicks={openPicks}
           onOpenPick={openPick}
+          onSelectCompany={openReconstructionCompany}
           marketPrices={marketPrices}
         />
       </ReactFlowProvider>

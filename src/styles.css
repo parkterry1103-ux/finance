@@ -15201,9 +15201,23 @@ body {
   font-weight: 900;
 }
 
+.reconstruction-company-role {
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid #d7e3f4;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #f4f8ff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
 .reconstruction-company-body {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -15254,6 +15268,19 @@ body {
   box-shadow: none;
 }
 
+.reconstruction-reference-action {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid #d7e3f4;
+  border-radius: 8px;
+  color: #475467;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .reconstruction-related,
 .reconstruction-compact-flow {
   display: grid;
@@ -15284,7 +15311,7 @@ body {
 
 .reconstruction-related-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -15297,6 +15324,94 @@ body {
   border: 1px solid #e0e6ef;
   border-radius: 9px;
   background: #f8fafc;
+}
+
+.reconstruction-related-grid article {
+  grid-template-rows: auto auto minmax(48px, auto) auto auto;
+}
+
+.reconstruction-related-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.reconstruction-related-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 9px;
+  color: #ffffff;
+  background: #315e9e;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.reconstruction-related-head > div:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reconstruction-related-head small {
+  color: #667085;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.reconstruction-related-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.reconstruction-related-meta span,
+.reconstruction-related-meta em {
+  display: inline-flex;
+  min-height: 23px;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid #d7e3f4;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.reconstruction-related-meta em {
+  color: #667085;
+  background: #ffffff;
+}
+
+.reconstruction-related-grid .price-badge {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.reconstruction-related-grid button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: auto;
+  padding: 0 10px;
+  border: 1px solid #d7e3f4;
+  border-radius: 8px;
+  color: #1d4ed8;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: none;
 }
 
 .reconstruction-related-grid article > span,
@@ -15348,14 +15463,37 @@ body {
   content: '';
 }
 
-.reconstruction-flow-steps small {
+.reconstruction-step-representatives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
   margin-top: auto;
   padding-top: 7px;
   border-top: 1px solid #e0e6ef;
+}
+
+.reconstruction-step-representatives b {
+  width: 100%;
   color: #1d4ed8;
   font-size: 10.5px;
   font-weight: 850;
   line-height: 1.4;
+}
+
+.reconstruction-step-representatives small {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 1px solid #d7e3f4;
+  border-radius: 999px;
+  color: #475467;
+  background: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .reconstruction-connections {
@@ -15407,6 +15545,12 @@ body {
   border-color: #2563eb;
   color: #ffffff;
   background: #2563eb;
+}
+
+.reconstruction-flow-canvas .reconstruction-flow-node.tone-reference {
+  border-color: #b9c9df;
+  color: #315e9e;
+  background: #f4f8ff;
 }
 
 .reconstruction-flow-canvas .reconstruction-flow-node.tone-result {
@@ -15494,7 +15638,8 @@ body {
 
   .reconstruction-company-actions > *,
   .reconstruction-company-actions button,
-  .reconstruction-connection-entry button {
+  .reconstruction-connection-entry button,
+  .reconstruction-related-grid button {
     width: 100%;
   }
 
