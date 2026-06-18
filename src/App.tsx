@@ -56,6 +56,7 @@ import {
   links,
   marketMovers,
   MarketPrice,
+  reconstructionInfrastructureMap,
   RiskLevel,
   sectors,
   SmartMoneyMove,
@@ -3538,7 +3539,7 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMap
                 <p>{item.note}</p>
                 {isActive ? (
                   <button type="button" onClick={() => openMarketMapItem(item)}>
-                    지도 보기
+                    {item.ctaLabel ?? '지도 보기'}
                     <ArrowRight size={15} />
                   </button>
                 ) : (
@@ -3547,6 +3548,183 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMap
               </article>
             );
           })}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+type ReconstructionInfrastructurePageProps = {
+  requestedCompanyId?: string | null;
+  onHome: () => void;
+  onOpenMarketMap: () => void;
+  onOpenPicks: () => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
+  marketPrices: MarketPrice[];
+};
+
+function ReconstructionInfrastructurePage({
+  requestedCompanyId,
+  onHome,
+  onOpenMarketMap,
+  onOpenPicks,
+  onOpenPick,
+  marketPrices,
+}: ReconstructionInfrastructurePageProps) {
+  const [showConnections, setShowConnections] = useState(false);
+  const map = reconstructionInfrastructureMap;
+  const isKnownCompanyQuery = !requestedCompanyId || map.companyAliases.some((alias) => alias === requestedCompanyId);
+  const selectedCompanyId = map.companyId;
+  const relatedPick = stockAutopsyPicks.find((pick) => pick.id === map.pickId);
+  const selectedPrice = relatedPick ? getPriceForPick(relatedPick, marketPrices) : null;
+  const graphNodes = useMemo<Node[]>(
+    () => map.graphNodes.map((node) => ({
+      id: node.id,
+      position: { x: node.x, y: node.y },
+      data: { label: node.label },
+      className: `reconstruction-flow-node tone-${node.tone}`,
+      draggable: false,
+      selectable: false,
+    })),
+    [map.graphNodes],
+  );
+  const graphEdges = useMemo<Edge[]>(
+    () => map.graphEdges.map(([source, target], index) => ({
+      id: `reconstruction-edge-${index + 1}`,
+      source,
+      target,
+      type: 'smoothstep',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      style: { stroke: '#7c93b4', strokeWidth: 2 },
+    })),
+    [map.graphEdges],
+  );
+
+  return (
+    <div
+      className={`pick-shell story-dark-shell reconstruction-map-shell${showConnections ? ' connections-open' : ''}`}
+      data-selected-company-id={selectedCompanyId}
+      data-query-fallback={isKnownCompanyQuery ? 'false' : 'true'}
+    >
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo"><Network size={20} /></span>
+          <strong>주가해부실</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenPicks}>이번 주 Pick</button>
+          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
+        </nav>
+      </header>
+
+      <main>
+        <section className="reconstruction-hero">
+          <p className="home-kicker">재건 / 인프라 시장지도</p>
+          <h1>{map.hero.title}</h1>
+          <p>{map.hero.description}</p>
+          <strong>{map.hero.note}</strong>
+        </section>
+
+        <section className="reconstruction-company-card" aria-label="선택 기업 현대건설">
+          <div className="reconstruction-company-head">
+            <div className="reconstruction-company-mark" aria-hidden="true">HDEC</div>
+            <div>
+              <span>선택 기업</span>
+              <h2>{map.company.name}</h2>
+              <small>{map.company.ticker}</small>
+            </div>
+            <em>{map.company.status}</em>
+          </div>
+          <div className="reconstruction-company-body">
+            <div>
+              <span>이 회사는 뭐 해요?</span>
+              <p>{map.company.description}</p>
+            </div>
+            <div>
+              <span>왜 이 흐름에 있나요?</span>
+              <p>{map.company.reason}</p>
+            </div>
+            <div>
+              <span>확인할 점</span>
+              <ul>
+                {map.company.checks.map((check) => <li key={check}>{check}</li>)}
+              </ul>
+            </div>
+          </div>
+          <div className="reconstruction-company-actions">
+            <PriceBadge price={selectedPrice} compact />
+            {relatedPick && (
+              <button type="button" className="primary" onClick={() => onOpenPick(relatedPick)}>
+                관련 Pick 보기
+                <ArrowRight size={15} />
+              </button>
+            )}
+          </div>
+        </section>
+
+        <section className="reconstruction-related" aria-labelledby="reconstruction-related-title">
+          <div className="reconstruction-section-head">
+            <span>같이 볼 흐름</span>
+            <h2 id="reconstruction-related-title">{map.relatedTitle}</h2>
+            <p>{map.relatedNote}</p>
+          </div>
+          <div className="reconstruction-related-grid">
+            {map.relatedFlows.map((flow, index) => (
+              <article key={flow.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{flow.title}</strong>
+                <p>{flow.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="reconstruction-compact-flow" aria-labelledby="reconstruction-flow-title">
+          <div className="reconstruction-section-head">
+            <span>compact 5단계 흐름</span>
+            <h2 id="reconstruction-flow-title">기대가 숫자로 확인되기까지</h2>
+          </div>
+          <div className="reconstruction-flow-steps">
+            {map.flowSteps.map((step, index) => (
+              <article key={step.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{step.title}</strong>
+                <p>{step.description}</p>
+                <small>대표 항목: {step.representative}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="reconstruction-connections" aria-labelledby="reconstruction-connections-title">
+          <div className="reconstruction-connection-entry">
+            <div>
+              <span>{map.graphIntro.eyebrow}</span>
+              <h2 id="reconstruction-connections-title">{map.graphIntro.description}</h2>
+            </div>
+            <button type="button" className="primary" onClick={() => setShowConnections((current) => !current)}>
+              {showConnections ? '5단계 흐름으로 돌아가기' : '전체 연결 보기'}
+            </button>
+          </div>
+          {showConnections && (
+            <div className="reconstruction-flow-canvas" aria-label="재건 인프라 전체 관계도">
+              <ReactFlow
+                nodes={graphNodes}
+                edges={graphEdges}
+                fitView
+                fitViewOptions={{ padding: 0.18 }}
+                minZoom={0.45}
+                maxZoom={1.35}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                proOptions={{ hideAttribution: true }}
+              >
+                <Background color="#dbe3ef" gap={20} size={1} />
+                <Controls showInteractive={false} />
+              </ReactFlow>
+            </div>
+          )}
         </section>
       </main>
     </div>
@@ -5119,6 +5297,7 @@ function App() {
   const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? resolveCategoryRouteCompanyId(routeParams.get('company')) ?? undefined : undefined;
+  const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
   const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
@@ -5694,6 +5873,21 @@ function App() {
 
   if (isMarketMapRoute) {
     return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} />;
+  }
+
+  if (isReconstructionInfrastructureRoute) {
+    return (
+      <ReactFlowProvider>
+        <ReconstructionInfrastructurePage
+          requestedCompanyId={routeParams.get('company')}
+          onHome={openHome}
+          onOpenMarketMap={openMarketMapLibrary}
+          onOpenPicks={openPicks}
+          onOpenPick={openPick}
+          marketPrices={marketPrices}
+        />
+      </ReactFlowProvider>
+    );
   }
 
   if (isOwnershipRoute) {

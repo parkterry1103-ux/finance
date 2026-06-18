@@ -350,6 +350,7 @@ export interface WeeklyDigestMarketMapItem {
   href?: string;
   sectorId?: string;
   note: string;
+  ctaLabel?: string;
 }
 
 export interface WeeklyDigest {
@@ -8026,6 +8027,110 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
   },
 ];
 
+export const reconstructionInfrastructureMap = {
+  sectorId: 'reconstruction-infrastructure',
+  companyId: 'reconstruction-hyundai-ec',
+  companyAliases: ['reconstruction-hyundai-ec', 'hyundai-engineering-construction'],
+  pickId: 'pick-hyundai-engineering-reconstruction-expectation',
+  hero: {
+    title: '전쟁이 멈출 수 있다는 기대가 커지면, 시장은 다시 짓는 회사를 봅니다',
+    description: '재건 기대감은 도로, 플랜트, 주택, 항만 같은 인프라 발주 가능성으로 이어집니다. 하지만 기대가 실제 수주와 실적으로 이어지는지는 따로 확인해야 합니다.',
+    note: '테마는 주가를 먼저 움직이고, 수주와 매출·이익이 그 기대를 검증합니다.',
+  },
+  company: {
+    name: '현대건설',
+    ticker: '000720.KS',
+    status: 'Pick only',
+    description: '도로, 주택, 플랜트 같은 대형 건설·인프라 사업을 수행하는 건설사입니다.',
+    reason: '종전 기대감이 커질 때 시장은 전쟁 이후 복구와 인프라 발주 가능성을 먼저 보기 때문입니다.',
+    checks: [
+      '재건 기대가 실제 발주로 이어지는가',
+      '현대건설이 실제 수주를 따내는가',
+      '수주가 매출과 이익으로 연결되는가',
+      '단기 테마 과열은 아닌가',
+    ],
+  },
+  relatedTitle: '현대건설과 같이 볼 흐름',
+  relatedNote: '아래 관계는 직접 계약 관계가 아니라, 재건 기대감이 시장에서 어떻게 해석되는지 보여주는 흐름입니다.',
+  relatedFlows: [
+    {
+      title: '재건 기대감',
+      description: '전쟁이 멈출 수 있다는 기대가 생기면 복구 수요가 먼저 주목받습니다.',
+    },
+    {
+      title: '인프라 발주',
+      description: '도로, 항만, 플랜트, 주택 같은 프로젝트가 실제 발주로 이어지는지가 중요합니다.',
+    },
+    {
+      title: '수주 경쟁',
+      description: '기대감이 실적으로 이어지려면 해당 기업이 실제 계약을 따내야 합니다.',
+    },
+    {
+      title: '실적 검증',
+      description: '수주가 매출로 찍히고, 공사 마진이 남는지가 마지막 확인 지점입니다.',
+    },
+  ],
+  flowSteps: [
+    {
+      title: '종전 기대감',
+      description: '전쟁이 멈출 수 있다는 기대가 생기면 시장은 복구 가능성을 먼저 봅니다.',
+      representative: '지정학 뉴스',
+    },
+    {
+      title: '재건 수요',
+      description: '도로, 주택, 항만, 플랜트처럼 다시 지어야 할 영역이 주목받습니다.',
+      representative: '도로 / 항만 / 주택 / 플랜트',
+    },
+    {
+      title: '인프라 발주',
+      description: '기대가 실제 프로젝트 발주로 이어지는지가 첫 번째 확인 지점입니다.',
+      representative: '정부·공공 프로젝트',
+    },
+    {
+      title: '수주 경쟁',
+      description: '건설사가 실제 계약을 따내야 매출 가능성이 생깁니다.',
+      representative: '현대건설',
+    },
+    {
+      title: '매출 / 이익 검증',
+      description: '수주가 매출로 찍히고, 공사 마진이 남아야 기대가 숫자로 확인됩니다.',
+      representative: '매출 / 영업이익 / 현금흐름',
+    },
+  ],
+  graphNodes: [
+    { id: 'expectation', label: '종전 기대감', x: 0, y: 160, tone: 'expectation' },
+    { id: 'demand', label: '재건 수요', x: 220, y: 160, tone: 'demand' },
+    { id: 'road-port', label: '도로 / 항만', x: 440, y: 40, tone: 'asset' },
+    { id: 'housing', label: '주택', x: 440, y: 160, tone: 'asset' },
+    { id: 'plant', label: '플랜트', x: 440, y: 280, tone: 'asset' },
+    { id: 'orders', label: '인프라 발주', x: 660, y: 160, tone: 'order' },
+    { id: 'hyundai', label: '현대건설', x: 880, y: 80, tone: 'company' },
+    { id: 'contract', label: '수주', x: 880, y: 240, tone: 'contract' },
+    { id: 'revenue', label: '매출', x: 1100, y: 40, tone: 'result' },
+    { id: 'profit', label: '영업이익', x: 1100, y: 160, tone: 'result' },
+    { id: 'cashflow', label: '현금흐름', x: 1100, y: 280, tone: 'result' },
+  ],
+  graphEdges: [
+    ['expectation', 'demand'],
+    ['demand', 'road-port'],
+    ['demand', 'housing'],
+    ['demand', 'plant'],
+    ['road-port', 'orders'],
+    ['housing', 'orders'],
+    ['plant', 'orders'],
+    ['orders', 'hyundai'],
+    ['orders', 'contract'],
+    ['hyundai', 'contract'],
+    ['contract', 'revenue'],
+    ['contract', 'profit'],
+    ['contract', 'cashflow'],
+  ],
+  graphIntro: {
+    eyebrow: '전체 관계를 보고 싶다면',
+    description: '종전 기대감이 재건 수요, 인프라 발주, 수주 경쟁, 실적 검증으로 이어지는 흐름을 한눈에 봅니다.',
+  },
+} as const;
+
 export const currentWeeklyDigest: WeeklyDigest = {
   weekLabel: '2026년 6월 셋째 주',
   kicker: '2026년 6월 셋째 주 해부',
@@ -8105,6 +8210,14 @@ export const currentWeeklyDigest: WeeklyDigest = {
       href: '/ko/category/datacenter-power-cooling',
       sectorId: 'datacenter-power-cooling',
       note: 'AI 서버가 늘 때 전력 관리, 냉각, HVAC, 운영 안정성이 함께 움직이는 흐름',
+    },
+    {
+      title: '재건 / 인프라',
+      status: 'active',
+      href: '/ko/category/reconstruction-infrastructure',
+      sectorId: 'reconstruction-infrastructure',
+      note: '종전 기대감이 커질 때 시장이 보는 도로, 플랜트, 주택, 항만, 건설·엔지니어링 흐름입니다.',
+      ctaLabel: '시장 지도 보기',
     },
     {
       title: 'M&A / 인수 프리미엄',

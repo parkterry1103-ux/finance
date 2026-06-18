@@ -116,6 +116,23 @@
 - 재무제표·공시 분석 화면을 핵심 숫자와 한 줄 결론 중심으로 먼저 보여주고, 기존 해설은 접힘 섹션으로 보존
 - 인스타그램 카드뉴스 유입용 `주가해부실 Pick` 페이지 추가: `/ko/picks`, `/picks`, `/stock-autopsy-picks`
 
+## 재건 / 인프라 시장지도 추가
+
+- 새 읽기형 시장지도 route는 `/ko/category/reconstruction-infrastructure`입니다.
+- `/ko/market-map`에서 `재건 / 인프라` 카드를 활성화하고 `시장 지도 보기`로 진입합니다.
+- 현대건설은 `000720.KS`와 기존 `pick-hyundai-engineering-reconstruction-expectation`을 연결한 `Pick only` 상태입니다.
+- 현대건설 선택 카드의 CTA는 `관련 Pick 보기`만 허용하며, 기업해설과 재무 숫자 CTA는 만들지 않습니다.
+- 기본 화면은 `종전 기대감 -> 재건 수요 -> 인프라 발주 -> 수주 경쟁 -> 매출 / 이익 검증` compact 5단계 흐름을 먼저 보여줍니다.
+- ReactFlow는 기본 화면에 렌더하지 않고 `전체 연결 보기`를 누른 뒤에만 표시합니다.
+- `?company=reconstruction-hyundai-ec`와 `?company=hyundai-engineering-construction`은 현대건설을 선택하며, 알 수 없는 company query도 현대건설로 fallback합니다.
+
+남은 TODO:
+
+- 추가 후보 기업 조사
+- 글로벌 EPC/건설/중장비/건자재 기업 후보
+- 실제 발주/수주 source 보강
+- 현대건설 기업해설/재무 연결은 별도 검토
+
 ## 가격 기준일/source UI 강화
 
 가격은 종목마다 수집 경로와 기준 시점이 다를 수 있으므로, 숫자만 보여주면 초보 사용자가 최신성이나 출처를 오해하기 쉽습니다. 이번 UI는 가격 API, KIS, sync 경로를 바꾸지 않고 이미 들어온 `source`, `asOf`, `currency`를 `PriceBadge`에서 더 읽기 좋게 드러냅니다.

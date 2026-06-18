@@ -15066,6 +15066,443 @@ body {
   }
 }
 
+/* Reconstruction / infrastructure: reading first, full relationship map on demand. */
+.reconstruction-map-shell {
+  min-height: 100vh;
+  color: #172033;
+  background: #f7f6f3;
+}
+
+.reconstruction-map-shell .pick-nav {
+  width: min(calc(100% - 28px), 1180px);
+  margin: 0 auto;
+}
+
+.reconstruction-map-shell .pick-nav nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reconstruction-map-shell main {
+  display: grid;
+  gap: 12px;
+  width: min(calc(100% - 28px), 1180px);
+  margin: 0 auto;
+  padding: 18px 0 40px;
+}
+
+.reconstruction-hero,
+.reconstruction-company-card,
+.reconstruction-related,
+.reconstruction-compact-flow,
+.reconstruction-connections {
+  min-width: 0;
+  border: 1px solid #dde3ec;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(31, 42, 68, 0.055);
+}
+
+.reconstruction-hero {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+}
+
+.reconstruction-hero .home-kicker,
+.reconstruction-section-head > span,
+.reconstruction-company-head span,
+.reconstruction-company-body span,
+.reconstruction-connection-entry span {
+  margin: 0;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.reconstruction-hero h1 {
+  max-width: 860px;
+  margin: 0;
+  color: #111827;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 950;
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+}
+
+.reconstruction-hero > p:not(.home-kicker) {
+  max-width: 760px;
+  margin: 0;
+  color: #526078;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.reconstruction-hero > strong {
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #1e40af;
+  background: #eff6ff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.reconstruction-company-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.reconstruction-company-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+}
+
+.reconstruction-company-mark {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 13px;
+  color: #ffffff;
+  background: #164e9e;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.reconstruction-company-head h2 {
+  margin: 2px 0;
+  color: #111827;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.reconstruction-company-head small {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.reconstruction-company-head > em {
+  padding: 6px 9px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.reconstruction-company-body {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.reconstruction-company-body > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e5e9f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.reconstruction-company-body p,
+.reconstruction-company-body ul {
+  margin: 7px 0 0;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.reconstruction-company-body ul {
+  display: grid;
+  gap: 3px;
+  padding-left: 17px;
+}
+
+.reconstruction-company-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reconstruction-company-actions button,
+.reconstruction-connection-entry button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.reconstruction-related,
+.reconstruction-compact-flow {
+  display: grid;
+  gap: 13px;
+  padding: 18px;
+}
+
+.reconstruction-section-head {
+  display: grid;
+  gap: 4px;
+}
+
+.reconstruction-section-head h2,
+.reconstruction-connection-entry h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.reconstruction-section-head p {
+  max-width: 760px;
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.reconstruction-related-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reconstruction-related-grid article,
+.reconstruction-flow-steps article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e0e6ef;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.reconstruction-related-grid article > span,
+.reconstruction-flow-steps article > span {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border-radius: 8px;
+  color: #1d4ed8;
+  background: #eaf2ff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.reconstruction-related-grid strong,
+.reconstruction-flow-steps strong {
+  color: #172033;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.reconstruction-related-grid p,
+.reconstruction-flow-steps p {
+  margin: 0;
+  color: #667085;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.reconstruction-flow-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reconstruction-flow-steps article {
+  position: relative;
+}
+
+.reconstruction-flow-steps article:not(:last-child)::after {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  right: -9px;
+  width: 10px;
+  height: 2px;
+  background: #9fb0c7;
+  content: '';
+}
+
+.reconstruction-flow-steps small {
+  margin-top: auto;
+  padding-top: 7px;
+  border-top: 1px solid #e0e6ef;
+  color: #1d4ed8;
+  font-size: 10.5px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.reconstruction-connections {
+  overflow: hidden;
+}
+
+.reconstruction-connection-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.reconstruction-connection-entry > div {
+  display: grid;
+  gap: 5px;
+}
+
+.reconstruction-connection-entry h2 {
+  max-width: 800px;
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.reconstruction-flow-canvas {
+  width: 100%;
+  height: 520px;
+  border-top: 1px solid #dde3ec;
+  background: #f8fafc;
+}
+
+.reconstruction-flow-canvas .react-flow__node-default,
+.reconstruction-flow-canvas .reconstruction-flow-node {
+  width: 150px;
+  min-height: 48px;
+  padding: 12px 9px;
+  border: 1px solid #bfd0e8;
+  border-radius: 9px;
+  color: #172033;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 7px 18px rgba(31, 42, 68, 0.08);
+}
+
+.reconstruction-flow-canvas .reconstruction-flow-node.tone-company {
+  border-color: #2563eb;
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.reconstruction-flow-canvas .reconstruction-flow-node.tone-result {
+  border-color: #b7dfca;
+  background: #ecfdf3;
+}
+
+.reconstruction-flow-canvas .reconstruction-flow-node.tone-expectation {
+  border-color: #e8c999;
+  background: #fff7e8;
+}
+
+@media (max-width: 900px) {
+  .reconstruction-company-body,
+  .reconstruction-related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reconstruction-flow-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .reconstruction-flow-steps article:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -9px;
+    left: 25px;
+    width: 2px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .reconstruction-map-shell .pick-nav,
+  .reconstruction-map-shell main {
+    width: min(calc(100% - 20px), 1180px);
+  }
+
+  .reconstruction-map-shell .pick-nav {
+    align-items: flex-start;
+  }
+
+  .reconstruction-map-shell .pick-nav nav {
+    width: 100%;
+  }
+
+  .reconstruction-map-shell .pick-nav nav button {
+    flex: 1 1 auto;
+  }
+
+  .reconstruction-map-shell main {
+    padding-top: 10px;
+  }
+
+  .reconstruction-hero,
+  .reconstruction-company-card,
+  .reconstruction-related,
+  .reconstruction-compact-flow,
+  .reconstruction-connection-entry {
+    padding: 13px;
+  }
+
+  .reconstruction-hero h1 {
+    font-size: 25px;
+  }
+
+  .reconstruction-company-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .reconstruction-company-head > em {
+    grid-column: 1 / -1;
+    width: fit-content;
+  }
+
+  .reconstruction-company-body,
+  .reconstruction-related-grid,
+  .reconstruction-connection-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .reconstruction-company-actions {
+    align-items: stretch;
+  }
+
+  .reconstruction-company-actions > *,
+  .reconstruction-company-actions button,
+  .reconstruction-connection-entry button {
+    width: 100%;
+  }
+
+  .reconstruction-flow-canvas {
+    height: 460px;
+  }
+}
+
 html,
 body,
 #root {
