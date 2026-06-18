@@ -199,6 +199,25 @@ cron schedule:
 - KIS 확인 결과 `005930.KS`, `000660.KS`, `066570.KS`는 `kis-openapi`와 KRW를 유지했습니다. `000720.KS`는 현재 `limit=200` 응답에 없습니다.
 - `git diff --check`, 앱 TypeScript, scripts TypeScript, Vite production build가 모두 통과했습니다.
 
+## Yahoo 가격 cron 재확인 및 현대건설 가격 포함 점검
+
+2026-06-18 16:08 Asia/Shanghai 기준 production은 `https://finance1-flax.vercel.app`에서 확인했습니다.
+
+- 가격 수정 commit은 `55754f5e03da58c4020fa0d1c94370c1e346ba91`, Vercel `finance1` production deployment ID는 `CvimZ71MDyTkapx1UoSEPmKe7GqY`입니다.
+- Vercel Cron Jobs는 Enabled이며 `/api/sync/prices`에 `30 8 * * 1-5`와 `30 22 * * 1-5`가 모두 등록돼 있습니다. 시간대는 UTC이고 Hobby 플랜은 최대 1시간의 유연 실행 창이 있습니다.
+- 22:30 UTC 일정은 미국 정규장 마감인 20:00 UTC(서머타임) 또는 21:00 UTC(표준시) 이후입니다. 08:30 UTC 일정과는 약 14시간 차이라 중복 실행 충돌은 없습니다.
+- 수정 전 API는 83행, `kis-openapi` 46행, `yahoo-finance-chart` 37행이었습니다. 대표 USD ticker의 `asOf`는 2026-06-11이었고 `000720.KS`, `DKNG`는 없었습니다.
+- `000720.KS`와 `DKNG`는 이미 `stockAutopsyPicks`를 통해 85개 가격 target universe에 포함돼 있었습니다. `.KS`는 KIS 대상으로 분기되고 `000720.KS`는 KIS 심볼 `000720`으로 변환됩니다.
+- 첫 수동 cron trace는 provider 호출 후 `companies` upsert에서 끝나고 `market_prices` write가 없었습니다. 코드와 schema 대조 결과 동일 CIK `1674101`을 공유하는 두 Vertiv ID가 price target ID 변경 전후로 충돌한 것이 원인이었습니다.
+- 가격 row의 company ID를 ticker 기준 canonical company로 정규화하고 company upsert payload를 ID 기준으로 dedupe했습니다. company가 없는 Pick ticker는 `company_id: null`로 가격 row를 저장합니다.
+- 수정 배포 후 Vercel Dashboard에서 수동 cron을 실행했습니다. 2026-06-18 16:03:27 Asia/Shanghai 시작, HTTP 200, 약 17초였고 warning/error/fatal 및 Yahoo 429/5xx 로그는 없었습니다. trace에서 `companies`, `market_prices`, `sync_runs` POST를 모두 확인했습니다.
+- 코드 및 trace 기준 sync payload와 `inserted_count`는 85개 ticker입니다. Supabase Dashboard는 별도 로그인이 필요해 `sync_runs` 행 자체는 직접 읽지 못했습니다.
+- 수정 후 API는 86행, `kis-openapi` 48행, `yahoo-finance-chart` 38행입니다. 대표 USD ticker의 `asOf`는 2026-06-17 미국장 마감으로 갱신됐습니다.
+- `000720.KS`는 `kis-openapi`, KRW, `asOf: 2026-06-18T08:03:32.373Z`로 생성됐습니다. `DKNG`는 `yahoo-finance-chart`, USD, `asOf: 2026-06-17T20:00:01.000Z`로 생성됐습니다.
+- KIS 회귀 확인 결과 `005930.KS`, `000660.KS`, `066570.KS` 모두 2026-06-18 KIS row를 유지합니다. Pick과 시장 지도 가격 badge는 `최신`으로 표시됐습니다.
+- calendar day 기반 stale 판정은 주말과 미국 휴일에 과민할 수 있으므로 거래일 기준 보정은 별도 TODO로 유지합니다.
+- 수동 cron은 성공했습니다. 다음 자동 `08:30` 또는 `22:30 UTC` 실행은 Hobby 유연 창을 감안해 runtime log와 `asOf`를 한 번 더 확인합니다.
+
 ## Local
 
 UI만 확인할 때:
