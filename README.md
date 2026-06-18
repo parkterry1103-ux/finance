@@ -218,6 +218,22 @@ cron schedule:
 - calendar day 기반 stale 판정은 주말과 미국 휴일에 과민할 수 있으므로 거래일 기준 보정은 별도 TODO로 유지합니다.
 - 수동 cron은 성공했습니다. 다음 자동 `08:30` 또는 `22:30 UTC` 실행은 Hobby 유연 창을 감안해 runtime log와 `asOf`를 한 번 더 확인합니다.
 
+## 자동 cron 이후 가격 sync 안정화 재확인
+
+2026-06-18 09:01 UTC까지는 자동 요청이 없었고, 작업을 09:07:39 UTC에 재개했습니다.
+
+- production은 commit `7c78a4233b14e7ae25e9550f04e4a8b27e6dacad`, Vercel deployment `HMLoQ1XypLxNG6zbfPk4nS4wLr7x`입니다.
+- `08:30 UTC` 자동 cron은 09:07:18.11 UTC에 `/api/sync/prices`로 실행됐습니다. 약 37분 지연으로 Hobby 1시간 유연 실행 창 안입니다.
+- runtime log는 user agent `vercel-cron/1.0`, production/main, HTTP 200, duration 17.87초를 표시했습니다. 종료 시각은 약 09:07:36 UTC입니다.
+- warning/error/fatal은 모두 0이며 Yahoo 429/5xx와 KIS 실패 로그가 없습니다. 코드와 성공 trace 기준 price payload 및 `inserted_count`는 85개 ticker입니다. Supabase `sync_runs` 행 자체는 별도 로그인 제한으로 직접 읽지 못했습니다.
+- 자동 실행 후 `/api/market-prices?limit=200`는 HTTP 200, `ok: true`, 86행을 유지했습니다. source 분포는 `kis-openapi` 48행, `yahoo-finance-chart` 38행입니다.
+- 자동 실행 약 5분 39초 뒤인 09:12:57 UTC에도 86행과 source 분포, `000720.KS`와 `DKNG`의 `asOf`가 동일하게 유지됐습니다.
+- 미국 대표 10종 `SMCI`, `MU`, `VRT`, `ETN`, `DKNG`, `MRVL`, `NVDA`, `DELL`, `MSFT`, `GOOGL`은 모두 Yahoo/USD이며 `asOf`는 2026-06-17 20:00~20:03 UTC 미국장 마감 기준을 유지합니다. 자동 실행 사이에 새 미국장 마감이 없어 timestamp가 유지되는 것이 정상입니다.
+- 한국 대표 4종 `005930.KS`, `000660.KS`, `066570.KS`, `000720.KS`는 모두 KIS/KRW이며 `asOf`가 2026-06-18 09:07:20~09:07:22 UTC로 갱신됐습니다.
+- `000720.KS`는 133,200원 KIS row를 유지했고 `DKNG`는 26.32달러 Yahoo row를 유지했습니다. canonical company 정규화와 Pick-only ticker 저장은 자동 실행에서도 회귀하지 않았습니다.
+- 홈, Pick 목록/보관함, SMCI/Micron/현대건설/DraftKings 상세, Vertiv 분석, 전력·냉각 지도, AI 반도체 지도에서 가격 badge와 source label을 확인했습니다. 과도한 stale label은 없었고 390px 가로 overflow는 전 route 0입니다.
+- 자동 cron과 저장 안정성이 확인돼 즉시 추가 재확인은 필요하지 않습니다. `22:30 UTC` 실행은 정기 운영 모니터링 대상으로 남깁니다.
+
 ## Local
 
 UI만 확인할 때:
