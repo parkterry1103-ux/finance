@@ -186,6 +186,19 @@ cron schedule:
 - Yahoo 429가 계속되면 `PRICE_IMPORT_URL` 또는 `MARKET_PRICES_IMPORT_URL` fallback을 운영 환경에 추가합니다.
 - stale badge는 calendar day가 아니라 거래일 기준으로 완화하는 작업을 별도 검토합니다.
 
+## 2026-06-18 production 반영 확인
+
+- 기능 커밋 `44567993da305260b9534729db175a08207c9035`를 `origin/main`에 push했습니다.
+- Vercel `finance1` production deployment는 같은 commit SHA로 완료됐고 deployment ID는 `8YfQtCE9wErg8WFzMW7MxmqEHKWU`입니다.
+- 운영 확인 URL은 `https://finance1-flax.vercel.app`입니다. production HTML asset은 `index-DIZJ0GhQ.js` / `index-qKf_3D3d.css`에서 `index-jLkwYM44.js` / `index-CyGStBlb.css`로 교체됐습니다.
+- `/ko/category/datacenter-power-cooling`은 AI 반도체 지도와 같은 읽기형 구조로 반영됐습니다. 기본 화면에는 좌우 패널과 ReactFlow가 없고, `전체 연결 보기` 또는 `시장 흐름 보기` 이후에만 ReactFlow가 렌더됩니다.
+- CTA는 Vertiv에 기업 해설/숫자/시장 흐름, Eaton과 Schneider Electric에는 기업 해설/숫자 CTA 없음, LG전자에는 관련 Pick만 노출되는 것으로 확인했습니다.
+- 전력/냉각 기본 route와 네 회사 query route, `/ko/category/us-semiconductors`는 390px viewport에서 가로 overflow 0입니다.
+- Yahoo 429 완화를 위한 4개 chunk, 재시도, chunk 지연과 08:30/22:30 UTC 가격 cron은 production commit에 포함됐습니다.
+- 배포 직후 `/api/market-prices?limit=200`의 미국 대표 row는 여전히 `yahoo-finance-chart`이지만 `asOf`가 2026-06-11에 머물러 있습니다. 로컬에 `CRON_SECRET`이 없어 수동 sync는 실행하지 않았으며 다음 가격 cron 성공 후 재확인이 필요합니다.
+- KIS 확인 결과 `005930.KS`, `000660.KS`, `066570.KS`는 `kis-openapi`와 KRW를 유지했습니다. `000720.KS`는 현재 `limit=200` 응답에 없습니다.
+- `git diff --check`, 앱 TypeScript, scripts TypeScript, Vite production build가 모두 통과했습니다.
+
 ## Local
 
 UI만 확인할 때:
