@@ -139,7 +139,13 @@
 - 2026-06-19 최초 확인에서 local HEAD와 `origin/main`은 기능 commit으로 일치했지만, GitHub `Production – finance1` deployment record는 생성되지 않았습니다.
 - 이 시점의 `https://finance1-flax.vercel.app`은 이전 asset인 `index-jLkwYM44.js`와 `index-CyGStBlb.css`를 계속 제공했습니다.
 - 인앱 브라우저가 시작 단계에서 다시 충돌했고 로컬에는 Vercel CLI, token, project link가 없어 dashboard redeploy를 실행할 수 없었습니다.
-- 따라서 이 README-only 기록 commit으로 `main` push webhook을 최소 재트리거합니다. 새 deployment SHA, asset, production route, 390px 모바일 QA 결과는 배포 완료 후 이 섹션에 이어서 기록합니다.
+- 따라서 README-only commit `49769ca1a92fc8df6c3150bf37ffcfcca09549b7`을 `main`에 push해 webhook을 최소 재트리거했습니다. 기능 코드는 변경하지 않았습니다.
+- 재트리거 후 GitHub deployment ID `5112859152`, 환경 `Production – finance1`, SHA `49769ca1a92fc8df6c3150bf37ffcfcca09549b7`가 생성됐고 status는 `success`, 설명은 `Deployment has completed`입니다. 이 SHA는 기능 commit을 포함한 `main` HEAD입니다.
+- 확인 대상 production domain은 `https://finance1-flax.vercel.app`입니다. HTML asset은 `index-jLkwYM44.js` / `index-CyGStBlb.css`에서 `index-D6BQRWxB.js` / `index-BS1zFfvp.css`로 교체됐고 새 JS bundle에서 재건 hero, route, `관련 Pick 보기` 문구를 확인했습니다.
+- `/`, `/ko/`, `/ko/picks`, `/ko/picks/archive`, `/ko/market-map`, 재건 기본·두 alias·invalid query route, 현대건설 Pick 상세, `/ko/category/us-semiconductors`, `/ko/category/datacenter-power-cooling`은 모두 HTTP 200이며 새 asset을 참조합니다.
+- 코드 계약 재확인에서 재건 기본 선택과 invalid fallback은 현대건설이고, 선택 카드 CTA는 `관련 Pick 보기`만 있습니다. 기업해설/숫자 CTA는 없으며 compact 5단계가 기본이고 ReactFlow는 `전체 연결 보기` 클릭 상태에서만 렌더됩니다. production 가격 API의 `000720.KS` KIS/KRW row도 유지됩니다.
+- 기존 AI 반도체와 전력·냉각 route는 새 production asset으로 HTTP 200을 확인했습니다. 다만 인앱 브라우저가 계속 충돌해 두 화면의 시각 회귀 여부는 직접 확인하지 못했습니다.
+- 390x844 모바일 `scrollWidth - innerWidth`, 버튼 가시성, compact 카드, ReactFlow 클릭 전후 overflow는 미확인입니다. 대체 Playwright package는 있었지만 실행 브라우저 binary가 없었고, 신규 다운로드 금지 조건에 따라 설치하지 않았습니다. `전체 연결 보기` 클릭 결과도 같은 이유로 시각 확인하지 못했으며 조건부 렌더링 코드만 재검증했습니다.
 
 ## 가격 기준일/source UI 강화
 
