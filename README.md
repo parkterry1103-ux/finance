@@ -133,6 +133,14 @@
 - 실제 발주/수주 source 보강
 - 현대건설 기업해설/재무 연결은 별도 검토
 
+## 재건 / 인프라 시장지도 production 반영 확인
+
+- 기능 구현 commit은 `b08f1f735b2c91563343f7ea06b4250b28819a43`입니다.
+- 2026-06-19 최초 확인에서 local HEAD와 `origin/main`은 기능 commit으로 일치했지만, GitHub `Production – finance1` deployment record는 생성되지 않았습니다.
+- 이 시점의 `https://finance1-flax.vercel.app`은 이전 asset인 `index-jLkwYM44.js`와 `index-CyGStBlb.css`를 계속 제공했습니다.
+- 인앱 브라우저가 시작 단계에서 다시 충돌했고 로컬에는 Vercel CLI, token, project link가 없어 dashboard redeploy를 실행할 수 없었습니다.
+- 따라서 이 README-only 기록 commit으로 `main` push webhook을 최소 재트리거합니다. 새 deployment SHA, asset, production route, 390px 모바일 QA 결과는 배포 완료 후 이 섹션에 이어서 기록합니다.
+
 ## 가격 기준일/source UI 강화
 
 가격은 종목마다 수집 경로와 기준 시점이 다를 수 있으므로, 숫자만 보여주면 초보 사용자가 최신성이나 출처를 오해하기 쉽습니다. 이번 UI는 가격 API, KIS, sync 경로를 바꾸지 않고 이미 들어온 `source`, `asOf`, `currency`를 `PriceBadge`에서 더 읽기 좋게 드러냅니다.
