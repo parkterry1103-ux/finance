@@ -289,6 +289,40 @@ function priceLookupTicker(ticker: string) {
   return YAHOO_TICKER_ALIASES[normalized] ?? normalized;
 }
 
+function canonicalPriceCompany(row) {
+  const lookupTicker = priceLookupTicker(normalizeTickerKey(row.ticker));
+  return (
+    companies.find((company) => company.ticker && priceLookupTicker(normalizeTickerKey(company.ticker)) === lookupTicker) ??
+    companies.find((company) => company.id === row.company_id)
+  );
+}
+
+function canonicalizePriceCompanyIds(rows) {
+  return rows.map((row) => {
+    const company = canonicalPriceCompany(row);
+    return { ...row, company_id: company?.id ?? null };
+  });
+}
+
+function companyRowsForPrices(rows) {
+  const byId = new Map();
+  rows.forEach((row) => {
+    const company = canonicalPriceCompany(row);
+    if (!company || byId.has(company.id)) return;
+    byId.set(company.id, {
+      id: company.id,
+      name: company.name,
+      ticker: company.ticker ?? null,
+      market: company.country,
+      sector: company.sector,
+      dart_corp_code: company.corpCode ?? null,
+      sec_cik: company.cik ?? null,
+      updated_at: nowIso(),
+    });
+  });
+  return Array.from(byId.values());
+}
+
 function uniquePriceTargets() {
   const byLookupTicker = new Map<string, { ticker: string; lookupTicker: string; companyId?: string; market?: string }>();
   const add = (ticker?: string, companyId?: string, market?: string) => {
@@ -537,7 +571,7 @@ export async function syncPrices() {
       };
     }
 
-    const normalizedRows = rows.map(normalizePriceRow).filter((row) => row.ticker);
+    const normalizedRows = canonicalizePriceCompanyIds(rows.map(normalizePriceRow).filter((row) => row.ticker));
     if (!normalizedRows.length) {
       const message = `No price rows in ${sourceLabel}. Frontend keeps mock fallback.`;
       await recordSyncRun({ source: 'market-prices', status: 'skipped', startedAt, errorMessage: message });
@@ -561,19 +595,7 @@ export async function syncPrices() {
     }
 
     if (hasSupabaseConfig()) {
-      const companyRows = normalizedRows
-        .map((row) => companies.find((company) => company.id === row.company_id))
-        .filter(Boolean)
-        .map((company) => ({
-          id: company.id,
-          name: company.name,
-          ticker: company.ticker ?? null,
-          market: company.country,
-          sector: company.sector,
-          dart_corp_code: company.corpCode ?? null,
-          sec_cik: company.cik ?? null,
-          updated_at: nowIso(),
-        }));
+      const companyRows = companyRowsForPrices(normalizedRows);
       if (companyRows.length) {
         await upsertRows('companies', companyRows, ['id']);
       }
