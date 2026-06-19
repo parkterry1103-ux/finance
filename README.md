@@ -2915,23 +2915,24 @@ production domain:
 
 `IndustryReport` metadata:
 
-- 기본 식별 정보: `id`, `title`, `firm`, `industry`, `publishedYear`, `url`
+- 기본 식별 정보: `id`, `slug`, `title`, `firm`, `industry`, `publishedYear`, `publishedAt`, `publishedLabel`, `url`
 - 접근·검증 정보: `accessType`, `sourceNote`, `statusNote`, `lastCheckedAt`
 - 해석 정보: `summaryBullets`, `keyIdeas`, `howToUse`
 - 연결 정보: `relatedMaps`, `relatedPicks`, `relatedCompanies`
 
 `accessType` 정책:
 
-- `public`: 로그인 없이 본문 또는 PDF가 바로 열리는 자료입니다. 짧은 해석형 요약과 원문 링크를 표시합니다.
-- `free-login`: 이메일 입력, 회원가입, 로그인, 다운로드 폼이 필요한 자료입니다. 자동 접근하지 않고 `사용자 확인 후 요약 가능`으로 표시합니다.
-- `restricted`: 유료, 비공개, 회원 전용, 재배포 제한 자료입니다. 기본 공개 목록과 요약에서 제외합니다.
-- `dead-link`: 링크가 깨졌거나 접근할 수 없는 자료입니다. 요약을 늘리지 않고 대체 공개 출처를 찾습니다.
+- `public`: 로그인 없이 본문 또는 PDF가 바로 열리는 자료입니다. 홈페이지에는 이 상태의 보고서만 표시합니다.
+- `free-login`: 이메일 입력, 회원가입, 로그인, 다운로드 폼이 필요한 자료입니다. 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
+- `restricted`: 유료, 비공개, 회원 전용, 재배포 제한 자료입니다. 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
+- `dead-link`: 링크가 깨졌거나 접근할 수 없는 자료입니다. 사이트에 표시하지 않고 대체 공개 출처가 필요하다고 별도로 보고합니다.
 
 로그인 필요 자료 처리:
 
 - 자동 로그인, 쿠키/session 저장, 우회 다운로드를 하지 않습니다.
 - 사용자가 직접 받은 PDF 또는 로그인 없는 공개 링크를 제공한 경우에만 접근 상태와 공개 가능 범위를 다시 확인합니다.
 - 유료·비공개 원문은 사이트 공개 요약에 사용하지 않습니다.
+- 홈페이지에는 `public` 보고서만 노출합니다. 무료 로그인, 이메일 입력, 유료, 비공개, 링크 오류 자료는 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
 
 원문 정책:
 
@@ -2961,11 +2962,23 @@ production domain:
 
 - 공개 보고서 source 추가
 - `free-login` 보고서 사용자 확인 워크플로우
-- 보고서 상세 route `/ko/reports/:reportId`
 - 보고서 검색/필터
 - 보고서 freshness check
 - source validation script
 - 산업 보고서 기반 Pick 작성 루틴 자동화
+
+### 산업 보고서 서재 UI 정리 및 재건/인프라 지도 통일
+
+확인 일시: 2026-06-19
+
+- `/ko/reports`의 큰 접근 상태 안내 섹션을 제거하고, 개별 공개 보고서의 작은 상태 badge만 유지했습니다.
+- 서재 hero의 navy 톤은 유지하면서 제목은 흰색, 본문은 밝은 slate, 보조 문구는 밝은 blue로 대비를 높였습니다.
+- 보고서 metadata에 상세 route용 `slug`와 `publishedAt`, `publishedLabel`을 추가했습니다. 공식 출처에서 월을 확인할 수 있는 경우에만 연월을 표시하고, 명확하지 않으면 연도만 표시합니다.
+- `/ko/reports/:reportId` 상세 route는 `public` 보고서만 렌더링하며 요약, 산업 시야, 활용 방법, 시장지도/Pick, 공식 원문을 연결합니다.
+- 재건/인프라 지도는 `hero -> 선택 기업 pill -> 선택 기업/같이 볼 회사 2열 -> compact 5단계 -> 전체 연결 보기 -> 관련 보고서` 순서로 통일했습니다.
+- 현대건설은 `Pick only`와 `관련 Pick 보기`만 유지합니다. 다른 reference 기업에는 기업해설이나 숫자 CTA를 만들지 않습니다.
+- ReactFlow 19개 노드는 기본 화면에서 숨기고 `전체 연결 보기`를 눌렀을 때만 렌더링합니다.
+- 로컬 QA에서 서재·상세·세 시장지도·재건 query·연결 Pick을 390px로 확인했으며 모두 overflow `0`이었습니다.
 
 ## MVP QA 원칙
 

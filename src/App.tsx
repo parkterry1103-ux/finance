@@ -667,7 +667,9 @@ function marketMapPath() {
 }
 
 function reportsPath(reportId?: string) {
-  return reportId ? `/ko/reports#${encodeURIComponent(reportId)}` : '/ko/reports';
+  if (!reportId) return '/ko/reports';
+  const report = industryReports.find((item) => item.id === reportId || item.slug === reportId);
+  return `/ko/reports/${encodeURIComponent(report?.slug ?? reportId)}`;
 }
 
 function picksPath(pick?: StockAutopsyPick) {
@@ -3523,11 +3525,11 @@ function ReportAccessBadge({ accessType }: { accessType: IndustryReportAccessTyp
 }
 
 function reportsForMap(mapId: string) {
-  return industryReports.filter((report) => report.accessType !== 'restricted' && report.relatedMaps.includes(mapId));
+  return industryReports.filter((report) => report.accessType === 'public' && report.relatedMaps.includes(mapId));
 }
 
 function reportsForPick(pickId: string) {
-  return industryReports.filter((report) => report.accessType !== 'restricted' && report.relatedPicks.includes(pickId));
+  return industryReports.filter((report) => report.accessType === 'public' && report.relatedPicks.includes(pickId));
 }
 
 type RelatedIndustryReportsProps = {
@@ -3555,17 +3557,13 @@ function RelatedIndustryReports({ title, description, reports, onOpenReports }: 
               <ReportAccessBadge accessType={report.accessType} />
             </div>
             <strong>{report.title}</strong>
-            {report.accessType === 'free-login' ? <p>사용자 확인 후 요약 가능합니다.</p> : <p>{report.keyIdeas[0]}</p>}
+            <p>{report.keyIdeas[0]}</p>
             <div className="related-industry-report-actions">
               <button type="button" onClick={() => onOpenReports(report.id)}>보고서 요약 보기</button>
-              {report.accessType === 'dead-link' || report.accessType === 'restricted' ? (
-                <span aria-disabled="true">원문 확인 불가</span>
-              ) : (
-                <a href={report.url} target="_blank" rel="noreferrer">
-                  원문 보기
-                  <ExternalLink size={13} />
-                </a>
-              )}
+              <a href={report.url} target="_blank" rel="noreferrer">
+                원문 보기
+                <ExternalLink size={13} />
+              </a>
             </div>
           </article>
         ))}
@@ -3578,11 +3576,12 @@ type IndustryReportsPageProps = {
   onHome: () => void;
   onOpenMarketMap: () => void;
   onOpenCategory: (sectorId: string) => void;
+  onOpenReport: (reportId: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
 };
 
-function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPick }: IndustryReportsPageProps) {
-  const visibleReports = industryReports.filter((report) => report.accessType !== 'restricted');
+function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenReport, onOpenPick }: IndustryReportsPageProps) {
+  const visibleReports = industryReports.filter((report) => report.accessType === 'public');
   const mapConnections = Object.entries(reportMapLabels).map(([mapId, label]) => ({
     mapId,
     label,
@@ -3604,7 +3603,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPi
 
       <main>
         <section className="industry-reports-hero">
-          <p className="home-kicker">산업 흐름을 넓게 보는 참고 서재</p>
+          <p className="home-kicker industry-reports-kicker">산업 흐름을 넓게 보는 참고 서재</p>
           <div className="industry-reports-hero-mark" aria-hidden="true"><BookOpen size={30} /></div>
           <h1>산업 보고서 서재</h1>
           <p>뉴스는 사건을 보여주고, 공시는 숫자를 보여줍니다. 산업 보고서는 그 사건과 숫자가 어떤 시장 흐름 안에 있는지 넓게 보는 데 도움을 줍니다.</p>
@@ -3638,21 +3637,14 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPi
                 <article className="industry-report-card" id={report.id} key={report.id}>
                   <div className="industry-report-card-topline">
                     <span>{report.firm}</span>
-                    <span>{report.publishedYear ?? '연도 확인 필요'}</span>
+                    <span>{report.publishedLabel ?? report.publishedYear ?? '발행 시점 확인 필요'}</span>
                     <ReportAccessBadge accessType={report.accessType} />
                   </div>
                   <span className="industry-report-field">{report.industry}</span>
                   <h3>{report.title}</h3>
-                  {report.accessType === 'free-login' ? (
-                    <div className="industry-report-login-note">
-                      <Lock size={16} />
-                      <p>원문 접근: 무료 로그인 필요. 사용자 확인 후 요약 가능합니다.</p>
-                    </div>
-                  ) : (
-                    <ul className="industry-report-summary">
-                      {report.summaryBullets.slice(0, 3).map((bullet) => <li key={bullet}>{bullet}</li>)}
-                    </ul>
-                  )}
+                  <ul className="industry-report-summary">
+                    {report.summaryBullets.slice(0, 3).map((bullet) => <li key={bullet}>{bullet}</li>)}
+                  </ul>
                   <div className="industry-report-insight">
                     <span>이 보고서에서 얻을 시야</span>
                     <p>{report.keyIdeas[0]}</p>
@@ -3674,33 +3666,17 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPi
                     ) : null}
                   </div>
                   <div className="industry-report-actions">
-                    {report.accessType === 'dead-link' || report.accessType === 'restricted' ? (
-                      <span aria-disabled="true">링크 확인 필요</span>
-                    ) : (
-                      <a href={report.url} target="_blank" rel="noreferrer">
-                        원문 보기
-                        <ExternalLink size={14} />
-                      </a>
-                    )}
+                    <button type="button" onClick={() => onOpenReport(report.id)}>보고서 자세히 보기</button>
+                    <a href={report.url} target="_blank" rel="noreferrer">
+                      원문 보기
+                      <ExternalLink size={14} />
+                    </a>
                     <small>마지막 확인 {report.lastCheckedAt}</small>
                   </div>
                   {report.sourceNote ? <p className="industry-report-source-note">{report.sourceNote}</p> : null}
                 </article>
               );
             })}
-          </div>
-        </section>
-
-        <section className="industry-report-access-guide" aria-labelledby="industry-report-access-title">
-          <div className="industry-report-section-head">
-            <span>접근 상태 안내</span>
-            <h2 id="industry-report-access-title">열리는 방식까지 투명하게 표시합니다</h2>
-          </div>
-          <div className="industry-report-access-grid">
-            <article><ReportAccessBadge accessType="public" /><p>로그인 없이 열리는 공개 본문 또는 PDF만 요약합니다.</p></article>
-            <article><ReportAccessBadge accessType="free-login" /><p>자동 접근하지 않고, 사용자가 PDF나 공개 링크를 제공한 뒤 반영합니다.</p></article>
-            <article><ReportAccessBadge accessType="restricted" /><p>유료·비공개·회원 전용 자료는 공개 목록과 요약에서 제외합니다.</p></article>
-            <article><ReportAccessBadge accessType="dead-link" /><p>깨진 링크는 요약을 늘리지 않고 대체 공개 출처를 찾습니다.</p></article>
           </div>
         </section>
 
@@ -3719,6 +3695,115 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPi
               </article>
             ))}
           </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+type IndustryReportDetailPageProps = {
+  report?: IndustryReport;
+  onHome: () => void;
+  onOpenReports: () => void;
+  onOpenCategory: (sectorId: string) => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
+};
+
+function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategory, onOpenPick }: IndustryReportDetailPageProps) {
+  if (!report) {
+    return (
+      <div className="pick-shell story-dark-shell industry-reports-shell">
+        <header className="pick-nav">
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenReports}>보고서 서재</button>
+        </header>
+        <main className="pick-empty industry-report-detail-empty">
+          <h1>보고서를 찾을 수 없습니다.</h1>
+          <p>공개 상태로 등록된 보고서인지 확인해주세요.</p>
+          <button type="button" onClick={onOpenReports}>산업 보고서 서재 보기</button>
+        </main>
+      </div>
+    );
+  }
+
+  const relatedPickItems = report.relatedPicks
+    .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+
+  return (
+    <div className="pick-shell story-dark-shell industry-reports-shell industry-report-detail-shell">
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo"><Network size={20} /></span>
+          <strong>주가해부실</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onOpenReports}>보고서 서재</button>
+          <button type="button" onClick={onHome}>홈</button>
+        </nav>
+      </header>
+
+      <main className="industry-report-detail-main">
+        <section className="industry-report-detail-hero">
+          <p className="home-kicker">{report.firm} · 산업 보고서</p>
+          <div className="industry-report-detail-meta">
+            <span>{report.publishedLabel ?? report.publishedYear ?? '발행 시점 확인 필요'}</span>
+            <ReportAccessBadge accessType={report.accessType} />
+          </div>
+          <h1>{report.title}</h1>
+          <p>{report.industry}</p>
+          <small>산업 구조를 넓게 보는 참고 자료이며, 공식 재무 숫자나 투자 추천을 대신하지 않습니다.</small>
+        </section>
+
+        <section className="industry-report-detail-grid">
+          <article className="industry-report-detail-card">
+            <span>3줄 요약</span>
+            <h2>먼저 읽을 핵심</h2>
+            <ul>
+              {report.summaryBullets.slice(0, 3).map((bullet) => <li key={bullet}>{bullet}</li>)}
+            </ul>
+          </article>
+          <article className="industry-report-detail-card">
+            <span>이 보고서에서 얻을 시야</span>
+            <h2>산업 구조로 읽기</h2>
+            <ul>
+              {report.keyIdeas.map((idea) => <li key={idea}>{idea}</li>)}
+            </ul>
+          </article>
+          <article className="industry-report-detail-card">
+            <span>어떻게 사용할까</span>
+            <h2>공시와 함께 확인하기</h2>
+            <ul>
+              {report.howToUse.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+          </article>
+          <article className="industry-report-detail-card industry-report-detail-connections">
+            <span>연결해서 보기</span>
+            <h2>시장지도와 Pick</h2>
+            <div>
+              {report.relatedMaps.map((mapId) => (
+                <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>
+              ))}
+            </div>
+            {relatedPickItems.length ? (
+              <div>
+                {relatedPickItems.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}
+              </div>
+            ) : null}
+            <p>{report.relatedCompanies.join(' · ')}</p>
+          </article>
+        </section>
+
+        <section className="industry-report-detail-source">
+          <div>
+            <span>공식 공개 원문</span>
+            <strong>{report.sourceNote}</strong>
+            <small>마지막 접근 확인 {report.lastCheckedAt}</small>
+          </div>
+          <a href={report.url} target="_blank" rel="noreferrer">
+            원문 보기
+            <ExternalLink size={15} />
+          </a>
         </section>
       </main>
     </div>
@@ -3823,13 +3908,6 @@ function ReconstructionInfrastructurePage({
   const selectedPrice = relatedPick
     ? getPriceForPick(relatedPick, marketPrices)
     : getPriceForTicker(selectedCompany.ticker, selectedCompany.id, marketPrices);
-  const candidatePrices = useMemo(
-    () => new Map(map.companies.map((company) => [
-      company.id,
-      getPriceForTicker(company.ticker, company.id, marketPrices),
-    ])),
-    [map.companies, marketPrices],
-  );
   const graphNodes = useMemo<Node[]>(
     () => map.graphNodes.map((node) => ({
       id: node.id,
@@ -3879,78 +3957,78 @@ function ReconstructionInfrastructurePage({
           <strong>{map.hero.note}</strong>
         </section>
 
-        <section className="reconstruction-company-card" aria-label={`선택 기업 ${selectedCompany.name}`}>
-          <div className="reconstruction-company-head">
-            <div className="reconstruction-company-mark" aria-hidden="true">{selectedCompany.mark}</div>
-            <div>
-              <span>선택 기업</span>
-              <h2>{selectedCompany.name}</h2>
-              <small>{selectedCompany.ticker} · {selectedCompany.exchange}</small>
-            </div>
-            <em>{selectedCompany.status}</em>
-          </div>
-          <div className="reconstruction-company-role">{selectedCompany.role}</div>
-          <div className="reconstruction-company-body">
-            <div>
-              <span>이 회사는 뭐 해요?</span>
-              <p>{selectedCompany.description}</p>
-            </div>
-            <div>
-              <span>왜 이 흐름에 있나요?</span>
-              <p>{selectedCompany.reason}</p>
-            </div>
-            <div>
-              <span>같이 볼 회사</span>
-              <p>{relatedCompanies.map((company) => company.name).join(', ')}</p>
-            </div>
-            <div>
-              <span>확인할 점</span>
-              <ul>
-                {selectedCompany.checks.map((check) => <li key={check}>{check}</li>)}
-              </ul>
-            </div>
-          </div>
-          <div className="reconstruction-company-actions">
-            <PriceBadge price={selectedPrice} compact />
-            {relatedPick && (
-              <button type="button" className="primary" onClick={() => onOpenPick(relatedPick)}>
-                관련 Pick 보기
-                <ArrowRight size={15} />
-              </button>
-            )}
-            {!relatedPick && <span className="reconstruction-reference-action">시장 흐름 참고</span>}
-          </div>
-        </section>
+        <div className="reconstruction-selected-pill" aria-label="현재 선택 기업">
+          <span>선택 기업</span>
+          <strong>{selectedCompany.name}</strong>
+          <em>{selectedCompany.status}</em>
+        </div>
 
-        <section className="reconstruction-related" aria-labelledby="reconstruction-related-title">
-          <div className="reconstruction-section-head">
-            <span>같이 볼 회사</span>
-            <h2 id="reconstruction-related-title">{selectedCompany.name}과 같이 볼 회사</h2>
-            <p>{map.relatedNote}</p>
-          </div>
-          <div className="reconstruction-related-grid">
-            {relatedCompanies.map((company) => (
-              <article key={company.id}>
-                <div className="reconstruction-related-head">
-                  <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
-                  <div>
-                    <strong>{company.name}</strong>
-                    <small>{company.ticker} · {company.exchange}</small>
-                  </div>
-                </div>
-                <div className="reconstruction-related-meta">
-                  <span>{company.role}</span>
-                  <em>{company.status}</em>
-                </div>
-                <p>{company.description}</p>
-                <PriceBadge price={candidatePrices.get(company.id)} compact />
-                <button type="button" onClick={() => onSelectCompany(company.id)}>
-                  시장 흐름에서 보기
-                  <ArrowRight size={14} />
+        <section className="reconstruction-focus-grid" aria-label="선택 기업과 같이 볼 회사">
+          <article className="reconstruction-company-card" aria-label={`선택 기업 ${selectedCompany.name}`}>
+            <div className="reconstruction-company-head">
+              <div className="reconstruction-company-mark" aria-hidden="true">{selectedCompany.mark}</div>
+              <div>
+                <span>선택한 기업</span>
+                <h2>{selectedCompany.name}</h2>
+                <small>{selectedCompany.ticker} · {selectedCompany.exchange}</small>
+              </div>
+            </div>
+            <div className="reconstruction-company-badges">
+              <em>{selectedCompany.status}</em>
+              <span>{selectedCompany.role}</span>
+            </div>
+            <div className="reconstruction-company-body">
+              <div>
+                <span>이 회사는 뭐 해요?</span>
+                <p>{selectedCompany.description}</p>
+              </div>
+              <div>
+                <span>왜 이 흐름에 있나요?</span>
+                <p>{selectedCompany.reason}</p>
+              </div>
+            </div>
+            <div className="reconstruction-company-actions">
+              <PriceBadge price={selectedPrice} compact />
+              {relatedPick ? (
+                <button type="button" className="primary" onClick={() => onOpenPick(relatedPick)}>
+                  관련 Pick 보기
+                  <ArrowRight size={15} />
                 </button>
-              </article>
-            ))}
-          </div>
+              ) : (
+                <span className="reconstruction-reference-action">시장 흐름 참고</span>
+              )}
+            </div>
+          </article>
+
+          <section className="reconstruction-related" aria-labelledby="reconstruction-related-title">
+            <div className="reconstruction-section-head">
+              <span>같이 볼 회사</span>
+              <h2 id="reconstruction-related-title">{selectedCompany.name}과 같이 볼 회사</h2>
+              <p>{map.relatedNote}</p>
+            </div>
+            <div className="reconstruction-related-grid">
+              {relatedCompanies.map((company) => (
+                <article key={company.id}>
+                  <div className="reconstruction-related-head">
+                    <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
+                    <div>
+                      <strong>{company.name}</strong>
+                      <small>{company.ticker} · {company.exchange}</small>
+                    </div>
+                  </div>
+                  <div className="reconstruction-related-meta">
+                    <span>{company.role}</span>
+                    <em>{company.status}</em>
+                  </div>
+                  <p>{company.description}</p>
+                  <button type="button" onClick={() => onSelectCompany(company.id)}>
+                    시장 흐름에서 보기
+                    <ArrowRight size={14} />
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
         </section>
 
         <section className="reconstruction-compact-flow" aria-labelledby="reconstruction-flow-title">
@@ -5580,6 +5658,7 @@ function App() {
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
   const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
   const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
+  const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
     (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) : null) ??
@@ -5590,6 +5669,10 @@ function App() {
   const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
   const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
   const routeCategoryCompanyId = routeCategoryId ? resolveCategoryRouteCompanyId(routeParams.get('company')) ?? undefined : undefined;
+  const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
+  const routeIndustryReport = routeReportSlug
+    ? industryReports.find((report) => report.accessType === 'public' && (report.slug === routeReportSlug || report.id === routeReportSlug))
+    : undefined;
   const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
   const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
@@ -5599,7 +5682,7 @@ function App() {
   const isPickArchiveRoute = Boolean(routePickArchiveMatch);
   const isPicksRoute = isPickArchiveRoute || Boolean(routePickMatch);
   const isMarketMapRoute = Boolean(routeMarketMapMatch);
-  const isReportsRoute = Boolean(routeReportsMatch);
+  const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -6180,12 +6263,25 @@ function App() {
     return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} onOpenReports={openReports} />;
   }
 
-  if (isReportsRoute) {
+  if (routeReportDetailMatch) {
+    return (
+      <IndustryReportDetailPage
+        report={routeIndustryReport}
+        onHome={openHome}
+        onOpenReports={() => openReports()}
+        onOpenCategory={openCategory}
+        onOpenPick={openPick}
+      />
+    );
+  }
+
+  if (routeReportsMatch) {
     return (
       <IndustryReportsPage
         onHome={openHome}
         onOpenMarketMap={openMarketMapLibrary}
         onOpenCategory={openCategory}
+        onOpenReport={openReports}
         onOpenPick={openPick}
       />
     );

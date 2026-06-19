@@ -194,10 +194,13 @@ export interface SourcePolicy {
 
 export interface IndustryReport {
   id: string;
+  slug: string;
   title: string;
   firm: 'PwC' | 'KPMG' | 'Deloitte' | 'EY' | 'McKinsey' | 'BCG' | 'Other';
   industry: string;
   publishedYear?: string;
+  publishedAt?: string;
+  publishedLabel?: string;
   url: string;
   accessType: IndustryReportAccessType;
   sourceNote?: string;
@@ -8050,10 +8053,13 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
 export const industryReports: IndustryReport[] = [
   {
     id: 'mckinsey-cost-of-compute-2025',
+    slug: 'mckinsey-cost-of-compute-data-centers',
     title: 'The cost of compute: A $7 trillion race to scale data centers',
     firm: 'McKinsey',
     industry: 'AI 데이터센터 / 전력·냉각',
     publishedYear: '2025',
+    publishedAt: '2025-04-28',
+    publishedLabel: '2025년 4월',
     url: 'https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/the-cost-of-compute-a-7-trillion-dollar-race-to-scale-data-centers',
     accessType: 'public',
     sourceNote: 'McKinsey 공개 웹 본문과 공개 PDF를 기준으로 확인했습니다.',
@@ -8081,10 +8087,13 @@ export const industryReports: IndustryReport[] = [
   },
   {
     id: 'pwc-state-semiconductor-industry-2024',
+    slug: 'pwc-state-of-semiconductor-industry',
     title: 'State of the semiconductor industry',
     firm: 'PwC',
     industry: 'AI 반도체 / HBM / 공급망',
     publishedYear: '2024',
+    publishedAt: '2024-11-28',
+    publishedLabel: '2024년 11월',
     url: 'https://www.pwc.com/gx/en/industries/technology/state-of-the-semicon-industry.html',
     accessType: 'public',
     sourceNote: 'PwC 공개 웹 보고서와 연결된 공개 PDF를 기준으로 확인했습니다.',
@@ -8108,10 +8117,13 @@ export const industryReports: IndustryReport[] = [
   },
   {
     id: 'deloitte-engineering-construction-outlook-2025',
+    slug: 'deloitte-engineering-construction-outlook-2025',
     title: '2025 Engineering and Construction Industry Outlook',
     firm: 'Deloitte',
     industry: '건설 / 제조시설 / 인프라',
     publishedYear: '2025',
+    publishedAt: '2024-11-04',
+    publishedLabel: '2024년 11월',
     url: 'https://www.deloitte.com/us/en/insights/industry/engineering-and-construction/engineering-and-construction-industry-outlook/2025.html',
     accessType: 'public',
     sourceNote: 'Deloitte 공개 웹 본문과 공개 다운로드 링크를 기준으로 확인했습니다.',
@@ -8135,10 +8147,12 @@ export const industryReports: IndustryReport[] = [
   },
   {
     id: 'kpmg-global-construction-survey-2025-2026',
+    slug: 'kpmg-global-construction-survey',
     title: 'Global construction survey 2025/2026: The paradox of progress',
     firm: 'KPMG',
     industry: '글로벌 건설 / 프로젝트 수행',
     publishedYear: '2026',
+    publishedLabel: '2026년',
     url: 'https://kpmg.com/xx/en/our-insights/operations/global-construction-survey.html',
     accessType: 'public',
     sourceNote: 'KPMG 공개 웹 본문과 로그인 없는 공개 PDF 링크를 기준으로 확인했습니다.',
@@ -8199,7 +8213,7 @@ export const reconstructionInfrastructureMap = {
       exchange: 'KOSPI',
       mark: 'SCT',
       status: '시장 흐름 참고',
-      role: '건설 / EPC / 인프라',
+      role: '대형 건설 / EPC',
       description: '대형 건설·인프라 프로젝트 흐름에서 현대건설과 함께 참고할 수 있는 국내 건설사입니다.',
       reason: '대형 인프라 발주와 EPC 수주 경쟁을 비교할 때 함께 확인하는 참고 기업입니다.',
       checks: ['프로젝트가 실제 발주되는가', '실제 수주 여부가 확인되는가', '수주가 매출과 공사 마진으로 이어지는가'],
@@ -8212,7 +8226,7 @@ export const reconstructionInfrastructureMap = {
       exchange: 'KOSPI',
       mark: 'DEC',
       status: '시장 흐름 참고',
-      role: '해외 건설 / 플랜트 / 인프라',
+      role: '해외 건설 / 플랜트',
       description: '해외 건설과 플랜트 수주 흐름에서 함께 비교할 수 있는 건설사입니다.',
       reason: '재건 기대가 실제 해외 건설·플랜트 발주와 수주 경쟁으로 이어지는지 비교하기 위한 참고 기업입니다.',
       checks: ['해외 발주가 실제로 나오는가', '수주 공시와 계약 조건이 확인되는가', '원가와 공사 마진이 유지되는가'],
@@ -8225,7 +8239,7 @@ export const reconstructionInfrastructureMap = {
       exchange: 'KOSPI',
       mark: 'HDI',
       status: '시장 흐름 참고',
-      role: '건설장비 / 중장비',
+      role: '건설장비',
       description: '재건 프로젝트가 실제 공사로 이어질 때 필요한 건설장비 흐름에서 함께 볼 수 있습니다.',
       reason: '발주와 착공 이후 건설장비 수요가 실제 주문과 매출로 이어지는지 확인하는 참고 기업입니다.',
       checks: ['프로젝트가 실제 착공되는가', '건설장비 주문과 판매가 늘어나는가', '장비 매출과 마진이 확인되는가'],
@@ -8238,7 +8252,7 @@ export const reconstructionInfrastructureMap = {
       exchange: 'KOSPI',
       mark: 'POSCO',
       status: '시장 흐름 참고',
-      role: '철강 / 건자재 / 인프라 소재',
+      role: '철강 / 인프라 소재',
       description: '도로, 항만, 플랜트 같은 인프라 공사에는 철강과 소재 수요도 함께 확인됩니다.',
       reason: '인프라 공사가 실제 자재 조달로 이어질 때 철강 수요와 가격 흐름을 함께 보기 위한 참고 기업입니다.',
       checks: ['인프라 소재 수요가 실제로 늘어나는가', '철강 판매량과 가격이 확인되는가', '매출과 현금흐름으로 이어지는가'],
@@ -8258,7 +8272,7 @@ export const reconstructionInfrastructureMap = {
       pickId: null,
     },
   ],
-  relatedNote: '아래 관계는 직접 계약 관계가 아니라, 재건 기대감이 시장에서 어떻게 해석되는지 보여주는 흐름입니다.',
+  relatedNote: '관계는 시장 흐름을 이용합니다. 직접 계약 여부는 공시·IR로 따로 확인합니다.',
   flowSteps: [
     {
       title: '종전 기대감',
