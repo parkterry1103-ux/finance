@@ -44,6 +44,7 @@ export type StockAutopsyValueChainPosition =
   | 'other';
 export type MarketStatus = 'open' | 'closed' | 'premarket' | 'afterhours' | 'delayed' | 'unknown';
 export type PriceLabel = 'latest' | 'close' | 'delayed' | 'fallback' | 'unavailable';
+export type IndustryReportAccessType = 'public' | 'free-login' | 'restricted' | 'dead-link';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -189,6 +190,25 @@ export interface SourcePolicy {
   label: string;
   domains: string[];
   note: string;
+}
+
+export interface IndustryReport {
+  id: string;
+  title: string;
+  firm: 'PwC' | 'KPMG' | 'Deloitte' | 'EY' | 'McKinsey' | 'BCG' | 'Other';
+  industry: string;
+  publishedYear?: string;
+  url: string;
+  accessType: IndustryReportAccessType;
+  sourceNote?: string;
+  summaryBullets: string[];
+  keyIdeas: string[];
+  howToUse: string[];
+  relatedMaps: string[];
+  relatedPicks: string[];
+  relatedCompanies: string[];
+  statusNote?: string;
+  lastCheckedAt: string;
 }
 
 export interface FilingSourceLink {
@@ -8024,6 +8044,121 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
     cautionSignals: ['전기차 수요 둔화', '소재 가격 하락', '재고 부담 증가'],
     publishedAt: '2026-05-17',
     status: 'published',
+  },
+];
+
+export const industryReports: IndustryReport[] = [
+  {
+    id: 'mckinsey-cost-of-compute-2025',
+    title: 'The cost of compute: A $7 trillion race to scale data centers',
+    firm: 'McKinsey',
+    industry: 'AI 데이터센터 / 전력·냉각',
+    publishedYear: '2025',
+    url: 'https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/the-cost-of-compute-a-7-trillion-dollar-race-to-scale-data-centers',
+    accessType: 'public',
+    sourceNote: 'McKinsey 공개 웹 본문과 공개 PDF를 기준으로 확인했습니다.',
+    summaryBullets: [
+      'AI 연산 수요가 데이터센터 용량 확대를 밀지만, 실제 투자 규모는 AI 활용과 효율 개선 속도에 따라 크게 달라질 수 있습니다.',
+      '투자는 부지·건설, 발전·송전·냉각·전기장비, 반도체·서버 하드웨어처럼 여러 층으로 나뉩니다.',
+      '과잉 투자와 공급 부족 위험이 함께 있어, 프로젝트를 단계별로 집행하고 수요와 수익성을 계속 확인해야 합니다.',
+    ],
+    keyIdeas: [
+      'AI 인프라는 GPU만이 아니라 전력망, 냉각, 건설, 서버까지 이어지는 자본 집약적 생태계입니다.',
+      '효율이 좋아져도 AI 사용량이 더 빠르게 늘면 전체 연산 수요는 계속 커질 수 있습니다.',
+    ],
+    howToUse: [
+      '반도체 기업은 출하·마진, 전력·냉각 기업은 수주·백로그, 건설 기업은 프로젝트 집행을 각각 공시로 확인합니다.',
+      '보고서의 장기 수요 시나리오를 특정 기업의 매출 전망이나 투자 추천으로 바꾸어 읽지 않습니다.',
+    ],
+    relatedMaps: ['us-semiconductors', 'datacenter-power-cooling'],
+    relatedPicks: [
+      'pick-smci-ai-server-funding-dilution',
+      'pick-micron-ai-memory-hbm-demand',
+      'pick-lg-electronics-ai-datacenter-cooling',
+    ],
+    relatedCompanies: ['NVIDIA', 'Micron', 'Super Micro Computer', 'Vertiv', 'Eaton', 'Schneider Electric', 'LG전자'],
+    lastCheckedAt: '2026-06-19',
+  },
+  {
+    id: 'pwc-state-semiconductor-industry-2024',
+    title: 'State of the semiconductor industry',
+    firm: 'PwC',
+    industry: 'AI 반도체 / HBM / 공급망',
+    publishedYear: '2024',
+    url: 'https://www.pwc.com/gx/en/industries/technology/state-of-the-semicon-industry.html',
+    accessType: 'public',
+    sourceNote: 'PwC 공개 웹 보고서와 연결된 공개 PDF를 기준으로 확인했습니다.',
+    summaryBullets: [
+      'AI 워크로드 확대로 고대역폭 메모리와 목적별 반도체의 중요성이 커지고 있습니다.',
+      'HBM은 일반 메모리와 달리 기술 장벽과 고객 협업 요구가 높아 메모리·파운드리·패키징을 함께 봐야 합니다.',
+      '각국의 생산 지원은 공급망 복원력을 높일 수 있지만, 동시 증설은 가동률과 가격 경쟁 위험도 만들 수 있습니다.',
+    ],
+    keyIdeas: [
+      'AI 반도체 흐름은 GPU 한 종목이 아니라 HBM, 파운드리, 첨단 패키징, 장비의 연결 구조로 봅니다.',
+      '정책 지원과 공장 증설이 곧바로 수익으로 이어지는 것은 아니며 수율과 가동률이 중요합니다.',
+    ],
+    howToUse: [
+      'Micron·SK하이닉스는 HBM 매출과 마진, TSMC는 첨단 공정 수요, 장비사는 실제 수주 전환을 확인합니다.',
+      '시장 성장률은 산업 배경으로만 쓰고 개별 기업의 공식 가이던스와 혼합하지 않습니다.',
+    ],
+    relatedMaps: ['us-semiconductors'],
+    relatedPicks: ['pick-smci-ai-server-funding-dilution', 'pick-micron-ai-memory-hbm-demand'],
+    relatedCompanies: ['NVIDIA', 'TSMC', 'SK하이닉스', 'Micron', '삼성전자', 'ASML'],
+    lastCheckedAt: '2026-06-19',
+  },
+  {
+    id: 'deloitte-engineering-construction-outlook-2025',
+    title: '2025 Engineering and Construction Industry Outlook',
+    firm: 'Deloitte',
+    industry: '건설 / 제조시설 / 인프라',
+    publishedYear: '2025',
+    url: 'https://www.deloitte.com/us/en/insights/industry/engineering-and-construction/engineering-and-construction-industry-outlook/2025.html',
+    accessType: 'public',
+    sourceNote: 'Deloitte 공개 웹 본문과 공개 다운로드 링크를 기준으로 확인했습니다.',
+    summaryBullets: [
+      '미국 건설 수요는 제조시설·에너지·데이터센터와 정책성 투자에서 상대적으로 지지를 받을 수 있습니다.',
+      '숙련 인력 부족과 높은 공사비는 대형 프로젝트의 일정과 수익성을 흔드는 핵심 변수입니다.',
+      'BIM, 디지털 트윈, 자동화, 모듈화는 인력 제약과 복잡한 프로젝트 관리 부담을 줄이는 도구로 다뤄집니다.',
+    ],
+    keyIdeas: [
+      '발주 기대보다 누가 인력·원가·현금흐름을 관리하며 실제 프로젝트를 끝낼 수 있는지가 중요합니다.',
+      '데이터센터와 반도체 공장 증설은 건설사뿐 아니라 전기·기계 설비와 숙련 인력 수요까지 넓힙니다.',
+    ],
+    howToUse: [
+      '현대건설·삼성물산·대우건설은 수주 공시, 계약 조건, 원가율, 미청구공사를 우선 확인합니다.',
+      '미국 산업 전망을 한국 건설사의 특정 지역 수주 가능성으로 바로 연결하지 않습니다.',
+    ],
+    relatedMaps: ['reconstruction-infrastructure'],
+    relatedPicks: ['pick-hyundai-engineering-reconstruction-expectation'],
+    relatedCompanies: ['현대건설', '삼성물산', '대우건설', 'Caterpillar', 'POSCO홀딩스'],
+    lastCheckedAt: '2026-06-19',
+  },
+  {
+    id: 'kpmg-global-construction-survey-2025-2026',
+    title: 'Global construction survey 2025/2026: The paradox of progress',
+    firm: 'KPMG',
+    industry: '글로벌 건설 / 프로젝트 수행',
+    publishedYear: '2026',
+    url: 'https://kpmg.com/xx/en/our-insights/operations/global-construction-survey.html',
+    accessType: 'public',
+    sourceNote: 'KPMG 공개 웹 본문과 로그인 없는 공개 PDF 링크를 기준으로 확인했습니다.',
+    summaryBullets: [
+      '건설 리더들은 수요를 낙관하면서도 공급망, 규제, 원가와 프로젝트 위험에는 더 신중한 태도를 보입니다.',
+      '디지털 도구만 도입하는 것보다 현장 인력의 역량과 데이터 기반을 함께 갖추는 것이 실행력을 좌우합니다.',
+      '협업 계약, 공급망 디지털화, 오프사이트 제작은 위험을 나누고 납기를 안정시키는 운영 방식으로 주목됩니다.',
+    ],
+    keyIdeas: [
+      '같은 발주 증가 국면에서도 계약 구조와 위험 분담 방식에 따라 건설사의 현금흐름과 마진이 달라질 수 있습니다.',
+      '재건·인프라 테마는 기대보다 인력, 조달, 계약, 실행 능력을 함께 보는 편이 안전합니다.',
+    ],
+    howToUse: [
+      '수주잔고의 크기뿐 아니라 공사 원가, 계약 유형, 현금 회수와 프로젝트 지연을 함께 확인합니다.',
+      '설문 결과는 업계 분위기를 읽는 참고 자료이며 개별 기업의 수주 확률을 뜻하지 않습니다.',
+    ],
+    relatedMaps: ['reconstruction-infrastructure'],
+    relatedPicks: ['pick-hyundai-engineering-reconstruction-expectation'],
+    relatedCompanies: ['현대건설', '삼성물산', '대우건설', 'Caterpillar', 'POSCO홀딩스'],
+    lastCheckedAt: '2026-06-19',
   },
 ];
 

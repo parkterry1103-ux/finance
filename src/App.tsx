@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  BookOpen,
   ChevronDown,
   CircleDollarSign,
   Cloud,
@@ -53,6 +54,9 @@ import {
   FilingSourceStatus,
   FinancialMetric,
   FinancialStatementSummary,
+  IndustryReport,
+  IndustryReportAccessType,
+  industryReports,
   links,
   marketMovers,
   MarketPrice,
@@ -660,6 +664,10 @@ function categoryPath(sectorId: string, selectedCompanyId?: string) {
 
 function marketMapPath() {
   return '/ko/market-map';
+}
+
+function reportsPath(reportId?: string) {
+  return reportId ? `/ko/reports#${encodeURIComponent(reportId)}` : '/ko/reports';
 }
 
 function picksPath(pick?: StockAutopsyPick) {
@@ -3335,6 +3343,7 @@ type StockAutopsyPicksPageProps = {
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenPicks: () => void;
   onOpenPicksArchive: () => void;
+  onOpenReports: (reportId?: string) => void;
   marketPrices: MarketPrice[];
 };
 
@@ -3342,6 +3351,7 @@ type MarketMapLibraryPageProps = {
   onHome: () => void;
   onOpenPicks: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
+  onOpenReports: (reportId?: string) => void;
 };
 
 const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
@@ -3495,7 +3505,227 @@ function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
   return categoryMatch?.[1] ? decodeURIComponent(categoryMatch[1]) : undefined;
 }
 
-function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMapLibraryPageProps) {
+const reportAccessLabels: Record<IndustryReportAccessType, string> = {
+  public: '공개',
+  'free-login': '무료 로그인 필요',
+  restricted: '제한됨',
+  'dead-link': '링크 확인 필요',
+};
+
+const reportMapLabels: Record<string, string> = {
+  'us-semiconductors': 'AI 반도체 / 데이터센터',
+  'datacenter-power-cooling': '데이터센터 냉각 / 전력 인프라',
+  'reconstruction-infrastructure': '재건 / 인프라',
+};
+
+function ReportAccessBadge({ accessType }: { accessType: IndustryReportAccessType }) {
+  return <span className={`industry-report-access ${accessType}`}>{reportAccessLabels[accessType]}</span>;
+}
+
+function reportsForMap(mapId: string) {
+  return industryReports.filter((report) => report.accessType !== 'restricted' && report.relatedMaps.includes(mapId));
+}
+
+function reportsForPick(pickId: string) {
+  return industryReports.filter((report) => report.accessType !== 'restricted' && report.relatedPicks.includes(pickId));
+}
+
+type RelatedIndustryReportsProps = {
+  title: string;
+  description: string;
+  reports: IndustryReport[];
+  onOpenReports: (reportId?: string) => void;
+};
+
+function RelatedIndustryReports({ title, description, reports, onOpenReports }: RelatedIndustryReportsProps) {
+  if (!reports.length) return null;
+
+  return (
+    <section className="related-industry-reports" aria-label={title}>
+      <div className="related-industry-report-head">
+        <span>산업 구조 참고</span>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <div className="related-industry-report-list">
+        {reports.slice(0, 3).map((report) => (
+          <article key={report.id}>
+            <div>
+              <span>{report.firm}</span>
+              <ReportAccessBadge accessType={report.accessType} />
+            </div>
+            <strong>{report.title}</strong>
+            {report.accessType === 'free-login' ? <p>사용자 확인 후 요약 가능합니다.</p> : <p>{report.keyIdeas[0]}</p>}
+            <div className="related-industry-report-actions">
+              <button type="button" onClick={() => onOpenReports(report.id)}>보고서 요약 보기</button>
+              {report.accessType === 'dead-link' || report.accessType === 'restricted' ? (
+                <span aria-disabled="true">원문 확인 불가</span>
+              ) : (
+                <a href={report.url} target="_blank" rel="noreferrer">
+                  원문 보기
+                  <ExternalLink size={13} />
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+type IndustryReportsPageProps = {
+  onHome: () => void;
+  onOpenMarketMap: () => void;
+  onOpenCategory: (sectorId: string) => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
+};
+
+function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenPick }: IndustryReportsPageProps) {
+  const visibleReports = industryReports.filter((report) => report.accessType !== 'restricted');
+  const mapConnections = Object.entries(reportMapLabels).map(([mapId, label]) => ({
+    mapId,
+    label,
+    reports: reportsForMap(mapId),
+  }));
+
+  return (
+    <div className="pick-shell story-dark-shell industry-reports-shell">
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo"><Network size={20} /></span>
+          <strong>주가해부실</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
+        </nav>
+      </header>
+
+      <main>
+        <section className="industry-reports-hero">
+          <p className="home-kicker">산업 흐름을 넓게 보는 참고 서재</p>
+          <div className="industry-reports-hero-mark" aria-hidden="true"><BookOpen size={30} /></div>
+          <h1>산업 보고서 서재</h1>
+          <p>뉴스는 사건을 보여주고, 공시는 숫자를 보여줍니다. 산업 보고서는 그 사건과 숫자가 어떤 시장 흐름 안에 있는지 넓게 보는 데 도움을 줍니다.</p>
+          <small>공개 보고서는 요약과 원문 링크를 연결하고, 로그인이나 유료 접근이 필요한 자료는 사용자 확인 후 반영합니다.</small>
+        </section>
+
+        <section className="industry-reports-why" aria-labelledby="industry-reports-why-title">
+          <div>
+            <span>보고서가 왜 필요한가</span>
+            <h2 id="industry-reports-why-title">숫자를 대신하지 않고, 숫자가 놓인 시장을 봅니다</h2>
+          </div>
+          <div className="industry-reports-principles">
+            <article><strong>공식 숫자</strong><p>SEC, OpenDART, IR, 공시를 먼저 확인합니다.</p></article>
+            <article><strong>산업 구조</strong><p>공개 산업 보고서에서 흐름과 구조를 참고합니다.</p></article>
+            <article><strong>뉴스 이벤트</strong><p>회사 발표, 거래소 공시, 신뢰할 수 있는 보도로 확인합니다.</p></article>
+          </div>
+        </section>
+
+        <section className="industry-report-library" aria-labelledby="industry-report-library-title">
+          <div className="industry-report-section-head">
+            <span>초기 공개 자료 {visibleReports.length}건</span>
+            <h2 id="industry-report-library-title">산업별 보고서</h2>
+            <p>원문의 결론을 투자 추천으로 옮기지 않고, 시장을 이해하는 질문만 남겼습니다.</p>
+          </div>
+          <div className="industry-report-grid">
+            {visibleReports.map((report) => {
+              const relatedPickItems = report.relatedPicks
+                .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
+                .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+              return (
+                <article className="industry-report-card" id={report.id} key={report.id}>
+                  <div className="industry-report-card-topline">
+                    <span>{report.firm}</span>
+                    <span>{report.publishedYear ?? '연도 확인 필요'}</span>
+                    <ReportAccessBadge accessType={report.accessType} />
+                  </div>
+                  <span className="industry-report-field">{report.industry}</span>
+                  <h3>{report.title}</h3>
+                  {report.accessType === 'free-login' ? (
+                    <div className="industry-report-login-note">
+                      <Lock size={16} />
+                      <p>원문 접근: 무료 로그인 필요. 사용자 확인 후 요약 가능합니다.</p>
+                    </div>
+                  ) : (
+                    <ul className="industry-report-summary">
+                      {report.summaryBullets.slice(0, 3).map((bullet) => <li key={bullet}>{bullet}</li>)}
+                    </ul>
+                  )}
+                  <div className="industry-report-insight">
+                    <span>이 보고서에서 얻을 시야</span>
+                    <p>{report.keyIdeas[0]}</p>
+                  </div>
+                  <div className="industry-report-connections">
+                    <div>
+                      <span>연결된 시장지도</span>
+                      <div>{report.relatedMaps.map((mapId) => <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>)}</div>
+                    </div>
+                    <div>
+                      <span>같이 볼 기업</span>
+                      <p>{report.relatedCompanies.slice(0, 6).join(' · ')}</p>
+                    </div>
+                    {relatedPickItems.length ? (
+                      <div>
+                        <span>연결된 Pick</span>
+                        <div>{relatedPickItems.slice(0, 3).map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName}</button>)}</div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="industry-report-actions">
+                    {report.accessType === 'dead-link' || report.accessType === 'restricted' ? (
+                      <span aria-disabled="true">링크 확인 필요</span>
+                    ) : (
+                      <a href={report.url} target="_blank" rel="noreferrer">
+                        원문 보기
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                    <small>마지막 확인 {report.lastCheckedAt}</small>
+                  </div>
+                  {report.sourceNote ? <p className="industry-report-source-note">{report.sourceNote}</p> : null}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="industry-report-access-guide" aria-labelledby="industry-report-access-title">
+          <div className="industry-report-section-head">
+            <span>접근 상태 안내</span>
+            <h2 id="industry-report-access-title">열리는 방식까지 투명하게 표시합니다</h2>
+          </div>
+          <div className="industry-report-access-grid">
+            <article><ReportAccessBadge accessType="public" /><p>로그인 없이 열리는 공개 본문 또는 PDF만 요약합니다.</p></article>
+            <article><ReportAccessBadge accessType="free-login" /><p>자동 접근하지 않고, 사용자가 PDF나 공개 링크를 제공한 뒤 반영합니다.</p></article>
+            <article><ReportAccessBadge accessType="restricted" /><p>유료·비공개·회원 전용 자료는 공개 목록과 요약에서 제외합니다.</p></article>
+            <article><ReportAccessBadge accessType="dead-link" /><p>깨진 링크는 요약을 늘리지 않고 대체 공개 출처를 찾습니다.</p></article>
+          </div>
+        </section>
+
+        <section className="industry-report-map-connections" aria-labelledby="industry-report-map-title">
+          <div className="industry-report-section-head">
+            <span>시장지도와 연결된 보고서</span>
+            <h2 id="industry-report-map-title">보고서에서 다시 시장 흐름으로</h2>
+          </div>
+          <div>
+            {mapConnections.map((connection) => (
+              <article key={connection.mapId}>
+                <span>{connection.reports.length}건 연결</span>
+                <strong>{connection.label}</strong>
+                <p>{connection.reports.map((report) => report.firm).join(' · ')}</p>
+                <button type="button" onClick={() => onOpenCategory(connection.mapId)}>시장지도 보기</button>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenReports }: MarketMapLibraryPageProps) {
   const marketMapItems = currentWeeklyDigest.marketMapItems;
   const openMarketMapItem = (item: (typeof marketMapItems)[number]) => {
     if (item.status !== 'active') return;
@@ -3515,6 +3745,7 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory }: MarketMap
         <nav>
           <button type="button" onClick={onHome}>홈</button>
           <button type="button" onClick={onOpenPicks}>이번 주 Pick</button>
+          <button type="button" onClick={() => onOpenReports()}>보고서</button>
         </nav>
       </header>
 
@@ -3560,6 +3791,7 @@ type ReconstructionInfrastructurePageProps = {
   onOpenMarketMap: () => void;
   onOpenPicks: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
+  onOpenReports: (reportId?: string) => void;
   onSelectCompany: (companyId: string) => void;
   marketPrices: MarketPrice[];
 };
@@ -3570,6 +3802,7 @@ function ReconstructionInfrastructurePage({
   onOpenMarketMap,
   onOpenPicks,
   onOpenPick,
+  onOpenReports,
   onSelectCompany,
   marketPrices,
 }: ReconstructionInfrastructurePageProps) {
@@ -3769,6 +4002,13 @@ function ReconstructionInfrastructurePage({
             </div>
           )}
         </section>
+
+        <RelatedIndustryReports
+          title="산업 보고서로 더 넓게 보기"
+          description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
+          reports={reportsForMap(reconstructionInfrastructureMap.sectorId)}
+          onOpenReports={onOpenReports}
+        />
       </main>
     </div>
   );
@@ -3783,6 +4023,7 @@ function StockAutopsyPicksPage({
   onOpenPick,
   onOpenPicks,
   onOpenPicksArchive,
+  onOpenReports,
   marketPrices,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
@@ -3819,6 +4060,7 @@ function StockAutopsyPicksPage({
     const detailPickPrice = getPriceForPick(detailPick, marketPrices);
     const watchMetricCards = pickWatchMetricCards(detailPick, relatedCompany).slice(0, 3);
     const signalSet = pickSignalSet(detailPick, relatedCompany);
+    const relatedIndustryReports = reportsForPick(detailPick.id).slice(0, 2);
     const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
     const flowLabel = pickFlowLabel(detailPick);
     const flowStage = pickFlowStage(detailPick);
@@ -4019,6 +4261,13 @@ function StockAutopsyPicksPage({
               </article>
             ))}
           </section>
+
+          <RelatedIndustryReports
+            title="이 이슈를 넓게 보면"
+            description="이 Pick은 단기 뉴스에서 시작했지만, 산업 보고서를 보면 어떤 시장 흐름과 연결되는지 더 넓게 볼 수 있습니다."
+            reports={relatedIndustryReports}
+            onOpenReports={onOpenReports}
+          />
 
           <section className="pick-story-drawers" aria-label="더 깊게 보기">
             <details>
@@ -5330,6 +5579,7 @@ function App() {
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
   const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
+  const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
     (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) : null) ??
@@ -5349,6 +5599,7 @@ function App() {
   const isPickArchiveRoute = Boolean(routePickArchiveMatch);
   const isPicksRoute = isPickArchiveRoute || Boolean(routePickMatch);
   const isMarketMapRoute = Boolean(routeMarketMapMatch);
+  const isReportsRoute = Boolean(routeReportsMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -5364,12 +5615,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!isAnalysisRoute || !routeHash) return;
+    if ((!isAnalysisRoute && !isReportsRoute) || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -5817,6 +6068,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openReports(reportId?: string) {
+    window.history.pushState({}, '', reportsPath(reportId));
+    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+  }
+
   function openHome() {
     window.history.pushState({}, '', '/ko/');
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -5914,13 +6170,25 @@ function App() {
         onOpenPick={openPick}
         onOpenPicks={openPicks}
         onOpenPicksArchive={openPicksArchive}
+        onOpenReports={openReports}
         marketPrices={marketPrices}
       />
     );
   }
 
   if (isMarketMapRoute) {
-    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} />;
+    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} onOpenReports={openReports} />;
+  }
+
+  if (isReportsRoute) {
+    return (
+      <IndustryReportsPage
+        onHome={openHome}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenCategory={openCategory}
+        onOpenPick={openPick}
+      />
+    );
   }
 
   if (isReconstructionInfrastructureRoute) {
@@ -5932,6 +6200,7 @@ function App() {
           onOpenMarketMap={openMarketMapLibrary}
           onOpenPicks={openPicks}
           onOpenPick={openPick}
+          onOpenReports={openReports}
           onSelectCompany={openReconstructionCompany}
           marketPrices={marketPrices}
         />
@@ -6789,6 +7058,15 @@ function App() {
                 <button type="button" onClick={() => openCategory(aiRelationshipSectorId)}>AI 반도체 지도 보기</button>
               </div>
             </section>
+          )}
+
+          {isStoryMarketMap && (
+            <RelatedIndustryReports
+              title="산업 보고서로 더 넓게 보기"
+              description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
+              reports={reportsForMap(selectedSector.id)}
+              onOpenReports={openReports}
+            />
           )}
 
           {shouldShowRelationshipCanvas && (

@@ -2905,6 +2905,68 @@ production domain:
 - 코드 기능 변경 없이 이 README 기록 커밋을 push해 GitHub main push webhook을 다시 발생시킵니다.
 - push 후 `Production – finance1` deployment가 새 commit으로 생성되는지 확인하고, `finance1-flax.vercel.app` asset 및 새 route를 다시 확인합니다.
 
+### 산업 보고서 서재 추가
+
+확인 일시: 2026-06-19
+
+새 route:
+
+- `/ko/reports`: 공개 산업 보고서를 짧게 요약하고 시장지도와 Pick으로 다시 연결하는 서재입니다.
+
+`IndustryReport` metadata:
+
+- 기본 식별 정보: `id`, `title`, `firm`, `industry`, `publishedYear`, `url`
+- 접근·검증 정보: `accessType`, `sourceNote`, `statusNote`, `lastCheckedAt`
+- 해석 정보: `summaryBullets`, `keyIdeas`, `howToUse`
+- 연결 정보: `relatedMaps`, `relatedPicks`, `relatedCompanies`
+
+`accessType` 정책:
+
+- `public`: 로그인 없이 본문 또는 PDF가 바로 열리는 자료입니다. 짧은 해석형 요약과 원문 링크를 표시합니다.
+- `free-login`: 이메일 입력, 회원가입, 로그인, 다운로드 폼이 필요한 자료입니다. 자동 접근하지 않고 `사용자 확인 후 요약 가능`으로 표시합니다.
+- `restricted`: 유료, 비공개, 회원 전용, 재배포 제한 자료입니다. 기본 공개 목록과 요약에서 제외합니다.
+- `dead-link`: 링크가 깨졌거나 접근할 수 없는 자료입니다. 요약을 늘리지 않고 대체 공개 출처를 찾습니다.
+
+로그인 필요 자료 처리:
+
+- 자동 로그인, 쿠키/session 저장, 우회 다운로드를 하지 않습니다.
+- 사용자가 직접 받은 PDF 또는 로그인 없는 공개 링크를 제공한 경우에만 접근 상태와 공개 가능 범위를 다시 확인합니다.
+- 유료·비공개 원문은 사이트 공개 요약에 사용하지 않습니다.
+
+원문 정책:
+
+- 원문 보고서나 PDF를 repo와 public asset에 복사하지 않습니다.
+- 사이트에는 짧은 요약, 활용 질문, 공식 원문 외부 링크만 저장합니다.
+- 공식 재무 숫자는 계속 SEC, OpenDART, IR, 공시를 우선하며 산업 보고서가 숫자를 대체하지 않습니다.
+- 산업 전망을 개별 종목의 추천, 수혜 확정, 주가 전망으로 바꾸어 쓰지 않습니다.
+
+초기 공개 보고서 4건:
+
+- McKinsey, `The cost of compute: A $7 trillion race to scale data centers` (`public`)
+- PwC, `State of the semiconductor industry` (`public`)
+- Deloitte, `2025 Engineering and Construction Industry Outlook` (`public`)
+- KPMG, `Global construction survey 2025/2026: The paradox of progress` (`public`)
+
+시장지도/Pick 연결:
+
+- `AI 반도체 / 데이터센터`: McKinsey, PwC
+- `데이터센터 냉각 / 전력 인프라`: McKinsey
+- `재건 / 인프라`: Deloitte, KPMG
+- SMCI와 Micron Pick: AI 인프라·반도체 보고서
+- LG전자 Pick: 데이터센터 전력·냉각 보고서
+- 현대건설 Pick: 건설·인프라 보고서
+- 연결은 report와 map/Pick ID를 metadata에 저장해 제목이 바뀌어도 유지합니다.
+
+남은 TODO:
+
+- 공개 보고서 source 추가
+- `free-login` 보고서 사용자 확인 워크플로우
+- 보고서 상세 route `/ko/reports/:reportId`
+- 보고서 검색/필터
+- 보고서 freshness check
+- source validation script
+- 산업 보고서 기반 Pick 작성 루틴 자동화
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
