@@ -15791,6 +15791,201 @@ body {
   margin-top: 22px;
 }
 
+.evidence-details {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe4f0;
+  border-radius: 18px;
+  color: #172033;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(31, 42, 68, 0.055);
+}
+
+.evidence-details > summary {
+  display: flex;
+  min-width: 0;
+  min-height: 70px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  color: #172033;
+  cursor: pointer;
+  list-style: none;
+}
+
+.evidence-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.evidence-details > summary > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.evidence-details > summary strong {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.evidence-details > summary small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.evidence-details > summary svg {
+  flex: 0 0 auto;
+  color: #64748b;
+  transition: transform 160ms ease;
+}
+
+.evidence-details[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.evidence-details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.evidence-details-body {
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px 22px;
+}
+
+.evidence-group {
+  display: grid;
+  gap: 11px;
+  min-width: 0;
+}
+
+.evidence-group-head {
+  display: grid;
+  gap: 3px;
+}
+
+.evidence-group-head h3,
+.evidence-group-head p {
+  margin: 0;
+}
+
+.evidence-group-head h3 {
+  color: #172033;
+  font-size: 14px;
+}
+
+.evidence-group-head p {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.evidence-source-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evidence-source-card {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.evidence-source-card > span {
+  width: fit-content;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.evidence-source-card > strong {
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.evidence-source-card > small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.evidence-source-card > p {
+  margin: 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.evidence-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.evidence-source-actions a {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 10px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.story-pick-shell .evidence-details {
+  border-color: rgba(219, 234, 254, 0.16);
+  color: #f8fbff;
+  background: rgba(12, 25, 48, 0.76);
+  box-shadow: none;
+}
+
+.story-pick-shell .evidence-details > summary,
+.story-pick-shell .evidence-group-head h3,
+.story-pick-shell .evidence-source-card > strong {
+  color: #f8fbff;
+}
+
+.story-pick-shell .evidence-details > summary small,
+.story-pick-shell .evidence-group-head p,
+.story-pick-shell .evidence-source-card > small,
+.story-pick-shell .evidence-source-card > p {
+  color: #cbd5e1;
+}
+
+.story-pick-shell .evidence-details[open] > summary,
+.story-pick-shell .evidence-source-card {
+  border-color: rgba(219, 234, 254, 0.14);
+}
+
+.story-pick-shell .evidence-source-card {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.story-pick-shell .evidence-source-actions a {
+  border-color: rgba(191, 219, 254, 0.2);
+  color: #f8fbff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
 .related-industry-report-head h2 {
   font-size: 22px;
 }
@@ -15841,7 +16036,8 @@ body {
   .industry-report-grid,
   .industry-reports-principles,
   .industry-report-map-connections > div:last-child,
-  .related-industry-report-list {
+  .related-industry-report-list,
+  .evidence-source-list {
     grid-template-columns: 1fr;
   }
 
@@ -15897,6 +16093,20 @@ body {
   .related-industry-report-actions button,
   .related-industry-report-actions a,
   .industry-report-map-connections button {
+    width: 100%;
+  }
+
+  .evidence-details > summary,
+  .evidence-details-body {
+    padding-inline: 16px;
+  }
+
+  .evidence-source-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidence-source-actions a {
     width: 100%;
   }
 }

@@ -47,6 +47,12 @@ export type PriceLabel = 'latest' | 'close' | 'delayed' | 'fallback' | 'unavaila
 export type IndustryReportAccessType = 'public' | 'free-login' | 'restricted' | 'dead-link';
 export type IndustryReportSourceStatus = 'available' | 'redirected' | 'unavailable';
 export type IndustryReportEditionStatus = 'current' | 'previous' | 'unknown';
+export type EvidenceSourceType =
+  | 'industry-report'
+  | 'company-filing'
+  | 'company-ir'
+  | 'official-announcement'
+  | 'news';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -223,6 +229,25 @@ export interface IndustryReport {
   sourceStatusNote?: string;
 }
 
+export interface EvidenceSource {
+  id: string;
+  type: EvidenceSourceType;
+  title: string;
+  publisher: string;
+  publishedAt?: string;
+  publishedLabel?: string;
+  url: string;
+  note?: string;
+  relatedReportId?: string;
+}
+
+export interface EvidenceGroup {
+  id: string;
+  title: string;
+  description?: string;
+  sources: EvidenceSource[];
+}
+
 export interface FilingSourceLink {
   label: string;
   url: string;
@@ -326,6 +351,15 @@ export interface SmartMoneyMove {
   beginnerExplanation: string;
 }
 
+export interface StockAutopsySourceLink {
+  label: string;
+  url?: string;
+  note?: string;
+  type?: EvidenceSourceType;
+  publisher?: string;
+  accessType?: 'public' | 'restricted';
+}
+
 export interface StockAutopsyPick {
   id: string;
   pickId?: string;
@@ -354,7 +388,7 @@ export interface StockAutopsyPick {
   watchMetrics?: Array<{ label: string; note: string }>;
   goodSignals?: string[];
   cautionSignals?: string[];
-  sourceLinks?: Array<{ label: string; url?: string; note?: string }>;
+  sourceLinks?: StockAutopsySourceLink[];
   publishedAt?: string;
   status?: 'draft' | 'published' | 'archived';
 }
@@ -7427,11 +7461,15 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
         label: 'LG전자 완주 AI 데이터센터 HVAC 협약',
         url: 'https://www.lge.co.kr/story/newsroom/235685',
         note: 'AI 데이터센터 토털 HVAC 솔루션 공급 추진과 수주 확대 문맥은 LG전자 뉴스룸 기준으로 확인합니다.',
+        type: 'official-announcement',
+        publisher: 'LG전자',
       },
       {
         label: 'LG AI 데이터센터 냉각 솔루션',
         url: 'https://www.lg.com/global/newsroom/news/eco-solution/lg-electronics-showcases-ai-data-center-cooling-solutions-at-data-center-world-2026/',
         note: 'Data Center World 2026에서 공개한 냉각 포트폴리오 문맥을 확인합니다.',
+        type: 'official-announcement',
+        publisher: 'LG전자',
       },
     ],
     publishedAt: '2026-06-08',
@@ -7528,11 +7566,15 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
         label: 'Supermicro 자금조달 발표',
         url: 'https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Proposed-7-0-Billion-of-Equity-and-Equity-linked-Financing-Transactions-To-Fund-AI-Orders/default.aspx',
         note: 'AI 서버 주문을 충족하기 위한 70억 달러 규모 자금조달 계획은 회사 발표 기준으로 확인합니다.',
+        type: 'company-ir',
+        publisher: 'Super Micro Computer',
       },
       {
         label: 'Supermicro 자금조달 가격 확정',
         url: 'https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Pricing-of-Equity-and-Equity-Linked-Financing-Transactions-To-Fund-AI-Orders/default.aspx',
         note: '보통주, 의무전환우선주, ATM 프로그램 조건은 회사 발표 기준으로 확인합니다.',
+        type: 'company-ir',
+        publisher: 'Super Micro Computer',
       },
     ],
     publishedAt: '2026-06-12',
@@ -7579,11 +7621,15 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
         label: '연합뉴스 재건주 급등 보도',
         url: 'https://www.yna.co.kr/view/AKR20260612043100008',
         note: '미국·이란 종전 기대와 현대건설을 포함한 재건 관련주 움직임은 보도 기준으로 확인합니다.',
+        type: 'news',
+        publisher: '연합뉴스',
       },
       {
         label: '현대건설 회사 소개',
         url: 'https://www.hdec.kr/en/main.aspx',
         note: '해외 인프라와 건설 사업 회사 맥락을 확인하는 보조 원문입니다.',
+        type: 'official-announcement',
+        publisher: '현대건설',
       },
     ],
     publishedAt: '2026-06-12',
@@ -7684,11 +7730,16 @@ export const stockAutopsyPicks: StockAutopsyPick[] = [
         label: 'Micron FY26 2Q 실적 발표',
         url: 'https://investors.micron.com/news-releases/news-release-details/micron-technology-inc-reports-results-second-quarter-fiscal-2026',
         note: 'AI 시대 메모리 수요, 매출, 현금흐름 설명은 회사 발표 기준으로 확인합니다.',
+        type: 'company-ir',
+        publisher: 'Micron',
       },
       {
         label: 'MarketWatch 메모리주 반등 보도',
         url: 'https://www.marketwatch.com/story/microns-stock-bounces-back-in-a-big-way-the-memory-trade-is-alive-and-well-3466929f',
         note: '메모리 업종 반등과 HBM/DRAM 수요 해석은 보도 기준으로 참고합니다.',
+        type: 'news',
+        publisher: 'MarketWatch',
+        accessType: 'restricted',
       },
     ],
     publishedAt: '2026-06-12',
@@ -8236,6 +8287,15 @@ export const industryReports: IndustryReport[] = [
     sourceStatusNote: '글로벌 공식 페이지와 2026년 3월 공식 PDF가 로그인 없이 열리며 더 최신 공개판은 확인되지 않았습니다.',
   },
 ];
+
+export const marketMapEvidencePickIds: Record<string, string[]> = {
+  'us-semiconductors': [
+    'pick-smci-ai-server-funding-dilution',
+    'pick-micron-ai-memory-hbm-demand',
+  ],
+  'datacenter-power-cooling': ['pick-lg-electronics-ai-datacenter-cooling'],
+  'reconstruction-infrastructure': ['pick-hyundai-engineering-reconstruction-expectation'],
+};
 
 export const reconstructionInfrastructureMap = {
   sectorId: 'reconstruction-infrastructure',

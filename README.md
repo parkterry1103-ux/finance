@@ -3005,6 +3005,29 @@ production domain:
 
 - 공개 보고서 상태를 주기적으로 확인하는 no-dependency validator를 검토합니다. `data.ts`를 정규식으로 파싱하거나 로그인 자동화를 추가하지 않습니다.
 
+### 근거 보기 레이어 및 사용자 화면 메타데이터 정리
+
+적용 일시: 2026-06-21
+
+- `lastCheckedAt`, `latestEditionCheckedAt`, `sourceStatus`, `editionStatus`, `canonicalUrl`, `latestReportId`, `sourceStatusNote`는 삭제하지 않고 내부 운영 데이터로 유지합니다.
+- 정상 `current` 보고서의 원문 확인일, 최신판 확인일, 접근·판본 상태와 redirect 확인 문구는 사용자 화면에서 숨깁니다. 기본 화면에는 기관명과 공식 발행 연월만 표시합니다.
+- `previous` 상세의 이전판 안내와 `최신판 보기` CTA, `unavailable` 상세의 원문 접근 불가 안내와 원문 CTA 제거는 계속 유지합니다.
+- `EvidenceSource`와 `EvidenceGroup`은 시장지도와 Pick이 함께 사용하는 표시 구조입니다. 산업 보고서는 `industryReports` 레코드를 참조하고, 지도는 관련 Pick ID만 저장해 제목과 URL을 복제하지 않습니다.
+- 시장지도 3개와 SMCI, Micron, LG전자, 현대건설 Pick에는 기본 접힘 상태의 `근거 보기`를 추가했습니다.
+- `산업 구조`는 공개 산업 보고서, `기업·사업 확인`은 기존 SEC·IR·회사 공식 자료, `이슈·시장 확인`은 Pick에 이미 등록된 확인 자료만 사용합니다.
+- 산업 보고서는 시장 구조를 이해하는 참고 자료이며 직접 계약·수주 증거로 표현하지 않습니다. 재무 숫자는 SEC, OpenDART, 회사 IR과 공시 원문을 우선합니다.
+- 실제 source가 없는 그룹과 근거가 전혀 없는 섹션은 렌더하지 않습니다. 네 Pick의 기존 `원문/출처` drawer는 새 레이어로 통합해 같은 링크가 중복 표시되지 않게 했습니다.
+- 외부 원문은 새 탭에서 `noreferrer noopener`로 열고, 산업 보고서 요약은 기존 내부 `/ko/reports/:reportId` route로 이동합니다.
+- 로그인, 이메일 폼, 유료 또는 회원 전용 자료는 사이트에 추가하지 않습니다. 원문 PDF나 전체 보고서는 repo와 public asset에 재배포하지 않습니다.
+
+남은 TODO:
+
+- 모든 Pick의 공식 source 보강
+- SEC/OpenDART/IR source registry 통합
+- 뉴스 source freshness 관리
+- 공개 링크 validator
+- 출처 중복 제거 자동 검사
+
 ### 산업 보고서 서재 UI 정리 및 재건/인프라 지도 통일
 
 확인 일시: 2026-06-19
