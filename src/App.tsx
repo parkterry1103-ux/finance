@@ -3524,12 +3524,30 @@ function ReportAccessBadge({ accessType }: { accessType: IndustryReportAccessTyp
   return <span className={`industry-report-access ${accessType}`}>{reportAccessLabels[accessType]}</span>;
 }
 
+function isCurrentPublicReport(report: IndustryReport) {
+  return report.accessType === 'public'
+    && report.editionStatus === 'current'
+    && (report.sourceStatus === 'available' || report.sourceStatus === 'redirected');
+}
+
+function industryReportSourceUrl(report: IndustryReport) {
+  return report.sourceStatus === 'redirected' && report.canonicalUrl ? report.canonicalUrl : report.url;
+}
+
+function reportCheckDate(value?: string) {
+  return value ? value.replace(/-/g, '.') : '확인 필요';
+}
+
+function reportPublishedLabel(report: IndustryReport) {
+  return report.publishedLabel ?? report.publishedYear ?? '발행 시점 확인 필요';
+}
+
 function reportsForMap(mapId: string) {
-  return industryReports.filter((report) => report.accessType === 'public' && report.relatedMaps.includes(mapId));
+  return industryReports.filter((report) => isCurrentPublicReport(report) && report.relatedMaps.includes(mapId));
 }
 
 function reportsForPick(pickId: string) {
-  return industryReports.filter((report) => report.accessType === 'public' && report.relatedPicks.includes(pickId));
+  return industryReports.filter((report) => isCurrentPublicReport(report) && report.relatedPicks.includes(pickId));
 }
 
 type RelatedIndustryReportsProps = {
@@ -3560,7 +3578,7 @@ function RelatedIndustryReports({ title, description, reports, onOpenReports }: 
             <p>{report.keyIdeas[0]}</p>
             <div className="related-industry-report-actions">
               <button type="button" onClick={() => onOpenReports(report.id)}>보고서 요약 보기</button>
-              <a href={report.url} target="_blank" rel="noreferrer">
+              <a href={industryReportSourceUrl(report)} target="_blank" rel="noreferrer">
                 원문 보기
                 <ExternalLink size={13} />
               </a>
@@ -3581,12 +3599,12 @@ type IndustryReportsPageProps = {
 };
 
 function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenReport, onOpenPick }: IndustryReportsPageProps) {
-  const visibleReports = industryReports.filter((report) => report.accessType === 'public');
+  const visibleReports = industryReports.filter(isCurrentPublicReport);
   const mapConnections = Object.entries(reportMapLabels).map(([mapId, label]) => ({
     mapId,
     label,
     reports: reportsForMap(mapId),
-  }));
+  })).filter((connection) => connection.reports.length > 0);
 
   return (
     <div className="pick-shell story-dark-shell industry-reports-shell">
@@ -3624,7 +3642,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenRe
 
         <section className="industry-report-library" aria-labelledby="industry-report-library-title">
           <div className="industry-report-section-head">
-            <span>초기 공개 자료 {visibleReports.length}건</span>
+            <span>현재 공개 자료 {visibleReports.length}건</span>
             <h2 id="industry-report-library-title">산업별 보고서</h2>
             <p>원문의 결론을 투자 추천으로 옮기지 않고, 시장을 이해하는 질문만 남겼습니다.</p>
           </div>
@@ -3637,7 +3655,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenRe
                 <article className="industry-report-card" id={report.id} key={report.id}>
                   <div className="industry-report-card-topline">
                     <span>{report.firm}</span>
-                    <span>{report.publishedLabel ?? report.publishedYear ?? '발행 시점 확인 필요'}</span>
+                    <span>발행 {reportPublishedLabel(report)} · 원문 확인 {reportCheckDate(report.lastCheckedAt)}</span>
                     <ReportAccessBadge accessType={report.accessType} />
                   </div>
                   <span className="industry-report-field">{report.industry}</span>
@@ -3666,12 +3684,11 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenRe
                     ) : null}
                   </div>
                   <div className="industry-report-actions">
-                    <button type="button" onClick={() => onOpenReport(report.id)}>보고서 자세히 보기</button>
-                    <a href={report.url} target="_blank" rel="noreferrer">
+                    <button type="button" onClick={() => onOpenReport(report.id)}>보고서 요약 보기</button>
+                    <a href={industryReportSourceUrl(report)} target="_blank" rel="noreferrer">
                       원문 보기
                       <ExternalLink size={14} />
                     </a>
-                    <small>마지막 확인 {report.lastCheckedAt}</small>
                   </div>
                   {report.sourceNote ? <p className="industry-report-source-note">{report.sourceNote}</p> : null}
                 </article>
@@ -3704,7 +3721,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenRe
 type IndustryReportDetailPageProps = {
   report?: IndustryReport;
   onHome: () => void;
-  onOpenReports: () => void;
+  onOpenReports: (reportId?: string) => void;
   onOpenCategory: (sectorId: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
 };
@@ -3715,12 +3732,12 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategor
       <div className="pick-shell story-dark-shell industry-reports-shell">
         <header className="pick-nav">
           <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenReports}>보고서 서재</button>
+          <button type="button" onClick={() => onOpenReports()}>보고서 서재</button>
         </header>
         <main className="pick-empty industry-report-detail-empty">
           <h1>보고서를 찾을 수 없습니다.</h1>
           <p>공개 상태로 등록된 보고서인지 확인해주세요.</p>
-          <button type="button" onClick={onOpenReports}>산업 보고서 서재 보기</button>
+          <button type="button" onClick={() => onOpenReports()}>산업 보고서 서재 보기</button>
         </main>
       </div>
     );
@@ -3738,16 +3755,37 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategor
           <strong>주가해부실</strong>
         </a>
         <nav>
-          <button type="button" onClick={onOpenReports}>보고서 서재</button>
+          <button type="button" onClick={() => onOpenReports()}>보고서 서재</button>
           <button type="button" onClick={onHome}>홈</button>
         </nav>
       </header>
 
       <main className="industry-report-detail-main">
+        {report.editionStatus === 'previous' ? (
+          <section className="industry-report-status-notice previous" aria-label="이전판 안내">
+            <div>
+              <strong>이 보고서는 이전판입니다.</strong>
+              <span>같은 시리즈의 최신 공개 보고서가 등록되어 있습니다.</span>
+            </div>
+            {report.latestReportId ? (
+              <button type="button" onClick={() => onOpenReports(report.latestReportId)}>최신판 보기</button>
+            ) : null}
+          </section>
+        ) : null}
+        {report.sourceStatus === 'unavailable' ? (
+          <section className="industry-report-status-notice unavailable" aria-label="원문 상태 안내">
+            <div>
+              <strong>현재 원문 링크를 확인할 수 없습니다.</strong>
+              <span>공식 출처의 새 주소를 확인 중입니다.</span>
+            </div>
+          </section>
+        ) : null}
         <section className="industry-report-detail-hero">
           <p className="home-kicker">{report.firm} · 산업 보고서</p>
           <div className="industry-report-detail-meta">
-            <span>{report.publishedLabel ?? report.publishedYear ?? '발행 시점 확인 필요'}</span>
+            <span>발행 {reportPublishedLabel(report)}</span>
+            <span>원문 확인 {reportCheckDate(report.lastCheckedAt)}</span>
+            {report.latestEditionCheckedAt ? <span>최신판 확인 {reportCheckDate(report.latestEditionCheckedAt)}</span> : null}
             <ReportAccessBadge accessType={report.accessType} />
           </div>
           <h1>{report.title}</h1>
@@ -3798,12 +3836,14 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategor
           <div>
             <span>공식 공개 원문</span>
             <strong>{report.sourceNote}</strong>
-            <small>마지막 접근 확인 {report.lastCheckedAt}</small>
+            {report.sourceStatus === 'redirected' ? <small>공식 원문 주소 확인 완료</small> : null}
           </div>
-          <a href={report.url} target="_blank" rel="noreferrer">
-            원문 보기
-            <ExternalLink size={15} />
-          </a>
+          {report.sourceStatus !== 'unavailable' ? (
+            <a href={industryReportSourceUrl(report)} target="_blank" rel="noreferrer">
+              원문 보기
+              <ExternalLink size={15} />
+            </a>
+          ) : null}
         </section>
       </main>
     </div>
@@ -6268,7 +6308,7 @@ function App() {
       <IndustryReportDetailPage
         report={routeIndustryReport}
         onHome={openHome}
-        onOpenReports={() => openReports()}
+        onOpenReports={openReports}
         onOpenCategory={openCategory}
         onOpenPick={openPick}
       />

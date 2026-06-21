@@ -2916,13 +2916,13 @@ production domain:
 `IndustryReport` metadata:
 
 - 기본 식별 정보: `id`, `slug`, `title`, `firm`, `industry`, `publishedYear`, `publishedAt`, `publishedLabel`, `url`
-- 접근·검증 정보: `accessType`, `sourceNote`, `statusNote`, `lastCheckedAt`
+- 접근·검증 정보: `accessType`, `sourceNote`, `statusNote`, `lastCheckedAt`, `latestEditionCheckedAt`, `sourceStatus`, `editionStatus`, `canonicalUrl`, `latestReportId`, `latestReportUrl`, `sourceStatusNote`
 - 해석 정보: `summaryBullets`, `keyIdeas`, `howToUse`
 - 연결 정보: `relatedMaps`, `relatedPicks`, `relatedCompanies`
 
 `accessType` 정책:
 
-- `public`: 로그인 없이 본문 또는 PDF가 바로 열리는 자료입니다. 홈페이지에는 이 상태의 보고서만 표시합니다.
+- `public`: 로그인 없이 본문 또는 PDF가 바로 열리는 자료입니다. 기본 목록에는 이 상태이면서 현재판이고 원문 접근이 가능한 보고서만 표시합니다.
 - `free-login`: 이메일 입력, 회원가입, 로그인, 다운로드 폼이 필요한 자료입니다. 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
 - `restricted`: 유료, 비공개, 회원 전용, 재배포 제한 자료입니다. 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
 - `dead-link`: 링크가 깨졌거나 접근할 수 없는 자료입니다. 사이트에 표시하지 않고 대체 공개 출처가 필요하다고 별도로 보고합니다.
@@ -2932,7 +2932,7 @@ production domain:
 - 자동 로그인, 쿠키/session 저장, 우회 다운로드를 하지 않습니다.
 - 사용자가 직접 받은 PDF 또는 로그인 없는 공개 링크를 제공한 경우에만 접근 상태와 공개 가능 범위를 다시 확인합니다.
 - 유료·비공개 원문은 사이트 공개 요약에 사용하지 않습니다.
-- 홈페이지에는 `public` 보고서만 노출합니다. 무료 로그인, 이메일 입력, 유료, 비공개, 링크 오류 자료는 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
+- 홈페이지에는 `public + current + available/redirected` 보고서만 노출합니다. 무료 로그인, 이메일 입력, 유료, 비공개, 링크 오류 자료는 사이트에 표시하지 않고 사용자에게 별도로 보고합니다.
 
 원문 정책:
 
@@ -2966,6 +2966,44 @@ production domain:
 - 보고서 freshness check
 - source validation script
 - 산업 보고서 기반 Pick 작성 루틴 자동화
+
+### 산업 보고서 최신판 및 출처 상태 관리
+
+확인 일시: 2026-06-21
+
+상태 필드:
+
+- `lastCheckedAt`: 공식 원문 링크를 로그인 없이 직접 확인한 날짜입니다.
+- `latestEditionCheckedAt`: 같은 시리즈의 더 최신 공개판이 있는지 확인한 날짜입니다.
+- `sourceStatus`: `available`은 기존 URL에서 접근 가능, `redirected`는 공식 최종 URL로 이동, `unavailable`은 현재 원문을 확인할 수 없는 상태입니다.
+- `editionStatus`: `current`는 현재 공개판, `previous`는 후속 공개판이 확인된 이전판, `unknown`은 시리즈 관계를 확정하지 못한 상태입니다.
+- `canonicalUrl`은 redirect된 공식 최종 URL에만 사용하고, 원문 CTA는 이 값이 있으면 우선 사용합니다.
+- `latestReportId`는 사이트에 등록된 최신판 상세 route를 연결하며, `latestReportUrl`은 최신판을 발견했지만 사이트 데이터로 등록하지 않은 경우에만 사용합니다.
+
+노출 정책:
+
+- `/ko/reports`, 시장지도, Pick의 기본 관련 보고서는 `public + current + available/redirected` 조건을 모두 만족할 때만 표시합니다.
+- `previous`와 `unavailable` 보고서는 기본 목록에서 숨기지만 기존 상세 route는 인용과 북마크가 끊기지 않도록 유지합니다.
+- 이전판 상세에는 최신판 안내와 내부 `최신판 보기` CTA를 표시합니다. 원문 확인이 불가능한 상세에서는 원문 CTA를 제거합니다.
+- 로그인, 이메일 폼, 유료 또는 회원 전용 최신판은 사이트 데이터에 추가하지 않고 사용자에게 필요한 액션만 별도로 보고합니다.
+- 발행월은 공식 상세 페이지나 공식 PDF 경로에서 확인되는 경우에만 기록하며 추정하지 않습니다.
+
+공식 원문 4건 검증 결과:
+
+- McKinsey, [The cost of compute: A $7 trillion race to scale data centers](https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/the-cost-of-compute-a-7-trillion-dollar-race-to-scale-data-centers): 2025년 4월 28일 발행, 로그인 없이 접근 가능, redirect 없음, `available/current`입니다. 같은 시리즈의 후속 공개판은 확인되지 않았습니다.
+- PwC, [State of the semiconductor industry](https://www.pwc.com/gx/en/industries/technology/state-of-the-semicon-industry.html): 2024년 11월 28일 발행, 웹 본문과 PDF 모두 로그인 없이 접근 가능, redirect 없음, `available/current`입니다. 같은 시리즈의 후속 공개판은 확인되지 않았습니다.
+- Deloitte, [2025 Engineering and Construction Industry Outlook](https://www.deloitte.com/us/en/insights/industry/engineering-and-construction/engineering-and-construction-industry-outlook/2025.html): 2024년 11월 4일 발행, 로그인 없이 접근 가능, redirect 없음, `available/previous`입니다. 기존 상세 route를 유지하고 2026판으로 연결합니다.
+- KPMG, [Global construction survey 2025/2026](https://kpmg.com/xx/en/our-insights/operations/global-construction-survey.html): 공식 글로벌 페이지와 2026년 3월 PDF가 로그인 없이 열리며 redirect가 없습니다. `available/current`로 유지하고 발행 표시는 `2026년 3월`로 갱신했습니다.
+
+발견한 최신판 및 처리:
+
+- Deloitte [2026 Engineering and Construction Industry Outlook](https://www.deloitte.com/us/en/insights/industry/engineering-and-construction/engineering-and-construction-industry-outlook.html)은 2025년 11월 13일 공개된 같은 연간 시리즈의 후속판입니다.
+- 새 report를 `current`로 추가하고 2025판을 `previous`로 변경했습니다. 재건/인프라 시장지도와 현대건설 Pick의 기본 연결은 필터를 통해 2026판을 사용합니다.
+- 로그인이나 이메일 입력이 필요한 후속판은 발견되지 않아 사용자 확인 필요 자료는 없습니다.
+
+남은 TODO:
+
+- 공개 보고서 상태를 주기적으로 확인하는 no-dependency validator를 검토합니다. `data.ts`를 정규식으로 파싱하거나 로그인 자동화를 추가하지 않습니다.
 
 ### 산업 보고서 서재 UI 정리 및 재건/인프라 지도 통일
 

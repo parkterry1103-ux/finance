@@ -45,6 +45,8 @@ export type StockAutopsyValueChainPosition =
 export type MarketStatus = 'open' | 'closed' | 'premarket' | 'afterhours' | 'delayed' | 'unknown';
 export type PriceLabel = 'latest' | 'close' | 'delayed' | 'fallback' | 'unavailable';
 export type IndustryReportAccessType = 'public' | 'free-login' | 'restricted' | 'dead-link';
+export type IndustryReportSourceStatus = 'available' | 'redirected' | 'unavailable';
+export type IndustryReportEditionStatus = 'current' | 'previous' | 'unknown';
 
 export interface CountryDefinition {
   id: CountryId;
@@ -212,6 +214,13 @@ export interface IndustryReport {
   relatedCompanies: string[];
   statusNote?: string;
   lastCheckedAt: string;
+  latestEditionCheckedAt?: string;
+  sourceStatus?: IndustryReportSourceStatus;
+  editionStatus?: IndustryReportEditionStatus;
+  canonicalUrl?: string;
+  latestReportId?: string;
+  latestReportUrl?: string;
+  sourceStatusNote?: string;
 }
 
 export interface FilingSourceLink {
@@ -8083,7 +8092,11 @@ export const industryReports: IndustryReport[] = [
       'pick-lg-electronics-ai-datacenter-cooling',
     ],
     relatedCompanies: ['NVIDIA', 'Micron', 'Super Micro Computer', 'Vertiv', 'Eaton', 'Schneider Electric', 'LG전자'],
-    lastCheckedAt: '2026-06-19',
+    lastCheckedAt: '2026-06-21',
+    latestEditionCheckedAt: '2026-06-21',
+    sourceStatus: 'available',
+    editionStatus: 'current',
+    sourceStatusNote: '공식 웹 본문이 로그인 없이 열리며 같은 시리즈의 후속 공개판은 확인되지 않았습니다.',
   },
   {
     id: 'pwc-state-semiconductor-industry-2024',
@@ -8113,7 +8126,11 @@ export const industryReports: IndustryReport[] = [
     relatedMaps: ['us-semiconductors'],
     relatedPicks: ['pick-smci-ai-server-funding-dilution', 'pick-micron-ai-memory-hbm-demand'],
     relatedCompanies: ['NVIDIA', 'TSMC', 'SK하이닉스', 'Micron', '삼성전자', 'ASML'],
-    lastCheckedAt: '2026-06-19',
+    lastCheckedAt: '2026-06-21',
+    latestEditionCheckedAt: '2026-06-21',
+    sourceStatus: 'available',
+    editionStatus: 'current',
+    sourceStatusNote: '공식 웹 본문과 PDF가 로그인 없이 열리며 같은 시리즈의 후속 공개판은 확인되지 않았습니다.',
   },
   {
     id: 'deloitte-engineering-construction-outlook-2025',
@@ -8143,7 +8160,46 @@ export const industryReports: IndustryReport[] = [
     relatedMaps: ['reconstruction-infrastructure'],
     relatedPicks: ['pick-hyundai-engineering-reconstruction-expectation'],
     relatedCompanies: ['현대건설', '삼성물산', '대우건설', 'Caterpillar', 'POSCO홀딩스'],
-    lastCheckedAt: '2026-06-19',
+    lastCheckedAt: '2026-06-21',
+    latestEditionCheckedAt: '2026-06-21',
+    sourceStatus: 'available',
+    editionStatus: 'previous',
+    latestReportId: 'deloitte-engineering-construction-outlook-2026',
+    sourceStatusNote: '공식 2025판 원문은 공개 상태이며 2026판이 같은 연간 시리즈의 후속판으로 확인됐습니다.',
+  },
+  {
+    id: 'deloitte-engineering-construction-outlook-2026',
+    slug: 'deloitte-engineering-construction-outlook-2026',
+    title: '2026 Engineering and Construction Industry Outlook',
+    firm: 'Deloitte',
+    industry: '건설 / 데이터센터 / 에너지 인프라',
+    publishedYear: '2025',
+    publishedAt: '2025-11-13',
+    publishedLabel: '2025년 11월',
+    url: 'https://www.deloitte.com/us/en/insights/industry/engineering-and-construction/engineering-and-construction-industry-outlook.html',
+    accessType: 'public',
+    sourceNote: 'Deloitte 공개 웹 본문과 공개 다운로드 링크를 기준으로 확인했습니다.',
+    summaryBullets: [
+      '2026년 건설 시장은 관세와 자재비, 인력 부족이 수익성을 압박하는 가운데 데이터센터와 에너지 인프라가 선택적 수요를 지지할 수 있습니다.',
+      'AI 기반 설계·견적·일정 관리와 연결형 건설은 생산성과 프로젝트 수행 능력을 높이는 핵심 도구로 다뤄집니다.',
+      '유동성, 계약 구조, 공급망 회복력과 인력 전략을 함께 관리하는 기업이 변동성에 더 잘 대응할 수 있습니다.',
+    ],
+    keyIdeas: [
+      '데이터센터 확대는 건설사뿐 아니라 전력망, 냉각, 전기장비와 전문 인력 수요를 함께 움직입니다.',
+      '수주 성장만큼 관세·자재비를 계약에 반영하고 프로젝트 현금을 회수하는 실행력이 중요합니다.',
+    ],
+    howToUse: [
+      '현대건설·삼성물산·대우건설은 수주 공시, 원가율, 계약 조건, 미청구공사와 현금흐름을 함께 확인합니다.',
+      '미국 산업 전망을 한국 건설사의 특정 프로젝트 수주나 실적 개선으로 바로 연결하지 않습니다.',
+    ],
+    relatedMaps: ['reconstruction-infrastructure'],
+    relatedPicks: ['pick-hyundai-engineering-reconstruction-expectation'],
+    relatedCompanies: ['현대건설', '삼성물산', '대우건설', 'Caterpillar', 'POSCO홀딩스'],
+    lastCheckedAt: '2026-06-21',
+    latestEditionCheckedAt: '2026-06-21',
+    sourceStatus: 'available',
+    editionStatus: 'current',
+    sourceStatusNote: '공식 2026판 본문이 로그인 없이 열리며 Deloitte의 현재 연간 전망 페이지로 확인됐습니다.',
   },
   {
     id: 'kpmg-global-construction-survey-2025-2026',
@@ -8152,7 +8208,8 @@ export const industryReports: IndustryReport[] = [
     firm: 'KPMG',
     industry: '글로벌 건설 / 프로젝트 수행',
     publishedYear: '2026',
-    publishedLabel: '2026년',
+    publishedAt: '2026-03',
+    publishedLabel: '2026년 3월',
     url: 'https://kpmg.com/xx/en/our-insights/operations/global-construction-survey.html',
     accessType: 'public',
     sourceNote: 'KPMG 공개 웹 본문과 로그인 없는 공개 PDF 링크를 기준으로 확인했습니다.',
@@ -8172,7 +8229,11 @@ export const industryReports: IndustryReport[] = [
     relatedMaps: ['reconstruction-infrastructure'],
     relatedPicks: ['pick-hyundai-engineering-reconstruction-expectation'],
     relatedCompanies: ['현대건설', '삼성물산', '대우건설', 'Caterpillar', 'POSCO홀딩스'],
-    lastCheckedAt: '2026-06-19',
+    lastCheckedAt: '2026-06-21',
+    latestEditionCheckedAt: '2026-06-21',
+    sourceStatus: 'available',
+    editionStatus: 'current',
+    sourceStatusNote: '글로벌 공식 페이지와 2026년 3월 공식 PDF가 로그인 없이 열리며 더 최신 공개판은 확인되지 않았습니다.',
   },
 ];
 
