@@ -3041,6 +3041,59 @@ production domain:
 - ReactFlow 19개 노드는 기본 화면에서 숨기고 `전체 연결 보기`를 눌렀을 때만 렌더링합니다.
 - 로컬 QA에서 서재·상세·세 시장지도·재건 query·연결 Pick을 390px로 확인했으며 모두 overflow `0`이었습니다.
 
+### 이번 주 Huntsman·uniQure Pick 반영
+
+적용 기준일: 2026-06-22
+
+주차 구성:
+
+- 이번 주 Pick: Huntsman, uniQure
+- 지난주 Pick: SMCI, Micron, 현대건설, DraftKings
+- 그 이전 주 Pick: Marvell, LG전자, Taylor Morrison
+- 이전 Pick: Dell, Snowflake, NVIDIA, 삼성전자 등 기존 나머지 Pick을 유지합니다.
+- 홈 대표 Pick은 Huntsman이며, `/ko/picks`에서는 Huntsman과 uniQure만 표시합니다. 기존 Pick 상세 route는 삭제하지 않습니다.
+
+Huntsman 공식 조건 확인:
+
+- Huntsman과 Olin은 2026년 6월 16일 전액 주식 교환 방식의 합병을 발표했습니다.
+- Huntsman 주주는 1주당 Olin `0.5476주`를 받습니다. 고정 현금 대가는 없고, 단주에 한해 무이자 현금 정산이 있습니다.
+- 합병 후 예상 지분은 Olin 주주 약 54.5%, Huntsman 주주 약 45.5%입니다.
+- 양사는 2027년 상반기 종결을 목표로 하며, Huntsman 주주 승인, Olin 주주 승인, 미국과 해외 규제 승인 등 통상적인 종결 조건이 남아 있습니다.
+- 6월 15일 종가 기준 Olin `25.30달러 × 0.5476 = 약 13.85달러`로, Huntsman 종가 15.89달러보다 약 12.8% 낮았습니다. 발표일 Huntsman 종가는 13.18달러로 약 17.1% 하락했습니다. 회사는 교환비율이 6월 12일까지 30일 거래량가중평균가격을 기준으로 정해졌다고 설명했습니다.
+- 공식 원문: [Huntsman·Olin 공동 발표](https://www.sec.gov/Archives/edgar/data/74303/000119312526271782/d99037dex991.htm), [Huntsman 8-K](https://www.sec.gov/Archives/edgar/data/1307954/000110465926074683/tm2618028d1_8k.htm), [Olin 8-K](https://www.sec.gov/Archives/edgar/data/74303/000119312526271782/d99037d8k.htm)
+
+uniQure FDA 발표 확인:
+
+- uniQure는 2026년 6월 17일 FDA Type B 미팅 결과를 발표했습니다. AMT-130은 헌팅턴병을 대상으로 개발 중인 유전자치료제입니다.
+- FDA는 3년차 1/2상 분석을 가속승인 BLA의 주된 근거로 받아들일 수 있다고 전달했습니다. 회사는 2026년 3분기 BLA 제출을 계획하며, 제출 전 확증시험 설계를 FDA와 추가로 맞춰야 합니다.
+- 이는 BLA 제출 가능성이 다시 열린 단계입니다. BLA 제출, FDA 접수, 심사, 가속승인, 상업화는 아직 완료되거나 확정되지 않았습니다.
+- 발표일 uniQure 종가는 26.99달러에서 48.16달러로 약 78.4% 상승했습니다.
+- 공식 원문: [uniQure 발표](https://uniqure.gcs-web.com/news-releases/news-release-details/uniqure-announces-plan-bla-submission-amt-130-huntingtons), [uniQure 8-K](https://www.sec.gov/Archives/edgar/data/1590560/000110465926074853/tm2618105d1_8k.htm), [FDA 가속승인 안내](https://www.fda.gov/drugs/nda-and-bla-approvals/accelerated-approval-program)
+
+표시 정책과 남은 확인:
+
+- 두 Pick 모두 기업해설·숫자 CTA를 만들지 않은 `Pick only`입니다. 공식 자료와 공개 과거 시세만 `근거 보기`에 표시하고, source가 없는 빈 그룹은 렌더하지 않습니다.
+- `HUN`, `QURE` 가격 row는 2026년 6월 22일 production API에서 확인되지 않아 `가격 준비 중` fallback을 사용합니다. 가격 sync script, Yahoo/KIS source, 가격 API와 ticker universe는 수정하지 않았습니다.
+- 관련 시장지도는 작은 준비 안내만 표시합니다. 화학 업황·원재료·M&A 지도와 바이오 임상·FDA 규제 경로 지도는 이번 작업에서 만들지 않습니다.
+- 로그인, 이메일 입력, 유료 또는 회원 전용 자료는 사용하지 않았고 사용자 확인이 필요한 원문은 없습니다.
+
+로컬 QA:
+
+- production bundle 기준 `/`, `/ko/`, `/ko/picks`, `/ko/picks/archive`, Huntsman·uniQure 신규 상세, 지난주·그 이전 주 기존 상세 7개, `/ko/market-map`, `/ko/reports`를 확인했습니다.
+- 390×844 viewport에서 확인한 모든 route의 `document.documentElement.scrollWidth - window.innerWidth`는 `0`이고 콘솔 오류는 `0`입니다.
+- Huntsman 상세의 `근거 보기`를 클릭해 `기업·거래 확인`, `이슈·시장 확인`의 source 카드 5개가 열리는 것을 확인했습니다. uniQure 상세에는 `기업·규제 확인`, `이슈·시장 확인` source 카드 4개가 있으며 빈 그룹은 없습니다.
+- 두 신규 상세에는 기업해설·숫자 CTA가 없고, `가격 준비 중` fallback과 작은 시장지도 준비 안내가 정상 표시됩니다.
+- TypeScript `--noEmit`과 Vite production build를 통과했습니다. 기존 허용 경고인 ReactFlow `use client` 지시문과 500kB 이상 chunk 경고만 발생했습니다.
+- 인앱 브라우저의 전체 페이지 캡처는 시간 초과했고, 번들 Playwright에는 실행 가능한 브라우저 바이너리가 없어 별도 픽셀 캡처를 만들지 못했습니다. 신규 설치 없이 visible DOM snapshot, 390px 폭 측정, 클릭 상태와 콘솔 검증으로 대체했습니다.
+
+남은 TODO:
+
+- Huntsman/Olin 조건 변경과 주주·규제 승인 추적
+- 합병 시너지와 화학 업황 추적
+- AMT-130 BLA 실제 제출과 FDA 접수·심사 결과 추적
+- 확증시험 설계와 추가 임상 요구 추적
+- 화학/M&A 지도와 바이오/FDA 지도 검토
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.

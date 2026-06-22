@@ -3326,7 +3326,7 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
         <section className="home-weekly-cta-strip" aria-label="다음에 볼 곳">
           <article>
             <span>이번 주 전체 Pick</span>
-            <p>Marvell, LG전자, Taylor Morrison을 한 번에 보려면 Pick 페이지로 이동하세요.</p>
+            <p>Huntsman과 uniQure를 한 번에 보려면 Pick 페이지로 이동하세요.</p>
             <button type="button" onClick={onOpenPicks}>
               이번 주 Pick 전체 보기
               <ArrowRight size={15} />
@@ -3470,27 +3470,48 @@ function archivedStockAutopsyPicks() {
 }
 
 const previousWeekArchivePickOrder = [
+  'pick-smci-ai-server-funding-dilution',
+  'pick-micron-ai-memory-hbm-demand',
+  'pick-hyundai-engineering-reconstruction-expectation',
+  'pick-draftkings-sports-prediction-platform',
+] as const;
+
+const twoWeeksAgoArchivePickOrder = [
   'pick-marvell-nvlink-fusion-ai-interconnect',
   'pick-lg-electronics-ai-datacenter-cooling',
   'pick-taylor-morrison-berkshire-acquisition',
 ] as const;
 
 const previousWeekArchivePickIds = new Set<string>(previousWeekArchivePickOrder);
+const twoWeeksAgoArchivePickIds = new Set<string>(twoWeeksAgoArchivePickOrder);
 
 function archivedStockAutopsyPickGroups() {
   const archivePicks = archivedStockAutopsyPicks();
   const previousWeekPicks = previousWeekArchivePickOrder
     .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
     .filter((pick): pick is StockAutopsyPick => Boolean(pick));
-  const earlierPicks = archivePicks.filter((pick) => !previousWeekArchivePickIds.has(pick.id));
+  const twoWeeksAgoPicks = twoWeeksAgoArchivePickOrder
+    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+  const earlierPicks = archivePicks.filter(
+    (pick) => !previousWeekArchivePickIds.has(pick.id) && !twoWeeksAgoArchivePickIds.has(pick.id),
+  );
 
   return [
     previousWeekPicks.length
       ? {
           id: 'previous-week',
           title: '지난주 Pick',
-          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄처럼 직전 주차에서 본 흐름입니다.',
+          description: 'AI 서버 자금조달, 메모리, 재건, 예측 플랫폼처럼 직전 주차에서 본 흐름입니다.',
           picks: previousWeekPicks,
+        }
+      : null,
+    twoWeeksAgoPicks.length
+      ? {
+          id: 'two-weeks-ago',
+          title: '그 이전 주 Pick',
+          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄을 다룬 주차입니다.',
+          picks: twoWeeksAgoPicks,
         }
       : null,
     earlierPicks.length
@@ -3546,7 +3567,11 @@ const evidenceSourceTypeLabels: Record<EvidenceSourceType, string> = {
   news: '뉴스',
 };
 
-const evidenceEnabledPickIds = new Set(Object.values(marketMapEvidencePickIds).flat());
+const evidenceEnabledPickIds = new Set([
+  ...Object.values(marketMapEvidencePickIds).flat(),
+  'pick-huntsman-olin-merger-exchange-ratio',
+  'pick-uniqure-amt130-fda-regulatory-path',
+]);
 
 function evidencePublishedLabel(value?: string) {
   if (!value) return undefined;
@@ -3652,7 +3677,30 @@ function evidenceGroupsForPicks(picks: StockAutopsyPick[], reports: IndustryRepo
 }
 
 function evidenceGroupsForPick(pick: StockAutopsyPick) {
-  return evidenceGroupsForPicks([pick], reportsForPick(pick.id));
+  const groups = evidenceGroupsForPicks([pick], reportsForPick(pick.id));
+  if (pick.id === 'pick-huntsman-olin-merger-exchange-ratio') {
+    return groups.map((group) => group.id === 'company-activity'
+      ? {
+          ...group,
+          title: '기업·거래 확인',
+          description: '교환비율과 종결 조건은 양사 공동 발표와 SEC 공시 원문에서 확인합니다.',
+        }
+      : group.id === 'issue-market'
+        ? { ...group, description: '발표일 주가와 참고 합병가치는 공개 과거 시세로 확인합니다.' }
+        : group);
+  }
+  if (pick.id === 'pick-uniqure-amt130-fda-regulatory-path') {
+    return groups.map((group) => group.id === 'company-activity'
+      ? {
+          ...group,
+          title: '기업·규제 확인',
+          description: 'AMT-130의 BLA 계획과 가속승인 절차는 회사 발표, SEC 공시, FDA 안내에서 확인합니다.',
+        }
+      : group.id === 'issue-market'
+        ? { ...group, description: '발표일 주가 반응은 공개 과거 시세로 확인합니다.' }
+        : group);
+  }
+  return groups;
 }
 
 function evidenceGroupsForMap(mapId: string) {
@@ -4352,6 +4400,13 @@ function StockAutopsyPicksPage({
     const isDellAiServerEarningsPick = detailPick.id === 'pick-dell-ai-server-earnings-check';
     const isSnowflakeAiDataPick = detailPick.id === 'pick-snowflake-ai-data-platform';
     const isDellAiServerPick = isDellAiServerDemandPick || isDellAiServerEarningsPick;
+    const isHuntsmanMergerPick = detailPick.id === 'pick-huntsman-olin-merger-exchange-ratio';
+    const isUniqureRegulatoryPick = detailPick.id === 'pick-uniqure-amt130-fda-regulatory-path';
+    const pendingMarketMapNote = isHuntsmanMergerPick
+      ? '관련 시장지도는 준비 중입니다. 향후 화학 업황·원재료·M&A 흐름을 검토합니다.'
+      : isUniqureRegulatoryPick
+        ? '관련 시장지도는 준비 중입니다. 향후 바이오 임상·FDA 규제 경로를 검토합니다.'
+        : undefined;
     const storyQuestion = isSnowflakeAiDataPick
       ? 'Snowflake는 왜 폭등했을까?'
       : isDellAiServerEarningsPick
@@ -4365,7 +4420,16 @@ function StockAutopsyPicksPage({
       ? '지난번엔 기대감, 이번엔 숫자 확인'
       : isDellAiServerDemandPick
       ? 'Dell은 AI 서버를 기업에 팝니다.'
+      : isHuntsmanMergerPick
+      ? '합병 발표 ≠ 무조건 호재. 시장은 교환비율과 합병가치를 함께 봅니다.'
+      : isUniqureRegulatoryPick
+      ? 'FDA 경로 재개 ≠ 승인 완료. 신청부터 상업화까지는 각각 다른 단계입니다.'
       : detailPick.oneLineConclusion ?? '시장 흐름과 연결해 봅니다.';
+    const storyHeroNote = isHuntsmanMergerPick
+      ? 'Olin 0.5476주라는 교환조건과 발표 전일의 참고 합병가치를 먼저 봅니다.'
+      : isUniqureRegulatoryPick
+        ? 'BLA 제출 가능성이 열린 단계와 아직 남은 승인 절차를 구분합니다.'
+        : '왜 움직였는지 먼저 봅니다.';
     const storyRelatedLabels = isSnowflakeAiDataPick
       ? ['Amazon / AWS', 'Microsoft', 'Datadog']
       : isDellAiServerPick
@@ -4390,7 +4454,7 @@ function StockAutopsyPicksPage({
     const openPickMarketFlow = () => {
       if (detailPick.relatedSupplyChainId) onOpenCategory(detailPick.relatedSupplyChainId, detailPick.relatedCompanyId);
     };
-    const storyCards = [
+    const standardStoryCards = [
       {
         title: '무슨 일이 있었나요?',
         description: isSnowflakeAiDataPick
@@ -4456,6 +4520,93 @@ function StockAutopsyPicksPage({
         chipType: 'metric' as const,
       },
     ];
+    const storyCards = isHuntsmanMergerPick
+      ? [
+          {
+            title: '오늘 왜 움직였나요?',
+            description: '6월 16일 Olin과의 전액 주식 합병 발표 뒤 Huntsman 종가는 약 17.1% 하락했습니다.',
+            badge: '합병 발표',
+            icon: <Newspaper size={34} />,
+            chips: ['2026-06-16', '종가 약 -17.1%', '전액 주식 합병'],
+            chipType: 'metric' as const,
+          },
+          {
+            title: '핵심 조건',
+            description: 'Huntsman 1주당 Olin 0.5476주를 받습니다. 고정 현금 대가는 없고 단주만 현금 정산합니다.',
+            badge: '교환비율',
+            icon: <Network size={34} />,
+            chips: ['0.5476주', '고정 현금 없음', '단주만 현금'],
+            chipType: 'metric' as const,
+          },
+          {
+            title: '한 줄 정리',
+            description: detailPick.oneLineConclusion ?? detailPick.reasonSummary,
+            badge: '합병 발표 ≠ 무조건 호재',
+            icon: <FileSearch size={34} />,
+            chips: ['교환비율', '상대 주가', '합병가치'],
+            chipType: 'metric' as const,
+          },
+          {
+            title: '진짜 체크포인트',
+            description: '조건 변경, 양사 주주·규제 승인, 통합 시너지와 화학 업황을 순서대로 확인합니다.',
+            badge: '승인·실행',
+            icon: <Target size={34} />,
+            chips: ['주주·규제 승인', '합병 시너지', '화학 업황'],
+            chipType: 'metric' as const,
+          },
+          {
+            title: '마지막으로',
+            description: 'M&A 뉴스는 기대감을 만들고, 합병 조건과 화학 업황이 주가를 검증합니다.',
+            badge: '기대와 검증',
+            icon: <BarChart3 size={34} />,
+            chips: ['기대감', '합병 조건', '업황 검증'],
+            chipType: 'metric' as const,
+          },
+        ]
+      : isUniqureRegulatoryPick
+        ? [
+            {
+              title: '오늘 왜 움직였나요?',
+              description: '6월 17일 AMT-130의 FDA 규제 경로 발표 뒤 uniQure 종가는 약 78.4% 상승했습니다.',
+              badge: 'FDA 경로 재개',
+              icon: <Newspaper size={34} />,
+              chips: ['2026-06-17', '종가 약 +78.4%', '승인 완료 아님'],
+              chipType: 'metric' as const,
+            },
+            {
+              title: '핵심 조건',
+              description: 'FDA는 3년차 1/2상 분석을 가속승인 BLA의 주된 근거로 받아들일 수 있다고 전달했습니다.',
+              badge: 'BLA 제출 준비',
+              icon: <Network size={34} />,
+              chips: ['3년차 1/2상', '2026년 3분기 계획', '확증시험 협의'],
+              chipType: 'metric' as const,
+            },
+            {
+              title: '한 줄 정리',
+              description: detailPick.oneLineConclusion ?? detailPick.reasonSummary,
+              badge: '경로 재개 ≠ 승인',
+              icon: <FileSearch size={34} />,
+              chips: ['제출', '접수·심사', '승인'],
+              chipType: 'metric' as const,
+            },
+            {
+              title: '진짜 체크포인트',
+              description: 'BLA 제출·접수, 가속승인 심사, 효과·안전성, 추가 임상 요구를 순서대로 확인합니다.',
+              badge: '규제 단계',
+              icon: <Target size={34} />,
+              chips: ['BLA 제출·접수', '효과·안전성', '추가 임상'],
+              chipType: 'metric' as const,
+            },
+            {
+              title: '마지막으로',
+              description: 'FDA 뉴스는 기대감을 만들고, 임상 데이터와 실제 승인 결과가 주가를 검증합니다.',
+              badge: '기대와 검증',
+              icon: <BarChart3 size={34} />,
+              chips: ['FDA 뉴스', '임상 데이터', '승인 결과'],
+              chipType: 'metric' as const,
+            },
+          ]
+        : standardStoryCards;
 
     return (
       <div className="pick-shell story-dark-shell story-pick-shell">
@@ -4482,7 +4633,7 @@ function StockAutopsyPicksPage({
               </div>
               <h1>{storyQuestion}</h1>
               <strong>{storyAnswer}</strong>
-              <p>왜 움직였는지 먼저 봅니다.</p>
+              <p>{storyHeroNote}</p>
               <div className="pick-story-actions" aria-label="Pick 주요 이동">
                 {relatedCompany && relatedCompanyCanOpenFinancials ? (
                   <button type="button" className="pick-primary-action" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
@@ -4558,6 +4709,13 @@ function StockAutopsyPicksPage({
             groups={pickEvidenceGroups}
             onOpenReports={onOpenReports}
           />
+
+          {pendingMarketMapNote ? (
+            <aside className="pick-market-map-note" aria-label="관련 시장지도 안내">
+              <Network size={16} />
+              <span>{pendingMarketMapNote}</span>
+            </aside>
+          ) : null}
 
           <section className="pick-story-drawers" aria-label="더 깊게 보기">
             <details>
