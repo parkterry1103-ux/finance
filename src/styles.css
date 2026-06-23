@@ -15794,10 +15794,10 @@ body {
 .evidence-details {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #dbe4f0;
+  border: 1px solid var(--jg-border);
   border-radius: 18px;
-  color: #172033;
-  background: #ffffff;
+  color: var(--ink);
+  background: var(--panel);
   box-shadow: 0 10px 28px rgba(31, 42, 68, 0.055);
 }
 
@@ -15809,7 +15809,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 22px;
-  color: #172033;
+  color: var(--ink);
   cursor: pointer;
   list-style: none;
 }
@@ -15855,6 +15855,8 @@ body {
   display: grid;
   gap: 18px;
   padding: 20px 22px 22px;
+  color: var(--ink);
+  background: #f8fafc;
 }
 
 .evidence-group {
@@ -15874,7 +15876,7 @@ body {
 }
 
 .evidence-group-head h3 {
-  color: #172033;
+  color: var(--ink);
   font-size: 14px;
 }
 
@@ -15897,7 +15899,8 @@ body {
   padding: 15px;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  background: #f8fafc;
+  color: var(--ink);
+  background: var(--panel);
 }
 
 .evidence-source-card > span {
@@ -15908,7 +15911,7 @@ body {
 }
 
 .evidence-source-card > strong {
-  color: #172033;
+  color: var(--ink);
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -15949,41 +15952,6 @@ body {
   font-size: 10px;
   font-weight: 850;
   text-decoration: none;
-}
-
-.story-pick-shell .evidence-details {
-  border-color: rgba(219, 234, 254, 0.16);
-  color: #f8fbff;
-  background: rgba(12, 25, 48, 0.76);
-  box-shadow: none;
-}
-
-.story-pick-shell .evidence-details > summary,
-.story-pick-shell .evidence-group-head h3,
-.story-pick-shell .evidence-source-card > strong {
-  color: #f8fbff;
-}
-
-.story-pick-shell .evidence-details > summary small,
-.story-pick-shell .evidence-group-head p,
-.story-pick-shell .evidence-source-card > small,
-.story-pick-shell .evidence-source-card > p {
-  color: #cbd5e1;
-}
-
-.story-pick-shell .evidence-details[open] > summary,
-.story-pick-shell .evidence-source-card {
-  border-color: rgba(219, 234, 254, 0.14);
-}
-
-.story-pick-shell .evidence-source-card {
-  background: rgba(255, 255, 255, 0.055);
-}
-
-.story-pick-shell .evidence-source-actions a {
-  border-color: rgba(191, 219, 254, 0.2);
-  color: #f8fbff;
-  background: rgba(255, 255, 255, 0.07);
 }
 
 .related-industry-report-head h2 {
