@@ -237,15 +237,54 @@
 자동 cron 확인:
 
 - `vercel.json`의 가격 cron은 `/api/sync/prices`를 평일 `08:30 UTC`, `22:30 UTC`에 실행합니다.
-- 현재 로컬에는 `CRON_SECRET`이 없어 production 수동 sync를 직접 트리거하지 않았습니다.
-- 다음 권한 있는 production sync 후 기대 row 수는 기존 87개에서 네 ticker가 추가되어 91개입니다. 기대 source 분포는 `kis-openapi` 50개, `yahoo-finance-chart` 41개입니다.
+- 현재 로컬에는 `CRON_SECRET`이 없어 curl로 production sync를 직접 트리거하지 않았습니다. Dashboard의 Cron Jobs `Run` 기능으로 secret 노출 없이 실행했습니다.
+- Vercel Dashboard 기준 Cron Jobs는 Enabled이고 `/api/sync/prices`는 `30 8 * * 1-5`, `30 22 * * 1-5` 두 개로 등록돼 있습니다.
 - 기존 row 삭제나 schema 변경 없이 `ticker + source + as_of` upsert 정책을 유지합니다.
 
-남은 TODO:
+production sync 최종 검증:
 
-- production deployment 후 `/api/sync/prices`를 권한 있는 방식으로 수동 실행하거나 다음 평일 cron 후 재확인
-- 네 ticker의 production 저장값, 등락률, `asOf`, source 분포 최종 기록
-- 홈, `/ko/picks`, 4개 상세 페이지에서 `가격 준비 중` 제거 여부 production 재확인
+| 항목 | before | after |
+| --- | ---: | ---: |
+| 전체 row 수 | 87 | 91 |
+| unique ticker 수 | 87 | 91 |
+| `kis-openapi` rows | 47 | 50 |
+| `yahoo-finance-chart` rows | 40 | 41 |
+| duplicate ticker rows | 0 | 0 |
+
+- 실행 방식: Vercel Dashboard `finance1` project, Settings > Cron Jobs, `/api/sync/prices` `Run`.
+- 실행 시각: 2026-06-27 00:35:52.88 GMT+9, 즉 2026-06-26 15:35:52.88 UTC.
+- HTTP status: 200.
+- User agent: `vercel-cron/1.0`.
+- Function duration: 17.84s / 5m.
+- External API trace에서 Supabase `market_prices`, KIS token, KIS 국내 시세, Yahoo, Supabase `sync_runs` 호출을 확인했습니다.
+- 성공 실행에는 `fatal`, `error`, `429`, `500`, `503` 문구가 없었습니다.
+- 곧바로 두 번째 `Run`을 한 번 더 눌러 2026-06-27 00:36:36 GMT+9에 KIS token 1분 제한 경고가 한 번 남았습니다. 첫 실행에서 국내 3개 row는 이미 KIS로 저장됐고, 최종 API count/source count는 정상입니다.
+
+신규 4개 ticker production 저장 결과:
+
+| ticker | provider request | source | currency | price | API change percent | asOf | 저장 |
+| --- | --- | --- | --- | ---: | ---: | --- | --- |
+| `228340.KQ` | KIS code `228340` | `kis-openapi` | `KRW` | `2845` | `+29.91%` | `2026-06-26T15:35:56.192Z` | 성공 |
+| `002380.KS` | KIS code `002380` | `kis-openapi` | `KRW` | `494500` | `-7.22%` | `2026-06-26T15:35:56.396Z` | 성공 |
+| `080220.KQ` | KIS code `080220` | `kis-openapi` | `KRW` | `99200` | `-8.23%` | `2026-06-26T15:35:56.590Z` | 성공 |
+| `HTZ` | Yahoo symbol `HTZ` | `yahoo-finance-chart` | `USD` | `2.635` | `-0.94%` | `2026-06-26T15:36:35.000Z` | 성공 |
+
+회귀 확인:
+
+- 기존 87개 row는 유지됐고, 신규 4개 추가 후 unique ticker 91개입니다.
+- 국내 3개는 Yahoo fallback이 아니라 `kis-openapi` / `KRW`로 저장됐습니다.
+- `HTZ`는 KIS/KRW가 아니라 `yahoo-finance-chart` / `USD`로 저장됐습니다.
+- 표본 기존 ticker `SMCI`, `MU`, `VRT`, `NVDA`, `000720.KS`, `005930.KS`의 가격 row와 source/currency가 유지됐습니다.
+
+production UI 확인:
+
+- 확인 URL: `/`, `/ko/`, `/ko/picks`, 네 Pick 상세 route.
+- 모바일 viewport: 390 x 844.
+- 모든 확인 route에서 horizontal overflow 0, console error 0.
+- 홈 동양파일, Pick 목록 네 종목, 상세 네 페이지에서 `가격 준비 중`/`가격 불러오는 중` 문구가 사라졌습니다.
+- 동양파일, KCC, 제주반도체는 `한국투자`, 원화 가격, 기준일 `06.27`이 표시됩니다.
+- Hertz는 `Yahoo`, 달러 가격, 기준일 `06.27`이 표시됩니다.
+- 화면 price badge는 기존 UI 정책상 `시작가 대비` 등락률을 표시합니다. API provider row의 전일대비 등락률은 위 production 저장 결과 표에 기록했습니다.
 
 ## 재건 / 인프라 시장지도 추가
 
