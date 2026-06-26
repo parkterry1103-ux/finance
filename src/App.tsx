@@ -3326,7 +3326,7 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
         <section className="home-weekly-cta-strip" aria-label="다음에 볼 곳">
           <article>
             <span>이번 주 전체 Pick</span>
-            <p>Huntsman과 uniQure를 한 번에 보려면 Pick 페이지로 이동하세요.</p>
+            <p>동양파일, KCC, Hertz, 제주반도체를 한 번에 보려면 Pick 페이지로 이동하세요.</p>
             <button type="button" onClick={onOpenPicks}>
               이번 주 Pick 전체 보기
               <ArrowRight size={15} />
@@ -3470,13 +3470,18 @@ function archivedStockAutopsyPicks() {
 }
 
 const previousWeekArchivePickOrder = [
+  'pick-huntsman-olin-merger-exchange-ratio',
+  'pick-uniqure-amt130-fda-regulatory-path',
+] as const;
+
+const twoWeeksAgoArchivePickOrder = [
   'pick-smci-ai-server-funding-dilution',
   'pick-micron-ai-memory-hbm-demand',
   'pick-hyundai-engineering-reconstruction-expectation',
   'pick-draftkings-sports-prediction-platform',
 ] as const;
 
-const twoWeeksAgoArchivePickOrder = [
+const threeWeeksAgoArchivePickOrder = [
   'pick-marvell-nvlink-fusion-ai-interconnect',
   'pick-lg-electronics-ai-datacenter-cooling',
   'pick-taylor-morrison-berkshire-acquisition',
@@ -3484,6 +3489,7 @@ const twoWeeksAgoArchivePickOrder = [
 
 const previousWeekArchivePickIds = new Set<string>(previousWeekArchivePickOrder);
 const twoWeeksAgoArchivePickIds = new Set<string>(twoWeeksAgoArchivePickOrder);
+const threeWeeksAgoArchivePickIds = new Set<string>(threeWeeksAgoArchivePickOrder);
 
 function archivedStockAutopsyPickGroups() {
   const archivePicks = archivedStockAutopsyPicks();
@@ -3493,8 +3499,14 @@ function archivedStockAutopsyPickGroups() {
   const twoWeeksAgoPicks = twoWeeksAgoArchivePickOrder
     .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
     .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+  const threeWeeksAgoPicks = threeWeeksAgoArchivePickOrder
+    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
   const earlierPicks = archivePicks.filter(
-    (pick) => !previousWeekArchivePickIds.has(pick.id) && !twoWeeksAgoArchivePickIds.has(pick.id),
+    (pick) =>
+      !previousWeekArchivePickIds.has(pick.id) &&
+      !twoWeeksAgoArchivePickIds.has(pick.id) &&
+      !threeWeeksAgoArchivePickIds.has(pick.id),
   );
 
   return [
@@ -3502,7 +3514,7 @@ function archivedStockAutopsyPickGroups() {
       ? {
           id: 'previous-week',
           title: '지난주 Pick',
-          description: 'AI 서버 자금조달, 메모리, 재건, 예측 플랫폼처럼 직전 주차에서 본 흐름입니다.',
+          description: '합병 교환조건과 FDA 규제 경로처럼 직전 주차에서 본 흐름입니다.',
           picks: previousWeekPicks,
         }
       : null,
@@ -3510,8 +3522,16 @@ function archivedStockAutopsyPickGroups() {
       ? {
           id: 'two-weeks-ago',
           title: '그 이전 주 Pick',
-          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄을 다룬 주차입니다.',
+          description: 'AI 서버 자금조달, 메모리, 재건, 예측 플랫폼을 다룬 주차입니다.',
           picks: twoWeeksAgoPicks,
+        }
+      : null,
+    threeWeeksAgoPicks.length
+      ? {
+          id: 'three-weeks-ago',
+          title: '3주 전 Pick',
+          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄을 다룬 주차입니다.',
+          picks: threeWeeksAgoPicks,
         }
       : null,
     earlierPicks.length
@@ -3563,7 +3583,7 @@ const evidenceSourceTypeLabels: Record<EvidenceSourceType, string> = {
   'industry-report': '산업 보고서',
   'company-filing': '공시',
   'company-ir': '회사 IR',
-  'official-announcement': '회사 공식 자료',
+  'official-announcement': '공식 자료',
   news: '뉴스',
 };
 
@@ -3571,6 +3591,10 @@ const evidenceEnabledPickIds = new Set([
   ...Object.values(marketMapEvidencePickIds).flat(),
   'pick-huntsman-olin-merger-exchange-ratio',
   'pick-uniqure-amt130-fda-regulatory-path',
+  'pick-dongyang-pile-semiconductor-cluster-infrastructure',
+  'pick-kcc-silicone-margin-asset-value',
+  'pick-hertz-used-car-depreciation-financing',
+  'pick-jeju-semiconductor-export-fabless-rally',
 ]);
 
 function evidencePublishedLabel(value?: string) {
@@ -3678,6 +3702,99 @@ function evidenceGroupsForPicks(picks: StockAutopsyPick[], reports: IndustryRepo
 
 function evidenceGroupsForPick(pick: StockAutopsyPick) {
   const groups = evidenceGroupsForPicks([pick], reportsForPick(pick.id));
+  const linkedSources = pickLinkEvidenceSources(pick);
+  const groupsWithoutEmptySources = (items: EvidenceGroup[]) => items.filter((group) => group.sources.length > 0);
+
+  if (pick.id === 'pick-dongyang-pile-semiconductor-cluster-infrastructure') {
+    const officialSources = linkedSources.filter((source) => source.type !== 'news');
+    const marketSources = linkedSources.filter((source) => source.type === 'news');
+    return groupsWithoutEmptySources([
+      {
+        id: 'dongyang-policy-business',
+        title: '정책·사업 확인',
+        description: 'PHC 파일 사업과 공식 공시는 확인하되, 클러스터 기대는 확정 계획이나 직접 수주로 단정하지 않습니다.',
+        sources: officialSources,
+      },
+      {
+        id: 'dongyang-issue-market',
+        title: '이슈·시장 확인',
+        description: '상한가 날짜와 시장 반응은 공개 시세와 보도 기준으로 확인합니다.',
+        sources: marketSources,
+      },
+    ]);
+  }
+  if (pick.id === 'pick-kcc-silicone-margin-asset-value') {
+    const officialSources = linkedSources.filter((source) => source.type !== 'news');
+    const marketSources = linkedSources.filter((source) => source.type === 'news');
+    return groupsWithoutEmptySources([
+      {
+        id: 'kcc-company-results',
+        title: '기업·실적 확인',
+        description: '실리콘·도료 사업과 투자자산은 공시와 회사 자료를 먼저 확인합니다.',
+        sources: officialSources,
+      },
+      {
+        id: 'kcc-issue-market',
+        title: '이슈·시장 확인',
+        description: '증권사 전망과 목표주가 문구는 공개 접근 가능한 보도 기준으로만 표시합니다.',
+        sources: marketSources,
+      },
+    ]);
+  }
+  if (pick.id === 'pick-hertz-used-car-depreciation-financing') {
+    const financingSources = linkedSources.filter((source) =>
+      /PIK|공모|Offering|Pricing|보통주|채권|S-3/i.test(`${source.title} ${source.note ?? ''}`),
+    );
+    const structureSources = linkedSources.filter((source) =>
+      /10-Q|감가상각|잔존가치|depreciation|vehicle|차량/i.test(`${source.title} ${source.note ?? ''}`),
+    );
+    const marketSources = linkedSources.filter((source) => source.type === 'news');
+    return groupsWithoutEmptySources([
+      {
+        id: 'hertz-financing',
+        title: '기업·자금조달 확인',
+        description: 'PIK 채권, 보통주 대여 공모, 주식연계 조건은 회사 발표와 SEC 원문으로 확인합니다.',
+        sources: uniqueEvidenceSources(financingSources),
+      },
+      {
+        id: 'hertz-business-structure',
+        title: '사업 구조 확인',
+        description: '차량 감가상각, 중고차 잔존가치, 부채와 유동성 부담은 회사 공시에서 확인합니다.',
+        sources: uniqueEvidenceSources(structureSources),
+      },
+      {
+        id: 'hertz-issue-market',
+        title: '이슈·시장 확인',
+        description: '하락일 주가 반응은 공개 차트 데이터로 확인합니다.',
+        sources: marketSources,
+      },
+    ]);
+  }
+  if (pick.id === 'pick-jeju-semiconductor-export-fabless-rally') {
+    const companySources = linkedSources.filter((source) => source.type === 'company-filing');
+    const industrySources = linkedSources.filter((source) => source.type === 'official-announcement');
+    const marketSources = linkedSources.filter((source) => source.type === 'news');
+    return groupsWithoutEmptySources([
+      {
+        id: 'jeju-company-business',
+        title: '기업·사업 확인',
+        description: '팹리스 구조와 저전력 메모리 사업은 공시 원문 기준으로 확인합니다.',
+        sources: companySources,
+      },
+      {
+        id: 'jeju-industry',
+        title: '업황 확인',
+        description: '반도체 수출 호조는 관세청 공식 자료를 산업 배경으로만 사용합니다.',
+        sources: industrySources,
+      },
+      {
+        id: 'jeju-issue-market',
+        title: '이슈·시장 확인',
+        description: '중소형 반도체주로 매수세가 확산됐다는 해석은 공개 보도와 시세 기준으로 낮춰 봅니다.',
+        sources: marketSources,
+      },
+    ]);
+  }
   if (pick.id === 'pick-huntsman-olin-merger-exchange-ratio') {
     return groups.map((group) => group.id === 'company-activity'
       ? {
@@ -4402,10 +4519,22 @@ function StockAutopsyPicksPage({
     const isDellAiServerPick = isDellAiServerDemandPick || isDellAiServerEarningsPick;
     const isHuntsmanMergerPick = detailPick.id === 'pick-huntsman-olin-merger-exchange-ratio';
     const isUniqureRegulatoryPick = detailPick.id === 'pick-uniqure-amt130-fda-regulatory-path';
+    const isDongyangPilePick = detailPick.id === 'pick-dongyang-pile-semiconductor-cluster-infrastructure';
+    const isKccPick = detailPick.id === 'pick-kcc-silicone-margin-asset-value';
+    const isHertzPick = detailPick.id === 'pick-hertz-used-car-depreciation-financing';
+    const isJejuSemiconductorPick = detailPick.id === 'pick-jeju-semiconductor-export-fabless-rally';
     const pendingMarketMapNote = isHuntsmanMergerPick
       ? '관련 시장지도는 준비 중입니다. 향후 화학 업황·원재료·M&A 흐름을 검토합니다.'
       : isUniqureRegulatoryPick
         ? '관련 시장지도는 준비 중입니다. 향후 바이오 임상·FDA 규제 경로를 검토합니다.'
+        : isDongyangPilePick
+          ? '반도체 클러스터 / 산업단지 인프라 지도는 준비 중입니다. 정책 기대 ≠ 직접 수주, 예산·착공·공급계약은 따로 확인합니다.'
+          : isKccPick
+            ? '소재 / 실리콘 / 자산가치 지도는 준비 중입니다. 이번 Pick은 공시와 공개 보도 중심으로 봅니다.'
+            : isHertzPick
+              ? '렌터카 / 차량 잔존가치 / 부채 지도는 준비 중입니다. 자금조달 조건과 사업 구조를 분리해 봅니다.'
+              : isJejuSemiconductorPick
+                ? '팹리스 / 저전력 메모리 시장지도는 준비 중입니다. AI GPU 기업군으로 분류하지 않습니다.'
         : undefined;
     const storyQuestion = isSnowflakeAiDataPick
       ? 'Snowflake는 왜 폭등했을까?'

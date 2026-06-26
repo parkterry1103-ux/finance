@@ -116,6 +116,137 @@
 - 재무제표·공시 분석 화면을 핵심 숫자와 한 줄 결론 중심으로 먼저 보여주고, 기존 해설은 접힘 섹션으로 보존
 - 인스타그램 카드뉴스 유입용 `주가해부실 Pick` 페이지 추가: `/ko/picks`, `/picks`, `/stock-autopsy-picks`
 
+## 이번 주 동양파일·KCC·Hertz·제주반도체 Pick 반영
+
+2026년 6월 넷째 주 Pick을 아래 4개로 교체했습니다. 기존 Pick은 삭제하지 않고 보관함 주차만 이동했습니다.
+
+| Pick | ticker | 이벤트 날짜 | 종가 기준 변동률 | 핵심 확인 |
+| --- | --- | --- | --- | --- |
+| 동양파일 | `228340.KQ` | 2026-06-26 | `+29.91%` | 호남권 반도체 클러스터 관련 보도와 PHC 파일 인프라 기대. 직접 수주 확정 표현은 쓰지 않음 |
+| KCC | `002380.KS` | 2026-06-25 | `+11.27%` | 실리콘 수익성, 도료 이익, 투자자산 가치와 공개 증권사 전망. 목표주가 문구는 공개 보도 기준으로만 표시 |
+| Hertz | `HTZ` | 2026-06-24 | `-40.71%` | PIK 채권과 주식 관련 자금조달 조건을 직접 촉발 요인으로, 중고차 잔존가치와 감가상각은 구조적 부담으로 분리 |
+| 제주반도체 | `080220.KQ` | 2026-06-22 | `+17.24%` | 관세청 6월 1~20일 반도체 수출 호조와 중소형 팹리스 관심 확산. AI GPU 회사로 분류하지 않음 |
+
+홈 대표 Pick은 `동양파일`로 교체했습니다. 홈 대표 카드 첫 메시지는 `반도체 회사가 아닌데 동양파일은 왜 상한가를 갔을까요?`이며, 보조 문구는 `정책 기대 ≠ 직접 수주`를 먼저 보이게 정리했습니다.
+
+주차 이동 결과:
+
+- 이번 주 Pick: 동양파일, KCC, Hertz, 제주반도체
+- 지난주 Pick: Huntsman, uniQure
+- 그 이전 주 Pick: SMCI, Micron, 현대건설, DraftKings
+- 3주 전 Pick: Marvell, LG전자, Taylor Morrison
+- 이전 Pick: Dell, Snowflake, NVIDIA, 삼성전자 등 기존 나머지 Pick 유지
+
+공식·공개 근거:
+
+- 동양파일: KIND 사업보고서와 분기보고서로 `228340.KQ`, PHC 파일 사업, 건설 기초자재 성격 확인. 호남권 반도체 클러스터는 SBS Biz/Daum 공개 보도와 Yahoo 공개 차트로 시장 반응만 확인했습니다.
+- KCC: KIND 분기보고서로 `002380.KS`, 사업·재무 확인. 신한투자증권 목표주가 75만원 신규 제시와 실리콘·도료·투자자산 기대는 매일경제/머니투데이 공개 보도 기준으로만 반영했습니다.
+- Hertz: Hertz 공식 발표로 3억 달러 PIK 채권 제안, 3억5천만 달러 6.75% PIK 채권 가격 확정, 37,037,037주 주당 2.70달러 보통주 대여 공모 확인. SEC S-3와 10-Q로 공모 구조, 부채, 차량 감가상각·잔존가치 부담을 확인했습니다.
+- 제주반도체: KIND 사업보고서로 `080220.KQ`, 팹리스·저전력 메모리 사업 확인. 관세청 6월 1~20일 수출입 현황으로 반도체 수출 호조를 산업 배경으로만 사용했습니다.
+
+완화하거나 제거한 초안 표현:
+
+- 동양파일이 반도체 클러스터 공급사로 선정됐거나 직접 수주를 따낸 것처럼 보이는 표현은 제거했습니다.
+- 호남권 반도체 클러스터는 공식 예산·착공·공급계약이 확정된 것으로 쓰지 않고, 공개 보도와 시장 기대 수준으로 낮췄습니다.
+- KCC의 보유 투자자산 가치가 곧바로 주가에 반영된다고 단정하지 않았습니다.
+- Hertz 폭락 원인을 렌터카 수요 둔화나 중고차 가격 하나로 단정하지 않고, 자금조달 조건과 구조적 차량 가치 부담을 분리했습니다.
+- 제주반도체를 AI 반도체/GPU 기업으로 오해시키는 표현은 쓰지 않았습니다.
+
+가격 row/fallback:
+
+| ticker | 가격 row | source | currency | asOf |
+| --- | --- | --- | --- | --- |
+| `228340.KQ` | 없음 | `fallback-unavailable` | `KRW` | 없음 |
+| `002380.KS` | 없음 | `fallback-unavailable` | `KRW` | 없음 |
+| `HTZ` | 없음 | `fallback-unavailable` | `USD` | 없음 |
+| `080220.KQ` | 없음 | `fallback-unavailable` | `KRW` | 없음 |
+
+시장지도 연결 상태:
+
+- 동양파일: 반도체 클러스터 / 산업단지 인프라 지도 준비 중
+- KCC: 소재 / 실리콘 / 자산가치 지도 준비 중
+- Hertz: 렌터카 / 차량 잔존가치 / 부채 지도 준비 중
+- 제주반도체: 팹리스 / 저전력 메모리 시장지도 준비 중
+
+로그인·유료·사용자 확인 필요 자료:
+
+- KCC 증권사 원문 리포트는 홈페이지에 넣지 않았고, 공개 보도에서 확인 가능한 목표주가·전망 문구만 사용했습니다.
+- 로그인 또는 유료 접근이 필요한 원문은 source link에 넣지 않았습니다.
+
+근거 보기:
+
+- 새 4개 Pick 모두 기본 접힘 상태의 `근거 보기`를 제공합니다.
+- source 없는 빈 그룹은 렌더하지 않고, 원문 링크는 새 탭과 `rel="noreferrer noopener"`를 유지합니다.
+- 이전 커밋 `a032762`의 밝은 테마 색상 수정이 유지되어 펼친 근거 본문은 `#f8fafc`와 흰색 카드 톤으로 표시됩니다.
+
+남은 TODO:
+
+- 반도체 클러스터 / 산업단지 인프라 지도
+- 소재 / 실리콘 / 자산가치 지도
+- 렌터카 / 차량 잔존가치 / 부채 지도
+- 팹리스 / 저전력 메모리 지도
+- production 가격 sync 후 `228340.KQ`, `002380.KS`, `HTZ`, `080220.KQ` row 저장 여부 재확인
+
+## 이번 주 Pick 가격 데이터 연결
+
+이번 주 Pick 4개 가격 연결 대상:
+
+| ticker | provider | currency | provider lookup |
+| --- | --- | --- | --- |
+| `228340.KQ` | `kis-openapi` | `KRW` | KIS domestic code `228340` |
+| `002380.KS` | `kis-openapi` | `KRW` | KIS domestic code `002380` |
+| `080220.KQ` | `kis-openapi` | `KRW` | KIS domestic code `080220` |
+| `HTZ` | `yahoo-finance-chart` | `USD` | Yahoo symbol `HTZ` |
+
+누락 원인:
+
+- 가격 API는 Supabase `market_prices`에 저장된 최신 row만 반환합니다.
+- 가격 sync universe는 `REQUIRED_PRICE_TICKERS`, `mockMarketPrices`, `marketMovers`, `stockAutopsyPicks`, `anchors`, `companies`를 합쳐 만들며, 현재 코드에서는 `stockAutopsyPicks`가 이번 주 Pick ticker를 포함합니다.
+- 운영 API 기준선 확인 시점에는 새 Pick 데이터가 아직 커밋·배포되지 않았고, 해당 ticker로 권한 있는 가격 sync도 실행되지 않아 네 ticker 모두 `fallback-unavailable`이었습니다.
+- 로컬 컴파일 산출물 기준 `syncPrices()`의 `targetTickerCount`는 91개이며, 네 ticker 모두 target universe에 포함됩니다. 로컬에는 `KIS_APP_KEY/KIS_APP_SECRET`과 Supabase env가 없어 국내 3개는 KIS 저장까지 검증하지 못했고 Yahoo fallback 준비 결과만 확인했습니다.
+
+수정·유지한 universe/normalization 방식:
+
+- `scripts/sync-prices.ts`의 기존 universe 수집 구조를 유지합니다. 새 Pick ticker는 `stockAutopsyPicks.forEach((pick) => add(pick.ticker, pick.relatedCompanyId, pick.market))` 경로로 들어갑니다.
+- `.KS`, `.KQ` tickers는 `scripts/price-sources/kis.ts`에서 `isKisDomesticTicker()`와 `kisDomesticSymbol()`을 통해 provider 호출 시점에만 6자리 종목코드로 변환합니다.
+- DB 저장 ticker는 `228340.KQ`, `002380.KS`, `080220.KQ`처럼 사이트 canonical ticker를 유지합니다.
+- `HTZ`는 Yahoo lookup alias 없이 `HTZ`로 전달됩니다.
+- 가격 값은 코드나 Pick 데이터에 저장하지 않았습니다.
+
+운영 API 기준선:
+
+| 항목 | before |
+| --- | --- |
+| 전체 row 수 | 87 |
+| `kis-openapi` rows | 47 |
+| `yahoo-finance-chart` rows | 40 |
+| `228340.KQ` | row 없음, `fallback-unavailable`, `KRW` |
+| `002380.KS` | row 없음, `fallback-unavailable`, `KRW` |
+| `080220.KQ` | row 없음, `fallback-unavailable`, `KRW` |
+| `HTZ` | row 없음, `fallback-unavailable`, `USD` |
+
+로컬 provider 진단:
+
+| ticker | local provider result | price | change percent | asOf | 저장 |
+| --- | --- | --- | --- | --- | --- |
+| `228340.KQ` | Yahoo fallback success, KIS env missing locally | `2845` | `+0.35%` | `2026-06-26T06:30:05.000Z` | Supabase env 없음으로 저장 안 됨 |
+| `002380.KS` | Yahoo fallback success, KIS env missing locally | `494500` | `-5.99%` | `2026-06-26T06:30:05.000Z` | Supabase env 없음으로 저장 안 됨 |
+| `080220.KQ` | Yahoo fallback success, KIS env missing locally | `99200` | `-5.16%` | `2026-06-26T06:30:02.000Z` | Supabase env 없음으로 저장 안 됨 |
+| `HTZ` | Yahoo success | `2.635` | `-0.94%` | `2026-06-26T15:24:00.000Z` | Supabase env 없음으로 저장 안 됨 |
+
+자동 cron 확인:
+
+- `vercel.json`의 가격 cron은 `/api/sync/prices`를 평일 `08:30 UTC`, `22:30 UTC`에 실행합니다.
+- 현재 로컬에는 `CRON_SECRET`이 없어 production 수동 sync를 직접 트리거하지 않았습니다.
+- 다음 권한 있는 production sync 후 기대 row 수는 기존 87개에서 네 ticker가 추가되어 91개입니다. 기대 source 분포는 `kis-openapi` 50개, `yahoo-finance-chart` 41개입니다.
+- 기존 row 삭제나 schema 변경 없이 `ticker + source + as_of` upsert 정책을 유지합니다.
+
+남은 TODO:
+
+- production deployment 후 `/api/sync/prices`를 권한 있는 방식으로 수동 실행하거나 다음 평일 cron 후 재확인
+- 네 ticker의 production 저장값, 등락률, `asOf`, source 분포 최종 기록
+- 홈, `/ko/picks`, 4개 상세 페이지에서 `가격 준비 중` 제거 여부 production 재확인
+
 ## 재건 / 인프라 시장지도 추가
 
 - 새 읽기형 시장지도 route는 `/ko/category/reconstruction-infrastructure`입니다.

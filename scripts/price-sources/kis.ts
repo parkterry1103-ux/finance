@@ -254,6 +254,8 @@ export async function fetchKisDomesticQuoteRows(targets) {
           lookupTicker,
           status: 'success',
           price: row.price,
+          changePercent: row.changePercent,
+          currency: row.currency,
           priceLabel: row.priceLabel,
           source: row.source,
           asOf: row.asOf,
