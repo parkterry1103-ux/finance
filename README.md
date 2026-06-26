@@ -286,6 +286,96 @@ production UI 확인:
 - Hertz는 `Yahoo`, 달러 가격, 기준일 `06.27`이 표시됩니다.
 - 화면 price badge는 기존 UI 정책상 `시작가 대비` 등락률을 표시합니다. API provider row의 전일대비 등락률은 위 production 저장 결과 표에 기록했습니다.
 
+## 반도체 클러스터 / 산업단지 인프라 시장지도 추가
+
+새 route:
+
+- `/ko/category/semiconductor-cluster-infrastructure`
+- 기본 선택 기업: 동양파일 `228340.KQ`
+- invalid query는 동양파일로 fallback합니다.
+
+정책 사업 단계:
+
+- 화면에서는 공식 확정 사업명처럼 쓰지 않고 `반도체 클러스터 정책 추진`으로 표현합니다.
+- 호남권 또는 제2 반도체 클러스터 관련 기대는 공개 보도와 시장 반응 단계로만 취급합니다.
+- 정부·지자체의 공식 확정 사업명, 예산, 부지, 착공 일정, 공장 발주, 동양파일 직접 공급계약은 현재 확인된 공식 자료 기준으로 확정하지 않았습니다.
+- 기존 국가첨단산단·용인 반도체 클러스터 같은 공식 정책과 이번 호남권 기대를 섞어 쓰지 않습니다.
+
+추가한 후보 기업:
+
+| 기업 | ticker | status | 역할 | CTA |
+| --- | --- | --- | --- | --- |
+| 동양파일 | `228340.KQ` | Pick only | PHC 파일 / 기초 공사 | 관련 Pick 보기 |
+| 현대건설 | `000720.KS` | Pick only | 대형 건설 / 공장·인프라 시공 | 관련 Pick 보기 |
+| 삼성물산 | `028260.KS` | 시장 흐름 참고 | 건설 / EPC / 산업시설 | 시장 흐름에서 보기 |
+| LS ELECTRIC | `010120.KS` | 시장 흐름 참고 | 배전 / 전력설비 / 자동화 | 시장 흐름에서 보기 |
+| 효성중공업 | `298040.KS` | 시장 흐름 참고 | 변압기 / 전력망 | 시장 흐름에서 보기 |
+| KCC | `002380.KS` | Pick only | 건축·산업용 소재 / 도료 | 관련 Pick 보기 |
+
+6단계 시장 흐름:
+
+1. 정책 추진
+2. 부지·예산 확정
+3. 산업단지·공장 발주
+4. 기초 공사·전력·건축
+5. 직접 공급계약
+6. 매출·이익 검증
+
+직접 공급계약 확인:
+
+- 동양파일은 PHC 파일 업체로 표시하되 반도체 제조사로 표현하지 않습니다.
+- 현재 확인된 동양파일의 반도체 클러스터 직접 공급계약은 없습니다.
+- 그래프와 카드의 관계는 산업 흐름 설명용이며 실제 계약 관계를 뜻하지 않습니다.
+
+관련 Pick 연결:
+
+- 동양파일: `pick-dongyang-pile-semiconductor-cluster-infrastructure`
+- 현대건설: `pick-hyundai-engineering-reconstruction-expectation`
+- KCC: `pick-kcc-silicone-margin-asset-value`
+- 현대건설·KCC Pick은 해당 클러스터 직접 수혜 근거가 아니라 각 기업의 사업 구조 참고 콘텐츠로만 연결합니다.
+
+관련 산업 보고서:
+
+- PwC `State of the semiconductor industry`: 반도체 투자와 공급망 흐름을 넓게 이해하기 위한 참고 자료
+- Deloitte `2026 Engineering and Construction Industry Outlook`: 대형 건설 프로젝트가 발주, 수주, 원가와 마진으로 이어지는 구조를 이해하기 위한 참고 자료
+- 보고서 카드는 `관련 산업 보고서` 섹션에만 표시하고, `근거 보기`에는 중복 표시하지 않습니다.
+
+ReactFlow / query alias:
+
+- ReactFlow 노드 수: 20
+- edge 수: 28
+- 기본 화면에서는 ReactFlow를 숨기고 `전체 연결 보기` 클릭 후 렌더합니다.
+- query alias:
+  - `?company=cluster-dongyang-pile`
+  - `?company=cluster-hyundai-ec`
+  - `?company=cluster-samsung-ct`
+  - `?company=cluster-ls-electric`
+  - `?company=cluster-hyosung-heavy`
+  - `?company=cluster-kcc`
+  - `?company=invalid` -> 동양파일 fallback
+
+가격 badge:
+
+- 동양파일 `228340.KQ`, 현대건설 `000720.KS`, KCC `002380.KS`는 기존 가격 API row를 재사용합니다.
+- 삼성물산, LS ELECTRIC, 효성중공업은 현재 가격 row가 없으면 기존 `가격 준비 중` fallback을 사용합니다.
+- 가격 sync, ticker universe, API, schema는 수정하지 않았습니다.
+
+공식 source와 확인 상태:
+
+- 동양파일/KCC는 KIND 공시를 우선 source로 사용합니다.
+- 삼성물산과 LS ELECTRIC은 회사 공식 사업 페이지를 source로 추가했습니다.
+- 효성중공업 공식 제품 페이지는 확인 시점에 500 응답이 있어 화면에는 DART 공시 검색으로 연결했습니다.
+- 로그인·이메일·유료 자료는 추가하지 않았고 사용자 확인이 필요한 자료도 이번 변경에는 없습니다.
+
+남은 TODO:
+
+- 클러스터 사업 확정·예산·부지 추적
+- 착공 일정 추적
+- 동양파일 직접 수주 공시 추적
+- 전력 공급 계획 보강
+- 기업별 실제 공급계약 확인
+- 산업단지 인프라 후보 기업 추가 검토
+
 ## 재건 / 인프라 시장지도 추가
 
 - 새 읽기형 시장지도 route는 `/ko/category/reconstruction-infrastructure`입니다.

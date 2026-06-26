@@ -65,6 +65,7 @@ import {
   MarketPrice,
   reconstructionInfrastructureMap,
   RiskLevel,
+  semiconductorClusterInfrastructureMap,
   sectors,
   SmartMoneyMove,
   smartMoneyMoves,
@@ -3555,6 +3556,7 @@ const reportMapLabels: Record<string, string> = {
   'us-semiconductors': 'AI 반도체 / 데이터센터',
   'datacenter-power-cooling': '데이터센터 냉각 / 전력 인프라',
   'reconstruction-infrastructure': '재건 / 인프라',
+  'semiconductor-cluster-infrastructure': '반도체 클러스터 / 산업단지 인프라',
 };
 
 function isCurrentPublicReport(report: IndustryReport) {
@@ -3820,7 +3822,98 @@ function evidenceGroupsForPick(pick: StockAutopsyPick) {
   return groups;
 }
 
+const semiconductorClusterMapEvidenceGroups: EvidenceGroup[] = [
+  {
+    id: 'cluster-policy-stage',
+    title: '정책·사업 단계 확인',
+    description: '호남권 반도체 클러스터 기대는 공개 보도 기준의 정책 추진 이슈로만 보고, 예산·부지·착공·공급계약 확정으로 단정하지 않습니다.',
+    sources: [
+      {
+        id: 'cluster-policy-sbsbiz',
+        type: 'news',
+        title: 'SBS Biz 호남권 반도체 클러스터 관련주 시황',
+        publisher: 'SBS Biz',
+        url: 'https://v.daum.net/v/20260626094305527',
+        note: '시장 반응과 관련주 시황을 확인하는 공개 보도입니다. 공식 확정 사업이나 직접 수주 근거로 쓰지 않습니다.',
+      },
+    ],
+  },
+  {
+    id: 'cluster-company-business',
+    title: '기업·사업 확인',
+    description: '기업 역할은 공시와 회사 공식 자료 기준으로 확인하고, 특정 클러스터 계약 관계로 표현하지 않습니다.',
+    sources: [
+      {
+        id: 'cluster-dongyang-annual-report',
+        type: 'company-filing',
+        title: '동양파일 2025 사업보고서',
+        publisher: '한국거래소 KIND',
+        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260318002468&langTpCd=0&method=search&orgid=F&rcpno=20260318001680&tran=Y',
+        note: '동양파일의 PHC 파일 사업과 건설 기초자재 성격을 확인합니다.',
+      },
+      {
+        id: 'cluster-dongyang-quarterly-report',
+        type: 'company-filing',
+        title: '동양파일 2026년 1분기 분기보고서',
+        publisher: '한국거래소 KIND',
+        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260515000989&docno=&method=search&viewerhost=',
+        note: '최근 분기 기준 사업과 재무 확인에 사용합니다.',
+      },
+      {
+        id: 'cluster-samsung-ct-construction',
+        type: 'company-ir',
+        title: '삼성물산 건설부문 공식 사업 소개',
+        publisher: '삼성물산',
+        url: 'https://www.samsungcnt.com/eng/business/construction.do',
+        note: '건설·EPC 사업 흐름을 확인하는 회사 공식 자료입니다.',
+      },
+      {
+        id: 'cluster-ls-electric-power',
+        type: 'company-ir',
+        title: 'LS ELECTRIC 전력 솔루션 공식 사업 소개',
+        publisher: 'LS ELECTRIC',
+        url: 'https://www.ls-electric.com/en/business/power-solution',
+        note: '배전·전력설비 흐름을 확인하는 회사 공식 자료입니다.',
+      },
+      {
+        id: 'cluster-hyosung-dart-search',
+        type: 'company-filing',
+        title: '효성중공업 DART 공시 검색',
+        publisher: 'OpenDART',
+        url: 'https://dart.fss.or.kr/dsab007/main.do?option=corp&keyword=%ED%9A%A8%EC%84%B1%EC%A4%91%EA%B3%B5%EC%97%85',
+        note: '변압기와 전력설비 사업은 공시 원문으로 재확인합니다. 공식 제품 페이지는 확인 시점에 500 응답이 있어 링크하지 않았습니다.',
+      },
+      {
+        id: 'cluster-kcc-quarterly-report',
+        type: 'company-filing',
+        title: 'KCC 2026년 1분기 분기보고서',
+        publisher: '한국거래소 KIND',
+        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260515001457&docno=&method=search&viewerhost=',
+        note: 'KCC의 소재·도료·건축자재 사업과 재무는 공시 기준으로 확인합니다.',
+      },
+    ],
+  },
+  {
+    id: 'cluster-contract-status',
+    title: '직접 계약 확인',
+    description: '현재 확인된 동양파일의 반도체 클러스터 직접 공급계약은 없습니다.',
+    sources: [
+      {
+        id: 'cluster-dongyang-direct-contract-status',
+        type: 'company-filing',
+        title: 'KIND 공시 검색',
+        publisher: '한국거래소 KIND',
+        url: 'https://kind.krx.co.kr/disclosure/details.do?method=searchDetailsMain',
+        note: 'KIND/DART 공시와 공개 자료 기준으로 별도 직접 공급계약 공시는 확인하지 못했습니다. 새 수주 공시는 추적 대상입니다.',
+      },
+    ],
+  },
+];
+
 function evidenceGroupsForMap(mapId: string) {
+  if (mapId === semiconductorClusterInfrastructureMap.sectorId) {
+    return semiconductorClusterMapEvidenceGroups;
+  }
   const picks = (marketMapEvidencePickIds[mapId] ?? [])
     .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
     .filter((pick): pick is StockAutopsyPick => Boolean(pick));
@@ -4217,6 +4310,7 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenRepor
                 </div>
                 <h2>{item.title}</h2>
                 <p>{item.note}</p>
+                {item.supportingNote ? <small>{item.supportingNote}</small> : null}
                 {isActive ? (
                   <button type="button" onClick={() => openMarketMapItem(item)}>
                     {item.ctaLabel ?? '지도 보기'}
@@ -4234,7 +4328,15 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenRepor
   );
 }
 
-type ReconstructionInfrastructurePageProps = {
+type InfrastructureStoryMap = typeof reconstructionInfrastructureMap | typeof semiconductorClusterInfrastructureMap;
+type InfrastructureStoryMapCompany = InfrastructureStoryMap['companies'][number];
+
+type InfrastructureStoryMapPageProps = {
+  map: InfrastructureStoryMap;
+  kicker: string;
+  compactFlowLabel: string;
+  graphAriaLabel: string;
+  shellClassName?: string;
   requestedCompanyId?: string | null;
   onHome: () => void;
   onOpenMarketMap: () => void;
@@ -4245,7 +4347,12 @@ type ReconstructionInfrastructurePageProps = {
   marketPrices: MarketPrice[];
 };
 
-function ReconstructionInfrastructurePage({
+function InfrastructureStoryMapPage({
+  map,
+  kicker,
+  compactFlowLabel,
+  graphAriaLabel,
+  shellClassName = '',
   requestedCompanyId,
   onHome,
   onOpenMarketMap,
@@ -4254,11 +4361,10 @@ function ReconstructionInfrastructurePage({
   onOpenReports,
   onSelectCompany,
   marketPrices,
-}: ReconstructionInfrastructurePageProps) {
+}: InfrastructureStoryMapPageProps) {
   const [showConnections, setShowConnections] = useState(false);
-  const map = reconstructionInfrastructureMap;
   const aliasCompanyId = requestedCompanyId && Object.prototype.hasOwnProperty.call(map.companyAliases, requestedCompanyId)
-    ? map.companyAliases[requestedCompanyId as keyof typeof map.companyAliases]
+    ? (map.companyAliases as Record<string, string>)[requestedCompanyId]
     : requestedCompanyId;
   const selectedCompany = map.companies.find((company) => company.id === aliasCompanyId)
     ?? map.companies.find((company) => company.id === map.companyId)
@@ -4297,7 +4403,7 @@ function ReconstructionInfrastructurePage({
 
   return (
     <div
-      className={`pick-shell story-dark-shell reconstruction-map-shell${showConnections ? ' connections-open' : ''}`}
+      className={`pick-shell story-dark-shell reconstruction-map-shell ${shellClassName}${showConnections ? ' connections-open' : ''}`}
       data-selected-company-id={selectedCompanyId}
       data-query-fallback={isKnownCompanyQuery ? 'false' : 'true'}
     >
@@ -4315,10 +4421,11 @@ function ReconstructionInfrastructurePage({
 
       <main>
         <section className="reconstruction-hero">
-          <p className="home-kicker">재건 / 인프라 시장지도</p>
+          <p className="home-kicker">{kicker}</p>
           <h1>{map.hero.title}</h1>
           <p>{map.hero.description}</p>
           <strong>{map.hero.note}</strong>
+          {'caution' in map.hero && map.hero.caution ? <small>{map.hero.caution}</small> : null}
         </section>
 
         <div className="reconstruction-selected-pill" aria-label="현재 선택 기업">
@@ -4351,6 +4458,20 @@ function ReconstructionInfrastructurePage({
                 <p>{selectedCompany.reason}</p>
               </div>
             </div>
+            {'importantNote' in selectedCompany && selectedCompany.importantNote ? (
+              <div className="reconstruction-company-warning" role="note">
+                <AlertTriangle size={15} />
+                <span>{selectedCompany.importantNote}</span>
+              </div>
+            ) : null}
+            {selectedCompany.checks.length ? (
+              <div className="reconstruction-checkpoints">
+                <span>체크포인트</span>
+                <ul>
+                  {selectedCompany.checks.map((check) => <li key={check}>{check}</li>)}
+                </ul>
+              </div>
+            ) : null}
             <div className="reconstruction-company-actions">
               <PriceBadge price={selectedPrice} compact />
               {relatedPick ? (
@@ -4371,33 +4492,50 @@ function ReconstructionInfrastructurePage({
               <p>{map.relatedNote}</p>
             </div>
             <div className="reconstruction-related-grid">
-              {relatedCompanies.map((company) => (
-                <article key={company.id}>
-                  <div className="reconstruction-related-head">
-                    <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
-                    <div>
-                      <strong>{company.name}</strong>
-                      <small>{company.ticker} · {company.exchange}</small>
+              {relatedCompanies.map((company) => {
+                const companyPick = company.pickId
+                  ? stockAutopsyPicks.find((pick) => pick.id === company.pickId)
+                  : undefined;
+                const companyPrice = companyPick
+                  ? getPriceForPick(companyPick, marketPrices)
+                  : getPriceForTicker(company.ticker, company.id, marketPrices);
+                return (
+                  <article key={company.id}>
+                    <div className="reconstruction-related-head">
+                      <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
+                      <div>
+                        <strong>{company.name}</strong>
+                        <small>{company.ticker} · {company.exchange}</small>
+                      </div>
                     </div>
-                  </div>
-                  <div className="reconstruction-related-meta">
-                    <span>{company.role}</span>
-                    <em>{company.status}</em>
-                  </div>
-                  <p>{company.description}</p>
-                  <button type="button" onClick={() => onSelectCompany(company.id)}>
-                    시장 흐름에서 보기
-                    <ArrowRight size={14} />
-                  </button>
-                </article>
-              ))}
+                    <div className="reconstruction-related-meta">
+                      <span>{company.role}</span>
+                      <em>{company.status}</em>
+                    </div>
+                    <p>{company.description}</p>
+                    {'importantNote' in company && company.importantNote ? <small className="reconstruction-related-note">{company.importantNote}</small> : null}
+                    <div className="reconstruction-related-actions">
+                      <PriceBadge price={companyPrice} compact />
+                      <button type="button" onClick={() => onSelectCompany(company.id)}>
+                        시장 흐름에서 보기
+                        <ArrowRight size={14} />
+                      </button>
+                      {companyPick ? (
+                        <button type="button" className="secondary" onClick={() => onOpenPick(companyPick)}>
+                          관련 Pick 보기
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </section>
 
         <section className="reconstruction-compact-flow" aria-labelledby="reconstruction-flow-title">
           <div className="reconstruction-section-head">
-            <span>compact 5단계 흐름</span>
+            <span>{compactFlowLabel}</span>
             <h2 id="reconstruction-flow-title">기대가 숫자로 확인되기까지</h2>
           </div>
           <div className="reconstruction-flow-steps">
@@ -4426,7 +4564,7 @@ function ReconstructionInfrastructurePage({
             </button>
           </div>
           {showConnections && (
-            <div className="reconstruction-flow-canvas" aria-label="재건 인프라 전체 관계도">
+            <div className="reconstruction-flow-canvas" aria-label={graphAriaLabel}>
               <ReactFlow
                 nodes={graphNodes}
                 edges={graphEdges}
@@ -4448,12 +4586,12 @@ function ReconstructionInfrastructurePage({
         <RelatedIndustryReports
           title="산업 보고서로 더 넓게 보기"
           description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
-          reports={reportsForMap(reconstructionInfrastructureMap.sectorId)}
+          reports={reportsForMap(map.sectorId)}
           onOpenReports={onOpenReports}
         />
         <EvidenceDetails
           description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
-          groups={evidenceGroupsForMap(reconstructionInfrastructureMap.sectorId)}
+          groups={evidenceGroupsForMap(map.sectorId)}
           onOpenReports={onOpenReports}
         />
       </main>
@@ -6173,6 +6311,7 @@ function App() {
     ? industryReports.find((report) => report.accessType === 'public' && (report.slug === routeReportSlug || report.id === routeReportSlug))
     : undefined;
   const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
+  const isSemiconductorClusterInfrastructureRoute = routeCategoryId === semiconductorClusterInfrastructureMap.sectorId;
   const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
@@ -6633,6 +6772,11 @@ function App() {
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
+    if (sectorId === reconstructionInfrastructureMap.sectorId || sectorId === semiconductorClusterInfrastructureMap.sectorId) {
+      window.history.pushState({}, '', categoryPath(sectorId, selectedCompanyIdToFocus));
+      setRoute(`${window.location.pathname}${window.location.search}`);
+      return;
+    }
     const focusCompany = selectedCompanyIdToFocus ? companies.find((company) => company.id === selectedCompanyIdToFocus) : undefined;
     const nextSectorId = focusCompany?.sectorId ?? sectorId;
     selectSectorScope(nextSectorId, focusCompany?.id);
@@ -6642,6 +6786,11 @@ function App() {
 
   function openReconstructionCompany(companyId: string) {
     window.history.pushState({}, '', categoryPath(reconstructionInfrastructureMap.sectorId, companyId));
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function openSemiconductorClusterCompany(companyId: string) {
+    window.history.pushState({}, '', categoryPath(semiconductorClusterInfrastructureMap.sectorId, companyId));
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
@@ -6789,7 +6938,11 @@ function App() {
   if (isReconstructionInfrastructureRoute) {
     return (
       <ReactFlowProvider>
-        <ReconstructionInfrastructurePage
+        <InfrastructureStoryMapPage
+          map={reconstructionInfrastructureMap}
+          kicker="재건 / 인프라 시장지도"
+          compactFlowLabel="compact 5단계 흐름"
+          graphAriaLabel="재건 인프라 전체 관계도"
           requestedCompanyId={routeParams.get('company')}
           onHome={openHome}
           onOpenMarketMap={openMarketMapLibrary}
@@ -6797,6 +6950,28 @@ function App() {
           onOpenPick={openPick}
           onOpenReports={openReports}
           onSelectCompany={openReconstructionCompany}
+          marketPrices={marketPrices}
+        />
+      </ReactFlowProvider>
+    );
+  }
+
+  if (isSemiconductorClusterInfrastructureRoute) {
+    return (
+      <ReactFlowProvider>
+        <InfrastructureStoryMapPage
+          map={semiconductorClusterInfrastructureMap}
+          kicker="반도체 클러스터 / 산업단지 인프라 시장지도"
+          compactFlowLabel="compact 6단계 흐름"
+          graphAriaLabel="반도체 클러스터 산업단지 인프라 전체 관계도"
+          shellClassName="semiconductor-cluster-map-shell"
+          requestedCompanyId={routeParams.get('company')}
+          onHome={openHome}
+          onOpenMarketMap={openMarketMapLibrary}
+          onOpenPicks={openPicks}
+          onOpenPick={openPick}
+          onOpenReports={openReports}
+          onSelectCompany={openSemiconductorClusterCompany}
           marketPrices={marketPrices}
         />
       </ReactFlowProvider>
