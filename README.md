@@ -2014,7 +2014,7 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 
 ## 주간 해부 업데이트 방법
 
-홈은 `currentWeeklyDigest`를 기준으로 표시되는 주간 해부 피드입니다. 제작자는 주중에 인스타그램/Threads에 짧은 해부 콘텐츠를 올리고, 토요일에 그 주에 분석한 종목 3~5개를 `src/data.ts`의 `currentWeeklyDigest`에 정리해 사이트 홈을 갱신합니다.
+홈은 `currentWeeklyDigest` export를 기준으로 표시되는 주간 해부 피드입니다. 실제 Pick 본문과 주차 운영 데이터는 `src/content/picks`에서 관리하고, `src/data.ts`는 기존 import 계약을 위한 re-export만 제공합니다. 제작자는 주중에 인스타그램/Threads에 짧은 해부 콘텐츠를 올리고, 토요일에 그 주에 분석한 종목 3~5개를 주차 파일로 등록해 사이트 홈을 갱신합니다.
 
 ### 주가해부실 정체성
 
@@ -2029,13 +2029,108 @@ Vercel Cron 대신 `.github/workflows/sync.yml`을 사용할 수 있습니다. G
 - 주중에는 인스타그램/Threads에 짧은 해부 콘텐츠를 업로드합니다.
 - 토요일에는 그 주에 분석한 종목 3~5개를 사이트에 정리합니다.
 - 홈은 `currentWeeklyDigest`를 기준으로 표시됩니다.
-- `featuredPickId`는 이번 주 대표 해부입니다.
-- `recentItems`는 이번 주 또는 최근 해부 목록입니다. 대체 설계에서 `recentPickIds`를 쓰더라도 같은 역할입니다.
+- `featuredPickId`는 최신 주차의 `representativePickId`에서 자동 계산합니다.
+- `recentItems`는 최신 주차의 `pickIds`에서 자동 계산합니다. 대체 설계에서 `recentPickIds`를 쓰더라도 같은 역할입니다.
 - `market`은 미국/한국 구분에 사용합니다. 현재 타입 기준으로 `US`, `KR`을 사용합니다.
 - `movement` 운영 입력값은 급등/급락/실적/이슈 구분입니다. 현재 데이터 구조에서는 `movementLabel`에 넣습니다.
 - `theme`은 AI 서버, 전력 인프라, 바이오처럼 이번 움직임이 속한 테마입니다.
 - 실제 상세 페이지가 없는 항목은 `coming-soon` 또는 `target: 'analysis'`처럼 상세 연결이 없음을 분명히 처리합니다.
 - 실제 링크가 없는 항목은 `href`를 만들지 않습니다. 빈 링크나 가짜 URL을 넣지 않습니다.
+
+### 주간 Pick 콘텐츠 모듈화 및 자동 주차 관리
+
+현재 Pick 데이터 구조:
+
+```text
+src/content/picks/
+├─ entries.ts
+├─ index.ts
+├─ legacy.ts
+├─ registry.ts
+├─ selectors.ts
+├─ types.ts
+└─ weeks/
+   ├─ index.ts
+   ├─ 2026-06-08.ts
+   ├─ 2026-06-12.ts
+   ├─ 2026-06-15.ts
+   └─ 2026-06-22.ts
+```
+
+`WeeklyPickCollection` schema:
+
+```ts
+export type WeeklyPickCollection = {
+  weekOf: string;
+  label?: string;
+  representativePickId: string;
+  pickIds: string[];
+  publishedAt?: string;
+  status?: 'published' | 'draft';
+  archiveDescription?: string;
+};
+```
+
+계산 방식:
+
+- `weeklyPickCollections`는 `weekOf` 내림차순으로 정렬합니다.
+- 가장 최신 주차가 `currentWeeklyCollection`이 됩니다.
+- 홈 대표 Pick은 `currentWeeklyCollection.representativePickId`로 자동 선택합니다.
+- `/ko/picks`는 `currentWeeklyCollection.pickIds` 순서의 `currentWeeklyPicks`를 사용합니다.
+- `/ko/picks/archive`는 최신 주차를 제외한 주차를 `지난주 Pick`, `그 이전 주 Pick`, `3주 전 Pick`으로 자동 묶고, 남은 오래된 Pick은 `legacyArchivePicks`로 `이전 Pick`에 유지합니다.
+- `src/data.ts`는 `stockAutopsyPicks`, `currentWeeklyDigest`, `weeklyDigest`, `representativePick`, `currentWeeklyPickOrder`, `previousWeekArchivePickOrder`, `archivedWeeklyPickGroups` 등 기존 import가 기대할 수 있는 export를 re-export합니다.
+- 상세 route는 기존처럼 Pick `id`를 사용합니다. `pickBySlug`는 현재 `pickId ?? id`를 slug 호환 키로 보관합니다.
+- 가격 universe는 기존 `scripts/sync-prices.ts` 흐름을 유지합니다. `stockAutopsyPicks`가 새 모듈에서 re-export되므로 sync script는 수정하지 않고 전체 Pick ticker를 계속 수집합니다.
+
+현재 주차 구조:
+
+| archive 표시 | weekOf | Pick |
+| --- | --- | --- |
+| 이번 주 Pick | `2026-06-22` | 동양파일, KCC, Hertz, 제주반도체 |
+| 지난주 Pick | `2026-06-15` | Huntsman, uniQure |
+| 그 이전 주 Pick | `2026-06-12` | SMCI, Micron, 현대건설, DraftKings |
+| 3주 전 Pick | `2026-06-08` | Marvell, LG전자, Taylor Morrison |
+| 이전 Pick | legacy | Dell, Snowflake, NVIDIA, 삼성전자 등 기존 Pick |
+
+주차 날짜 메모:
+
+- `2026-06-22`와 `2026-06-15`는 Pick 본문 `publishedAt`와 기존 README 주차 기록을 기준으로 사용합니다.
+- SMCI, Micron, 현대건설, DraftKings 묶음은 기존 화면 순서를 보존하기 위해 네 Pick의 `publishedAt`인 `2026-06-12`를 사용합니다.
+- Marvell, LG전자, Taylor Morrison은 기존 README의 2026년 6월 둘째 주 기록과 본문 `publishedAt: 2026-06-08`을 사용합니다.
+- 그 이전 Pick은 날짜 정리가 끝나지 않았으므로 억지로 주차 파일에 넣지 않고 legacy archive로 유지합니다.
+
+검증:
+
+```bash
+npm run validate:content
+```
+
+validator는 실제 export된 TypeScript 데이터를 import해 다음을 확인합니다.
+
+- Pick id/slug 중복, 필수 필드, 체크포인트
+- 주차 `weekOf`, 중복 주차, 중복 Pick, 대표 Pick 포함 여부
+- 보고서 `relatedPicks`, 시장지도 evidence Pick, 시장지도 route 참조
+- source URL 형식
+- Pick only 지도 항목의 기업해설/숫자 CTA 연결 방지
+- 국내 ticker 형식과 현재 주차 ticker의 가격 universe 포함 여부
+
+새 주간 Pick 추가 절차:
+
+1. `src/content/picks/entries.ts`에 Pick 콘텐츠 객체를 추가합니다.
+2. `src/content/picks/weeks/YYYY-MM-DD.ts`를 만들고 `representativePickId`와 `pickIds`를 지정합니다.
+3. 필요한 홈 대표 문구가 있다면 `selectors.ts`의 featured/recent template에 복사만 추가합니다.
+4. `npm run validate:content`를 실행합니다.
+5. `./node_modules/.bin/tsc --noEmit`과 `./node_modules/.bin/vite build`를 실행합니다.
+6. `/`, `/ko/picks`, `/ko/picks/archive`, 주요 상세 route, `/ko/market-map`, `/ko/reports`를 QA합니다.
+
+남은 TODO:
+
+- 오래된 legacy Pick의 주차 날짜 정리
+- source registry 완전 통합
+- 보고서·시장지도 참조 타입 강화
+- 다음 주차 입력 템플릿
+- draft/published workflow
+- 관리자 입력 폼 검토
 
 ### 홈 단순화: 이번 주 대표 해부 중심
 

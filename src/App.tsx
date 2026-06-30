@@ -45,12 +45,16 @@ import {
   analystOpinions,
   AnchorCompany,
   anchors,
+  archivedStockAutopsyPickGroups as contentArchivedStockAutopsyPickGroups,
+  archivedStockAutopsyPicks as contentArchivedStockAutopsyPicks,
   companies,
   Company,
   CompanyTier,
   countries,
   CountryId,
   currentWeeklyDigest,
+  currentWeeklyPickIds as contentCurrentWeeklyPickIds,
+  currentWeeklyPicks as contentCurrentWeeklyPicks,
   EvidenceGroup,
   EvidenceSource,
   EvidenceSourceType,
@@ -3445,105 +3449,19 @@ function pickRelationCopy(company: Company, pick: StockAutopsyPick) {
 }
 
 function currentWeeklyPickIds() {
-  return new Set(
-    currentWeeklyDigest.recentItems
-      .map((item) => item.pickId)
-      .filter((pickId): pickId is string => Boolean(pickId)),
-  );
+  return new Set(contentCurrentWeeklyPickIds);
 }
 
 function weeklyStockAutopsyPicks() {
-  const seenPickIds = new Set<string>();
-  return currentWeeklyDigest.recentItems
-    .map((item) => (item.pickId ? stockAutopsyPicks.find((pick) => pick.id === item.pickId) : undefined))
-    .filter((pick): pick is StockAutopsyPick => {
-      if (!pick || seenPickIds.has(pick.id)) return false;
-      seenPickIds.add(pick.id);
-      return true;
-    });
+  return contentCurrentWeeklyPicks;
 }
 
 function archivedStockAutopsyPicks() {
-  const weeklyPickIds = currentWeeklyPickIds();
-  return stockAutopsyPicks
-    .filter((pick) => !weeklyPickIds.has(pick.id))
-    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
+  return contentArchivedStockAutopsyPicks;
 }
 
-const previousWeekArchivePickOrder = [
-  'pick-huntsman-olin-merger-exchange-ratio',
-  'pick-uniqure-amt130-fda-regulatory-path',
-] as const;
-
-const twoWeeksAgoArchivePickOrder = [
-  'pick-smci-ai-server-funding-dilution',
-  'pick-micron-ai-memory-hbm-demand',
-  'pick-hyundai-engineering-reconstruction-expectation',
-  'pick-draftkings-sports-prediction-platform',
-] as const;
-
-const threeWeeksAgoArchivePickOrder = [
-  'pick-marvell-nvlink-fusion-ai-interconnect',
-  'pick-lg-electronics-ai-datacenter-cooling',
-  'pick-taylor-morrison-berkshire-acquisition',
-] as const;
-
-const previousWeekArchivePickIds = new Set<string>(previousWeekArchivePickOrder);
-const twoWeeksAgoArchivePickIds = new Set<string>(twoWeeksAgoArchivePickOrder);
-const threeWeeksAgoArchivePickIds = new Set<string>(threeWeeksAgoArchivePickOrder);
-
 function archivedStockAutopsyPickGroups() {
-  const archivePicks = archivedStockAutopsyPicks();
-  const previousWeekPicks = previousWeekArchivePickOrder
-    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
-    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
-  const twoWeeksAgoPicks = twoWeeksAgoArchivePickOrder
-    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
-    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
-  const threeWeeksAgoPicks = threeWeeksAgoArchivePickOrder
-    .map((pickId) => archivePicks.find((pick) => pick.id === pickId))
-    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
-  const earlierPicks = archivePicks.filter(
-    (pick) =>
-      !previousWeekArchivePickIds.has(pick.id) &&
-      !twoWeeksAgoArchivePickIds.has(pick.id) &&
-      !threeWeeksAgoArchivePickIds.has(pick.id),
-  );
-
-  return [
-    previousWeekPicks.length
-      ? {
-          id: 'previous-week',
-          title: '지난주 Pick',
-          description: '합병 교환조건과 FDA 규제 경로처럼 직전 주차에서 본 흐름입니다.',
-          picks: previousWeekPicks,
-        }
-      : null,
-    twoWeeksAgoPicks.length
-      ? {
-          id: 'two-weeks-ago',
-          title: '그 이전 주 Pick',
-          description: 'AI 서버 자금조달, 메모리, 재건, 예측 플랫폼을 다룬 주차입니다.',
-          picks: twoWeeksAgoPicks,
-        }
-      : null,
-    threeWeeksAgoPicks.length
-      ? {
-          id: 'three-weeks-ago',
-          title: '3주 전 Pick',
-          description: 'AI 연결 반도체, 데이터센터 냉각, 인수 프리미엄을 다룬 주차입니다.',
-          picks: threeWeeksAgoPicks,
-        }
-      : null,
-    earlierPicks.length
-      ? {
-          id: 'earlier',
-          title: '이전 Pick',
-          description: '앞서 다룬 기업 해부와 시장 흐름을 모아두었습니다.',
-          picks: earlierPicks,
-        }
-      : null,
-  ].filter((group): group is { id: string; title: string; description: string; picks: StockAutopsyPick[] } => Boolean(group));
+  return contentArchivedStockAutopsyPickGroups;
 }
 
 function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
