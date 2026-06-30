@@ -15,6 +15,8 @@ import {
   stockAutopsyPicks,
   weeklyPickCollections,
 } from '../src/data.js';
+import { stockAutopsyPickEntries } from '../src/content/picks/entries.js';
+import { contentSources, sourceRegistry } from '../src/content/sources/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 
 const REQUIRED_PRICE_TICKERS = [
@@ -41,6 +43,31 @@ const YAHOO_TICKER_ALIASES: Record<string, string> = {
 const errors: string[] = [];
 const warnings: string[] = [];
 const runtime = globalThis as typeof globalThis & { process?: { exit?: (code?: number) => never } };
+const sourceValidation = {
+  duplicateIdCount: 0,
+  duplicateUrlCount: 0,
+  invalidRefCount: 0,
+  sourceLessPublishedPickCount: 0,
+  restrictedRefCount: 0,
+};
+const tickerValidation = {
+  sharedListedTickerGroups: 0,
+  placeholderTickerGroups: 0,
+};
+
+const VALID_SOURCE_KINDS = new Set([
+  'company-release',
+  'company-ir',
+  'company-filing',
+  'sec-filing',
+  'dart-filing',
+  'kind-filing',
+  'government',
+  'industry-data',
+  'news',
+  'market-data',
+]);
+const VALID_SOURCE_ACCESS_TYPES = new Set(['public', 'restricted']);
 
 function addError(message: string) {
   errors.push(`✗ ${message}`);
@@ -97,13 +124,68 @@ function uniquePriceTargets() {
   REQUIRED_PRICE_TICKERS.forEach((ticker) => addPriceTarget(targets, ticker));
   mockMarketPrices.forEach((price) => addPriceTarget(targets, price.ticker, price.companyId, price.market));
   marketMovers.forEach((mover) => addPriceTarget(targets, mover.ticker, mover.companyId, mover.market));
-  stockAutopsyPicks.forEach((pick) => addPriceTarget(targets, pick.ticker, pick.relatedCompanyId, pick.market));
+  stockAutopsyPicks.forEach((pick) => {
+    if (pick.tickerStatus !== 'placeholder') addPriceTarget(targets, pick.ticker, pick.relatedCompanyId, pick.market);
+  });
   anchors.forEach((anchor) => addPriceTarget(targets, anchor.ticker, anchor.id, anchor.country));
   companies.forEach((company) => {
     const listing = inferCompanyListing(company);
     if (isPriceSyncTarget(company)) addPriceTarget(targets, company.ticker, company.id, listing.market);
   });
   return Array.from(targets.values());
+}
+
+function validateSourceRegistry() {
+  const sourceIds = contentSources.map((source) => source.id);
+  const duplicateSourceIds = duplicateValues(sourceIds);
+  sourceValidation.duplicateIdCount = duplicateSourceIds.length;
+  duplicateSourceIds.forEach((id) => addError(`duplicate source id: ${id}`));
+
+  const sourceUrls = contentSources.map((source) => source.url);
+  const duplicateSourceUrls = duplicateValues(sourceUrls);
+  sourceValidation.duplicateUrlCount = duplicateSourceUrls.length;
+  duplicateSourceUrls.forEach((url) => addError(`duplicate source URL: ${url}`));
+
+  const industryReportUrls = new Set(industryReports.map((report) => report.url));
+
+  contentSources.forEach((source) => {
+    if (!source.id) addError(`missing source id: ${source.title || '(unknown)'}`);
+    if (!source.title) addError(`missing source title: ${source.id}`);
+    if (!source.publisher) addError(`missing source publisher: ${source.id}`);
+    if (!source.url) addError(`missing source URL: ${source.id}`);
+    if (source.url && !isHttpUrl(source.url)) addError(`invalid source URL: ${source.id} / ${source.url}`);
+    if (!VALID_SOURCE_KINDS.has(source.kind)) addError(`invalid source kind: ${source.id} / ${source.kind}`);
+    if (source.accessType && !VALID_SOURCE_ACCESS_TYPES.has(source.accessType)) {
+      addError(`invalid source accessType: ${source.id} / ${source.accessType}`);
+    }
+    if (industryReportUrls.has(source.url)) addError(`industry report URL duplicated in source registry: ${source.id}`);
+  });
+}
+
+function validatePickSources() {
+  stockAutopsyPickEntries.forEach((pick) => {
+    if (pick.sourceLinks?.length) addError(`legacy sourceLinks should be sourceRefs: ${pick.id}`);
+
+    const sourceRefs = pick.sourceRefs ?? [];
+    if (pick.status === 'published' && !sourceRefs.length && pick.sourceStatus !== 'legacy-unverified') {
+      sourceValidation.sourceLessPublishedPickCount += 1;
+      addError(`published pick has no sourceRefs: ${pick.id}`);
+    }
+
+    duplicateValues(sourceRefs.map((ref) => ref.sourceId)).forEach((sourceId) => {
+      addError(`duplicate source ref in pick: ${pick.id} / ${sourceId}`);
+    });
+
+    sourceRefs.forEach((ref) => {
+      const source = sourceRegistry[ref.sourceId];
+      if (!source) {
+        sourceValidation.invalidRefCount += 1;
+        addError(`missing source ref: ${pick.id} / ${ref.sourceId}`);
+        return;
+      }
+      if (source.accessType === 'restricted') sourceValidation.restrictedRefCount += 1;
+    });
+  });
 }
 
 function validatePicks() {
@@ -124,28 +206,52 @@ function validatePicks() {
     if (!pick.title) addError(`missing title: ${pick.id}`);
     if (!pick.watchMetrics?.length) addError(`missing watchMetrics: ${pick.id}`);
 
-    if (weeklyPickIds.has(pick.id) && !pick.sourceLinks?.length) {
-      addError(`missing sourceLinks for weekly pick: ${pick.id}`);
-    } else if (!pick.sourceLinks?.length) {
-      addWarning(`legacy pick has no sourceLinks: ${pick.id}`);
-    }
-
     pick.sourceLinks?.forEach((source) => {
       if (source.url === '') addError(`empty source URL: ${pick.id} / ${source.label}`);
       if (source.url && !isHttpUrl(source.url)) addError(`invalid source URL: ${pick.id} / ${source.url}`);
     });
+
+    const isPlaceholderTicker = pick.tickerStatus === 'placeholder';
+    if (isPlaceholderTicker && pick.ticker !== 'WATCH') {
+      addError(`placeholder pick must use WATCH ticker label: ${pick.id} / ${pick.ticker}`);
+    }
+
+    if (isPlaceholderTicker) {
+      return;
+    }
 
     if (pick.ticker.endsWith('.KS') || pick.ticker.endsWith('.KQ')) {
       if (!/^\d{6}\.(KS|KQ)$/.test(pick.ticker)) addError(`invalid domestic ticker: ${pick.id} / ${pick.ticker}`);
     } else if (pick.market === 'KR' && weeklyPickIds.has(pick.id)) {
       addError(`current weekly KR pick must use .KS/.KQ ticker: ${pick.id} / ${pick.ticker}`);
     } else if (pick.market === 'KR') {
-      addWarning(`legacy KR pick uses non-KRX ticker: ${pick.id} / ${pick.ticker}`);
+      addError(`KR pick must use .KS/.KQ ticker unless placeholder: ${pick.id} / ${pick.ticker}`);
     }
   });
 
-  const duplicateTickers = duplicateValues(stockAutopsyPicks.map((pick) => normalizeTicker(pick.ticker)));
-  duplicateTickers.forEach((ticker) => addWarning(`duplicate ticker across picks: ${ticker}`));
+  const picksByTicker = new Map<string, typeof stockAutopsyPicks>();
+  stockAutopsyPicks.forEach((pick) => {
+    const ticker = normalizeTicker(pick.ticker);
+    if (!ticker) return;
+    picksByTicker.set(ticker, [...(picksByTicker.get(ticker) ?? []), pick]);
+  });
+
+  picksByTicker.forEach((picks, ticker) => {
+    if (picks.length <= 1) return;
+    if (picks.every((pick) => pick.tickerStatus === 'placeholder')) {
+      tickerValidation.placeholderTickerGroups += 1;
+      return;
+    }
+
+    const listedPicks = picks.filter((pick) => pick.tickerStatus !== 'placeholder');
+    const identityKeys = new Set(listedPicks.map((pick) => pick.relatedCompanyId ?? pick.companyId ?? pick.companyName));
+    if (identityKeys.size <= 1) {
+      tickerValidation.sharedListedTickerGroups += 1;
+      return;
+    }
+
+    addError(`conflicting duplicate ticker across picks: ${ticker} / ${picks.map((pick) => pick.id).join(', ')}`);
+  });
 }
 
 function validateWeeks() {
@@ -260,9 +366,18 @@ function validatePriceUniverse() {
       addError(`current weekly ticker missing from price universe: ${pick.id} / ${pick.ticker}`);
     }
   });
+  stockAutopsyPicks
+    .filter((pick) => pick.tickerStatus === 'placeholder')
+    .forEach((pick) => {
+      if (targetTickers.has(normalizeTicker(pick.ticker))) {
+        addError(`placeholder ticker included in price universe: ${pick.id} / ${pick.ticker}`);
+      }
+    });
   return targets.length;
 }
 
+validateSourceRegistry();
+validatePickSources();
 validatePicks();
 validateWeeks();
 validateReferences();
@@ -278,9 +393,17 @@ if (errors.length) {
 }
 
 console.log(`✓ Pick ${stockAutopsyPicks.length}개 검증`);
+console.log(`✓ Source ${contentSources.length}개 검증`);
 console.log(`✓ 주간 컬렉션 ${weeklyPickCollections.length}개 검증`);
 console.log(`✓ 대표 Pick 확인: ${representativePick.companyName}`);
 console.log('✓ 중복 id/slug 없음');
+console.log('✓ 중복 source id 없음');
+console.log('✓ 중복 source URL 없음');
+console.log('✓ 잘못된 source 참조 없음');
+console.log('✓ published Pick source 연결 정상');
+console.log(`✓ ticker 공유 관계 정상 (상장 ticker ${tickerValidation.sharedListedTickerGroups}개, placeholder ${tickerValidation.placeholderTickerGroups}개)`);
+console.log('✓ placeholder ticker 가격 universe 제외');
+console.log(`✓ restricted source 명시 처리 (${sourceValidation.restrictedRefCount}개)`);
 console.log('✓ 관련 보고서 참조 정상');
 console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');

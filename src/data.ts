@@ -352,12 +352,21 @@ export interface SmartMoneyMove {
 }
 
 export interface StockAutopsySourceLink {
+  sourceId?: string;
   label: string;
   url?: string;
   note?: string;
   type?: EvidenceSourceType;
   publisher?: string;
   accessType?: 'public' | 'restricted';
+}
+
+export type StockAutopsySourceStatus = 'verified' | 'legacy-unverified';
+export type StockAutopsyTickerStatus = 'listed' | 'private' | 'unknown' | 'placeholder';
+
+export interface StockAutopsySourceRef {
+  sourceId: string;
+  note?: string;
 }
 
 export interface StockAutopsyPick {
@@ -367,6 +376,7 @@ export interface StockAutopsyPick {
   companyId?: string;
   title?: string;
   ticker: string;
+  tickerStatus?: StockAutopsyTickerStatus;
   market: CountryId;
   movementDirection: StockAutopsyDirection;
   movementLabel: string;
@@ -388,6 +398,8 @@ export interface StockAutopsyPick {
   watchMetrics?: Array<{ label: string; note: string }>;
   goodSignals?: string[];
   cautionSignals?: string[];
+  sourceRefs?: StockAutopsySourceRef[];
+  sourceStatus?: StockAutopsySourceStatus;
   sourceLinks?: StockAutopsySourceLink[];
   publishedAt?: string;
   status?: 'draft' | 'published' | 'archived';

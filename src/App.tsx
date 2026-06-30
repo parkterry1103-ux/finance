@@ -4955,7 +4955,7 @@ function StockAutopsyPicksPage({
                 ) : (
                   <span className="pick-disabled-action">원문 보고서 연결 준비 중</span>
                 )}
-                {detailPick.sourceLinks?.slice(0, 3).map((source) =>
+                {detailPick.sourceLinks?.filter((source) => source.accessType !== 'restricted').slice(0, 3).map((source) =>
                   source.url ? (
                     <a key={source.label} href={source.url} target="_blank" rel="noreferrer noopener">
                       {source.label}

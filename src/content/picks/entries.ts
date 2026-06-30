@@ -36,35 +36,23 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '직접 수주 없이 테마성 과열만 커짐',
       '건설 경기 둔화와 원가 부담으로 이익 연결이 지연',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: '동양파일 2025 사업보고서',
-        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260318002468&langTpCd=0&method=search&orgid=F&rcpno=20260318001680&tran=Y',
+        sourceId: 'kind-krx-20260318002468',
         note: 'KIND 공시에서 동양파일의 228340 종목 코드와 PHC 파일 사업, 건설 기초자재 성격을 확인합니다.',
-        type: 'company-filing',
-        publisher: '한국거래소 KIND',
       },
       {
-        label: '동양파일 2026년 1분기 분기보고서',
-        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260515000989&docno=&method=search&viewerhost=',
+        sourceId: 'kind-krx-20260515000989',
         note: '최근 분기 공시 기준으로 사업과 재무 확인에 사용합니다.',
-        type: 'company-filing',
-        publisher: '한국거래소 KIND',
       },
       {
-        label: 'SBS Biz 호남권 반도체 클러스터 관련주 시황',
-        url: 'https://v.daum.net/v/20260626094305527',
+        sourceId: 'v-daum-v-20260626094305527-19a14080',
         note: '동양파일 6월 26일 상한가와 호남권 반도체 클러스터 관련 기대는 공개 보도 기준으로만 참고합니다.',
-        type: 'news',
-        publisher: 'SBS Biz',
       },
       {
-        label: 'Yahoo Finance 228340.KQ 공개 차트',
-        url: 'https://query1.finance.yahoo.com/v8/finance/chart/228340.KQ?range=5d&interval=1d',
+        sourceId: 'yahoo-finance-chart-228340-kq',
         note: '6월 24일 2,410원(+29.92%)과 6월 26일 2,845원(+29.91%) 종가 계산에 사용한 공개 차트 데이터입니다.',
-        type: 'news',
-        publisher: 'Yahoo Finance',
-      },
+      }
     ],
     publishedAt: '2026-06-26',
     status: 'published',
@@ -104,35 +92,23 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '보유자산 가치가 곧바로 주주가치로 연결되지 않음',
       '증권사 전망과 실제 실적 사이의 간격 확대',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'KCC 2026년 1분기 분기보고서',
-        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260515001457&docno=&method=search&viewerhost=',
+        sourceId: 'kind-krx-20260515001457',
         note: 'KCC의 002380 종목 코드, 사업 부문, 재무와 투자자산은 KIND 공시 기준으로 확인합니다.',
-        type: 'company-filing',
-        publisher: '한국거래소 KIND',
       },
       {
-        label: '매일경제 KCC 실적·자산가치 보도',
-        url: 'https://stock.mk.co.kr/news/view/1110153',
+        sourceId: 'stock-mk-news-view-1110153-99ac0782',
         note: '신한투자증권의 목표주가 75만원 신규 제시와 실리콘·도료·투자자산 가치 기대는 공개 보도 기준으로만 참고합니다.',
-        type: 'news',
-        publisher: '매일경제',
       },
       {
-        label: '머니투데이 KCC 실리콘·도료 전망 보도',
-        url: 'https://www.mt.co.kr/amp/stock/2026/06/25/2026062508592086578',
+        sourceId: 'mt-06-25-2026062508592086578-81e25849',
         note: '실리콘 하반기 수익성 전망과 투자자산·주주환원 기대를 보조 확인합니다.',
-        type: 'news',
-        publisher: '머니투데이',
       },
       {
-        label: 'Yahoo Finance 002380.KS 공개 차트',
-        url: 'https://query1.finance.yahoo.com/v8/finance/chart/002380.KS?range=5d&interval=1d',
+        sourceId: 'yahoo-finance-chart-002380-ks',
         note: '6월 25일 533,000원(+11.27%)과 6월 26일 494,500원(-7.22%) 종가 계산에 사용한 공개 차트 데이터입니다.',
-        type: 'news',
-        publisher: 'Yahoo Finance',
-      },
+      }
     ],
     publishedAt: '2026-06-25',
     status: 'published',
@@ -172,49 +148,31 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '주식 또는 주식연계 조달로 희석 가능성 확대',
       '중고차 가격 약세로 차량 처분 손실과 감가상각비 부담 지속',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Hertz 3억 달러 PIK 채권 제안 발표',
-        url: 'https://newsroom.hertz.com/press-releases/press-release-details/hertz-announces-proposed-offering-of-300-million-of-exchangeable-senior-first-lien-secured-pik-notes/',
+        sourceId: 'newsroom-hertz-press-releases-press-release-details-hertz-announces-prop-379e936c',
         note: '3억 달러 PIK 채권, 2030년 만기, 보통주 교환 가능성, 19.9% 한도와 동시 주식 공모 구조를 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'Hertz',
       },
       {
-        label: 'Hertz 3억5천만 달러 PIK 채권 가격 확정',
-        url: 'https://newsroom.hertz.com/press-releases/press-release-details/hertz-announces-pricing-of-upsized-350-million-of-exchangeable-senior-first-lien-secured-pik-notes/',
+        sourceId: 'newsroom-hertz-press-releases-press-release-details-hertz-announces-pric-95a9f82b',
         note: '6.75% PIK 채권, 현금 3.375%와 PIK 3.375%, 2030년 7월 1일 만기, 최초 교환가 3.58달러를 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'Hertz',
       },
       {
-        label: 'Hertz 보통주 37,037,037주 가격 확정',
-        url: 'https://newsroom.hertz.com/press-releases/press-release-details/hertz-announces-pricing-of-offering-of-37037037-shares-of-common-stock/',
+        sourceId: 'newsroom-hertz-press-releases-press-release-details-hertz-announces-pric-89198328',
         note: '주당 2.70달러, 주식 대여 구조, 회사가 공모 대금을 직접 받지 않는다는 조건을 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'Hertz',
       },
       {
-        label: 'SEC Hertz 보통주 공모 설명서',
-        url: 'https://www.sec.gov/Archives/edgar/data/0001657853/000110465926077051/tm2618542-1_s3asr.htm',
+        sourceId: 'sec-gov-tm2618542-1-s3asr',
         note: '1억 달러 규모 보통주 대여 공모 구조와 SEC 등록 문서를 확인합니다.',
-        type: 'company-filing',
-        publisher: 'SEC',
       },
       {
-        label: 'Hertz 2026년 1분기 10-Q',
-        url: 'https://www.sec.gov/Archives/edgar/data/1657853/000165785326000024/htzz-20260331.htm',
+        sourceId: 'sec-gov-htzz-20260331',
         note: '부채, 차량 금융, 차량 감가상각과 잔존가치 부담을 회사 공시 기준으로 확인합니다.',
-        type: 'company-filing',
-        publisher: 'SEC',
       },
       {
-        label: 'Yahoo Finance HTZ 공개 차트',
-        url: 'https://query1.finance.yahoo.com/v8/finance/chart/HTZ?range=5d&interval=1d',
+        sourceId: 'yahoo-finance-chart-htz',
         note: '6월 24일 종가 3.00달러와 전일 5.06달러 기준 -40.71% 계산에 사용한 공개 차트 데이터입니다.',
-        type: 'news',
-        publisher: 'Yahoo Finance',
-      },
+      }
     ],
     publishedAt: '2026-06-24',
     status: 'published',
@@ -254,35 +212,23 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '중소형 반도체주 수급이 과열',
       '모바일·IoT·전장 수요 회복이 기대보다 느림',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: '제주반도체 2025 사업보고서',
-        url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260323001354&docno=&method=search&viewerhost=',
+        sourceId: 'kind-krx-20260323001354',
         note: '080220 종목 코드, 팹리스 사업 구조, 저전력 메모리 제품과 외부 위탁생산 구조를 확인합니다.',
-        type: 'company-filing',
-        publisher: '한국거래소 KIND',
       },
       {
-        label: '관세청 2026년 6월 1~20일 수출입 현황',
-        url: 'https://www.customs.go.kr/kcs/na/ntt/selectNttInfo.do?nttSn=10167371&nttSnUrl=d3dc345ca30751d2b28d06b45adfbc2b',
+        sourceId: 'korea-customs-10167371',
         note: '6월 1~20일 반도체 수출 255억 달러와 동기간 역대 최대 수치를 확인합니다.',
-        type: 'official-announcement',
-        publisher: '관세청',
       },
       {
-        label: '제주반도체 반도체 수출 호조 보도',
-        url: 'https://news.nate.com/view/20260622n11074?mid=n1101',
+        sourceId: 'news-nate-view-20260622n11074-0ec51351',
         note: '반도체 수출 호조와 중소형 반도체주 매수세 확산은 공개 보도 기준으로만 참고합니다.',
-        type: 'news',
-        publisher: '이투데이',
       },
       {
-        label: 'Yahoo Finance 080220.KQ 공개 차트',
-        url: 'https://query1.finance.yahoo.com/v8/finance/chart/080220.KQ?range=5d&interval=1d',
+        sourceId: 'yahoo-finance-chart-080220-kq',
         note: '6월 22일 134,000원(+17.24%) 종가 계산에 사용한 공개 차트 데이터입니다.',
-        type: 'news',
-        publisher: 'Yahoo Finance',
-      },
+      }
     ],
     publishedAt: '2026-06-22',
     status: 'published',
@@ -322,42 +268,27 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '주주·규제 승인 지연이나 거래 무산',
       '통합 비용 확대와 화학 업황 부진 지속',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Huntsman·Olin 공동 합병 발표',
-        url: 'https://www.sec.gov/Archives/edgar/data/74303/000119312526271782/d99037dex991.htm',
+        sourceId: 'sec-gov-d99037dex991',
         note: '발표일, 0.5476주 교환비율, 45.5%/54.5% 지분, 2027년 상반기 종결 목표와 승인 조건을 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'Huntsman·Olin',
       },
       {
-        label: 'Huntsman 합병계약 8-K',
-        url: 'https://www.sec.gov/Archives/edgar/data/1307954/000110465926074683/tm2618028d1_8k.htm',
+        sourceId: 'sec-gov-tm2618028d1-8k',
         note: '전액 주식 합병, 단주 현금 지급, 주주·규제 승인과 해지 조건을 확인합니다.',
-        type: 'company-filing',
-        publisher: 'SEC · Huntsman',
       },
       {
-        label: 'Olin 공동 발표 8-K',
-        url: 'https://www.sec.gov/Archives/edgar/data/74303/000119312526271782/d99037d8k.htm',
+        sourceId: 'sec-gov-d99037d8k',
         note: 'Olin이 제출한 공동 발표와 투자자 자료의 SEC 공시 원문입니다.',
-        type: 'company-filing',
-        publisher: 'SEC · Olin',
       },
       {
-        label: 'Huntsman 공개 과거 시세',
-        url: 'https://www.nasdaq.com/market-activity/stocks/hun/historical',
+        sourceId: 'nasdaq-historical-hun',
         note: '발표 전일과 발표일 종가를 비교하는 공개 시세 자료입니다.',
-        type: 'news',
-        publisher: 'Nasdaq · HUN',
       },
       {
-        label: 'Olin 공개 과거 시세',
-        url: 'https://www.nasdaq.com/market-activity/stocks/oln/historical',
+        sourceId: 'nasdaq-historical-oln',
         note: '교환비율을 적용한 발표 전일의 참고 합병가치를 계산하는 공개 시세 자료입니다.',
-        type: 'news',
-        publisher: 'Nasdaq · OLN',
-      },
+      }
     ],
     publishedAt: '2026-06-16',
     status: 'published',
@@ -397,35 +328,23 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '추가 임상이나 데이터 보완 요구',
       'FDA가 기존 1/2상 데이터만으로 충분하지 않다고 판단',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'uniQure AMT-130 BLA 계획 발표',
-        url: 'https://uniqure.gcs-web.com/news-releases/news-release-details/uniqure-announces-plan-bla-submission-amt-130-huntingtons',
+        sourceId: 'uniqure-gcs-web-news-releases-news-release-details-uniqure-announces-pla-3cbaedf7',
         note: 'FDA Type B 미팅 결과, 3년차 1/2상 데이터, 2026년 3분기 BLA 계획과 확증시험 조건을 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'uniQure',
       },
       {
-        label: 'uniQure AMT-130 FDA 8-K',
-        url: 'https://www.sec.gov/Archives/edgar/data/1590560/000110465926074853/tm2618105d1_8k.htm',
+        sourceId: 'sec-gov-tm2618105d1-8k',
         note: 'BLA 제출 계획과 FDA가 전달한 규제 경로의 SEC 공시 원문입니다.',
-        type: 'company-filing',
-        publisher: 'SEC · uniQure',
       },
       {
-        label: 'FDA 가속승인 프로그램 안내',
-        url: 'https://www.fda.gov/drugs/nda-and-bla-approvals/accelerated-approval-program',
+        sourceId: 'fda-gov-drugs-nda-and-bla-approvals-accelerated-approval-program-1610dedc',
         note: '가속승인은 BLA 제출 계획이나 지정만으로 확정되지 않는다는 절차 문맥을 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'FDA',
       },
       {
-        label: 'uniQure 공개 과거 시세',
-        url: 'https://www.nasdaq.com/market-activity/stocks/qure/historical',
+        sourceId: 'nasdaq-historical-qure',
         note: '발표 전일과 발표일 종가를 비교하는 공개 시세 자료입니다.',
-        type: 'news',
-        publisher: 'Nasdaq · QURE',
-      },
+      }
     ],
     publishedAt: '2026-06-17',
     status: 'published',
@@ -470,17 +389,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '고객 집중도와 경쟁 ASIC 업체 부담',
       'AI 인프라 투자 속도 둔화',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Marvell·NVIDIA NVLink Fusion 발표',
-        url: 'https://www.marvell.com/company/newsroom/nvidia-ai-ecosystem-expands-marvell-joins-forces-through-nvlink-fusion.html',
+        sourceId: 'marvell-company-newsroom-nvidia-ai-ecosystem-expands-marvell-joins-force-8761be8f',
         note: '전략적 파트너십, NVLink Fusion, 광인터커넥트 협력은 회사 발표 기준으로 확인합니다.',
       },
       {
-        label: 'NVIDIA NVLink Fusion 발표',
-        url: 'https://investor.nvidia.com/news/press-release-details/2025/NVIDIA-Unveils-NVLink-Fusion-for-Industry-to-Build-Semi-Custom-AI-Infrastructure-With-NVIDIA-Partner-Ecosystem/default.aspx',
+        sourceId: 'investor-nvidia-2025-nvidia-unveils-nvlink-fusion-for-industry-to-build-cc4f6311',
         note: 'NVLink Fusion 파트너 생태계 문맥을 확인하는 보조 원문입니다.',
-      },
+      }
     ],
     publishedAt: '2026-06-08',
     status: 'archived',
@@ -520,21 +437,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '수주 기대가 실제 실적으로 찍히는 시점이 늦어짐',
       '테마 기대가 밸류에이션 부담으로 바뀜',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'LG전자 완주 AI 데이터센터 HVAC 협약',
-        url: 'https://www.lge.co.kr/story/newsroom/235685',
+        sourceId: 'lge-story-newsroom-235685-63746d17',
         note: 'AI 데이터센터 토털 HVAC 솔루션 공급 추진과 수주 확대 문맥은 LG전자 뉴스룸 기준으로 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'LG전자',
       },
       {
-        label: 'LG AI 데이터센터 냉각 솔루션',
-        url: 'https://www.lg.com/global/newsroom/news/eco-solution/lg-electronics-showcases-ai-data-center-cooling-solutions-at-data-center-world-2026/',
+        sourceId: 'lg-news-eco-solution-lg-electronics-showcases-ai-data-center-cooling-sol-6f61b0d8',
         note: 'Data Center World 2026에서 공개한 냉각 포트폴리오 문맥을 확인합니다.',
-        type: 'official-announcement',
-        publisher: 'LG전자',
-      },
+      }
     ],
     publishedAt: '2026-06-08',
     status: 'archived',
@@ -574,12 +485,11 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '금리 부담으로 신규 주택 수요 둔화',
       '인수 프리미엄 이후 추가 상승 여력 제한',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Taylor Morrison·Berkshire 인수 발표',
-        url: 'https://s27.q4cdn.com/448041563/files/doc_news/Berkshire-Hathaway-to-Acquire-Taylor-Morrison-Home-Corporation-for-8-5-Billion-2026.pdf',
+        sourceId: 's27-q4cdn-files-doc-news-berkshire-hathaway-to-acquire-taylor-morrison-h-db75cd29',
         note: '주당 72.50달러 현금 인수 조건, 승인 절차, 종결 예상 시점은 공동 발표 원문 기준으로만 확인합니다.',
-      },
+      }
     ],
     publishedAt: '2026-06-08',
     status: 'archived',
@@ -625,21 +535,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '부품 선구매로 현금흐름 악화',
       '매출은 늘지만 마진이 낮아짐',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Supermicro 자금조달 발표',
-        url: 'https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Proposed-7-0-Billion-of-Equity-and-Equity-linked-Financing-Transactions-To-Fund-AI-Orders/default.aspx',
+        sourceId: 'ir-supermicro-2026-supermicro-announces-proposed-7-0-billion-of-equity-a-98aa69c1',
         note: 'AI 서버 주문을 충족하기 위한 70억 달러 규모 자금조달 계획은 회사 발표 기준으로 확인합니다.',
-        type: 'company-ir',
-        publisher: 'Super Micro Computer',
       },
       {
-        label: 'Supermicro 자금조달 가격 확정',
-        url: 'https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-Pricing-of-Equity-and-Equity-Linked-Financing-Transactions-To-Fund-AI-Orders/default.aspx',
+        sourceId: 'ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243',
         note: '보통주, 의무전환우선주, ATM 프로그램 조건은 회사 발표 기준으로 확인합니다.',
-        type: 'company-ir',
-        publisher: 'Super Micro Computer',
-      },
+      }
     ],
     publishedAt: '2026-06-12',
     status: 'published',
@@ -680,21 +584,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '수주 경쟁 심화 또는 마진 부담',
       '단기 테마 과열 이후 변동성 확대',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: '연합뉴스 재건주 급등 보도',
-        url: 'https://www.yna.co.kr/view/AKR20260612043100008',
+        sourceId: 'yna-view-akr20260612043100008-e17a6a9a',
         note: '미국·이란 종전 기대와 현대건설을 포함한 재건 관련주 움직임은 보도 기준으로 확인합니다.',
-        type: 'news',
-        publisher: '연합뉴스',
       },
       {
-        label: '현대건설 회사 소개',
-        url: 'https://www.hdec.kr/en/main.aspx',
+        sourceId: 'hdec-en-main-aspx-2852b1b1',
         note: '해외 인프라와 건설 사업 회사 맥락을 확인하는 보조 원문입니다.',
-        type: 'official-announcement',
-        publisher: '현대건설',
-      },
+      }
     ],
     publishedAt: '2026-06-12',
     status: 'published',
@@ -734,17 +632,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '이용자 증가 대비 낮은 수익성',
       '경쟁 플랫폼과 마케팅 비용 부담',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'DraftKings SEC 8-K',
-        url: 'https://www.sec.gov/Archives/edgar/data/1883685/000110465926071581/tm2617134d1_8k.htm',
+        sourceId: 'sec-gov-tm2617134d1-8k',
         note: 'Predictions offering의 월간 증가율과 거래량은 회사 8-K 기준으로 확인합니다.',
       },
       {
-        label: 'Barron’s DraftKings 예측시장 보도',
-        url: 'https://www.barrons.com/articles/draftkings-stock-prediction-market-trading-volume-e9754687',
+        sourceId: 'barrons-articles-draftkings-stock-prediction-market-trading-volume-e9754-b1aa57a6',
         note: '주가 반응과 예측시장 경쟁 구도는 보도 기준으로만 참고합니다.',
-      },
+      }
     ],
     publishedAt: '2026-06-12',
     status: 'published',
@@ -789,22 +685,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       'HBM 공급 경쟁 심화',
       '섹터 반등이 실적 확인 없이 앞서감',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Micron FY26 2Q 실적 발표',
-        url: 'https://investors.micron.com/news-releases/news-release-details/micron-technology-inc-reports-results-second-quarter-fiscal-2026',
+        sourceId: 'investors-micron-news-releases-news-release-details-micron-technology-in-b6ad01c4',
         note: 'AI 시대 메모리 수요, 매출, 현금흐름 설명은 회사 발표 기준으로 확인합니다.',
-        type: 'company-ir',
-        publisher: 'Micron',
       },
       {
-        label: 'MarketWatch 메모리주 반등 보도',
-        url: 'https://www.marketwatch.com/story/microns-stock-bounces-back-in-a-big-way-the-memory-trade-is-alive-and-well-3466929f',
+        sourceId: 'marketwatch-story-microns-stock-bounces-back-in-a-big-way-the-memory-tra-d51e564f',
         note: '메모리 업종 반등과 HBM/DRAM 수요 해석은 보도 기준으로 참고합니다.',
-        type: 'news',
-        publisher: 'MarketWatch',
-        accessType: 'restricted',
-      },
+      }
     ],
     publishedAt: '2026-06-12',
     status: 'published',
@@ -849,11 +738,11 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '백로그가 실제 매출로 늦게 전환됨',
       '가이던스가 기대보다 보수적으로 바뀜',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Dell 실적 발표 원문 확인',
+        sourceId: 'dell-technologies-fy2026-q1-results',
         note: '주문, 백로그, 가이던스 수치는 회사 발표 원문에서 별도로 확인합니다.',
-      },
+      }
     ],
     publishedAt: '2026-05-30',
     status: 'published',
@@ -896,11 +785,11 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '대형 고객 지출 둔화',
       '클라우드 비용 부담으로 수익성 개선이 늦어짐',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Snowflake 공식 데이터 연결 필요',
+        sourceId: 'snowflake-fy2026-q1-results',
         note: '매출, 제품 매출 가이던스, 대형 고객·사용량은 다음 단계에서 공식 자료 기준으로 연결합니다.',
-      },
+      }
     ],
     publishedAt: '2026-05-30',
     status: 'published',
@@ -947,17 +836,15 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
       '수주잔고가 실제 매출로 전환되는 속도 둔화',
       '특정 대형 고객 의존도 확대',
     ],
-    sourceLinks: [
+    sourceRefs: [
       {
-        label: 'Dell 공식 FY26 실적 발표',
-        url: 'https://www.dell.com/en-us/dt/corporate/newsroom/announcements/detailpage.press-releases~usa~2026~2~dell-technologies-delivers-fourth-quarter-and-full-year-fiscal-2026-results.htm',
+        sourceId: 'dell-technologies-delivers-fourth-quarter-and-full-year-fiscal-2026-results',
         note: 'AI 최적화 서버 주문, 매출, 수주잔고는 회사 발표 기준으로 확인합니다.',
       },
       {
-        label: 'SEC 10-K 원문',
-        url: 'https://www.sec.gov/Archives/edgar/data/1571996/000157199626000008/dell-20260130.htm',
+        sourceId: 'sec-gov-dell-20260130',
         note: '재무제표와 MD&A는 SEC 원문 기준으로 확인합니다.',
-      },
+      }
     ],
     publishedAt: '2026-05-25',
     status: 'archived',
@@ -994,7 +881,12 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['데이터센터 매출 성장 지속', '높은 영업이익률 유지', '현금흐름과 생태계 투자 확대'],
     cautionSignals: ['고객 투자 둔화', 'ASIC·AMD와 경쟁 심화', '규제나 제품 전환에 따른 재고 부담'],
-    sourceLinks: [{ label: 'SEC 원문 보고서', url: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm', note: '실적과 MD&A는 원문 기준으로 확인합니다.' }],
+    sourceRefs: [
+      {
+        sourceId: 'sec-gov-nvda-20260125',
+        note: '실적과 MD&A는 원문 기준으로 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },
@@ -1030,6 +922,16 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['HBM 경쟁력 개선', '영업이익률 회복', '현금흐름 개선'],
     cautionSignals: ['재고 증가', '파운드리 투자 부담', '고객 인증 지연'],
+    sourceRefs: [
+      {
+        sourceId: 'samsung-electronics-2026-q1-dart-report',
+        note: '삼성전자 005930 종목 코드와 메모리·파운드리 사업, 최근 분기 공시를 확인합니다.',
+      },
+      {
+        sourceId: 'samsung-electronics-earnings-releases',
+        note: '분기 실적 발표와 HBM·메모리 업황 설명을 회사 IR 페이지에서 보조 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },
@@ -1065,7 +967,12 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['수주잔고 증가', '고객 인증 확대', '설비투자가 매출로 전환'],
     cautionSignals: ['고객 투자 지연', '특정 고객 의존도 확대', '수주가 매출로 늦게 반영'],
-    sourceLinks: [{ label: 'DART 원문 보고서', url: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515001572', note: '분기보고서 원문 기준으로 확인합니다.' }],
+    sourceRefs: [
+      {
+        sourceId: 'dart-fss-20260515001572',
+        note: '분기보고서 원문 기준으로 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },
@@ -1101,7 +1008,12 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['HBM 수요와 고객 인증 확대', '영업이익률 유지', '재고 회전과 현금흐름 개선'],
     cautionSignals: ['재고 증가', '매출채권 회수 지연', '메모리 가격 둔화'],
-    sourceLinks: [{ label: 'DART 원문 보고서', url: 'https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287', note: '분기보고서 원문 기준으로 확인합니다.' }],
+    sourceRefs: [
+      {
+        sourceId: 'dart-fss-20260515002287',
+        note: '분기보고서 원문 기준으로 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },
@@ -1111,6 +1023,7 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     title: 'AI 서버 인프라 흐름 해부',
     companyName: 'AI 서버 부품업체',
     ticker: 'WATCH',
+    tickerStatus: 'placeholder',
     market: 'US',
     movementDirection: 'up',
     movementLabel: '서버 투자 기대',
@@ -1135,6 +1048,16 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['데이터센터 수주 증가', '마진 유지', '현금흐름 개선'],
     cautionSignals: ['고객 투자 지연', '재고 증가', '매출 증가 대비 낮은 현금흐름'],
+    sourceRefs: [
+      {
+        sourceId: 'dell-technologies-fy2026-q1-results',
+        note: 'AI 서버 주문, 백로그, 데이터센터 인프라 수요를 회사 발표 기준으로 확인합니다.',
+      },
+      {
+        sourceId: 'sec-gov-nvda-20260125',
+        note: 'AI 서버 밸류체인의 GPU·데이터센터 수요 문맥을 SEC 원문으로 보조 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },
@@ -1144,6 +1067,7 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     title: '배터리 소재 수요 부담 해부',
     companyName: '배터리 소재업체',
     ticker: 'WATCH',
+    tickerStatus: 'placeholder',
     market: 'KR',
     movementDirection: 'down',
     movementLabel: '전기차 수요 부담',
@@ -1169,6 +1093,16 @@ export const stockAutopsyPickEntries: StockAutopsyPick[] = [
     ],
     goodSignals: ['고객사 투자 재개', '원재료 가격 안정', '영업현금흐름 개선'],
     cautionSignals: ['전기차 수요 둔화', '소재 가격 하락', '재고 부담 증가'],
+    sourceRefs: [
+      {
+        sourceId: 'posco-future-m-ir-reference',
+        note: '배터리 소재 대표 기업의 IR 자료실에서 사업과 투자자 자료를 확인합니다.',
+      },
+      {
+        sourceId: 'iea-global-ev-outlook-2025',
+        note: '전기차 수요와 배터리 소재 수요의 산업 데이터 문맥을 IEA 공개 보고서로 보조 확인합니다.',
+      }
+    ],
     publishedAt: '2026-05-17',
     status: 'published',
   },

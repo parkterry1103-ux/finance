@@ -2608,7 +2608,32 @@ CTA 상태:
 - `flowId`, `flowLabel`, `flowStage`, `relatedSupplyChainId`, `relatedCompanyId`가 있으면 Pick 상세에서 시장 흐름 지도, 기업 해설, 재무 쉽게 보기로 연결됩니다.
 - `connectedLeaders`와 `relatedCompanyIds`에는 대표 기업 3~5개만 넣고, 홈 기본 화면에는 최대 3개만 노출합니다.
 - `watchMetrics`, `goodSignals`, `cautionSignals`는 실제 확인 포인트만 씁니다. 실제 값이 없으면 숫자를 만들지 않습니다.
-- `sourceLinks`에는 DART, SEC, 회사 IR, 공식 보도자료, 신뢰 가능한 뉴스 원문처럼 확인 가능한 링크만 넣습니다.
+- `sourceRefs`에는 DART, SEC, 회사 IR, 공식 보도자료, 신뢰 가능한 뉴스 원문처럼 확인 가능한 공통 source id만 넣습니다.
+
+### 공통 출처 레지스트리 통합 및 legacy 경고 정리
+
+Pick 원문 출처는 `src/content/sources`의 공통 레지스트리에서 관리합니다. 개별 Pick은 URL과 publisher를 직접 들고 있지 않고 `sourceRefs`로만 source id를 참조하며, `src/content/picks/registry.ts`에서 화면 호환용 `sourceLinks`로 해석합니다.
+
+- `src/content/sources/types.ts`: `ContentSource`, `SourceKind`, `SourceAccessType` 스키마
+- `src/content/sources/entries.ts`: 실제 source 목록
+- `src/content/sources/registry.ts`: `sourceRegistry`, `sourceByUrl`, `resolvePickSourceLinks`
+- `src/content/sources/index.ts`: sources public export
+
+새 Pick을 추가할 때는 먼저 `contentSources`에 `id`, `kind`, `title`, `publisher`, `url`을 등록하고 Pick에는 `sourceRefs: [{ sourceId, note }]`만 넣습니다. 산업 보고서 원문은 `industryReports`가 별도로 관리하므로 같은 URL을 source registry에 중복 등록하지 않습니다.
+
+제한 접근 출처는 기본적으로 Pick 원문 링크로 쓰지 않습니다. 꼭 남겨야 하는 보도 참고 자료는 `accessType: 'restricted'`를 명시하고, 화면의 evidence/source 링크에서는 공개 출처처럼 노출하지 않습니다.
+
+`WATCH`는 실제 가격 동기화 대상 ticker가 아니라 여러 후보를 묶어 보는 placeholder입니다. 해당 Pick에는 `tickerStatus: 'placeholder'`를 붙이고 validator가 가격 universe 제외를 확인합니다. `DELL`처럼 같은 회사 ticker가 여러 이벤트 Pick에서 반복되는 경우에는 `companyId` 또는 `relatedCompanyId`가 같은 정상 공유 관계로 봅니다.
+
+콘텐츠 검증은 다음을 함께 확인합니다.
+
+- source id와 URL 중복 없음
+- source kind, title, publisher, URL 형식 정상
+- Pick의 sourceRefs 존재 여부와 참조 무결성
+- published Pick의 source 연결 정상
+- restricted source 명시 처리
+- `WATCH` placeholder 가격 universe 제외
+- 같은 ticker가 서로 다른 회사에 잘못 연결된 충돌 여부
 
 ## 그림책형 다크 프리미엄 UI 원칙
 
