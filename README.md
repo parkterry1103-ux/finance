@@ -2635,6 +2635,44 @@ Pick 원문 출처는 `src/content/sources`의 공통 레지스트리에서 관�
 - `WATCH` placeholder 가격 universe 제외
 - 같은 ticker가 서로 다른 회사에 잘못 연결된 충돌 여부
 
+### GitHub Actions CI 및 Vercel 배포 전 검증
+
+정적 콘텐츠와 TypeScript/build 검증은 GitHub Actions와 Vercel production build에서 같은 기준으로 차단합니다. production secret, 가격 sync, Supabase/KIS/API 호출은 이 검증에 사용하지 않습니다.
+
+- workflow 파일: `.github/workflows/ci.yml`
+- workflow 이름: `CI`
+- status check/job 이름: `Validate content, types, and build`
+- trigger: `pull_request`, `push` to `main`
+- Node 버전: `20.x`
+- 권한: `contents: read`
+
+CI는 다음 순서로 실행합니다.
+
+```bash
+npm ci
+npm run validate:content
+npm run check:types
+npm run build:app
+```
+
+`validate:content`는 stale `.sync-build`를 쓰지 않도록 먼저 `tsc -p tsconfig.scripts.json`를 실행한 뒤 `.sync-build/scripts/validate-content.js`를 실행합니다. 잘못된 source id, 중복 Pick id/slug, 잘못된 주차 참조, placeholder ticker의 가격 universe 포함, source URL 중복 같은 오류가 있으면 validator가 오류를 출력하고 exit code 1로 종료해 이후 step과 배포를 막습니다.
+
+Vercel은 `vercel.json`의 `buildCommand: npm run build`를 사용합니다. `build` 스크립트는 `npm run check:ci && npm run build:app`이므로 production build 전에 content validator와 TypeScript 검사를 반드시 통과해야 합니다. GitHub Actions는 로그에서 실패 단계를 분리하기 위해 `validate:content`, `check:types`, `build:app`을 각각 실행합니다.
+
+로컬에서 새 Pick을 배포하기 전 권장 순서는 다음과 같습니다.
+
+1. Pick/source/week 파일 수정
+2. `npm run validate:content`
+3. `npm run check:types`
+4. `npm run build`
+5. commit/push
+6. GitHub Actions `Validate content, types, and build` success 확인
+7. Vercel production success 확인
+
+의도적 실패 테스트는 존재하지 않는 `sourceId`를 임시로 주입해 `validate:content`가 `Unknown content source id` 또는 `missing source ref` 오류와 exit code 1로 차단하는지 확인한 뒤, 임시 변경을 되돌리고 정상 validator를 다시 실행합니다.
+
+branch protection을 켤 때는 저장소 설정에서 자동 변경하지 않고, GitHub `Settings -> Branches` 또는 `Rules`에서 `main` 보호 규칙에 `Require status checks to pass`를 켠 뒤 `Validate content, types, and build`를 선택합니다.
+
 ## 그림책형 다크 프리미엄 UI 원칙
 
 주가해부실은 금융 대시보드보다 시장 흐름을 쉽게 이해하는 학습형 UI를 지향합니다. 화면은 대한항공 기내 모니터처럼 깊은 네이비와 반투명 카드, 은은한 빛을 사용해 신뢰감과 몰입감을 주는 방향으로 발전시킵니다.

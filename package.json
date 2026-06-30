@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc && vite build",
+    "build": "npm run check:ci && npm run build:app",
+    "build:app": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "validate:content": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/validate-content.js",
+    "check:types": "tsc --noEmit",
+    "check:ci": "npm run validate:content && npm run check:types",
     "dev:vercel": "npx vercel dev",
     "sync:compile": "tsc -p tsconfig.scripts.json",
     "sync:opendart": "npm run sync:compile && node .sync-build/scripts/sync-opendart-financials.js",
