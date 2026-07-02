@@ -3546,6 +3546,30 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/disclo
 
 또는 Vercel Dashboard의 `finance1` project에서 Cron Jobs의 `/api/sync/disclosures`를 Run 합니다. 확인 항목은 HTTP 200, 감시 기업 수, 신규 공시 수, upsert 성공, 오류 기업 수, fatal 없음, API key 노출 없음입니다.
 
+### Production 운영 연결 검증 시도 (2026-07-03 KST)
+
+기준 commit은 `3fbc88a55b79acc41a8a858950442e45686b3f23`이며 로컬 `main`과 `origin/main`이 일치했습니다. 작업 전 `git diff --check`는 통과했고 working tree는 clean이었습니다.
+
+확인 대상 production은 `https://finance1-flax.vercel.app`입니다. 루트와 `/ko/`, `/ko/disclosures`, `/ko/picks`, `/ko/market-map`, `/ko/reports`는 HTTP 200을 반환했고, production HTML은 `assets/index-Ag8rDhkE.js`와 `assets/index-CpZ3BdL7.css`를 로드했습니다.
+
+로컬에는 `VERCEL_TOKEN`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `OPENDART_API_KEY`가 설정되어 있지 않았고, `vercel`, `supabase`, `gh` CLI도 PATH에 없었습니다. Vercel Dashboard 접근 자동화는 시간 제한으로 완료하지 못했습니다. 따라서 `OPENDART_API_KEY` Production 존재 여부, Supabase migration 실제 적용 여부, 권한 있는 Cron Run, DB row 확인, deployment ID/SHA는 확인하지 못했습니다. secret 값은 출력하거나 기록하지 않았습니다.
+
+공개 읽기 API는 다음 query 모두 HTTP 200이지만 `ok:false`, `code:"DISCLOSURES_UNAVAILABLE"`, `items:[]`, `meta.trackedCompanyCount:10`, `meta.lastSyncedAt:null`, `meta.stale:true`를 반환했습니다.
+
+```text
+/api/market-disclosures?limit=20
+/api/market-disclosures?hours=24&limit=20
+/api/market-disclosures?days=7&limit=20
+/api/market-disclosures?ticker=228340.KQ&limit=20
+/api/market-disclosures?category=supply-contract&limit=20
+```
+
+이 상태는 production 서버가 공시 API 코드는 실행하지만 Supabase `market_disclosures` 조회에서 실패 fallback으로 내려가는 상태입니다. migration 미적용 또는 production Supabase schema 불일치 가능성을 우선 확인해야 합니다.
+
+production UI 확인 결과 `/ko/disclosures`는 `공시 레이더`, OpenDART 상태 카드, 10개 감시 기업 수, category/company 필터, 오류 fallback 문구를 렌더했고 콘솔 오류와 가로 overflow는 없었습니다. 홈 `/ko/`에는 `오늘 한눈에` 카드 3개가 표시됐고 공시 조회 실패 fallback이 표시됐으며 콘솔 오류와 가로 overflow는 없었습니다. 실제 공시 row가 없으므로 DART 원문 링크, 공시 카드, Pick 상세 최근 공시 실데이터 표시는 아직 확인되지 않았습니다.
+
+다음 운영 단계는 Vercel `finance1` Production env에서 `OPENDART_API_KEY` 존재 여부만 확인하고, production Supabase에 `supabase/migrations/20260703_create_market_disclosures.sql`을 적용한 뒤, production redeploy 후 Vercel Dashboard Cron Jobs에서 `/api/sync/disclosures`를 한 번만 Run 하는 것입니다. 이후 `market_disclosures` row count, duplicate receipt 0건, ticker/category 집계, 공개 API 실데이터, 홈·공시 레이더·국내 Pick 상세 실데이터, 다음 자동 cron을 확인합니다.
+
 감시 기업 추가 절차:
 
 1. 공식 OpenDART `corpCode.xml`에서 ticker와 corpCode를 확인합니다.
