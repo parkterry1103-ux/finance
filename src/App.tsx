@@ -77,6 +77,19 @@ import {
   StockAutopsyPick,
   stockAutopsyPicks,
 } from './data';
+import {
+  currentPickDisclosureTickers,
+  disclosureCategoryLabels,
+  disclosureCategoryOrder,
+  disclosureCheckpoints,
+  enabledDartTrackedCompanies,
+  findDartTrackedCompanyByTicker,
+  marketMapDisclosureTickers,
+  type DisclosureCategory,
+  type MarketDisclosure,
+  type MarketDisclosureApiResponse,
+} from './content/disclosures';
+import { fetchMarketDisclosures } from './services/disclosures';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
 import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
@@ -108,6 +121,20 @@ type NewsState = {
   items: NewsItem[];
   updatedAt?: string;
   error?: string;
+};
+
+const initialDisclosureResponse: MarketDisclosureApiResponse = {
+  ok: false,
+  code: 'DISCLOSURES_LOADING',
+  message: '공시 데이터를 불러오는 중입니다.',
+  items: [],
+  meta: {
+    count: 0,
+    lastSyncedAt: null,
+    source: 'opendart',
+    stale: true,
+    trackedCompanyCount: enabledDartTrackedCompanies.length,
+  },
 };
 
 const tierLabels: Record<CompanyTier, string> = {
@@ -672,6 +699,10 @@ function categoryPath(sectorId: string, selectedCompanyId?: string) {
 
 function marketMapPath() {
   return '/ko/market-map';
+}
+
+function disclosuresPath() {
+  return '/ko/disclosures';
 }
 
 function reportsPath(reportId?: string) {
@@ -2984,6 +3015,416 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
   );
 }
 
+function parseSignedNumber(value?: string) {
+  if (!value) return Number.NaN;
+  return Number(String(value).replace(/[^0-9.-]/g, ''));
+}
+
+function formatKstDateTime(value?: string | null, fallback = '확인 중') {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  const parts = kstParts(date);
+  return `${parts.month}.${parts.day} ${parts.hour}:${parts.minute}`;
+}
+
+function formatKstDate(value?: string | null, fallback = '접수일 확인 중') {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  const parts = kstParts(date);
+  return `${parts.year}.${parts.month}.${parts.day}`;
+}
+
+function latestPriceAsOfForPicks(picks: StockAutopsyPick[], prices: MarketPrice[]) {
+  const timestamps = picks
+    .map((pick) => getPriceForPick(pick, prices)?.asOf)
+    .map((value) => parsePriceAsOf(value))
+    .filter((date): date is Date => Boolean(date))
+    .map((date) => date.getTime());
+  if (!timestamps.length) return null;
+  return new Date(Math.max(...timestamps)).toISOString();
+}
+
+function disclosureItemsWithin(items: MarketDisclosure[], hours: number) {
+  const threshold = Date.now() - hours * 60 * 60 * 1000;
+  return items.filter((item) => {
+    const receivedAt = Date.parse(item.receivedAt);
+    return !Number.isNaN(receivedAt) && receivedAt >= threshold;
+  });
+}
+
+function recentDisclosureCountForTicker(items: MarketDisclosure[], ticker: string, hours = 24) {
+  return disclosureItemsWithin(items, hours).filter((item) => item.ticker === ticker).length;
+}
+
+function disclosureStateMessage(response: MarketDisclosureApiResponse) {
+  if (response.ok) return '';
+  if (response.code === 'DISCLOSURES_LOADING') return '공시 데이터를 불러오는 중입니다.';
+  if (response.code === 'DISCLOSURES_NOT_CONFIGURED') return '공시 데이터를 준비하고 있습니다.';
+  return '공시 정보를 일시적으로 불러오지 못했습니다. 이전 데이터를 표시합니다.';
+}
+
+function disclosureSyncLabel(response: MarketDisclosureApiResponse) {
+  const lastSyncedAt = response.meta.lastSyncedAt;
+  if (!response.ok && response.code === 'DISCLOSURES_NOT_CONFIGURED') return '공시 데이터를 준비하고 있습니다.';
+  if (!lastSyncedAt) return 'OpenDART 확인 전';
+  if (response.meta.stale) return `업데이트 지연 · 마지막 확인 ${formatKstDateTime(lastSyncedAt)}`;
+  return `OpenDART · ${formatKstDateTime(lastSyncedAt)} 기준`;
+}
+
+function categoryCountSummary(items: MarketDisclosure[]) {
+  const counts = new Map<DisclosureCategory, number>();
+  items.forEach((item) => {
+    counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+  });
+  return disclosureCategoryOrder
+    .map((category) => ({ category, count: counts.get(category) ?? 0 }))
+    .filter((item) => item.count > 0);
+}
+
+function firstActionableDisclosureCategory(items: MarketDisclosure[]) {
+  return categoryCountSummary(items)[0]?.category ?? null;
+}
+
+type TodayOverviewProps = {
+  marketPrices: MarketPrice[];
+  disclosures: MarketDisclosureApiResponse;
+  onOpenPicks: () => void;
+  onOpenDisclosures: () => void;
+};
+
+function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosures }: TodayOverviewProps) {
+  const weeklyPicks = weeklyStockAutopsyPicks();
+  const sortedPicks = [...weeklyPicks].sort((a, b) => {
+    const aMove = Math.abs(parseSignedNumber(getPriceForPick(a, marketPrices)?.changePercent));
+    const bMove = Math.abs(parseSignedNumber(getPriceForPick(b, marketPrices)?.changePercent));
+    return (Number.isFinite(bMove) ? bMove : -1) - (Number.isFinite(aMove) ? aMove : -1);
+  });
+  const priceAsOf = latestPriceAsOfForPicks(weeklyPicks, marketPrices);
+  const recent24 = disclosureItemsWithin(disclosures.items, 24);
+  const recentByCompany = enabledDartTrackedCompanies
+    .map((company) => ({
+      company,
+      count: recentDisclosureCountForTicker(disclosures.items, company.ticker, 24),
+    }))
+    .filter((item) => item.count > 0)
+    .slice(0, 4);
+  const actionCategory = firstActionableDisclosureCategory(recent24.length ? recent24 : disclosures.items);
+  const actionCopy = actionCategory
+    ? disclosureCheckpoints[actionCategory]
+    : '새 공시보다 기존 Pick의 체크포인트를 계속 관찰할 시점입니다.';
+  const disclosureMessage = disclosureStateMessage(disclosures);
+
+  return (
+    <section className="today-overview-section" aria-labelledby="today-overview-title">
+      <div className="today-overview-head">
+        <div>
+          <p className="home-kicker">오늘성 체크</p>
+          <h2 id="today-overview-title">오늘 한눈에</h2>
+          <p>이번 주 Pick의 가격 변화와 새로 나온 공식 공시를 빠르게 확인합니다.</p>
+        </div>
+        <div className="today-asof-stack" aria-label="데이터 기준 시각">
+          <span>가격 · {priceAsOf ? formatKstDateTime(priceAsOf) : '기준일 확인 중'}</span>
+          <span>공시 · {disclosureSyncLabel(disclosures)}</span>
+        </div>
+      </div>
+
+      <div className="today-overview-grid">
+        <article className="today-card price-card">
+          <div className="today-card-title">
+            <BarChart3 size={18} />
+            <div>
+              <h3>이번 주 Pick 변화</h3>
+              <p>가격 변동이 큰 순서입니다. 변동 원인은 공시와 산업 흐름에서 따로 확인하세요.</p>
+            </div>
+          </div>
+          <div className="today-pick-list">
+            {sortedPicks.map((pick) => {
+              const price = getPriceForPick(pick, marketPrices);
+              return (
+                <button type="button" key={pick.id} className="today-pick-row" onClick={onOpenPicks}>
+                  <span>
+                    <strong>{pick.companyName}</strong>
+                    <small>{pick.ticker}</small>
+                  </span>
+                  <PriceBadge price={price} compact />
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" className="today-card-action" onClick={onOpenPicks}>
+            이번 주 Pick 보기
+            <ArrowRight size={15} />
+          </button>
+        </article>
+
+        <article className="today-card disclosure-card">
+          <div className="today-card-title">
+            <FileSearch size={18} />
+            <div>
+              <h3>새로 나온 공식 공시</h3>
+              <p>OpenDART에 접수된 감시 기업 공시만 표시합니다.</p>
+            </div>
+          </div>
+          <div className="today-disclosure-count">
+            {disclosureMessage ? (
+              <strong>{disclosureMessage}</strong>
+            ) : (
+              <>
+                <strong>{recent24.length ? `최근 24시간 ${recent24.length}건` : '최근 24시간 새 공시가 없습니다.'}</strong>
+                {recentByCompany.length ? (
+                  <div className="today-disclosure-company-list">
+                    {recentByCompany.map(({ company, count }) => (
+                      <span key={company.id}>{company.companyName} {count}건</span>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+          <button type="button" className="today-card-action" onClick={onOpenDisclosures}>
+            공시 레이더 보기
+            <ArrowRight size={15} />
+          </button>
+        </article>
+
+        <article className="today-card action-card">
+          <div className="today-card-title">
+            <Target size={18} />
+            <div>
+              <h3>지금 확인할 것</h3>
+              <p>공시 유형과 Pick 체크포인트를 단정 없이 연결합니다.</p>
+            </div>
+          </div>
+          <div className="today-action-copy">
+            {actionCategory ? <span>{disclosureCategoryLabels[actionCategory]}</span> : <span>체크포인트</span>}
+            <strong>{actionCopy}</strong>
+          </div>
+          <button type="button" className="today-card-action secondary" onClick={onOpenDisclosures}>
+            원문 기준으로 보기
+            <ArrowRight size={15} />
+          </button>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+type MarketDisclosuresPageProps = {
+  disclosures: MarketDisclosureApiResponse;
+  onHome: () => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+};
+
+function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
+  const categoryLabel = disclosureCategoryLabels[disclosure.category];
+  const checkpoint = disclosureCheckpoints[disclosure.category];
+
+  return (
+    <article className="disclosure-radar-card">
+      <div className="disclosure-card-topline">
+        <span>{categoryLabel}</span>
+        <time dateTime={disclosure.receivedAt}>{formatKstDate(disclosure.receivedAt)}</time>
+      </div>
+      <div className="disclosure-company-line">
+        <strong>{disclosure.companyName}</strong>
+        {disclosure.ticker ? <span>{disclosure.ticker}</span> : null}
+      </div>
+      <h2>{disclosure.reportName}</h2>
+      <p>
+        <b>확인할 것:</b>
+        {checkpoint}
+      </p>
+      <a href={disclosure.sourceUrl} target="_blank" rel="noopener noreferrer">
+        OpenDART 원문 보기
+        <ExternalLink size={14} />
+      </a>
+    </article>
+  );
+}
+
+function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketMap }: MarketDisclosuresPageProps) {
+  const [categoryFilter, setCategoryFilter] = useState<DisclosureCategory | 'all'>('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
+  const recent24 = disclosureItemsWithin(disclosures.items, 24);
+  const recent7 = disclosureItemsWithin(disclosures.items, 24 * 7);
+
+  const filteredItems = useMemo(() => {
+    return disclosures.items
+      .filter((item) => categoryFilter === 'all' || item.category === categoryFilter)
+      .filter((item) => {
+        if (companyFilter === 'all') return true;
+        if (companyFilter === 'current-pick') return currentPickDisclosureTickers.has(item.ticker ?? '');
+        if (companyFilter === 'market-map') return marketMapDisclosureTickers.has(item.ticker ?? '');
+        return item.ticker === companyFilter;
+      })
+      .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+  }, [categoryFilter, companyFilter, disclosures.items]);
+
+  const stateMessage = disclosureStateMessage(disclosures);
+
+  return (
+    <div className="pick-shell story-dark-shell disclosure-radar-shell">
+      <header className="pick-nav">
+        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
+          <span className="home-logo">
+            <Network size={20} />
+          </span>
+          <strong>주가해부실</strong>
+        </a>
+        <nav>
+          <button type="button" onClick={onHome}>홈</button>
+          <button type="button" onClick={onOpenPicks}>이번 주</button>
+          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
+        </nav>
+      </header>
+
+      <main className="disclosure-radar-main">
+        <section className="disclosure-radar-hero">
+          <p className="home-kicker">OpenDART 공시 레이더</p>
+          <h1>공시 레이더</h1>
+          <p>
+            현재 Pick과 시장지도 기업에서 새로 나온 공식 공시를 모아봅니다.
+            공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
+          </p>
+        </section>
+
+        <section className="disclosure-status-grid" aria-label="공시 레이더 상태">
+          <article>
+            <span>출처</span>
+            <strong>OpenDART</strong>
+          </article>
+          <article>
+            <span>마지막 동기화</span>
+            <strong>{disclosureSyncLabel(disclosures)}</strong>
+          </article>
+          <article>
+            <span>감시 기업 수</span>
+            <strong>{disclosures.meta.trackedCompanyCount}개</strong>
+          </article>
+          <article>
+            <span>최근 24시간</span>
+            <strong>{recent24.length}건</strong>
+          </article>
+          <article>
+            <span>최근 7일</span>
+            <strong>{recent7.length}건</strong>
+          </article>
+        </section>
+
+        <section className="disclosure-filter-panel" aria-label="공시 필터">
+          <div>
+            <span><Filter size={14} /> 유형</span>
+            <div className="disclosure-chip-row">
+              <button type="button" className={categoryFilter === 'all' ? 'active' : ''} onClick={() => setCategoryFilter('all')}>
+                전체
+              </button>
+              {disclosureCategoryOrder.map((category) => (
+                <button
+                  type="button"
+                  key={category}
+                  className={categoryFilter === category ? 'active' : ''}
+                  onClick={() => setCategoryFilter(category)}
+                >
+                  {disclosureCategoryLabels[category]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span><Filter size={14} /> 회사</span>
+            <div className="disclosure-chip-row">
+              <button type="button" className={companyFilter === 'all' ? 'active' : ''} onClick={() => setCompanyFilter('all')}>
+                전체
+              </button>
+              <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} onClick={() => setCompanyFilter('current-pick')}>
+                현재 Pick
+              </button>
+              <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} onClick={() => setCompanyFilter('market-map')}>
+                시장지도 기업
+              </button>
+              {enabledDartTrackedCompanies.map((company) => (
+                <button
+                  type="button"
+                  key={company.id}
+                  className={companyFilter === company.ticker ? 'active' : ''}
+                  onClick={() => setCompanyFilter(company.ticker)}
+                >
+                  {company.companyName}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {stateMessage ? (
+          <section className="disclosure-empty-state">
+            <RefreshCw size={18} />
+            <strong>{stateMessage}</strong>
+          </section>
+        ) : filteredItems.length ? (
+          <section className="disclosure-card-grid" aria-label="공시 목록">
+            {filteredItems.map((disclosure) => (
+              <DisclosureCard key={disclosure.receiptNumber} disclosure={disclosure} />
+            ))}
+          </section>
+        ) : (
+          <section className="disclosure-empty-state">
+            <CheckCircle size={18} />
+            <strong>최근 7일 새 공시가 없습니다.</strong>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function PickDisclosurePanel({
+  pick,
+  disclosures,
+}: {
+  pick: StockAutopsyPick;
+  disclosures: MarketDisclosureApiResponse;
+}) {
+  const trackedCompany = findDartTrackedCompanyByTicker(pick.ticker);
+  if (!trackedCompany) return null;
+
+  const recentItems = disclosures.items
+    .filter((item) => item.ticker === trackedCompany.ticker)
+    .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+    .slice(0, 3);
+  const stateMessage = disclosureStateMessage(disclosures);
+
+  return (
+    <section className="pick-recent-disclosures" aria-labelledby="pick-recent-disclosures-title">
+      <div className="pick-recent-disclosures-head">
+        <FileSearch size={17} />
+        <div>
+          <h2 id="pick-recent-disclosures-title">최근 공식 공시</h2>
+          <p>{disclosureSyncLabel(disclosures)}</p>
+        </div>
+      </div>
+      {stateMessage ? (
+        <p className="pick-disclosure-empty">{stateMessage}</p>
+      ) : recentItems.length ? (
+        <div className="pick-recent-disclosure-list">
+          {recentItems.map((disclosure) => (
+            <a key={disclosure.receiptNumber} href={disclosure.sourceUrl} target="_blank" rel="noopener noreferrer">
+              <span>{disclosureCategoryLabels[disclosure.category]} · {formatKstDate(disclosure.receivedAt)}</span>
+              <strong>{disclosure.reportName}</strong>
+              <small>{disclosureCheckpoints[disclosure.category]}</small>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p className="pick-disclosure-empty">최근 7일 새 공시가 없습니다.</p>
+      )}
+    </section>
+  );
+}
+
 function isQuarterlyHoldingReport(move: SmartMoneyMove) {
   return move.action === 'holding' || move.sourceLabel.includes('13F') || move.investorType === 'fund';
 }
@@ -3216,11 +3657,13 @@ type AnalysisPageProps = {
 type LandingPageProps = {
   onOpenMarketMapLibrary: () => void;
   onOpenPicks: () => void;
+  onOpenDisclosures: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
+  disclosures: MarketDisclosureApiResponse;
 };
 
-function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPrices }: LandingPageProps) {
+function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenPick, marketPrices, disclosures }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
@@ -3264,6 +3707,15 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
             }}
           >
             시장 지도
+          </a>
+          <a
+            href={disclosuresPath()}
+            onClick={(event) => {
+              event.preventDefault();
+              onOpenDisclosures();
+            }}
+          >
+            공시
           </a>
         </nav>
       </header>
@@ -3328,6 +3780,13 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenPick, marketPr
           </article>
         </section>
 
+        <TodayOverview
+          marketPrices={marketPrices}
+          disclosures={disclosures}
+          onOpenPicks={onOpenPicks}
+          onOpenDisclosures={onOpenDisclosures}
+        />
+
         <section className="home-weekly-cta-strip" aria-label="다음에 볼 곳">
           <article>
             <span>이번 주 전체 Pick</span>
@@ -3354,7 +3813,9 @@ type StockAutopsyPicksPageProps = {
   onOpenPicks: () => void;
   onOpenPicksArchive: () => void;
   onOpenReports: (reportId?: string) => void;
+  onOpenDisclosures: () => void;
   marketPrices: MarketPrice[];
+  disclosures: MarketDisclosureApiResponse;
 };
 
 type MarketMapLibraryPageProps = {
@@ -4527,7 +4988,9 @@ function StockAutopsyPicksPage({
   onOpenPicks,
   onOpenPicksArchive,
   onOpenReports,
+  onOpenDisclosures,
   marketPrices,
+  disclosures,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
   const detailPick = selectedPickId ? selectedPick : undefined;
@@ -4895,6 +5358,8 @@ function StockAutopsyPicksPage({
             onOpenReports={onOpenReports}
           />
 
+          <PickDisclosurePanel pick={detailPick} disclosures={disclosures} />
+
           {pendingMarketMapNote ? (
             <aside className="pick-market-map-note" aria-label="관련 시장지도 안내">
               <Network size={16} />
@@ -5056,6 +5521,7 @@ function StockAutopsyPicksPage({
         <nav>
           <button type="button" onClick={onHome}>홈</button>
           <button type="button" onClick={onOpenPicks}>주가해부실 Pick</button>
+          <button type="button" onClick={onOpenDisclosures}>공시</button>
         </nav>
       </header>
 
@@ -5931,6 +6397,7 @@ function App() {
   const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}${window.location.hash}`);
   const [isMapLocked, setIsMapLocked] = useState(false);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
+  const [marketDisclosures, setMarketDisclosures] = useState<MarketDisclosureApiResponse>(initialDisclosureResponse);
   const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
   const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
   const graphWrapRef = useRef<HTMLElement | null>(null);
@@ -6212,6 +6679,7 @@ function App() {
   const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
   const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
   const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
+  const routeDisclosuresMatch = routePath.match(/^\/ko\/disclosures\/?$/) ?? routePath.match(/^\/disclosures\/?$/);
   const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
   const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
@@ -6238,6 +6706,7 @@ function App() {
   const isPickArchiveRoute = Boolean(routePickArchiveMatch);
   const isPicksRoute = isPickArchiveRoute || Boolean(routePickMatch);
   const isMarketMapRoute = Boolean(routeMarketMapMatch);
+  const isDisclosuresRoute = Boolean(routeDisclosuresMatch);
   const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
@@ -6268,6 +6737,22 @@ function App() {
     });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDisclosures() {
+      const response = await fetchMarketDisclosures({ limit: 100, days: 7 });
+      if (!cancelled) setMarketDisclosures(response);
+    }
+
+    loadDisclosures();
+    const timer = window.setInterval(loadDisclosures, 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -6717,6 +7202,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
+  function openDisclosures() {
+    window.history.pushState({}, '', disclosuresPath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
   function openReports(reportId?: string) {
     window.history.pushState({}, '', reportsPath(reportId));
     setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
@@ -6820,7 +7310,20 @@ function App() {
         onOpenPicks={openPicks}
         onOpenPicksArchive={openPicksArchive}
         onOpenReports={openReports}
+        onOpenDisclosures={openDisclosures}
         marketPrices={marketPrices}
+        disclosures={marketDisclosures}
+      />
+    );
+  }
+
+  if (isDisclosuresRoute) {
+    return (
+      <MarketDisclosuresPage
+        disclosures={marketDisclosures}
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
       />
     );
   }
@@ -6951,8 +7454,10 @@ function App() {
       <LandingPage
         onOpenMarketMapLibrary={openMarketMapLibrary}
         onOpenPicks={openPicks}
+        onOpenDisclosures={openDisclosures}
         onOpenPick={openPick}
         marketPrices={marketPrices}
+        disclosures={marketDisclosures}
       />
     );
   }

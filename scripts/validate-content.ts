@@ -16,6 +16,11 @@ import {
   weeklyPickCollections,
 } from '../src/data.js';
 import { stockAutopsyPickEntries } from '../src/content/picks/entries.js';
+import {
+  classifyDisclosure,
+  dartTrackedCompanies,
+  enabledDartTrackedCompanies,
+} from '../src/content/disclosures/index.js';
 import { contentSources, sourceRegistry } from '../src/content/sources/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 
@@ -53,6 +58,11 @@ const sourceValidation = {
 const tickerValidation = {
   sharedListedTickerGroups: 0,
   placeholderTickerGroups: 0,
+};
+const disclosureValidation = {
+  enabledCount: 0,
+  disabledCount: 0,
+  duplicateCorpCodeCount: 0,
 };
 
 const VALID_SOURCE_KINDS = new Set([
@@ -376,6 +386,98 @@ function validatePriceUniverse() {
   return targets.length;
 }
 
+function validateDisclosureRegistry() {
+  disclosureValidation.enabledCount = enabledDartTrackedCompanies.length;
+  disclosureValidation.disabledCount = dartTrackedCompanies.length - enabledDartTrackedCompanies.length;
+
+  const ids = dartTrackedCompanies.map((company) => company.id);
+  duplicateValues(ids).forEach((id) => addError(`duplicate DART tracked company id: ${id}`));
+
+  const corpCodes = enabledDartTrackedCompanies.map((company) => company.corpCode);
+  const duplicateCorpCodes = duplicateValues(corpCodes);
+  disclosureValidation.duplicateCorpCodeCount = duplicateCorpCodes.length;
+  duplicateCorpCodes.forEach((corpCode) => addError(`duplicate DART corpCode: ${corpCode}`));
+
+  const tickerGroups = new Map<string, typeof dartTrackedCompanies>();
+  dartTrackedCompanies.forEach((company) => {
+    const ticker = normalizeTicker(company.ticker);
+    if (!ticker) return;
+    tickerGroups.set(ticker, [...(tickerGroups.get(ticker) ?? []), company]);
+  });
+
+  tickerGroups.forEach((companiesForTicker, ticker) => {
+    const identityKeys = new Set(companiesForTicker.map((company) => company.companyName));
+    if (identityKeys.size > 1) {
+      addError(`conflicting DART ticker identity: ${ticker} / ${companiesForTicker.map((company) => company.companyName).join(', ')}`);
+    }
+  });
+
+  const currentDomesticTickers = new Set(
+    currentWeeklyPicks
+      .filter((pick) => pick.tickerStatus !== 'placeholder' && (pick.ticker.endsWith('.KS') || pick.ticker.endsWith('.KQ')))
+      .map((pick) => normalizeTicker(pick.ticker)),
+  );
+
+  const marketMapDomesticTickers = new Set(
+    [
+      ...reconstructionInfrastructureMap.companies,
+      ...semiconductorClusterInfrastructureMap.companies,
+    ]
+      .map((company) => normalizeTicker(company.ticker))
+      .filter((ticker) => /^\d{6}\.(KS|KQ)$/.test(ticker)),
+  );
+
+  const enabledTickers = new Set(enabledDartTrackedCompanies.map((company) => normalizeTicker(company.ticker)));
+  currentDomesticTickers.forEach((ticker) => {
+    if (!enabledTickers.has(ticker)) addError(`current domestic Pick missing from DART registry: ${ticker}`);
+  });
+  marketMapDomesticTickers.forEach((ticker) => {
+    if (!enabledTickers.has(ticker)) addError(`market-map domestic ticker missing from DART registry: ${ticker}`);
+  });
+
+  dartTrackedCompanies.forEach((company) => {
+    const ticker = normalizeTicker(company.ticker);
+    const isDomesticTicker = /^\d{6}\.(KS|KQ)$/.test(ticker);
+    const isPlaceholderTicker = ticker === 'WATCH';
+    const isRequiredTicker = currentDomesticTickers.has(ticker) || marketMapDomesticTickers.has(ticker);
+
+    if (!company.id) addError(`DART tracked company missing id: ${company.companyName || company.ticker}`);
+    if (!company.companyName) addError(`DART tracked company missing companyName: ${company.id}`);
+    if (!company.ticker) addError(`DART tracked company missing ticker: ${company.id}`);
+    if (company.enabled && !company.corpCode) addError(`enabled DART tracked company missing corpCode: ${company.id}`);
+    if (company.corpCode && !/^\d{8}$/.test(company.corpCode)) addError(`invalid DART corpCode format: ${company.id} / ${company.corpCode}`);
+    if (company.enabled && !isDomesticTicker) addError(`enabled DART tracked company must be .KS/.KQ ticker: ${company.id} / ${company.ticker}`);
+    if (company.enabled && isPlaceholderTicker) addError(`placeholder ticker included in DART registry: ${company.id}`);
+    if (!company.enabled && isRequiredTicker) addError(`required DART ticker is disabled: ${company.id} / ${company.ticker}`);
+
+    if (company.source === 'current-pick' && !currentDomesticTickers.has(ticker)) {
+      addError(`DART current-pick source is not a current domestic Pick: ${company.id} / ${company.ticker}`);
+    }
+    if (company.source === 'market-map' && !marketMapDomesticTickers.has(ticker)) {
+      addError(`DART market-map source is not in active market maps: ${company.id} / ${company.ticker}`);
+    }
+  });
+}
+
+function validateDisclosureClassification() {
+  const examples: Array<[string, ReturnType<typeof classifyDisclosure>]> = [
+    ['단일판매ㆍ공급계약체결', 'supply-contract'],
+    ['분기보고서', 'periodic-report'],
+    ['매출액또는손익구조30%(대규모법인은15%)이상변경', 'earnings'],
+    ['주요사항보고서(전환사채권발행결정)', 'capital'],
+    ['임원ㆍ주요주주특정증권등소유상황보고서', 'ownership'],
+    ['투자판단관련주요경영사항', 'major-management'],
+    ['타법인주식및출자증권취득결정', 'investment'],
+    ['주주총회소집공고', 'governance'],
+    ['기타시장안내', 'other'],
+  ];
+
+  examples.forEach(([reportName, expected]) => {
+    const actual = classifyDisclosure(reportName);
+    if (actual !== expected) addError(`DART disclosure category mismatch: ${reportName} expected ${expected} got ${actual}`);
+  });
+}
+
 validateSourceRegistry();
 validatePickSources();
 validatePicks();
@@ -383,6 +485,8 @@ validateWeeks();
 validateReferences();
 validateCtaPolicy();
 const priceUniverseCount = validatePriceUniverse();
+validateDisclosureRegistry();
+validateDisclosureClassification();
 
 warnings.forEach((warning) => console.warn(warning));
 
@@ -408,3 +512,8 @@ console.log('✓ 관련 보고서 참조 정상');
 console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');
 console.log(`✓ 현재 주차 ticker 가격 universe 포함 (${priceUniverseCount}개 target)`);
+console.log(`✓ OpenDART 감시 기업 ${disclosureValidation.enabledCount}개 검증`);
+console.log('✓ 중복 corpCode 없음');
+console.log('✓ ticker/corpCode 연결 정상');
+console.log('✓ 미국·placeholder ticker 제외');
+console.log('✓ 공시 category 분류 정상');

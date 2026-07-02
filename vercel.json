@@ -20,6 +20,22 @@
     {
       "path": "/api/sync/prices",
       "schedule": "30 22 * * 1-5"
+    },
+    {
+      "path": "/api/sync/disclosures",
+      "schedule": "5 0 * * 1-5"
+    },
+    {
+      "path": "/api/sync/disclosures",
+      "schedule": "35 3 * * 1-5"
+    },
+    {
+      "path": "/api/sync/disclosures",
+      "schedule": "35 7 * * 1-5"
+    },
+    {
+      "path": "/api/sync/disclosures",
+      "schedule": "35 9 * * 1-5"
     }
   ],
   "rewrites": [
@@ -53,6 +69,14 @@
     },
     {
       "source": "/ownership-trades/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/disclosures",
+      "destination": "/"
+    },
+    {
+      "source": "/disclosures/:path*",
       "destination": "/"
     },
     {

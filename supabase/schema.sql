@@ -113,6 +113,41 @@ alter table if exists market_prices add column if not exists previous_close text
 alter table if exists market_prices add column if not exists close text;
 alter table if exists market_prices add column if not exists price_label text;
 
+create table if not exists market_disclosures (
+  receipt_number text primary key,
+  corp_code text not null,
+  company_name text not null,
+  ticker text,
+  report_name text not null,
+  filer_name text,
+  disclosure_category text not null check (
+    disclosure_category in (
+      'supply-contract',
+      'earnings',
+      'periodic-report',
+      'capital',
+      'ownership',
+      'major-management',
+      'investment',
+      'governance',
+      'other'
+    )
+  ),
+  received_at timestamptz not null,
+  source_url text not null,
+  source text not null default 'opendart',
+  synced_at timestamptz not null default now()
+);
+
+create index if not exists market_disclosures_received_at_idx
+  on market_disclosures (received_at desc);
+
+create index if not exists market_disclosures_ticker_idx
+  on market_disclosures (ticker);
+
+create index if not exists market_disclosures_corp_code_idx
+  on market_disclosures (corp_code);
+
 -- 중복 방지 설계:
 -- OpenDART: dart_rcept_no
 -- SEC filing: accession_number
@@ -120,6 +155,7 @@ alter table if exists market_prices add column if not exists price_label text;
 -- 13F: accessionNumber + cusip + managerCik를 raw_id로 저장
 -- Congress: reportId + transactionDate + assetName + amountRange를 raw_id로 저장
 -- Prices: ticker + source + as_of
+-- OpenDART disclosure radar: receipt_number
 
 create table if not exists sync_runs (
   id uuid primary key default gen_random_uuid(),

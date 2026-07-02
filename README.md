@@ -3512,6 +3512,58 @@ uniQure FDA 발표 확인:
 - 확증시험 설계와 추가 임상 요구 추적
 - 화학/M&A 지도와 바이오/FDA 지도 검토
 
+## 오늘 한눈에 및 OpenDART 공시 레이더
+
+홈(`/`, `/ko/`)에는 `오늘 한눈에` 섹션이 추가되어 이번 주 Pick 가격 변화, OpenDART 공시 동기화 상태, 최근 24시간 신규 공시 수, 지금 확인할 체크포인트를 함께 보여줍니다. 새 상세 route는 `/ko/disclosures`이며, 읽기 API는 `/api/market-disclosures`, 보호된 sync route는 `/api/sync/disclosures`입니다.
+
+서버 전용 환경변수는 `OPENDART_API_KEY`입니다. 클라이언트 `VITE_` prefix를 쓰지 않으며 실제 key 값은 README, 로그, API 응답에 기록하지 않습니다. key가 없으면 sync API는 `OPENDART_NOT_CONFIGURED`로 내려가고, 화면에는 `공시 데이터를 준비하고 있습니다.`만 표시합니다.
+
+감시 기업 registry는 `src/content/disclosures/companies.ts`에 있습니다. 현재 enabled 기업은 동양파일 `228340.KQ` / `00993931`, KCC `002380.KS` / `00105271`, 제주반도체 `080220.KQ` / `00447487`, 현대건설 `000720.KS` / `00164478`, 삼성물산 `028260.KS` / `00149655`, 대우건설 `047040.KS` / `00124540`, HD현대인프라코어 `042670.KS` / `00344287`, POSCO홀딩스 `005490.KS` / `00155319`, LS ELECTRIC `010120.KS` / `00105855`, 효성중공업 `298040.KS` / `01316245`입니다. 미국 ticker와 `WATCH` placeholder는 제외합니다.
+
+Supabase table은 `market_disclosures`입니다. primary key는 OpenDART 접수번호 `receipt_number`이며 원문 전체나 raw response는 저장하지 않습니다. 저장 필드는 회사명, ticker, 공시 제목, 제출인, deterministic category, 접수일, DART 원문 URL, sync 시각 같은 normalized metadata입니다. SQL은 `supabase/schema.sql`과 `supabase/migrations/20260703_create_market_disclosures.sql`에 있습니다.
+
+공시 category는 `src/content/disclosures/categories.ts`의 keyword mapping으로만 분류합니다. 공급계약, 실적, 정기보고서, 자금조달, 지분, 주요경영사항, 투자, 지배구조, 기타를 지원하며, 분류는 탐색 편의용입니다. 공시 제목만 보고 직접 계약이나 실적 효과를 단정하지 않습니다.
+
+Vercel cron은 기존 가격 cron을 유지하고 `/api/sync/disclosures`를 추가합니다. 설정 시각은 평일 `00:05`, `03:35`, `07:35`, `09:35` UTC이며 각각 `09:05`, `12:35`, `16:35`, `18:35` KST입니다. Vercel Hobby plan은 cron이 하루 1회로 제한될 수 있으므로, 실제 project plan이 이 빈도를 지원하는지 Dashboard에서 확인해야 합니다.
+
+UI stale 기준은 2시간입니다. 정상은 `OpenDART · HH:MM 기준`, 지연은 `업데이트 지연 · 마지막 확인 HH:MM`, 데이터 없음은 `최근 7일 새 공시가 없습니다.`, 최초 연결 전은 `공시 데이터를 준비하고 있습니다.`로 표시합니다. 읽기 API가 실패해도 홈 전체가 깨지지 않도록 빈 목록과 상태 메시지로 내려갑니다.
+
+Source registry와 공시 레이더는 역할을 분리합니다. Source registry는 편집된 Pick 설명의 근거이고, OpenDART 공시 레이더는 새로 발생한 동적 공식 이벤트입니다. 공시를 검토한 뒤 Pick 본문 근거로 삼아야 할 때만 편집자가 별도 source로 등록합니다.
+
+로컬 검증:
+
+```bash
+npm run validate:content
+npm run check:types
+npm run build
+```
+
+운영 sync:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/disclosures
+```
+
+또는 Vercel Dashboard의 `finance1` project에서 Cron Jobs의 `/api/sync/disclosures`를 Run 합니다. 확인 항목은 HTTP 200, 감시 기업 수, 신규 공시 수, upsert 성공, 오류 기업 수, fatal 없음, API key 노출 없음입니다.
+
+감시 기업 추가 절차:
+
+1. 공식 OpenDART `corpCode.xml`에서 ticker와 corpCode를 확인합니다.
+2. `dartTrackedCompanies`에 회사명, 내부 ticker, corpCode, source를 등록합니다.
+3. `npm run validate:content`로 중복과 제외 규칙을 확인합니다.
+4. `/api/sync/disclosures`를 실행합니다.
+5. `/api/market-disclosures`와 `/ko/disclosures`에서 노출을 확인합니다.
+
+남은 TODO:
+
+- 공시 원문 세부 항목 구조화
+- 공급계약 금액과 매출 대비 비중 추출
+- 미국 기업 SEC EDGAR 레이더
+- 사용자 관심 기업 watchlist
+- 공시 알림
+- 공시와 기존 Pick 가설 연결
+- 공시 사후 검증
+
 ## MVP QA 원칙
 
 핵심 사용자 동선은 `홈 -> Pick -> 시장 흐름 지도 -> 기업 해설 -> 숫자 3개 보기 -> 같이 볼 기업`입니다. 각 화면에는 다음 화면으로 가는 짧은 버튼을 둡니다: `해부 보기`, `지도에서 보기`, `기업 해설 보기`, `숫자 3개 보기`, `같이 볼 기업 보기`.
