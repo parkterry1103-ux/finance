@@ -3570,6 +3570,82 @@ production UI 확인 결과 `/ko/disclosures`는 `공시 레이더`, OpenDART �
 
 다음 운영 단계는 Vercel `finance1` Production env에서 `OPENDART_API_KEY` 존재 여부만 확인하고, production Supabase에 `supabase/migrations/20260703_create_market_disclosures.sql`을 적용한 뒤, production redeploy 후 Vercel Dashboard Cron Jobs에서 `/api/sync/disclosures`를 한 번만 Run 하는 것입니다. 이후 `market_disclosures` row count, duplicate receipt 0건, ticker/category 집계, 공개 API 실데이터, 홈·공시 레이더·국내 Pick 상세 실데이터, 다음 자동 cron을 확인합니다.
 
+### Production 운영 연결 완료 (2026-07-03 KST)
+
+기준 commit은 `704271dba6f2a4053fdb92dec9e53203c4c8774e`이며 로컬 `main`과 `origin/main`이 일치했습니다. Vercel production deployment는 `6z2Hg1hVk6psWbHne3uyvjTGDror`, production domain은 `https://finance1-flax.vercel.app`입니다. production HTML asset은 `assets/index-Ag8rDhkE.js`와 `assets/index-CpZ3BdL7.css`입니다.
+
+Production env는 secret 값을 열람하지 않았습니다. `OPENDART_API_KEY`, `CRON_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`는 Dashboard Cron 실행과 Supabase upsert 성공으로 production configured 상태를 확인했습니다.
+
+Supabase SQL Editor에서 `supabase/migrations/20260703_create_market_disclosures.sql`을 적용했고, `Run with Enable RLS`로 실행했습니다. 이후 확인 결과 `market_disclosures` RLS는 `true`입니다. 컬럼은 `receipt_number`, `corp_code`, `company_name`, `ticker`, `report_name`, `filer_name`, `disclosure_category`, `received_at`, `source_url`, `source`, `synced_at`이며 `ticker`와 `filer_name`만 nullable입니다. index는 `market_disclosures_pkey`, `market_disclosures_received_at_idx`, `market_disclosures_ticker_idx`, `market_disclosures_corp_code_idx`입니다.
+
+sync 전 공개 API는 `ok:true`, `items:[]`, `lastSyncedAt:null`, `trackedCompanyCount:10`으로 바뀌어 `DISCLOSURES_UNAVAILABLE`가 제거된 것을 확인했습니다.
+
+Vercel Dashboard `finance1 -> Settings -> Cron Jobs`에서 `/api/sync/disclosures`를 Run 했습니다. 화면 피드백이 없어 한 번 재시도되어 Vercel Logs에는 다음 두 요청이 남았습니다. 둘 다 `GET 200`, user agent `vercel-cron/1.0`입니다.
+
+```text
+2026-07-03 05:44:16.58 UTC / 2026-07-03 14:44:16.58 KST
+status: success
+ended_at: 2026-07-03 05:44:24.331 UTC
+inserted_count: 15
+updated_count: 0
+duration: 8.26s
+
+2026-07-03 05:44:34.164 UTC / 2026-07-03 14:44:34.164 KST
+status: success
+ended_at: 2026-07-03 05:44:40.64 UTC
+inserted_count: 0
+updated_count: 15
+```
+
+첫 저장 후 DB 확인 결과 `market_disclosures`는 총 15 rows이고 duplicate receipt는 0건입니다. ticker별 count는 `000720.KS:4`, `298040.KS:3`, `002380.KS:2`, `228340.KQ:2`, `028260.KS:2`, `005490.KS:2`입니다. category별 count는 `ownership:7`, `major-management:4`, `other:3`, `supply-contract:1`입니다.
+
+공개 API 확인 결과는 모두 HTTP 200, `ok:true`, `lastSyncedAt` 존재, `stale:false`입니다.
+
+```text
+/api/market-disclosures?limit=5
+items: 5
+lastSyncedAt: 2026-07-03T05:44:34.164+00:00
+
+/api/market-disclosures?days=7&limit=100
+items: 15
+duplicate receipt in response: 0
+
+/api/market-disclosures?hours=24&limit=100
+items: 0
+lastSyncedAt: 2026-07-03T05:44:40.64+00:00
+
+/api/market-disclosures?ticker=228340.KQ&limit=20
+items: 2
+
+/api/market-disclosures?category=supply-contract&limit=20
+items: 1
+```
+
+국내 Pick 상세용 ticker 확인 결과 동양파일 `228340.KQ`는 2건, KCC `002380.KS`는 2건, 제주반도체 `080220.KQ`는 0건입니다. Hertz `HTZ`는 OpenDART 대상이 아니며 API 필터 결과 0건입니다.
+
+DART 원문 링크 표본 3건은 모두 HTTP 200입니다.
+
+```text
+20260702900224
+20260702000275
+20260702800309
+```
+
+프론트 코드에서 공시 레이더와 Pick 상세의 OpenDART 링크는 `target="_blank"`와 `rel="noopener noreferrer"`를 사용합니다.
+
+Production UI HTTP 확인 결과 `/`, `/ko/`, `/ko/disclosures`, 동양파일/KCC/제주반도체/Hertz Pick 상세 route는 모두 HTTP 200입니다. 브라우저 모바일 렌더 순회는 in-app browser navigation timeout으로 끝까지 완료하지 못했지만, API와 route HTTP, DART 링크 보안 속성, fallback 제거는 확인했습니다.
+
+공시 cron UTC/KST 일정은 다음과 같습니다.
+
+```text
+00:05 UTC / 09:05 KST
+03:35 UTC / 12:35 KST
+07:35 UTC / 16:35 KST
+09:35 UTC / 18:35 KST
+```
+
+가격 cron은 `08:30 UTC / 17:30 KST`, `22:30 UTC / 07:30 KST`입니다. 첫 자동 cron 확인은 아직 남아 있으며, 다음 자동 실행 후 `lastSyncedAt` 갱신과 duplicate receipt 0건을 다시 보면 됩니다.
+
 감시 기업 추가 절차:
 
 1. 공식 OpenDART `corpCode.xml`에서 ticker와 corpCode를 확인합니다.
