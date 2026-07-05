@@ -116,6 +116,99 @@
 - 재무제표·공시 분석 화면을 핵심 숫자와 한 줄 결론 중심으로 먼저 보여주고, 기존 해설은 접힘 섹션으로 보존
 - 인스타그램 카드뉴스 유입용 `주가해부실 Pick` 페이지 추가: `/ko/picks`, `/picks`, `/stock-autopsy-picks`
 
+## 2026-06-29 주간 Pick 업데이트
+
+배포 정보:
+
+- 시작 HEAD: `c88e29e29e72e5525cc898287e2e563ae0016f7e`
+- 콘텐츠 commit: `c436b9cf6ab222b3e5c96aa20c35313af39e566f`
+- branch: `main`
+- production: `https://finance1-flax.vercel.app`
+- production asset: `/assets/index-D3tCVlqv.js`, `/assets/index-CpZ3BdL7.css`
+- Vercel execution host 확인: `finance1-79bt6093v-terrypark-s-projects.vercel.app`
+
+주차 구성:
+
+| 구분 | 값 |
+| --- | --- |
+| weekOf | `2026-06-29` |
+| 대표 Pick | SK하이닉스 |
+| 이번 주 Pick 순서 | SK하이닉스 -> Meta -> 에스폴리텍 -> 금호건설 |
+| 지난주 Pick | 동양파일 -> KCC -> Hertz -> 제주반도체 |
+
+신규 Pick:
+
+| 회사 | id / route | ticker | 가격 row |
+| --- | --- | --- | --- |
+| SK하이닉스 | `pick-sk-hynix-ai-overbuild-selloff` / `/ko/picks/pick-sk-hynix-ai-overbuild-selloff` | `000660.KS` | 있음 |
+| Meta | `pick-meta-ai-compute-cloud-option` / `/ko/picks/pick-meta-ai-compute-cloud-option` | `META` | 있음 |
+| 에스폴리텍 | `pick-spolytech-datacenter-polycarbonate-ramp` / `/ko/picks/pick-spolytech-datacenter-polycarbonate-ramp` | `050760.KQ` | 있음 |
+| 금호건설 | `pick-kumho-enc-honam-cluster-volatility` / `/ko/picks/pick-kumho-enc-honam-cluster-volatility` | `002990.KS` | 있음 |
+
+Source registry:
+
+- 신규 source 14개를 추가했습니다.
+- 신규 restricted source는 WSJ Meta 클라우드 보도 1개이며, 접근 제한 자료로 registry에 명시했습니다.
+- content validator 기준 전체 source 66개, 중복 id/URL 없음, source reference 오류 없음입니다.
+
+OpenDART registry:
+
+- 변경 전 감시 기업 수: 10개
+- 변경 후 감시 기업 수: 13개
+- 추가: SK하이닉스 `000660.KS` / `00164779`, 에스폴리텍 `050760.KQ` / `00340272`, 금호건설 `002990.KS` / `00106313`
+- 제거: 없음
+- 유지: 기존 10개 유지. 동양파일, KCC, 제주반도체는 `manual-watch`로 유지했고, 기존 시장지도 기업 7개도 유지했습니다.
+- Meta는 미국 기업이므로 OpenDART 감시 대상에 넣지 않았습니다.
+
+가격 API와 sync:
+
+| 시점 | `/api/market-prices?limit=200` | source 분포 | 신규 ticker 상태 |
+| --- | --- | --- | --- |
+| sync 전 | 91행 | `kis-openapi` 50, `yahoo-finance-chart` 41 | SK하이닉스 있음, Meta/에스폴리텍/금호건설 없음 |
+| sync 후 | 52행 | `kis-openapi` 52 | SK하이닉스/에스폴리텍/금호건설 표시, Meta는 무필터 응답에서 제외 |
+
+수동 가격 sync는 Vercel Dashboard Cron Jobs에서 `/api/sync/prices`를 1회 실행했습니다. Vercel Logs 기준 `2026-07-05 22:09:48 KST`, `GET 200`, warning/error/fatal 0건입니다.
+
+개별 ticker API 확인:
+
+| ticker | source | currency | price | changePercent | asOf | 화면 badge |
+| --- | --- | --- | --- | --- | --- | --- |
+| `000660.KS` | `kis-openapi` | KRW | `2425000` | `+10.88%` | `2026-07-05T13:09:51.482Z` | 표시 |
+| `META` | `yahoo-finance-chart` | USD | `582.9` | `-4.11%` | `2026-07-02T20:00:00.000Z` | 목록/홈은 fallback |
+| `050760.KQ` | `kis-openapi` | KRW | `1390` | `-1.56%` | `2026-07-05T13:09:52.799Z` | 표시 |
+| `002990.KS` | `kis-openapi` | KRW | `9500` | `-19.01%` | `2026-07-05T13:09:52.982Z` | 표시 |
+
+주의: Meta row는 ticker별 API에서는 존재하지만, 홈과 Pick 목록은 기존 `limit=200` 가격 fetch를 사용하므로 최신 KIS row 묶음에 밀려 `가격 준비 중` fallback으로 보입니다. 가격 API와 sync 구조는 이번 작업에서 수정하지 않았습니다.
+
+OpenDART sync와 공개 API:
+
+- 수동 공시 sync는 Vercel Dashboard Cron Jobs에서 `/api/sync/disclosures`를 1회 실행했습니다.
+- Vercel Logs 기준 `2026-07-05 22:07:18 KST`, `GET 200`, warning/error/fatal 0건입니다.
+- 공개 API는 `ok:true`, `trackedCompanyCount:13`, `stale:false`입니다.
+- `000660.KS`: 4건, `lastSyncedAt: 2026-07-05T13:07:19.038+00:00`
+- `050760.KQ`: 0건, `lastSyncedAt: 2026-07-05T13:07:27.288+00:00`
+- `002990.KS`: 1건, `lastSyncedAt: 2026-07-05T13:07:19.038+00:00`
+- 최근 기간에 에스폴리텍 공시가 없는 상태는 빈 배열로 정상 표시됩니다.
+
+Production QA:
+
+- 홈 `/`, `/ko/`: 대표 Pick SK하이닉스, 제목, ticker, 가격 badge, 오늘 한눈에 신규 4개 확인. Meta 가격 badge는 fallback입니다.
+- `/ko/picks`: SK하이닉스 -> Meta -> 에스폴리텍 -> 금호건설 순서 확인. 지난주 종목이 현재 목록에 섞이지 않습니다.
+- `/ko/picks/archive`: 지난주 그룹에 동양파일, KCC, Hertz, 제주반도체 확인. selector 기준 weekOf는 `2026-06-22`이며 화면 label은 `2026년 6월 넷째 주`입니다.
+- 신규 상세 4개: route 정상, title/ticker 정상, source links 정상, `details` 기본 접힘, 국내 3개 OpenDART section 정상, Meta는 OpenDART section 미표시.
+- 기존 표본 route: 동양파일, KCC, Hertz, 제주반도체, Huntsman, uniQure, 현대건설, Dell Technologies, NVIDIA id가 production bundle과 registry에 유지됩니다. 제주반도체 상세는 production에서 실제 route로 열어 가격 badge와 console 0을 확인했습니다.
+- Desktop QA: 홈, `/ko/picks`, `/ko/picks/archive`, 신규 상세 4개, `/ko/disclosures`, `/ko/market-map`, `/ko/reports`에서 horizontal overflow 0, console error 0.
+- Mobile QA `390x844`: 홈, `/ko/picks`, `/ko/picks/archive`, 기존 상세 표본, `/ko/disclosures`, `/ko/market-map`, `/ko/reports`에서 horizontal overflow 0, console error 0.
+
+검증:
+
+- `git diff --check` 통과
+- `tsc -p tsconfig.scripts.json` 통과
+- `node .sync-build/scripts/validate-content.js` 통과: Pick 26개, Source 66개, 주간 컬렉션 5개, 대표 Pick SK하이닉스, 가격 universe 95개 target, OpenDART 감시 기업 13개
+- `tsc --noEmit` 통과
+- `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
+- `package.json`, `package-lock.json` 변경 없음
+
 ## 이번 주 동양파일·KCC·Hertz·제주반도체 Pick 반영
 
 2026년 6월 넷째 주 Pick을 아래 4개로 교체했습니다. 기존 Pick은 삭제하지 않고 보관함 주차만 이동했습니다.
