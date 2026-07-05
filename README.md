@@ -209,6 +209,94 @@ Production QA:
 - `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
 - `package.json`, `package-lock.json` 변경 없음
 
+## market-prices 최신 ticker별 조회 안정화
+
+2026-06-29 주간 Pick 배포 뒤 가격 저장과 개별 ticker 조회는 정상인데, 홈과 `/ko/picks`가 쓰는 전체 가격 API에서 Meta와 기존 Yahoo ticker가 빠지는 회귀를 수정했습니다.
+
+증상:
+
+- 수정 전 production `/api/market-prices?limit=200`: 52 rows, unique ticker 52, duplicate ticker 0.
+- source/currency 분포는 `kis-openapi` 52 / `KRW` 52뿐이었습니다.
+- `META`, `NVDA`, `DELL`, `MU`, `SMCI`, `HTZ`는 개별 ticker API에는 있었지만 전체 API에는 없었습니다.
+- validator 기준 가격 universe 95개 중 non-tradable label `비상장`을 제외하면, 전체 API에 없고 개별 API에는 있던 실제 가격 ticker는 42개였습니다.
+
+실제 원인:
+
+- 기존 API는 Supabase `market_prices` raw rows에 `order=as_of.desc,created_at.desc`와 요청 `limit`을 먼저 적용했습니다.
+- 그 뒤 application에서 `company_id + ticker` 기준으로 dedupe했습니다.
+- 2026-07-05 KIS sync가 만든 최신 국내 raw rows가 상위 200개를 차지하면서, 더 오래된 2026-07-02 Yahoo 최신 rows가 raw limit 밖으로 밀렸습니다.
+- 반환된 응답 안의 duplicate ticker는 0이었지만, limit 의미가 "최종 고유 ticker 수"가 아니라 "raw snapshot 수"처럼 동작한 것이 문제였습니다.
+
+수정 방식:
+
+- `api/market-prices.js`만 수정했습니다.
+- DB schema, migration, view, RPC는 추가하지 않았습니다.
+- `market_prices`를 1,000 rows 단위로 pagination하여 읽고, 모든 읽은 rows에서 ticker별 대표 row를 먼저 선택합니다.
+- ticker key는 `ticker.trim().toUpperCase()` 기준입니다.
+- latest 선택 기준은 `정상 price row 우선 -> as_of desc -> created_at desc -> ticker/source stable tie-break`입니다.
+- 그 뒤에 최종 `limit`을 적용합니다. 예: `limit=20`은 raw rows 20개가 아니라 고유 ticker 최신 row 20개입니다.
+- 기존 API response schema인 `{ ok, source, limit, prices }`와 가격 row field명은 유지했습니다.
+- API response header에는 stale 응답 방지를 위해 `Cache-Control: no-store`를 추가했습니다.
+- 가격 sync, KIS provider, Yahoo provider, OpenDART, 주간 Pick selector, source registry는 수정하지 않았고 가격 sync도 다시 실행하지 않았습니다.
+
+production API 검증:
+
+| 항목 | 수정 전 | 수정 후 |
+| --- | ---: | ---: |
+| `/api/market-prices?limit=200` rows | 52 | 94 |
+| unique ticker | 52 | 94 |
+| duplicate ticker | 0 | 0 |
+| `kis-openapi` rows | 52 | 52 |
+| `yahoo-finance-chart` rows | 0 | 42 |
+| `KRW` rows | 52 | 52 |
+| `USD` rows | 0 | 42 |
+| 전체 API에 없고 개별 API에 있던 실제 ticker | 42 | 0 |
+
+- 수정 후 `newest asOf`: `2026-07-05T13:10:00.832Z`
+- 수정 후 `oldest asOf`: `2026-07-02T20:00:00.000Z`
+- `limit=20`은 rows 20, unique ticker 20, duplicate ticker 0으로 확인했습니다.
+- production API 반영 확인 request id: `x-vercel-id = icn1::iad1::nkp6t-1783263570761-24bf847198d8`
+- public HTML assets: `/assets/index-D3tCVlqv.js`, `/assets/index-CpZ3BdL7.css`. 이번 변경은 API 함수 변경이라 client asset hash는 유지됐습니다.
+- Vercel CLI는 로컬에 없고 public endpoint와 unauth GitHub deployments API에서는 deployment ID가 노출되지 않아 deployment ID 자체는 확인하지 못했습니다. 반영 기준은 production API 동작과 commit SHA로 확인했습니다.
+
+전체 API와 개별 ticker API 일치:
+
+| ticker | source | currency | price | change | changePercent | asOf | full vs individual |
+| --- | --- | --- | ---: | ---: | ---: | --- | --- |
+| `000660.KS` | `kis-openapi` | KRW | `2425000` | `+238000.00` | `+10.88%` | `2026-07-05T13:09:51.482Z` | 일치 |
+| `META` | `yahoo-finance-chart` | USD | `582.9` | `-25.00` | `-4.11%` | `2026-07-02T20:00:00.000Z` | 일치 |
+| `050760.KQ` | `kis-openapi` | KRW | `1390` | `-22.00` | `-1.56%` | `2026-07-05T13:09:52.799Z` | 일치 |
+| `002990.KS` | `kis-openapi` | KRW | `9500` | `-2230.00` | `-19.01%` | `2026-07-05T13:09:52.982Z` | 일치 |
+| `228340.KQ` | `kis-openapi` | KRW | `3245` | `-1125.00` | `-25.74%` | `2026-07-05T13:09:53.174Z` | 일치 |
+| `002380.KS` | `kis-openapi` | KRW | `489000` | `+19000.00` | `+4.04%` | `2026-07-05T13:09:53.357Z` | 일치 |
+| `HTZ` | `yahoo-finance-chart` | USD | `2.12` | `-0.08` | `-3.64%` | `2026-07-02T20:00:01.000Z` | 일치 |
+| `080220.KQ` | `kis-openapi` | KRW | `91500` | `+1800.00` | `+2.01%` | `2026-07-05T13:09:53.548Z` | 일치 |
+| `NVDA` | `yahoo-finance-chart` | USD | `194.83` | `-2.31` | `-1.17%` | `2026-07-02T20:00:01.000Z` | 일치 |
+| `DELL` | `yahoo-finance-chart` | USD | `394.32` | `-21.76` | `-5.23%` | `2026-07-02T20:04:40.000Z` | 일치 |
+| `MU` | `yahoo-finance-chart` | USD | `975.56` | `-65.94` | `-6.33%` | `2026-07-02T20:00:01.000Z` | 일치 |
+| `SMCI` | `yahoo-finance-chart` | USD | `27.22` | `-0.83` | `-2.96%` | `2026-07-02T20:00:00.000Z` | 일치 |
+| `000720.KS` | `kis-openapi` | KRW | `115300` | `+100.00` | `+0.09%` | `2026-07-05T13:09:53.921Z` | 일치 |
+
+production UI QA:
+
+- `/`, `/ko/`: 대표 Pick SK하이닉스와 `오늘 한눈에` 신규 4개 모두 실제 가격 badge 표시. Meta는 `$582.9`, Yahoo, 기준 `07.03`으로 표시되며 `가격 준비 중`이 사라졌습니다.
+- `/ko/picks`: SK하이닉스 -> Meta -> 에스폴리텍 -> 금호건설 순서 유지, 네 카드 모두 가격 표시.
+- Meta 상세 `/ko/picks/pick-meta-ai-compute-cloud-option`: `$582.9`, Yahoo, 기준 `07.03` 표시.
+- 신규 국내 상세 3개: SK하이닉스, 에스폴리텍, 금호건설 모두 한국투자/KRW 가격 표시.
+- archive `/ko/picks/archive`: 동양파일, KCC, Hertz, 제주반도체, SMCI, MU, DELL, NVDA, 000720.KS 표본 가격 badge 정상. `WATCH` placeholder 1개는 기존 정책대로 가격 준비 중입니다.
+- OpenDART 공개 API `/api/market-disclosures?limit=50`: HTTP 200, `ok: true`, items 20으로 회귀 없음.
+- Mobile QA `390x844`: `/ko/`, `/ko/picks`, Meta 상세에서 horizontal overflow 0, price badge overflow 0, console error 0.
+
+검증:
+
+- latest-by-ticker 순수 fixture 통과: 중복 row, raw limit 회귀, `asOf` 동률 `created_at` tie-break, invalid price row, final limit 20.
+- `git diff --check` 통과.
+- `tsc -p tsconfig.scripts.json` 통과.
+- `node .sync-build/scripts/validate-content.js` 통과: Pick 26개, Source 66개, 주간 컬렉션 5개, 대표 Pick SK하이닉스, 가격 universe 95개 target, OpenDART 감시 기업 13개.
+- `tsc --noEmit` 통과.
+- `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음.
+- `package.json`, `package-lock.json` 변경 없음.
+
 ## 이번 주 동양파일·KCC·Hertz·제주반도체 Pick 반영
 
 2026년 6월 넷째 주 Pick을 아래 4개로 교체했습니다. 기존 Pick은 삭제하지 않고 보관함 주차만 이동했습니다.
