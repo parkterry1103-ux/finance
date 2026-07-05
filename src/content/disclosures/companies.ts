@@ -2,11 +2,35 @@ import type { DartTrackedCompany } from './types.js';
 
 export const dartTrackedCompanies: DartTrackedCompany[] = [
   {
+    id: 'sk-hynix',
+    companyName: 'SK하이닉스',
+    ticker: '000660.KS',
+    corpCode: '00164779',
+    source: 'current-pick',
+    enabled: true,
+  },
+  {
+    id: 'spolytech',
+    companyName: '에스폴리텍',
+    ticker: '050760.KQ',
+    corpCode: '00340272',
+    source: 'current-pick',
+    enabled: true,
+  },
+  {
+    id: 'kumho-engineering-construction',
+    companyName: '금호건설',
+    ticker: '002990.KS',
+    corpCode: '00106313',
+    source: 'current-pick',
+    enabled: true,
+  },
+  {
     id: 'dongyang-pile',
     companyName: '동양파일',
     ticker: '228340.KQ',
     corpCode: '00993931',
-    source: 'current-pick',
+    source: 'manual-watch',
     enabled: true,
   },
   {
@@ -14,7 +38,7 @@ export const dartTrackedCompanies: DartTrackedCompany[] = [
     companyName: 'KCC',
     ticker: '002380.KS',
     corpCode: '00105271',
-    source: 'current-pick',
+    source: 'manual-watch',
     enabled: true,
   },
   {
@@ -22,7 +46,7 @@ export const dartTrackedCompanies: DartTrackedCompany[] = [
     companyName: '제주반도체',
     ticker: '080220.KQ',
     corpCode: '00447487',
-    source: 'current-pick',
+    source: 'manual-watch',
     enabled: true,
   },
   {

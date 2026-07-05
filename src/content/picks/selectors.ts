@@ -20,8 +20,8 @@ const archiveGroupCopy = [
 ] as const;
 
 const currentWeeklyDigestShell = {
-  headline: '이번 주 시장은 정책 기대, 실적 재평가, 자금조달, 반도체 업황에 반응했습니다.',
-  subheadline: '동양파일은 반도체 생산이 아니라 공장과 산업단지를 짓는 인프라 기대를 따로 봅니다.',
+  headline: '이번 주 시장은 AI 인프라 수익화, 메모리 변동성, 데이터센터 소재, 반도체 클러스터 기대에 반응했습니다.',
+  subheadline: 'SK하이닉스 급락은 확인된 주문 취소가 아니라 AI 과잉투자 우려와 수급 변동성을 따로 봅니다.',
   sourceNote: '정적 콘텐츠에는 가격·재무 숫자를 만들지 않고, 기준일은 가격 배지와 원문 링크로 확인합니다.',
   marketTabs: [
     { id: 'ALL', label: '전체' },
@@ -74,6 +74,17 @@ const currentWeeklyDigestShell = {
 } satisfies Omit<WeeklyDigest, 'weekLabel' | 'kicker' | 'featuredPickId' | 'featured' | 'recentItems'>;
 
 const featuredPickTemplates: Record<string, WeeklyDigest['featured']> = {
+  'pick-sk-hynix-ai-overbuild-selloff': {
+    marketLabel: '한국',
+    theme: 'AI 메모리 / 변동성',
+    question: 'SK하이닉스, 왜 하루 만에 14.57%나 빠졌을까?',
+    meta: '000660.KS · KOSPI · HBM / AI 인프라',
+    headline: '확인된 수요 감소가 아니라, AI 인프라 과잉투자 우려가 메모리주 밸류에이션을 흔들었습니다.',
+    summary: 'Meta 클라우드 보도는 공식 출시가 아닌 보도 단계입니다. HBM 실적, 메모리 가격, 수급 변동성을 나눠 봅니다.',
+    metricLabels: ['7월 2일 -14.57%', 'HBM / DRAM', '보도 단계 ≠ 공식 출시'],
+    primaryCtaLabel: 'SK하이닉스 해부 보기',
+    secondaryCtaLabel: '이번 주 Pick 전체 보기',
+  },
   'pick-dongyang-pile-semiconductor-cluster-infrastructure': {
     marketLabel: '한국',
     theme: '정책 기대 / 산업단지 인프라',
@@ -88,6 +99,42 @@ const featuredPickTemplates: Record<string, WeeklyDigest['featured']> = {
 };
 
 const currentWeeklyRecentItemTemplates: Record<string, Omit<WeeklyDigestRecentItem, 'pickId'>> = {
+  'pick-sk-hynix-ai-overbuild-selloff': {
+    id: 'weekly-sk-hynix-ai-overbuild-selloff',
+    market: 'KR',
+    theme: 'AI 메모리 / 변동성',
+    movementLabel: 'AI 과잉투자 우려 / 7월 2일 -14.57%',
+    question: 'SK하이닉스, 왜 하루 만에 14.57%나 빠졌을까?',
+    summary: '공식 수요 감소가 아니라 Meta 관련 보도 이후 AI 인프라 투자 과열 우려가 메모리주로 번진 흐름입니다.',
+    relatedCompanies: ['HBM', 'AI capex', '수급 변동성'],
+  },
+  'pick-meta-ai-compute-cloud-option': {
+    id: 'weekly-meta-ai-compute-cloud-option',
+    market: 'US',
+    theme: 'AI 인프라 / 클라우드 옵션',
+    movementLabel: 'AI 컴퓨팅 외부 판매 보도 / 7월 1일 +8.8%',
+    question: 'Meta는 왜 AI 지출 부담이 클라우드 옵션으로 다시 읽혔을까?',
+    summary: '대규모 AI 설비투자가 비용 부담에서 외부 판매 옵션으로 해석된 장면입니다.',
+    relatedCompanies: ['Meta Compute', 'AI capex', 'cloud option'],
+  },
+  'pick-spolytech-datacenter-polycarbonate-ramp': {
+    id: 'weekly-spolytech-datacenter-polycarbonate-ramp',
+    market: 'KR',
+    theme: '데이터센터 소재 / 엔지니어링 플라스틱',
+    movementLabel: 'AI 데이터센터용 폴리카보네이트 양산 보도 / 6월 30일 +30.00%',
+    question: '에스폴리텍, 데이터센터 소재 기대를 실적과 어떻게 나눠 봐야 할까?',
+    summary: '데이터센터 냉각 소재 기대와 실제 반복 공급, 납품 규모, 마진 확인을 분리해서 봅니다.',
+    relatedCompanies: ['폴리카보네이트', '냉각 격납', '소재 테마'],
+  },
+  'pick-kumho-enc-honam-cluster-volatility': {
+    id: 'weekly-kumho-enc-honam-cluster-volatility',
+    market: 'KR',
+    theme: '건설 / 정책 기대 / 변동성',
+    movementLabel: '호남 반도체 클러스터 기대 / 6월 29일 +29.86%',
+    question: '금호건설, 호남 반도체 클러스터 기대를 직접 수주처럼 보면 안 되는 이유',
+    summary: '정책 기대가 건설주로 번진 흐름이지만, 직접 계약과 실적 반영은 공시로 따로 확인해야 합니다.',
+    relatedCompanies: ['호남 반도체 클러스터', '건설 발주', '시장경보'],
+  },
   'pick-dongyang-pile-semiconductor-cluster-infrastructure': {
     id: 'weekly-dongyang-pile-semiconductor-cluster-infrastructure',
     market: 'KR',
