@@ -3759,11 +3759,11 @@ uniQure FDA 발표 확인:
 - 확증시험 설계와 추가 임상 요구 추적
 - 화학/M&A 지도와 바이오/FDA 지도 검토
 
-## 오늘 한눈에 및 OpenDART 공시 레이더
+## 오늘 한눈에 및 공식 공시 레이더
 
-홈(`/`, `/ko/`)에는 `오늘 한눈에` 섹션이 추가되어 이번 주 Pick 가격 변화, OpenDART 공시 동기화 상태, 최근 24시간 신규 공시 수, 지금 확인할 체크포인트를 함께 보여줍니다. 새 상세 route는 `/ko/disclosures`이며, 읽기 API는 `/api/market-disclosures`, 보호된 sync route는 `/api/sync/disclosures`입니다.
+홈(`/`, `/ko/`)에는 `오늘 한눈에` 섹션이 추가되어 이번 주 Pick 가격 변화, OpenDART와 SEC EDGAR 공시 동기화 상태, 최근 24시간 신규 공식 공시 수, 지금 확인할 체크포인트를 함께 보여줍니다. 새 상세 route는 `/ko/disclosures`이며, 읽기 API는 `/api/market-disclosures`와 `/api/market-sec-filings`, 보호된 sync route는 `/api/sync/disclosures`와 `/api/sync/sec-filings`입니다.
 
-서버 전용 환경변수는 `OPENDART_API_KEY`입니다. 클라이언트 `VITE_` prefix를 쓰지 않으며 실제 key 값은 README, 로그, API 응답에 기록하지 않습니다. key가 없으면 sync API는 `OPENDART_NOT_CONFIGURED`로 내려가고, 화면에는 `공시 데이터를 준비하고 있습니다.`만 표시합니다.
+OpenDART 서버 전용 환경변수는 `OPENDART_API_KEY`입니다. 클라이언트 `VITE_` prefix를 쓰지 않으며 실제 key 값은 README, 로그, API 응답에 기록하지 않습니다. key가 없으면 sync API는 `OPENDART_NOT_CONFIGURED`로 내려가고, 화면에는 `공시 데이터를 준비하고 있습니다.`만 표시합니다.
 
 감시 기업 registry는 `src/content/disclosures/companies.ts`에 있습니다. 현재 enabled 기업은 동양파일 `228340.KQ` / `00993931`, KCC `002380.KS` / `00105271`, 제주반도체 `080220.KQ` / `00447487`, 현대건설 `000720.KS` / `00164478`, 삼성물산 `028260.KS` / `00149655`, 대우건설 `047040.KS` / `00124540`, HD현대인프라코어 `042670.KS` / `00344287`, POSCO홀딩스 `005490.KS` / `00155319`, LS ELECTRIC `010120.KS` / `00105855`, 효성중공업 `298040.KS` / `01316245`입니다. 미국 ticker와 `WATCH` placeholder는 제외합니다.
 
@@ -3775,7 +3775,17 @@ Vercel cron은 기존 가격 cron을 유지하고 `/api/sync/disclosures`를 추
 
 UI stale 기준은 2시간입니다. 정상은 `OpenDART · HH:MM 기준`, 지연은 `업데이트 지연 · 마지막 확인 HH:MM`, 데이터 없음은 `최근 7일 새 공시가 없습니다.`, 최초 연결 전은 `공시 데이터를 준비하고 있습니다.`로 표시합니다. 읽기 API가 실패해도 홈 전체가 깨지지 않도록 빈 목록과 상태 메시지로 내려갑니다.
 
-Source registry와 공시 레이더는 역할을 분리합니다. Source registry는 편집된 Pick 설명의 근거이고, OpenDART 공시 레이더는 새로 발생한 동적 공식 이벤트입니다. 공시를 검토한 뒤 Pick 본문 근거로 삼아야 할 때만 편집자가 별도 source로 등록합니다.
+Source registry와 공시 레이더는 역할을 분리합니다. Source registry는 편집된 Pick 설명의 근거이고, 공시 레이더는 OpenDART와 SEC EDGAR에서 새로 발생한 동적 공식 이벤트입니다. 공시를 검토한 뒤 Pick 본문 근거로 삼아야 할 때만 편집자가 별도 source로 등록합니다.
+
+SEC EDGAR filings radar는 미국 Pick용 공식 공시 피드입니다. 공식 SEC JSON endpoint `https://data.sec.gov/submissions/CIK##########.json`만 서버에서 호출하고, 클라이언트가 SEC를 직접 bulk 호출하지 않습니다. SEC User-Agent는 서버 전용 `SEC_USER_AGENT` 환경변수로만 사용하며 값은 API 응답, README, 로그에 기록하지 않습니다. 값이 없으면 sync는 SEC를 호출하지 않고 `SEC_USER_AGENT_NOT_CONFIGURED`로 안전하게 skip합니다.
+
+SEC 감시 기업 registry는 `src/content/disclosures/sec-companies.ts`입니다. CIK는 SEC 공식 company ticker JSON 기준으로 저장하며, enabled 기업은 Meta `META` / `0001326801`, Hertz `HTZ` / `0001657853`, Huntsman `HUN` / `0001307954`, uniQure `QURE` / `0001590560`, Marvell `MRVL` / `0001835632`, Taylor Morrison `TMHC` / `0001562476`, Super Micro Computer `SMCI` / `0001375365`, DraftKings `DKNG` / `0001883685`, Micron `MU` / `0000723125`, Dell `DELL` / `0001571996`, Snowflake `SNOW` / `0001640147`, NVIDIA `NVDA` / `0001045810`입니다.
+
+SEC Supabase table은 `market_sec_filings`입니다. primary key는 `accession_number`이며 저장 필드는 CIK, 회사명, ticker, form type, deterministic filing category, 제출 시각, report date, primary document, SEC Archives index URL, sync 시각 같은 normalized metadata입니다. SQL은 `supabase/schema.sql`과 `supabase/migrations/20260706_create_market_sec_filings.sql`에 있습니다. 원문 HTML scraping, third-party SEC API, 가격·뉴스 대체 데이터는 사용하지 않습니다.
+
+SEC filing category는 `src/content/disclosures/sec-categories.ts`의 form mapping으로만 분류합니다. `8-K`, `10-Q`, `10-K`, `3/4/5`, `SC 13D/G`, `DEF 14A`, `S-1/S-3/S-4/424B`, `6-K/20-F`를 지원하며 amended form도 같은 유형으로 취급합니다. 분류는 탐색 편의용이고, 공시 발생만으로 매수·매도·수요 감소·주문 취소를 단정하지 않습니다.
+
+Vercel cron은 기존 가격/OpenDART cron을 유지하고 `/api/sync/sec-filings`를 평일 `21:15 UTC`에 추가합니다. 한국시간으로는 다음 날 `06:15 KST`입니다. SEC UI stale 기준은 36시간이며, 정상은 `SEC EDGAR · HH:MM 기준`, 지연은 `업데이트 지연 · 마지막 확인 HH:MM`, 최초 연결 전은 `미국 공시 데이터를 준비하고 있습니다.`로 표시합니다.
 
 로컬 검증:
 
@@ -3789,9 +3799,10 @@ npm run build
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/disclosures
+curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/sync/sec-filings
 ```
 
-또는 Vercel Dashboard의 `finance1` project에서 Cron Jobs의 `/api/sync/disclosures`를 Run 합니다. 확인 항목은 HTTP 200, 감시 기업 수, 신규 공시 수, upsert 성공, 오류 기업 수, fatal 없음, API key 노출 없음입니다.
+또는 Vercel Dashboard의 `finance1` project에서 Cron Jobs의 `/api/sync/disclosures` 또는 `/api/sync/sec-filings`를 Run 합니다. 확인 항목은 HTTP 200, 감시 기업 수, 신규 공시 수, upsert 성공, 오류 기업 수, fatal 없음, API key/User-Agent 노출 없음입니다.
 
 ### Production 운영 연결 검증 시도 (2026-07-03 KST)
 

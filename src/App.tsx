@@ -79,17 +79,28 @@ import {
 } from './data';
 import {
   currentPickDisclosureTickers,
+  currentPickSecTickers,
   disclosureCategoryLabels,
   disclosureCategoryOrder,
   disclosureCheckpoints,
   enabledDartTrackedCompanies,
+  enabledSecTrackedCompanies,
   findDartTrackedCompanyByTicker,
+  findSecTrackedCompanyByTicker,
   marketMapDisclosureTickers,
+  matchesSecFormPattern,
+  secFilingCategoryLabels,
+  secFilingCategoryOrder,
+  secFilingCheckpoints,
+  secSupportedFormPatterns,
   type DisclosureCategory,
   type MarketDisclosure,
   type MarketDisclosureApiResponse,
+  type MarketSecFiling,
+  type MarketSecFilingsApiResponse,
+  type SecFilingCategory,
 } from './content/disclosures';
-import { fetchMarketDisclosures } from './services/disclosures';
+import { fetchMarketDisclosures, fetchMarketSecFilings } from './services/disclosures';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
 import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
@@ -134,6 +145,20 @@ const initialDisclosureResponse: MarketDisclosureApiResponse = {
     source: 'opendart',
     stale: true,
     trackedCompanyCount: enabledDartTrackedCompanies.length,
+  },
+};
+
+const initialSecFilingsResponse: MarketSecFilingsApiResponse = {
+  ok: false,
+  code: 'SEC_FILINGS_LOADING',
+  message: '미국 공시 데이터를 불러오는 중입니다.',
+  items: [],
+  meta: {
+    count: 0,
+    lastSyncedAt: null,
+    source: 'sec-edgar',
+    stale: true,
+    trackedCompanyCount: enabledSecTrackedCompanies.length,
   },
 };
 
@@ -3197,8 +3222,20 @@ function disclosureItemsWithin(items: MarketDisclosure[], hours: number) {
   });
 }
 
+function secFilingItemsWithin(items: MarketSecFiling[], hours: number) {
+  const threshold = Date.now() - hours * 60 * 60 * 1000;
+  return items.filter((item) => {
+    const filedAt = Date.parse(item.filedAt);
+    return !Number.isNaN(filedAt) && filedAt >= threshold;
+  });
+}
+
 function recentDisclosureCountForTicker(items: MarketDisclosure[], ticker: string, hours = 24) {
   return disclosureItemsWithin(items, hours).filter((item) => item.ticker === ticker).length;
+}
+
+function recentSecFilingCountForTicker(items: MarketSecFiling[], ticker: string, hours = 24) {
+  return secFilingItemsWithin(items, hours).filter((item) => item.ticker === ticker).length;
 }
 
 function disclosureStateMessage(response: MarketDisclosureApiResponse) {
@@ -3216,6 +3253,21 @@ function disclosureSyncLabel(response: MarketDisclosureApiResponse) {
   return `OpenDART · ${formatKstDateTime(lastSyncedAt)} 기준`;
 }
 
+function secFilingStateMessage(response: MarketSecFilingsApiResponse) {
+  if (response.ok) return '';
+  if (response.code === 'SEC_FILINGS_LOADING') return '미국 공시 데이터를 불러오는 중입니다.';
+  if (response.code === 'SEC_FILINGS_NOT_CONFIGURED') return '미국 공시 데이터를 준비하고 있습니다.';
+  return '미국 공시 정보를 일시적으로 불러오지 못했습니다. 이전 데이터를 표시합니다.';
+}
+
+function secFilingSyncLabel(response: MarketSecFilingsApiResponse) {
+  const lastSyncedAt = response.meta.lastSyncedAt;
+  if (!response.ok && response.code === 'SEC_FILINGS_NOT_CONFIGURED') return '미국 공시 데이터를 준비하고 있습니다.';
+  if (!lastSyncedAt) return 'SEC EDGAR 확인 전';
+  if (response.meta.stale) return `업데이트 지연 · 마지막 확인 ${formatKstDateTime(lastSyncedAt)}`;
+  return `SEC EDGAR · ${formatKstDateTime(lastSyncedAt)} 기준`;
+}
+
 function categoryCountSummary(items: MarketDisclosure[]) {
   const counts = new Map<DisclosureCategory, number>();
   items.forEach((item) => {
@@ -3230,14 +3282,50 @@ function firstActionableDisclosureCategory(items: MarketDisclosure[]) {
   return categoryCountSummary(items)[0]?.category ?? null;
 }
 
+function secCategoryCountSummary(items: MarketSecFiling[]) {
+  const counts = new Map<SecFilingCategory, number>();
+  items.forEach((item) => {
+    counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+  });
+  return secFilingCategoryOrder
+    .map((category) => ({ category, count: counts.get(category) ?? 0 }))
+    .filter((item) => item.count > 0);
+}
+
+function firstActionableSecFilingCategory(items: MarketSecFiling[]) {
+  return secCategoryCountSummary(items)[0]?.category ?? null;
+}
+
+type OfficialDisclosureFeedItem =
+  | { source: 'opendart'; id: string; sortAt: string; disclosure: MarketDisclosure }
+  | { source: 'sec-edgar'; id: string; sortAt: string; filing: MarketSecFiling };
+
+function officialDisclosureFeedItems(disclosures: MarketDisclosure[], secFilings: MarketSecFiling[]) {
+  return [
+    ...disclosures.map((disclosure) => ({
+      source: 'opendart' as const,
+      id: disclosure.receiptNumber,
+      sortAt: disclosure.receivedAt,
+      disclosure,
+    })),
+    ...secFilings.map((filing) => ({
+      source: 'sec-edgar' as const,
+      id: filing.accessionNumber,
+      sortAt: filing.filedAt,
+      filing,
+    })),
+  ].sort((a, b) => b.sortAt.localeCompare(a.sortAt));
+}
+
 type TodayOverviewProps = {
   marketPrices: MarketPrice[];
   disclosures: MarketDisclosureApiResponse;
+  secFilings: MarketSecFilingsApiResponse;
   onOpenPicks: () => void;
   onOpenDisclosures: () => void;
 };
 
-function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosures }: TodayOverviewProps) {
+function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onOpenDisclosures }: TodayOverviewProps) {
   const weeklyPicks = weeklyStockAutopsyPicks();
   const sortedPicks = [...weeklyPicks].sort((a, b) => {
     const aMove = Math.abs(parseSignedNumber(getPriceForPick(a, marketPrices)?.changePercent));
@@ -3246,6 +3334,8 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
   });
   const priceAsOf = latestPriceAsOfForPicks(weeklyPicks, marketPrices);
   const recent24 = disclosureItemsWithin(disclosures.items, 24);
+  const recentSec24 = secFilingItemsWithin(secFilings.items, 24);
+  const totalRecentOfficialDisclosures = recent24.length + recentSec24.length;
   const recentByCompany = enabledDartTrackedCompanies
     .map((company) => ({
       company,
@@ -3253,11 +3343,25 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
     }))
     .filter((item) => item.count > 0)
     .slice(0, 4);
+  const recentSecByCompany = enabledSecTrackedCompanies
+    .map((company) => ({
+      company,
+      count: recentSecFilingCountForTicker(secFilings.items, company.ticker, 24),
+    }))
+    .filter((item) => item.count > 0)
+    .slice(0, 4);
   const actionCategory = firstActionableDisclosureCategory(recent24.length ? recent24 : disclosures.items);
+  const actionSecCategory = firstActionableSecFilingCategory(recentSec24.length ? recentSec24 : secFilings.items);
   const actionCopy = actionCategory
     ? disclosureCheckpoints[actionCategory]
-    : '새 공시보다 기존 Pick의 체크포인트를 계속 관찰할 시점입니다.';
+    : actionSecCategory
+      ? secFilingCheckpoints[actionSecCategory]
+      : '새 공시보다 기존 Pick의 체크포인트를 계속 관찰할 시점입니다.';
   const disclosureMessage = disclosureStateMessage(disclosures);
+  const secFilingMessage = secFilingStateMessage(secFilings);
+  const combinedDisclosureMessage = totalRecentOfficialDisclosures
+    ? ''
+    : [disclosureMessage, secFilingMessage].filter(Boolean).join(' · ');
 
   return (
     <section className="today-overview-section" aria-labelledby="today-overview-title">
@@ -3269,7 +3373,8 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
         </div>
         <div className="today-asof-stack" aria-label="데이터 기준 시각">
           <span>가격 · {priceAsOf ? formatKstDateTime(priceAsOf) : '기준일 확인 중'}</span>
-          <span>공시 · {disclosureSyncLabel(disclosures)}</span>
+          <span>OpenDART · {disclosureSyncLabel(disclosures)}</span>
+          <span>SEC EDGAR · {secFilingSyncLabel(secFilings)}</span>
         </div>
       </div>
 
@@ -3304,19 +3409,26 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
             <FileSearch size={18} />
             <div>
               <h3>새로 나온 공식 공시</h3>
-              <p>OpenDART에 접수된 감시 기업 공시만 표시합니다.</p>
+              <p>OpenDART와 SEC EDGAR에 접수된 감시 기업 공시를 나눠 봅니다.</p>
             </div>
           </div>
           <div className="today-disclosure-count">
-            {disclosureMessage ? (
-              <strong>{disclosureMessage}</strong>
+            {combinedDisclosureMessage ? (
+              <strong>{combinedDisclosureMessage}</strong>
             ) : (
               <>
-                <strong>{recent24.length ? `최근 24시간 ${recent24.length}건` : '최근 24시간 새 공시가 없습니다.'}</strong>
-                {recentByCompany.length ? (
+                <strong>{totalRecentOfficialDisclosures ? `최근 24시간 ${totalRecentOfficialDisclosures}건` : '최근 24시간 새 공식 공시가 없습니다.'}</strong>
+                <div className="today-disclosure-source-list" aria-label="출처별 최근 공식 공시 수">
+                  <span>OpenDART {recent24.length}건</span>
+                  <span>SEC EDGAR {recentSec24.length}건</span>
+                </div>
+                {recentByCompany.length || recentSecByCompany.length ? (
                   <div className="today-disclosure-company-list">
                     {recentByCompany.map(({ company, count }) => (
                       <span key={company.id}>{company.companyName} {count}건</span>
+                    ))}
+                    {recentSecByCompany.map(({ company, count }) => (
+                      <span key={company.id}>SEC {company.companyName} {count}건</span>
                     ))}
                   </div>
                 ) : null}
@@ -3338,7 +3450,13 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
             </div>
           </div>
           <div className="today-action-copy">
-            {actionCategory ? <span>{disclosureCategoryLabels[actionCategory]}</span> : <span>체크포인트</span>}
+            {actionCategory ? (
+              <span>{disclosureCategoryLabels[actionCategory]}</span>
+            ) : actionSecCategory ? (
+              <span>{secFilingCategoryLabels[actionSecCategory]}</span>
+            ) : (
+              <span>체크포인트</span>
+            )}
             <strong>{actionCopy}</strong>
           </div>
           <button type="button" className="today-card-action secondary" onClick={onOpenDisclosures}>
@@ -3353,10 +3471,13 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
 
 type MarketDisclosuresPageProps = {
   disclosures: MarketDisclosureApiResponse;
+  secFilings: MarketSecFilingsApiResponse;
   onHome: () => void;
   onOpenPicks: () => void;
   onOpenMarketMap: () => void;
 };
+
+type DisclosureSourceFilter = 'all' | 'opendart' | 'sec-edgar';
 
 function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
   const categoryLabel = disclosureCategoryLabels[disclosure.category];
@@ -3372,6 +3493,7 @@ function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
   return (
     <article className="disclosure-radar-card">
       <div className="disclosure-card-topline">
+        <span>OpenDART</span>
         <span>{categoryLabel}</span>
         <time dateTime={disclosure.receivedAt}>{formatKstDate(disclosure.receivedAt)}</time>
       </div>
@@ -3391,25 +3513,96 @@ function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
   );
 }
 
-function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketMap }: MarketDisclosuresPageProps) {
+function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
+  const categoryLabel = secFilingCategoryLabels[filing.category];
+  const checkpoint = secFilingCheckpoints[filing.category];
+  const trackedCompany = findSecTrackedCompanyByTicker(filing.ticker);
+  const identity = resolveCompanyIdentity({
+    companyName: filing.companyName,
+    ticker: filing.ticker,
+    countryLabel: '미국',
+    statusLabel: trackedCompany?.source === 'current-pick' ? '현재 Pick' : '미국 Pick',
+  });
+
+  return (
+    <article className="disclosure-radar-card sec-filing-card">
+      <div className="disclosure-card-topline">
+        <span>SEC EDGAR</span>
+        <span>{filing.formType}</span>
+        <time dateTime={filing.filedAt}>{formatKstDate(filing.filedAt)}</time>
+      </div>
+      <div className="disclosure-company-line">
+        <CompanyIdentity {...identity} size="compact" />
+      </div>
+      <h2>{categoryLabel}</h2>
+      <p>
+        <b>확인할 것:</b>
+        {checkpoint}
+      </p>
+      {filing.reportDate ? <small className="disclosure-card-submeta">보고 기준일 · {formatKstDate(filing.reportDate)}</small> : null}
+      <a href={filing.sourceUrl} target="_blank" rel="noopener noreferrer">
+        SEC EDGAR 원문 보기
+        <ExternalLink size={14} />
+      </a>
+    </article>
+  );
+}
+
+function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, onOpenMarketMap }: MarketDisclosuresPageProps) {
+  const [sourceFilter, setSourceFilter] = useState<DisclosureSourceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<DisclosureCategory | 'all'>('all');
+  const [secCategoryFilter, setSecCategoryFilter] = useState<SecFilingCategory | 'all'>('all');
+  const [secFormFilter, setSecFormFilter] = useState<string | 'all'>('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const recent24 = disclosureItemsWithin(disclosures.items, 24);
   const recent7 = disclosureItemsWithin(disclosures.items, 24 * 7);
+  const recentSec24 = secFilingItemsWithin(secFilings.items, 24);
+  const recentSec30 = secFilingItemsWithin(secFilings.items, 24 * 30);
+  const shouldShowDart = sourceFilter === 'all' || sourceFilter === 'opendart';
+  const shouldShowSec = sourceFilter === 'all' || sourceFilter === 'sec-edgar';
 
-  const filteredItems = useMemo(() => {
+  const filteredDartItems = useMemo(() => {
+    if (!shouldShowDart) return [];
     return disclosures.items
       .filter((item) => categoryFilter === 'all' || item.category === categoryFilter)
       .filter((item) => {
         if (companyFilter === 'all') return true;
         if (companyFilter === 'current-pick') return currentPickDisclosureTickers.has(item.ticker ?? '');
         if (companyFilter === 'market-map') return marketMapDisclosureTickers.has(item.ticker ?? '');
+        if (companyFilter === 'us-pick') return false;
         return item.ticker === companyFilter;
       })
       .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
-  }, [categoryFilter, companyFilter, disclosures.items]);
+  }, [categoryFilter, companyFilter, disclosures.items, shouldShowDart]);
+
+  const filteredSecItems = useMemo(() => {
+    if (!shouldShowSec) return [];
+    return secFilings.items
+      .filter((item) => secCategoryFilter === 'all' || item.category === secCategoryFilter)
+      .filter((item) => secFormFilter === 'all' || matchesSecFormPattern(item.formType, secFormFilter))
+      .filter((item) => {
+        if (companyFilter === 'all') return true;
+        if (companyFilter === 'current-pick') return currentPickSecTickers.has(item.ticker);
+        if (companyFilter === 'market-map') return false;
+        if (companyFilter === 'us-pick') return enabledSecTrackedCompanies.some((company) => company.ticker === item.ticker);
+        return item.ticker === companyFilter;
+      })
+      .sort((a, b) => b.filedAt.localeCompare(a.filedAt));
+  }, [companyFilter, secCategoryFilter, secFilings.items, secFormFilter, shouldShowSec]);
+
+  const filteredItems = officialDisclosureFeedItems(filteredDartItems, filteredSecItems);
 
   const stateMessage = disclosureStateMessage(disclosures);
+  const secStateMessage = secFilingStateMessage(secFilings);
+  const sourceNotices = [
+    shouldShowDart && stateMessage ? `OpenDART · ${stateMessage}` : '',
+    shouldShowSec && secStateMessage ? `SEC EDGAR · ${secStateMessage}` : '',
+  ].filter(Boolean);
+
+  const updateSourceFilter = (next: DisclosureSourceFilter) => {
+    setSourceFilter(next);
+    setCompanyFilter('all');
+  };
 
   return (
     <div className="pick-shell story-dark-shell disclosure-radar-shell">
@@ -3429,10 +3622,10 @@ function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketM
 
       <main className="disclosure-radar-main">
         <section className="disclosure-radar-hero">
-          <p className="home-kicker">OpenDART 공시 레이더</p>
+          <p className="home-kicker">공식 공시 레이더</p>
           <h1>공시 레이더</h1>
           <p>
-            현재 Pick과 시장지도 기업에서 새로 나온 공식 공시를 모아봅니다.
+            현재 Pick과 시장지도 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
             공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
           </p>
         </section>
@@ -3440,45 +3633,103 @@ function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketM
         <section className="disclosure-status-grid" aria-label="공시 레이더 상태">
           <article>
             <span>출처</span>
-            <strong>OpenDART</strong>
+            <strong>OpenDART · SEC EDGAR</strong>
           </article>
           <article>
-            <span>마지막 동기화</span>
+            <span>OpenDART 동기화</span>
             <strong>{disclosureSyncLabel(disclosures)}</strong>
           </article>
           <article>
+            <span>SEC EDGAR 동기화</span>
+            <strong>{secFilingSyncLabel(secFilings)}</strong>
+          </article>
+          <article>
             <span>감시 기업 수</span>
-            <strong>{disclosures.meta.trackedCompanyCount}개</strong>
+            <strong>KR {disclosures.meta.trackedCompanyCount}개 · US {secFilings.meta.trackedCompanyCount}개</strong>
           </article>
           <article>
             <span>최근 24시간</span>
-            <strong>{recent24.length}건</strong>
+            <strong>{recent24.length + recentSec24.length}건</strong>
           </article>
           <article>
-            <span>최근 7일</span>
-            <strong>{recent7.length}건</strong>
+            <span>표시 범위</span>
+            <strong>OpenDART 7일 {recent7.length}건 · SEC 30일 {recentSec30.length}건</strong>
           </article>
         </section>
 
+        <section className="disclosure-source-tabs" aria-label="공시 출처 선택">
+          <button type="button" className={sourceFilter === 'all' ? 'active' : ''} onClick={() => updateSourceFilter('all')}>
+            전체
+          </button>
+          <button type="button" className={sourceFilter === 'opendart' ? 'active' : ''} onClick={() => updateSourceFilter('opendart')}>
+            OpenDART
+          </button>
+          <button type="button" className={sourceFilter === 'sec-edgar' ? 'active' : ''} onClick={() => updateSourceFilter('sec-edgar')}>
+            SEC EDGAR
+          </button>
+        </section>
+
         <section className="disclosure-filter-panel" aria-label="공시 필터">
-          <div>
-            <span><Filter size={14} /> 유형</span>
-            <div className="disclosure-chip-row">
-              <button type="button" className={categoryFilter === 'all' ? 'active' : ''} onClick={() => setCategoryFilter('all')}>
-                전체
-              </button>
-              {disclosureCategoryOrder.map((category) => (
-                <button
-                  type="button"
-                  key={category}
-                  className={categoryFilter === category ? 'active' : ''}
-                  onClick={() => setCategoryFilter(category)}
-                >
-                  {disclosureCategoryLabels[category]}
+          {shouldShowDart ? (
+            <div>
+              <span><Filter size={14} /> OpenDART 유형</span>
+              <div className="disclosure-chip-row">
+                <button type="button" className={categoryFilter === 'all' ? 'active' : ''} onClick={() => setCategoryFilter('all')}>
+                  전체
                 </button>
-              ))}
+                {disclosureCategoryOrder.map((category) => (
+                  <button
+                    type="button"
+                    key={category}
+                    className={categoryFilter === category ? 'active' : ''}
+                    onClick={() => setCategoryFilter(category)}
+                  >
+                    {disclosureCategoryLabels[category]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
+          {shouldShowSec ? (
+            <>
+              <div>
+                <span><Filter size={14} /> SEC 유형</span>
+                <div className="disclosure-chip-row">
+                  <button type="button" className={secCategoryFilter === 'all' ? 'active' : ''} onClick={() => setSecCategoryFilter('all')}>
+                    전체
+                  </button>
+                  {secFilingCategoryOrder.map((category) => (
+                    <button
+                      type="button"
+                      key={category}
+                      className={secCategoryFilter === category ? 'active' : ''}
+                      onClick={() => setSecCategoryFilter(category)}
+                    >
+                      {secFilingCategoryLabels[category]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span><Filter size={14} /> SEC Form</span>
+                <div className="disclosure-chip-row">
+                  <button type="button" className={secFormFilter === 'all' ? 'active' : ''} onClick={() => setSecFormFilter('all')}>
+                    전체
+                  </button>
+                  {secSupportedFormPatterns.map((formType) => (
+                    <button
+                      type="button"
+                      key={formType}
+                      className={secFormFilter === formType ? 'active' : ''}
+                      onClick={() => setSecFormFilter(formType)}
+                    >
+                      {formType === '424B' ? '424B 계열' : formType}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
           <div>
             <span><Filter size={14} /> 회사</span>
             <div className="disclosure-chip-row">
@@ -3488,38 +3739,61 @@ function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketM
               <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} onClick={() => setCompanyFilter('current-pick')}>
                 현재 Pick
               </button>
-              <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} onClick={() => setCompanyFilter('market-map')}>
-                시장지도 기업
-              </button>
-              {enabledDartTrackedCompanies.map((company) => (
-                <button
-                  type="button"
-                  key={company.id}
-                  className={companyFilter === company.ticker ? 'active' : ''}
-                  onClick={() => setCompanyFilter(company.ticker)}
-                >
-                  {company.companyName}
+              {shouldShowDart ? (
+                <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} onClick={() => setCompanyFilter('market-map')}>
+                  시장지도 기업
                 </button>
-              ))}
+              ) : null}
+              {shouldShowSec ? (
+                <button type="button" className={companyFilter === 'us-pick' ? 'active' : ''} onClick={() => setCompanyFilter('us-pick')}>
+                  미국 Pick
+                </button>
+              ) : null}
+              {shouldShowDart ? enabledDartTrackedCompanies.map((company) => (
+                  <button
+                    type="button"
+                    key={`dart-${company.id}`}
+                    className={companyFilter === company.ticker ? 'active' : ''}
+                    onClick={() => setCompanyFilter(company.ticker)}
+                  >
+                    {company.companyName}
+                  </button>
+                )) : null}
+              {shouldShowSec ? enabledSecTrackedCompanies.map((company) => (
+                  <button
+                    type="button"
+                    key={`sec-${company.id}`}
+                    className={companyFilter === company.ticker ? 'active' : ''}
+                    onClick={() => setCompanyFilter(company.ticker)}
+                  >
+                    {company.companyName}
+                  </button>
+                )) : null}
             </div>
           </div>
         </section>
 
-        {stateMessage ? (
-          <section className="disclosure-empty-state">
+        {sourceNotices.length ? (
+          <section className="disclosure-source-notice" aria-label="공시 데이터 상태">
             <RefreshCw size={18} />
-            <strong>{stateMessage}</strong>
+            <div>
+              {sourceNotices.map((message) => <strong key={message}>{message}</strong>)}
+            </div>
           </section>
-        ) : filteredItems.length ? (
+        ) : null}
+
+        {filteredItems.length ? (
           <section className="disclosure-card-grid" aria-label="공시 목록">
-            {filteredItems.map((disclosure) => (
-              <DisclosureCard key={disclosure.receiptNumber} disclosure={disclosure} />
+            {filteredItems.map((item) => (
+              item.source === 'opendart'
+                ? <DisclosureCard key={`dart-${item.id}`} disclosure={item.disclosure} />
+                : <SecFilingCard key={`sec-${item.id}`} filing={item.filing} />
             ))}
           </section>
         ) : (
           <section className="disclosure-empty-state">
             <CheckCircle size={18} />
-            <strong>최근 7일 새 공시가 없습니다.</strong>
+            <strong>선택한 조건에 맞는 새 공식 공시가 없습니다.</strong>
           </section>
         )}
       </main>
@@ -3530,11 +3804,51 @@ function MarketDisclosuresPage({ disclosures, onHome, onOpenPicks, onOpenMarketM
 function PickDisclosurePanel({
   pick,
   disclosures,
+  secFilings,
 }: {
   pick: StockAutopsyPick;
   disclosures: MarketDisclosureApiResponse;
+  secFilings: MarketSecFilingsApiResponse;
 }) {
   const trackedCompany = findDartTrackedCompanyByTicker(pick.ticker);
+  const secTrackedCompany = findSecTrackedCompanyByTicker(pick.ticker);
+  if (!trackedCompany && !secTrackedCompany) return null;
+
+  if (secTrackedCompany) {
+    const recentSecItems = secFilings.items
+      .filter((item) => item.ticker === secTrackedCompany.ticker)
+      .sort((a, b) => b.filedAt.localeCompare(a.filedAt))
+      .slice(0, 3);
+    const stateMessage = secFilingStateMessage(secFilings);
+
+    return (
+      <section className="pick-recent-disclosures" aria-labelledby="pick-recent-sec-filings-title">
+        <div className="pick-recent-disclosures-head">
+          <FileSearch size={17} />
+          <div>
+            <h2 id="pick-recent-sec-filings-title">최근 SEC 공시</h2>
+            <p>{secFilingSyncLabel(secFilings)}</p>
+          </div>
+        </div>
+        {stateMessage ? (
+          <p className="pick-disclosure-empty">{stateMessage}</p>
+        ) : recentSecItems.length ? (
+          <div className="pick-recent-disclosure-list">
+            {recentSecItems.map((filing) => (
+              <a key={filing.accessionNumber} href={filing.sourceUrl} target="_blank" rel="noopener noreferrer">
+                <span>{filing.formType} · {secFilingCategoryLabels[filing.category]} · {formatKstDate(filing.filedAt)}</span>
+                <strong>{filing.companyName} SEC filing</strong>
+                <small>{secFilingCheckpoints[filing.category]}</small>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="pick-disclosure-empty">최근 30일 새 SEC 공시가 없습니다.</p>
+        )}
+      </section>
+    );
+  }
+
   if (!trackedCompany) return null;
 
   const recentItems = disclosures.items
@@ -3807,9 +4121,10 @@ type LandingPageProps = {
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
   disclosures: MarketDisclosureApiResponse;
+  secFilings: MarketSecFilingsApiResponse;
 };
 
-function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenPick, marketPrices, disclosures }: LandingPageProps) {
+function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
@@ -3929,6 +4244,7 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, o
         <TodayOverview
           marketPrices={marketPrices}
           disclosures={disclosures}
+          secFilings={secFilings}
           onOpenPicks={onOpenPicks}
           onOpenDisclosures={onOpenDisclosures}
         />
@@ -3962,6 +4278,7 @@ type StockAutopsyPicksPageProps = {
   onOpenDisclosures: () => void;
   marketPrices: MarketPrice[];
   disclosures: MarketDisclosureApiResponse;
+  secFilings: MarketSecFilingsApiResponse;
 };
 
 type MarketMapLibraryPageProps = {
@@ -5153,6 +5470,7 @@ function StockAutopsyPicksPage({
   onOpenDisclosures,
   marketPrices,
   disclosures,
+  secFilings,
 }: StockAutopsyPicksPageProps) {
   const selectedPick = selectedPickId ? stockAutopsyPicks.find((pick) => pick.id === selectedPickId) : undefined;
   const detailPick = selectedPickId ? selectedPick : undefined;
@@ -5518,7 +5836,7 @@ function StockAutopsyPicksPage({
             onOpenReports={onOpenReports}
           />
 
-          <PickDisclosurePanel pick={detailPick} disclosures={disclosures} />
+          <PickDisclosurePanel pick={detailPick} disclosures={disclosures} secFilings={secFilings} />
 
           {pendingMarketMapNote ? (
             <aside className="pick-market-map-note" aria-label="관련 시장지도 안내">
@@ -6560,6 +6878,7 @@ function App() {
   const [isMapLocked, setIsMapLocked] = useState(false);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
   const [marketDisclosures, setMarketDisclosures] = useState<MarketDisclosureApiResponse>(initialDisclosureResponse);
+  const [marketSecFilings, setMarketSecFilings] = useState<MarketSecFilingsApiResponse>(initialSecFilingsResponse);
   const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
   const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
   const graphWrapRef = useRef<HTMLElement | null>(null);
@@ -6906,8 +7225,14 @@ function App() {
     let cancelled = false;
 
     async function loadDisclosures() {
-      const response = await fetchMarketDisclosures({ limit: 100, days: 7 });
-      if (!cancelled) setMarketDisclosures(response);
+      const [disclosureResponse, secFilingResponse] = await Promise.all([
+        fetchMarketDisclosures({ limit: 100, days: 7 }),
+        fetchMarketSecFilings({ limit: 100, days: 30 }),
+      ]);
+      if (!cancelled) {
+        setMarketDisclosures(disclosureResponse);
+        setMarketSecFilings(secFilingResponse);
+      }
     }
 
     loadDisclosures();
@@ -7475,6 +7800,7 @@ function App() {
         onOpenDisclosures={openDisclosures}
         marketPrices={marketPrices}
         disclosures={marketDisclosures}
+        secFilings={marketSecFilings}
       />
     );
   }
@@ -7483,6 +7809,7 @@ function App() {
     return (
       <MarketDisclosuresPage
         disclosures={marketDisclosures}
+        secFilings={marketSecFilings}
         onHome={openHome}
         onOpenPicks={openPicks}
         onOpenMarketMap={openMarketMapLibrary}
@@ -7620,6 +7947,7 @@ function App() {
         onOpenPick={openPick}
         marketPrices={marketPrices}
         disclosures={marketDisclosures}
+        secFilings={marketSecFilings}
       />
     );
   }

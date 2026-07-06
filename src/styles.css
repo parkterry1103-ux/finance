@@ -15210,7 +15210,14 @@ body {
   gap: 8px;
 }
 
+.today-disclosure-source-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .today-disclosure-company-list span,
+.today-disclosure-source-list span,
 .today-action-copy span {
   width: fit-content;
   padding: 5px 8px;
@@ -15272,7 +15279,7 @@ body {
 
 .disclosure-status-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   margin: 16px 0;
 }
@@ -15312,6 +15319,33 @@ body {
   border: 1px solid #dbe3ef;
   border-radius: 16px;
   background: #ffffff;
+}
+
+.disclosure-source-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 6px;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.disclosure-source-tabs button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #334155;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.disclosure-source-tabs button.active {
+  color: #ffffff;
+  background: #1e3a8a;
 }
 
 .disclosure-filter-panel > div {
@@ -15400,6 +15434,12 @@ body {
   color: #0f172a;
 }
 
+.disclosure-card-submeta {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .disclosure-radar-card a {
   display: inline-flex;
   align-items: center;
@@ -15426,6 +15466,28 @@ body {
   border-radius: 14px;
   color: #334155;
   background: #ffffff;
+}
+
+.disclosure-source-notice {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.disclosure-source-notice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.disclosure-source-notice strong {
+  line-height: 1.4;
 }
 
 .pick-recent-disclosures {

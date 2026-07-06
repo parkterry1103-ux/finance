@@ -148,6 +148,45 @@ create index if not exists market_disclosures_ticker_idx
 create index if not exists market_disclosures_corp_code_idx
   on market_disclosures (corp_code);
 
+create table if not exists market_sec_filings (
+  accession_number text primary key,
+  cik text not null,
+  company_name text not null,
+  ticker text not null,
+  form_type text not null,
+  filing_category text not null check (
+    filing_category in (
+      'current-report',
+      'quarterly-report',
+      'annual-report',
+      'insider-transaction',
+      'ownership',
+      'proxy',
+      'capital-markets',
+      'foreign-report',
+      'other'
+    )
+  ),
+  filed_at timestamptz not null,
+  report_date date,
+  primary_document text,
+  source_url text not null,
+  source text not null default 'sec-edgar',
+  synced_at timestamptz not null default now()
+);
+
+create index if not exists market_sec_filings_filed_at_idx
+  on market_sec_filings (filed_at desc);
+
+create index if not exists market_sec_filings_ticker_idx
+  on market_sec_filings (ticker);
+
+create index if not exists market_sec_filings_cik_idx
+  on market_sec_filings (cik);
+
+create index if not exists market_sec_filings_form_type_idx
+  on market_sec_filings (form_type);
+
 -- 중복 방지 설계:
 -- OpenDART: dart_rcept_no
 -- SEC filing: accession_number
@@ -156,6 +195,7 @@ create index if not exists market_disclosures_corp_code_idx
 -- Congress: reportId + transactionDate + assetName + amountRange를 raw_id로 저장
 -- Prices: ticker + source + as_of
 -- OpenDART disclosure radar: receipt_number
+-- SEC EDGAR disclosure radar: accession_number
 
 create table if not exists sync_runs (
   id uuid primary key default gen_random_uuid(),

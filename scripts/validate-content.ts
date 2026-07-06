@@ -18,11 +18,21 @@ import {
 import { stockAutopsyPickEntries } from '../src/content/picks/entries.js';
 import {
   classifyDisclosure,
+  classifySecFilingForm,
   dartTrackedCompanies,
   enabledDartTrackedCompanies,
+  enabledSecTrackedCompanies,
+  isSupportedSecFormPattern,
+  secTrackedCompanies,
 } from '../src/content/disclosures/index.js';
 import { contentSources, sourceRegistry } from '../src/content/sources/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
+import {
+  normalizeSecCik,
+  normalizeSecFilingRows,
+  secArchiveIndexUrl,
+  secSubmissionsUrl,
+} from './sync-sec-filings.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -63,6 +73,12 @@ const disclosureValidation = {
   enabledCount: 0,
   disabledCount: 0,
   duplicateCorpCodeCount: 0,
+};
+const secDisclosureValidation = {
+  enabledCount: 0,
+  disabledCount: 0,
+  duplicateCikCount: 0,
+  duplicateTickerCount: 0,
 };
 const identityValidation = {
   pickIdentityCount: 0,
@@ -498,6 +514,137 @@ function validateDisclosureClassification() {
   });
 }
 
+function validateSecDisclosureRegistry() {
+  secDisclosureValidation.enabledCount = enabledSecTrackedCompanies.length;
+  secDisclosureValidation.disabledCount = secTrackedCompanies.length - enabledSecTrackedCompanies.length;
+
+  const pickIds = new Set(stockAutopsyPicks.map((pick) => pick.id));
+  const companyIds = new Set(companies.map((company) => company.id));
+  const currentUsTickers = new Set(
+    currentWeeklyPicks
+      .filter((pick) => pick.market === 'US' && pick.tickerStatus !== 'placeholder')
+      .map((pick) => normalizeTicker(pick.ticker)),
+  );
+  const enabledTickers = new Set(enabledSecTrackedCompanies.map((company) => normalizeTicker(company.ticker)));
+
+  const ids = secTrackedCompanies.map((company) => company.id);
+  duplicateValues(ids).forEach((id) => addError(`duplicate SEC tracked company id: ${id}`));
+
+  const ciks = enabledSecTrackedCompanies.map((company) => company.cik);
+  const duplicateCiks = duplicateValues(ciks);
+  secDisclosureValidation.duplicateCikCount = duplicateCiks.length;
+  duplicateCiks.forEach((cik) => addError(`duplicate SEC CIK: ${cik}`));
+
+  const tickers = enabledSecTrackedCompanies.map((company) => normalizeTicker(company.ticker));
+  const duplicateTickers = duplicateValues(tickers);
+  secDisclosureValidation.duplicateTickerCount = duplicateTickers.length;
+  duplicateTickers.forEach((ticker) => addError(`duplicate SEC ticker: ${ticker}`));
+
+  currentUsTickers.forEach((ticker) => {
+    if (!enabledTickers.has(ticker)) addError(`current US Pick missing from SEC registry: ${ticker}`);
+  });
+
+  secTrackedCompanies.forEach((company) => {
+    const ticker = normalizeTicker(company.ticker);
+    const isRequiredTicker = currentUsTickers.has(ticker);
+
+    if (!company.id) addError(`SEC tracked company missing id: ${company.companyName || company.ticker}`);
+    if (!company.companyName) addError(`SEC tracked company missing companyName: ${company.id}`);
+    if (!company.ticker) addError(`SEC tracked company missing ticker: ${company.id}`);
+    if (company.enabled && !company.cik) addError(`enabled SEC tracked company missing CIK: ${company.id}`);
+    if (company.cik && !/^\d{10}$/.test(company.cik)) addError(`invalid SEC CIK format: ${company.id} / ${company.cik}`);
+    if (company.enabled && !/^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker)) addError(`invalid SEC ticker format: ${company.id} / ${company.ticker}`);
+    if (company.enabled && isPlaceholderTicker(ticker)) addError(`placeholder ticker included in SEC registry: ${company.id}`);
+    if (!company.enabled && isRequiredTicker) addError(`required SEC ticker is disabled: ${company.id} / ${company.ticker}`);
+    if (company.enabled && !company.forms.length) addError(`enabled SEC tracked company missing forms: ${company.id}`);
+
+    company.forms.forEach((formType) => {
+      if (!isSupportedSecFormPattern(formType)) addError(`unsupported SEC form pattern: ${company.id} / ${formType}`);
+    });
+
+    if (company.foreignIssuer && (!company.forms.includes('6-K') || !company.forms.includes('20-F'))) {
+      addWarning(`foreign issuer should track 6-K and 20-F: ${company.id}`);
+    }
+
+    if (company.source === 'current-pick' && !currentUsTickers.has(ticker)) {
+      addError(`SEC current-pick source is not a current US Pick: ${company.id} / ${company.ticker}`);
+    }
+
+    company.relatedPickIds?.forEach((pickId) => {
+      if (!pickIds.has(pickId)) addError(`missing SEC relatedPickIds: ${company.id} / ${pickId}`);
+    });
+    company.relatedCompanyIds?.forEach((companyId) => {
+      if (!companyIds.has(companyId)) addError(`missing SEC relatedCompanyIds: ${company.id} / ${companyId}`);
+    });
+  });
+}
+
+function validateSecFilingHelpers() {
+  const normalizedCik = normalizeSecCik('723125');
+  if (normalizedCik !== '0000723125') addError(`SEC CIK normalization mismatch: ${normalizedCik}`);
+  const submissionsUrl = secSubmissionsUrl('723125');
+  if (submissionsUrl !== 'https://data.sec.gov/submissions/CIK0000723125.json') {
+    addError(`SEC submissions URL mismatch: ${submissionsUrl}`);
+  }
+  const archiveUrl = secArchiveIndexUrl('0000723125', '0000723125-26-000006');
+  if (archiveUrl !== 'https://www.sec.gov/Archives/edgar/data/723125/000072312526000006/0000723125-26-000006-index.html') {
+    addError(`SEC archive URL mismatch: ${archiveUrl}`);
+  }
+
+  const classificationExamples: Array<[string, ReturnType<typeof classifySecFilingForm>]> = [
+    ['8-K', 'current-report'],
+    ['8-K/A', 'current-report'],
+    ['10-Q', 'quarterly-report'],
+    ['10-K', 'annual-report'],
+    ['4', 'insider-transaction'],
+    ['SC 13G/A', 'ownership'],
+    ['DEF 14A', 'proxy'],
+    ['424B5', 'capital-markets'],
+    ['6-K', 'foreign-report'],
+  ];
+  classificationExamples.forEach(([formType, expected]) => {
+    const actual = classifySecFilingForm(formType);
+    if (actual !== expected) addError(`SEC filing category mismatch: ${formType} expected ${expected} got ${actual}`);
+  });
+
+  const sampleCompany = enabledSecTrackedCompanies.find((company) => company.ticker === 'MU');
+  if (!sampleCompany) {
+    addError('SEC helper sample company missing: MU');
+    return;
+  }
+  const rows = normalizeSecFilingRows(
+    {
+      filings: {
+        recent: {
+          accessionNumber: ['0000723125-26-000006'],
+          filingDate: ['2026-06-30'],
+          reportDate: ['2026-06-29'],
+          acceptanceDateTime: ['2026-06-30T16:31:00.000Z'],
+          form: ['8-K'],
+          primaryDocument: ['mu-20260630.htm'],
+        },
+      },
+    },
+    sampleCompany,
+  );
+  if (rows.length !== 1) addError(`SEC normalized filing sample row count mismatch: ${rows.length}`);
+  if (rows[0]?.sourceUrl !== archiveUrl) addError(`SEC normalized filing URL mismatch: ${rows[0]?.sourceUrl}`);
+
+  const unevenRows = normalizeSecFilingRows(
+    {
+      filings: {
+        recent: {
+          accessionNumber: ['0000723125-26-000007'],
+          filingDate: [],
+          form: [],
+        },
+      },
+    },
+    sampleCompany,
+  );
+  if (unevenRows.length !== 0) addError(`SEC uneven recent arrays should be ignored safely: ${unevenRows.length}`);
+}
+
 type IdentityRecord = {
   source: string;
   id: string;
@@ -584,6 +731,18 @@ function validateCompanyIdentities() {
     });
   });
 
+  secTrackedCompanies.forEach((company) => {
+    identityValidation.disclosureIdentityCount += 1;
+    const ticker = normalizeTicker(company.ticker);
+    addRecord({
+      source: 'SEC registry',
+      id: company.id,
+      companyName: company.companyName,
+      legalName: legalNameByTicker.get(ticker) ?? company.companyName,
+      ticker: company.ticker,
+    });
+  });
+
   marketMovers.forEach((mover) => {
     identityValidation.marketMoverIdentityCount += 1;
     const ticker = normalizeTicker(mover.ticker);
@@ -649,6 +808,8 @@ validateCompanyIdentities();
 const priceUniverseCount = validatePriceUniverse();
 validateDisclosureRegistry();
 validateDisclosureClassification();
+validateSecDisclosureRegistry();
+validateSecFilingHelpers();
 
 warnings.forEach((warning) => console.warn(warning));
 
@@ -681,3 +842,6 @@ console.log('✓ 중복 corpCode 없음');
 console.log('✓ ticker/corpCode 연결 정상');
 console.log('✓ 미국·placeholder ticker 제외');
 console.log('✓ 공시 category 분류 정상');
+console.log(`✓ SEC EDGAR 감시 기업 ${secDisclosureValidation.enabledCount}개 검증`);
+console.log('✓ 중복 SEC ticker/CIK 없음');
+console.log('✓ SEC form/CIK/URL helper 정상');
