@@ -429,6 +429,75 @@ h2 {
   font-weight: 850;
 }
 
+.company-identity {
+  --company-identity-meta: #667085;
+  display: inline-grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  color: inherit;
+  vertical-align: top;
+}
+
+.company-identity > .company-identity__name,
+.company-identity > .company-identity__meta {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.company-identity > .company-identity__name {
+  display: block;
+  color: inherit;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.company-identity > .company-identity__meta {
+  display: block;
+  color: var(--company-identity-meta);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.company-identity--compact > .company-identity__name {
+  font-size: 14px;
+}
+
+.company-identity--compact > .company-identity__meta {
+  font-size: 11px;
+}
+
+.company-identity--hero > .company-identity__name {
+  font-size: 24px;
+}
+
+.company-identity--hero > .company-identity__meta {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.company-identity.pick-move {
+  display: inline-grid;
+  align-items: start;
+  height: auto;
+  padding: 7px 10px;
+}
+
+.company-identity.pick-move > .company-identity__meta {
+  color: currentColor;
+  opacity: 0.72;
+}
+
 .tier-pill {
   display: inline-flex;
   align-items: center;

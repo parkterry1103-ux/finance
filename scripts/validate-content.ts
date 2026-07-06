@@ -64,6 +64,17 @@ const disclosureValidation = {
   disabledCount: 0,
   duplicateCorpCodeCount: 0,
 };
+const identityValidation = {
+  pickIdentityCount: 0,
+  companyRegistryIdentityCount: 0,
+  anchorIdentityCount: 0,
+  mapIdentityCount: 0,
+  disclosureIdentityCount: 0,
+  marketMoverIdentityCount: 0,
+  tickerOnlyNameCount: 0,
+  conflictingTickerNameCount: 0,
+  aliasTickerNameCount: 0,
+};
 
 const VALID_SOURCE_KINDS = new Set([
   'company-release',
@@ -78,6 +89,7 @@ const VALID_SOURCE_KINDS = new Set([
   'market-data',
 ]);
 const VALID_SOURCE_ACCESS_TYPES = new Set(['public', 'restricted']);
+const PLACEHOLDER_TICKER_LABELS = new Set(['WATCH', 'PRIVATE', '비상장', 'N/A', '-']);
 
 function addError(message: string) {
   errors.push(`✗ ${message}`);
@@ -103,6 +115,14 @@ function isHttpUrl(value?: string) {
 
 function normalizeTicker(ticker?: string) {
   return String(ticker ?? '').trim().toUpperCase();
+}
+
+function normalizeIdentityName(value?: string) {
+  return String(value ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+function isPlaceholderTicker(ticker?: string) {
+  return PLACEHOLDER_TICKER_LABELS.has(normalizeTicker(ticker));
 }
 
 function priceLookupTicker(ticker: string) {
@@ -478,12 +498,154 @@ function validateDisclosureClassification() {
   });
 }
 
+type IdentityRecord = {
+  source: string;
+  id: string;
+  companyId?: string;
+  companyName?: string;
+  legalName?: string;
+  ticker?: string;
+};
+
+function validateCompanyIdentities() {
+  const legalNameByCompanyId = new Map(companies.map((company) => [company.id, company.legalName || company.name]));
+  const legalNameByTicker = new Map<string, string>();
+  companies.forEach((company) => {
+    const ticker = normalizeTicker(company.ticker);
+    if (ticker && !legalNameByTicker.has(ticker)) legalNameByTicker.set(ticker, company.legalName || company.name);
+  });
+
+  const records: IdentityRecord[] = [];
+  const addRecord = (record: IdentityRecord) => records.push(record);
+
+  stockAutopsyPicks.forEach((pick) => {
+    identityValidation.pickIdentityCount += 1;
+    const companyId = pick.relatedCompanyId ?? pick.companyId;
+    const ticker = normalizeTicker(pick.ticker);
+    addRecord({
+      source: 'Pick',
+      id: pick.id,
+      companyId,
+      companyName: pick.companyName,
+      legalName: companyId ? legalNameByCompanyId.get(companyId) : legalNameByTicker.get(ticker),
+      ticker: pick.ticker,
+    });
+  });
+
+  companies.forEach((company) => {
+    identityValidation.companyRegistryIdentityCount += 1;
+    addRecord({
+      source: 'company registry',
+      id: company.id,
+      companyId: company.id,
+      companyName: company.name,
+      legalName: company.legalName,
+      ticker: company.ticker,
+    });
+  });
+
+  anchors.forEach((anchor) => {
+    identityValidation.anchorIdentityCount += 1;
+    addRecord({
+      source: 'anchor',
+      id: anchor.id,
+      companyId: anchor.id,
+      companyName: anchor.name,
+      legalName: anchor.legalName,
+      ticker: anchor.ticker,
+    });
+  });
+
+  [
+    ...reconstructionInfrastructureMap.companies,
+    ...semiconductorClusterInfrastructureMap.companies,
+  ].forEach((company) => {
+    identityValidation.mapIdentityCount += 1;
+    const ticker = normalizeTicker(company.ticker);
+    addRecord({
+      source: 'market map',
+      id: company.id,
+      companyId: company.id,
+      companyName: company.name,
+      legalName: legalNameByCompanyId.get(company.id) ?? legalNameByTicker.get(ticker) ?? company.name,
+      ticker: company.ticker,
+    });
+  });
+
+  dartTrackedCompanies.forEach((company) => {
+    identityValidation.disclosureIdentityCount += 1;
+    const ticker = normalizeTicker(company.ticker);
+    addRecord({
+      source: 'DART registry',
+      id: company.id,
+      companyName: company.companyName,
+      legalName: legalNameByTicker.get(ticker),
+      ticker: company.ticker,
+    });
+  });
+
+  marketMovers.forEach((mover) => {
+    identityValidation.marketMoverIdentityCount += 1;
+    const ticker = normalizeTicker(mover.ticker);
+    addRecord({
+      source: 'market mover',
+      id: mover.id,
+      companyId: mover.companyId,
+      companyName: mover.companyName,
+      legalName: mover.companyId ? legalNameByCompanyId.get(mover.companyId) : legalNameByTicker.get(ticker),
+      ticker: mover.ticker,
+    });
+  });
+
+  const recordsByTicker = new Map<string, IdentityRecord[]>();
+
+  records.forEach((record) => {
+    const rawCompanyName = String(record.companyName ?? '').trim();
+    const rawTicker = String(record.ticker ?? '').trim();
+    const companyName = normalizeIdentityName(record.companyName);
+    const ticker = normalizeTicker(record.ticker);
+    const legalName = normalizeIdentityName(record.legalName);
+
+    if (!companyName) addError(`missing company identity name: ${record.source} / ${record.id}`);
+
+    if (ticker && !isPlaceholderTicker(ticker)) {
+      recordsByTicker.set(ticker, [...(recordsByTicker.get(ticker) ?? []), record]);
+      if (rawCompanyName === rawTicker && companyName === ticker && (!legalName || legalName === ticker)) {
+        identityValidation.tickerOnlyNameCount += 1;
+        addError(`ticker-only company identity: ${record.source} / ${record.id} / ${ticker}`);
+      }
+    }
+  });
+
+  recordsByTicker.forEach((tickerRecords, ticker) => {
+    const names = new Set(tickerRecords.map((record) => normalizeIdentityName(record.companyName)).filter(Boolean));
+    if (names.size <= 1) return;
+
+    const legalNames = new Set(tickerRecords.map((record) => normalizeIdentityName(record.legalName)).filter(Boolean));
+    if (legalNames.size <= 1) {
+      identityValidation.aliasTickerNameCount += 1;
+      return;
+    }
+
+    const companyIds = new Set(tickerRecords.map((record) => record.companyId).filter(Boolean));
+    if (companyIds.size > 1) {
+      identityValidation.conflictingTickerNameCount += 1;
+      addError(`conflicting company identity for ticker: ${ticker} / ${Array.from(names).join(', ')}`);
+      return;
+    }
+
+    identityValidation.aliasTickerNameCount += 1;
+    addWarning(`same ticker has multiple display names, confirm intentional alias: ${ticker} / ${Array.from(names).join(', ')}`);
+  });
+}
+
 validateSourceRegistry();
 validatePickSources();
 validatePicks();
 validateWeeks();
 validateReferences();
 validateCtaPolicy();
+validateCompanyIdentities();
 const priceUniverseCount = validatePriceUniverse();
 validateDisclosureRegistry();
 validateDisclosureClassification();
@@ -511,6 +673,8 @@ console.log(`✓ restricted source 명시 처리 (${sourceValidation.restrictedR
 console.log('✓ 관련 보고서 참조 정상');
 console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');
+console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
+console.log('✓ ticker-only companyName 없음');
 console.log(`✓ 현재 주차 ticker 가격 universe 포함 (${priceUniverseCount}개 target)`);
 console.log(`✓ OpenDART 감시 기업 ${disclosureValidation.enabledCount}개 검증`);
 console.log('✓ 중복 corpCode 없음');

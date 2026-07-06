@@ -209,6 +209,70 @@ Production QA:
 - `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
 - `package.json`, `package-lock.json` 변경 없음
 
+## 전체 기업 회사명 중심 표시 통일
+
+기업 식별 UI는 ticker를 첫 줄에 두던 방식에서 회사명을 첫 줄에 두는 방식으로 통일합니다.
+
+변경 전:
+
+```text
+미국 · SMCI
+한국 · 000720.KS
+```
+
+변경 후:
+
+```text
+슈퍼마이크로컴퓨터
+미국 · SMCI
+```
+
+```text
+현대건설
+한국 · 000720.KS
+```
+
+공통 UI는 `src/App.tsx`의 `CompanyIdentity`, `CompanyIdentityForCompany`, `CompanyIdentityForPick`, `resolveCompanyIdentity`에서 처리합니다. 스타일은 `src/styles.css`의 `.company-identity`, `.company-identity__name`, `.company-identity__meta` 규칙에 둡니다.
+
+회사명 해석 우선순위:
+
+1. Pick 또는 공시 객체의 `companyName`
+2. canonical company registry의 `name`
+3. company registry의 `legalName`
+4. 회사명이 없으면 `회사명 확인 필요` 표시
+
+국가·ticker 보조 줄은 기존 registry의 `region`, `country`, `market`, `exchange`를 우선 사용하고, 국내 `.KS`/`.KQ` suffix는 `한국`으로만 fallback합니다. suffix 없는 ticker를 무조건 미국으로 추정하지 않습니다. `WATCH`, `PRIVATE`, `비상장`, `N/A`, `-` 같은 placeholder는 실제 ticker처럼 표시하지 않고 `관찰 대상` 또는 기존 상태 표현을 사용합니다.
+
+적용 화면:
+
+- 홈 `오늘 한눈에` Pick 목록
+- `/ko/picks`, `/ko/picks/archive`, Pick 상세 hero
+- `/ko/disclosures` OpenDART 공시 카드
+- `/ko/market-map` 선택 기업, 같이 볼 회사, 관련 기업 카드, 오른쪽 선택 패널
+- `/ko/category/us-semiconductors`
+- `/ko/category/datacenter-power-cooling`
+- `/ko/category/reconstruction-infrastructure`
+- `/ko/category/semiconductor-cluster-infrastructure`
+- 기업 분석 카드와 관련 기업 목록
+- 기관/소유권 동향 카드
+
+validator 추가 항목:
+
+- Pick, company registry, anchor, 시장지도, OpenDART registry, 시장 카드의 회사명 누락 여부
+- ticker와 완전히 같은 ticker-only companyName 여부
+- 같은 ticker가 서로 다른 법적 회사명으로 충돌하는지 여부
+- placeholder ticker가 실제 회사 식별자로 노출되는지 여부
+
+로컬 검증 결과:
+
+- `git diff --check` 통과
+- `tsc -p tsconfig.scripts.json` 통과
+- `node .sync-build/scripts/validate-content.js` 통과: 회사명 identity Pick 26개, 회사 893개, 앵커 61개, 지도 12개, 공시 13개, 시장 카드 4개 검증
+- `tsc --noEmit` 통과
+- `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
+- 가격 API, 가격 sync, OpenDART sync, SEC API, Pick route/source/content는 수정하지 않았습니다.
+- `package.json`, `package-lock.json` 변경 없음
+
 ## market-prices 최신 ticker별 조회 안정화
 
 2026-06-29 주간 Pick 배포 뒤 가격 저장과 개별 ticker 조회는 정상인데, 홈과 `/ko/picks`가 쓰는 전체 가격 API에서 Meta와 기존 Yahoo ticker가 빠지는 회귀를 수정했습니다.
@@ -2814,6 +2878,8 @@ Pick 원문 출처는 `src/content/sources`의 공통 레지스트리에서 관�
 - published Pick의 source 연결 정상
 - restricted source 명시 처리
 - `WATCH` placeholder 가격 universe 제외
+- Pick, 회사 registry, 시장지도, OpenDART registry, 시장 카드의 회사명 identity 누락 여부
+- ticker-only companyName 사용 여부. ticker는 화면에서 `국가 · ticker` 보조 줄로만 둡니다.
 - 같은 ticker가 서로 다른 회사에 잘못 연결된 충돌 여부
 
 ### GitHub Actions CI 및 Vercel 배포 전 검증

@@ -239,7 +239,7 @@ const datacenterPowerCoolingFlowSteps = [
     label: 'AI 서버 증가',
     detail: 'AI 서비스를 처리할 서버가 더 많이 필요해집니다.',
     companyId: 'datacenter-power-ai-server-growth',
-    representativeCompanies: ['SMCI', 'Dell'],
+    representativeCompanies: ['Super Micro Computer', 'Dell Technologies'],
   },
   {
     label: '전력 사용 증가',
@@ -423,23 +423,23 @@ const companyVisualSymbols: Record<string, { label: string; tone: string }> = {
   'ai-datacenter-google': { label: 'G', tone: 'google' },
   'ai-datacenter-amazon': { label: 'AWS', tone: 'amazon' },
   'ai-datacenter-broadcom': { label: 'AV', tone: 'broadcom' },
-  'ai-datacenter-tsmc': { label: 'TSM', tone: 'tsmc' },
+  'ai-datacenter-tsmc': { label: 'TSMC', tone: 'tsmc' },
   'ai-datacenter-sk-hynix': { label: 'SK', tone: 'hynix' },
-  'ai-datacenter-samsung': { label: 'SEC', tone: 'samsung' },
+  'ai-datacenter-samsung': { label: '삼성', tone: 'samsung' },
   'ai-datacenter-asml': { label: 'ASML', tone: 'asml' },
-  'ai-datacenter-vertiv': { label: 'VRT', tone: 'vertiv' },
+  'ai-datacenter-vertiv': { label: 'V', tone: 'vertiv' },
   'ai-datacenter-amd': { label: 'AMD', tone: 'amd' },
-  'ai-datacenter-supermicro': { label: 'SMCI', tone: 'supermicro' },
-  'ai-datacenter-dell': { label: 'DELL', tone: 'dell' },
-  'ai-datacenter-arista': { label: 'ANET', tone: 'arista' },
-  'ai-datacenter-hanmi': { label: 'HMI', tone: 'kr' },
-  'ai-datacenter-leeno': { label: 'LNO', tone: 'kr' },
+  'ai-datacenter-supermicro': { label: 'SMC', tone: 'supermicro' },
+  'ai-datacenter-dell': { label: 'Dell', tone: 'dell' },
+  'ai-datacenter-arista': { label: 'AR', tone: 'arista' },
+  'ai-datacenter-hanmi': { label: '한미', tone: 'kr' },
+  'ai-datacenter-leeno': { label: '리노', tone: 'kr' },
   'ai-datacenter-isc': { label: 'ISC', tone: 'kr' },
-  'ai-datacenter-wonikips': { label: 'WON', tone: 'kr' },
-  'ai-datacenter-soulbrain': { label: 'SOL', tone: 'kr' },
-  'datacenter-power-vertiv': { label: 'VRT', tone: 'vertiv' },
-  'datacenter-power-eaton': { label: 'ETN', tone: 'energy' },
-  'datacenter-power-schneider': { label: 'SBG', tone: 'energy' },
+  'ai-datacenter-wonikips': { label: '원익', tone: 'kr' },
+  'ai-datacenter-soulbrain': { label: '솔브', tone: 'kr' },
+  'datacenter-power-vertiv': { label: 'V', tone: 'vertiv' },
+  'datacenter-power-eaton': { label: 'E', tone: 'energy' },
+  'datacenter-power-schneider': { label: 'SE', tone: 'energy' },
   'datacenter-power-lg-electronics': { label: 'LG', tone: 'kr' },
   'datacenter-power-ai-server-growth': { label: 'AI', tone: 'neutral' },
   'datacenter-power-power-use-growth': { label: 'KW', tone: 'energy' },
@@ -449,17 +449,31 @@ const companyVisualSymbols: Record<string, { label: string; tone: string }> = {
   'datacenter-power-investment-validation': { label: 'CHK', tone: 'neutral' },
 };
 
+function companyNameSymbolLabel(company: Company) {
+  const source = company.name || company.legalName || company.ticker || '';
+  const hangul = Array.from(source.match(/[가-힣]/g) ?? []).slice(0, 2).join('');
+  if (hangul) return hangul;
+
+  const words = source
+    .replace(/[,()]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 2) {
+    return words
+      .slice(0, 3)
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase();
+  }
+
+  return source.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || company.name.slice(0, 2);
+}
+
 function companySymbol(company: Company) {
   const mapped = companyVisualSymbols[company.id];
   if (mapped) return mapped;
-  const source = company.ticker && !company.ticker.includes('비상장') ? company.ticker : company.name;
-  const label = source
-    .replace(/\.(KS|KQ|US)$/i, '')
-    .replace(/[^a-zA-Z0-9가-힣]/g, '')
-    .slice(0, 4)
-    .toUpperCase();
   return {
-    label: label || company.name.slice(0, 2),
+    label: companyNameSymbolLabel(company),
     tone: isMainListedCompany(company) ? 'default' : 'reference',
   };
 }
@@ -760,6 +774,135 @@ function hasTradableTicker(company: Company) {
 
 function isMainListedCompany(company: Company) {
   return inferCompanyListing(company).isInvestmentAnalyzable;
+}
+
+const placeholderTickerLabels = new Set(['WATCH', '비상장', 'PRIVATE', 'N/A', '-']);
+
+type CompanyIdentitySize = 'compact' | 'card' | 'hero';
+
+type CompanyIdentityProps = {
+  companyName?: string | null;
+  ticker?: string | null;
+  countryLabel?: string | null;
+  statusLabel?: string | null;
+  size?: CompanyIdentitySize;
+  className?: string;
+};
+
+function cleanIdentityValue(value?: string | null) {
+  return String(value ?? '').trim();
+}
+
+function isDisplayTicker(ticker?: string | null) {
+  const normalized = cleanIdentityValue(ticker).toUpperCase();
+  return Boolean(normalized && !placeholderTickerLabels.has(normalized));
+}
+
+function countryLabelFromRegion(region?: string | null) {
+  const normalized = cleanIdentityValue(region).toLowerCase();
+  if (!normalized) return '';
+  if (['korea', 'south korea', '대한민국', '한국'].includes(normalized)) return '한국';
+  if (['united states', 'usa', 'us', '미국'].includes(normalized)) return '미국';
+  if (['taiwan', '대만'].includes(normalized)) return '대만';
+  if (['netherlands', 'the netherlands', '네덜란드'].includes(normalized)) return '네덜란드';
+  return '';
+}
+
+function countryLabelFromMarket(value?: string | null) {
+  const normalized = cleanIdentityValue(value).toUpperCase();
+  if (!normalized) return '';
+  if (['KR', 'KRX', 'KOSPI', 'KOSDAQ', 'KONEX', '한국'].includes(normalized)) return '한국';
+  if (['US', 'NASDAQ', 'NYSE', 'AMEX', 'OTC', '미국'].includes(normalized)) return '미국';
+  return '';
+}
+
+function countryLabelFromTicker(ticker?: string | null) {
+  const normalized = cleanIdentityValue(ticker).toUpperCase();
+  if (normalized.endsWith('.KS') || normalized.endsWith('.KQ') || normalized.endsWith('.KONEX')) return '한국';
+  return '';
+}
+
+function countryLabelFromCompany(company?: Company | null) {
+  if (!company) return '';
+  return (
+    countryLabelFromRegion(company.region) ||
+    countryLabelFromMarket(company.country) ||
+    countryLabelFromMarket(company.market) ||
+    countryLabelFromMarket(company.exchange) ||
+    countryLabelFromTicker(company.ticker)
+  );
+}
+
+function resolveCompanyIdentity(input: {
+  companyId?: string | null;
+  companyName?: string | null;
+  ticker?: string | null;
+  countryLabel?: string | null;
+  statusLabel?: string | null;
+}) {
+  const ticker = cleanIdentityValue(input.ticker);
+  const normalizedTicker = ticker.toUpperCase();
+  const company =
+    (input.companyId ? companies.find((item) => item.id === input.companyId) : undefined) ??
+    (normalizedTicker ? companies.find((item) => cleanIdentityValue(item.ticker).toUpperCase() === normalizedTicker) : undefined);
+  const companyName = cleanIdentityValue(input.companyName) || company?.name || company?.legalName || '회사명 확인 필요';
+  const resolvedTicker = ticker || company?.ticker || '';
+  const countryLabel =
+    cleanIdentityValue(input.countryLabel) ||
+    countryLabelFromCompany(company) ||
+    countryLabelFromTicker(resolvedTicker);
+  return {
+    companyName,
+    ticker: resolvedTicker,
+    countryLabel,
+    statusLabel: cleanIdentityValue(input.statusLabel),
+  };
+}
+
+function CompanyIdentity({
+  companyName,
+  ticker,
+  countryLabel,
+  statusLabel,
+  size = 'card',
+  className = '',
+}: CompanyIdentityProps) {
+  const name = cleanIdentityValue(companyName) || '회사명 확인 필요';
+  const displayTicker = isDisplayTicker(ticker) ? cleanIdentityValue(ticker).toUpperCase() : '';
+  const status = cleanIdentityValue(statusLabel) || (displayTicker ? '' : '비상장');
+  const meta = displayTicker
+    ? [cleanIdentityValue(countryLabel), displayTicker].filter(Boolean).join(' · ')
+    : status;
+
+  return (
+    <span className={`company-identity company-identity--${size} ${className}`.trim()}>
+      <strong className="company-identity__name">{name}</strong>
+      {meta ? <small className="company-identity__meta">{meta}</small> : null}
+    </span>
+  );
+}
+
+function CompanyIdentityForCompany({ company, size = 'card', className = '', statusLabel }: { company: Company; size?: CompanyIdentitySize; className?: string; statusLabel?: string }) {
+  const identity = resolveCompanyIdentity({
+    companyId: company.id,
+    companyName: company.name,
+    ticker: company.ticker,
+    countryLabel: countryLabelFromCompany(company),
+    statusLabel: statusLabel ?? (!hasTradableTicker(company) ? companyScopeLabel(company) : undefined),
+  });
+  return <CompanyIdentity {...identity} size={size} className={className} />;
+}
+
+function CompanyIdentityForPick({ pick, size = 'card', className = '' }: { pick: StockAutopsyPick; size?: CompanyIdentitySize; className?: string }) {
+  const statusLabel = pick.tickerStatus === 'placeholder' ? '관찰 대상' : undefined;
+  const identity = resolveCompanyIdentity({
+    companyId: pick.relatedCompanyId ?? pick.companyId,
+    companyName: pick.companyName,
+    ticker: pick.ticker,
+    countryLabel: pick.market === 'KR' ? '한국' : '미국',
+    statusLabel,
+  });
+  return <CompanyIdentity {...identity} size={size} className={className} />;
 }
 
 function isAuditedAiMarketMapCompany(company: Company) {
@@ -3144,10 +3287,7 @@ function TodayOverview({ marketPrices, disclosures, onOpenPicks, onOpenDisclosur
               const price = getPriceForPick(pick, marketPrices);
               return (
                 <button type="button" key={pick.id} className="today-pick-row" onClick={onOpenPicks}>
-                  <span>
-                    <strong>{pick.companyName}</strong>
-                    <small>{pick.ticker}</small>
-                  </span>
+                  <CompanyIdentityForPick pick={pick} size="compact" />
                   <PriceBadge price={price} compact />
                 </button>
               );
@@ -3221,6 +3361,13 @@ type MarketDisclosuresPageProps = {
 function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
   const categoryLabel = disclosureCategoryLabels[disclosure.category];
   const checkpoint = disclosureCheckpoints[disclosure.category];
+  const trackedCompany = findDartTrackedCompanyByTicker(disclosure.ticker);
+  const identity = resolveCompanyIdentity({
+    companyName: disclosure.companyName,
+    ticker: disclosure.ticker,
+    countryLabel: trackedCompany ? '한국' : countryLabelFromTicker(disclosure.ticker),
+    statusLabel: disclosure.ticker ? undefined : '공시 기업',
+  });
 
   return (
     <article className="disclosure-radar-card">
@@ -3229,8 +3376,7 @@ function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
         <time dateTime={disclosure.receivedAt}>{formatKstDate(disclosure.receivedAt)}</time>
       </div>
       <div className="disclosure-company-line">
-        <strong>{disclosure.companyName}</strong>
-        {disclosure.ticker ? <span>{disclosure.ticker}</span> : null}
+        <CompanyIdentity {...identity} size="compact" />
       </div>
       <h2>{disclosure.reportName}</h2>
       <p>
@@ -4809,7 +4955,13 @@ function InfrastructureStoryMapPage({
 
         <div className="reconstruction-selected-pill" aria-label="현재 선택 기업">
           <span>선택 기업</span>
-          <strong>{selectedCompany.name}</strong>
+          <CompanyIdentity
+            companyName={selectedCompany.name}
+            ticker={selectedCompany.ticker}
+            countryLabel={countryLabelFromMarket(selectedCompany.exchange) || countryLabelFromTicker(selectedCompany.ticker)}
+            statusLabel={selectedCompany.status}
+            size="compact"
+          />
           <em>{selectedCompany.status}</em>
         </div>
 
@@ -4819,8 +4971,13 @@ function InfrastructureStoryMapPage({
               <div className="reconstruction-company-mark" aria-hidden="true">{selectedCompany.mark}</div>
               <div>
                 <span>선택한 기업</span>
-                <h2>{selectedCompany.name}</h2>
-                <small>{selectedCompany.ticker} · {selectedCompany.exchange}</small>
+                <CompanyIdentity
+                  companyName={selectedCompany.name}
+                  ticker={selectedCompany.ticker}
+                  countryLabel={countryLabelFromMarket(selectedCompany.exchange) || countryLabelFromTicker(selectedCompany.ticker)}
+                  statusLabel={selectedCompany.status}
+                  size="hero"
+                />
               </div>
             </div>
             <div className="reconstruction-company-badges">
@@ -4883,8 +5040,13 @@ function InfrastructureStoryMapPage({
                     <div className="reconstruction-related-head">
                       <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
                       <div>
-                        <strong>{company.name}</strong>
-                        <small>{company.ticker} · {company.exchange}</small>
+                        <CompanyIdentity
+                          companyName={company.name}
+                          ticker={company.ticker}
+                          countryLabel={countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker)}
+                          statusLabel={company.status}
+                          size="compact"
+                        />
                       </div>
                     </div>
                     <div className="reconstruction-related-meta">
@@ -5273,9 +5435,7 @@ function StockAutopsyPicksPage({
         <main className="pick-detail pick-detail-page">
           <section className="pick-story-hero">
             <div>
-              <span className={`pick-move ${detailPick.movementDirection}`}>
-                {detailPick.ticker} · {pickMarketLabel(detailPick)}
-              </span>
+              <CompanyIdentityForPick pick={detailPick} size="hero" className={`pick-move ${detailPick.movementDirection}`} />
               <div className="pick-story-price-row">
                 <PriceBadge price={detailPickPrice} compact />
               </div>
@@ -5470,7 +5630,7 @@ function StockAutopsyPicksPage({
   const renderPickCard = (pick: StockAutopsyPick) => (
     <article className="pick-card" key={pick.id}>
       <div className="card-topline">
-        <span>{pickMarketLabel(pick)} · {pick.ticker}</span>
+        <CompanyIdentityForPick pick={pick} size="card" />
         <div className="pick-card-badge-row">
           {isArchive ? <span className="pick-archive-badge">보관함</span> : null}
           <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
@@ -5804,9 +5964,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
             <div>
               <div className="company-explainer-meta">
                 <span className="analysis-market-pill">{companyScopeLabel(company)}</span>
-                <span className="analysis-market-pill soft">{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</span>
               </div>
-              <h2>{company.name}</h2>
+              <CompanyIdentityForCompany company={company} size="hero" className="company-explainer-identity" />
               <strong className="company-one-line-conclusion">{companyTopConclusion}</strong>
               <p>{companyShortDescription}</p>
             </div>
@@ -5902,8 +6061,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
                       <button key={item.company.id} type="button" onClick={() => onOpenAnalysis(item.company)}>
                         <CompanyLogo company={item.company} size="small" />
                         <span>
-                          <strong>{item.company.name}</strong>
-                          <small>{marketDisplayLabel(item.company)} · {item.company.ticker ?? '티커 확인 필요'}</small>
+                          <CompanyIdentityForCompany company={item.company} size="compact" />
                           <em>{shortRelationshipLabel(item.relationship.type)} · {item.relationship.confidence}</em>
                         </span>
                         <b>보기</b>
@@ -6276,8 +6434,12 @@ function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: Owners
                   <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
                 </div>
                 <div className="smart-company-focus">
-                  <strong>{move.companyName}</strong>
-                  <small>{move.ticker}</small>
+                  <CompanyIdentity
+                    companyName={move.companyName}
+                    ticker={move.ticker}
+                    countryLabel={countryLabelFromMarket(move.market)}
+                    size="compact"
+                  />
                 </div>
                 <span className="trade-type-badge">{publicReportTypeBadge(move)}</span>
                 <p>{move.beginnerExplanation}</p>
@@ -7524,7 +7686,7 @@ function App() {
                   return (
                     <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
                       <span>{index + 1}</span>
-                      <strong>{company.name}</strong>
+                      <CompanyIdentityForCompany company={company} size="compact" />
                       <small>{role.primary} · {role.secondary}</small>
                     </button>
                   );
@@ -7547,10 +7709,12 @@ function App() {
               >
                 <span className="rank-badge">#{anchor.rank}</span>
                 <span>
-                  <strong>{anchor.name}</strong>
-                  <small>
-                    {anchor.exchange} · {anchor.ticker}
-                  </small>
+                  <CompanyIdentity
+                    companyName={anchor.name}
+                    ticker={anchor.ticker}
+                    countryLabel={countryLabelFromMarket(anchor.country) || countryLabelFromMarket(anchor.exchange)}
+                    size="compact"
+                  />
                 </span>
               </button>
             ))}
@@ -7708,7 +7872,7 @@ function App() {
                   >
                     <span className={`role-badge role-${role.className}`}>{role.primary}</span>
                     <span className="company-row-main">
-                      <strong>{company.name}</strong>
+                      <CompanyIdentityForCompany company={company} size="compact" />
                       <small>{role.secondary} · {productText(company)}</small>
                       <em>{companyScopeLabel(company)}</em>
                     </span>
@@ -7766,7 +7930,7 @@ function App() {
               {selectedCompany && (
                 <div className="selected-company-context">
                   <span>선택한 기업</span>
-                  <strong>{selectedCompany.name}</strong>
+                  <CompanyIdentityForCompany company={selectedCompany} size="compact" />
                   <em>{selectedCompanyStatusLabel}</em>
                 </div>
               )}
@@ -7829,8 +7993,8 @@ function App() {
                   <CompanyLogo company={selectedCompany} size="large" />
                   <div>
                     <span>선택한 기업</span>
-                    <h3>{selectedCompany.name}</h3>
-                    <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                    <CompanyIdentityForCompany company={selectedCompany} size="hero" />
+                    <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
                   </div>
                 </div>
                 <div className="connection-badge-row">
@@ -7898,7 +8062,7 @@ function App() {
                       return (
                         <article key={item.key} className={`connection-${connection.level}`}>
                           <div>
-                            <strong>{item.company.name}</strong>
+                            <CompanyIdentityForCompany company={item.company} size="compact" />
                             <span>{item.label}</span>
                           </div>
                           <p>{item.description}</p>
@@ -7945,8 +8109,8 @@ function App() {
                   {selectedCompany && (
                     <div className="relationship-selected-company-card" aria-label="전체 연결 보기 선택 기업">
                       <span>선택 기업</span>
-                      <strong>{selectedCompany.name}</strong>
-                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      <CompanyIdentityForCompany company={selectedCompany} size="compact" />
+                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
                       {selectedConnectionState && (
                         <div className="connection-badge-row">
                           {selectedConnectionState.badges.map((badge) => (
@@ -8066,7 +8230,7 @@ function App() {
                           <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
                             <CompanyLogo company={item.company} size="small" />
                             <span>
-                              <strong>{item.company.name}</strong>
+                              <CompanyIdentityForCompany company={item.company} size="compact" />
                               <small>{shortRelationshipLabel(item.relationship.type)}</small>
                             </span>
                           </button>
@@ -8082,8 +8246,8 @@ function App() {
                     <div>
                       <span>선택한 기업</span>
                       {activeFlowStageCard && <em className="flow-active-stage-label">{activeFlowStageCard.stage}</em>}
-                      <strong>{selectedCompany.name}</strong>
-                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)} · {marketDisplayLabel(selectedCompany)}</small>
+                      <CompanyIdentityForCompany company={selectedCompany} size="hero" />
+                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
                       {selectedConnectionState && (
                         <div className="connection-badge-row">
                           {selectedConnectionState.badges.map((badge) => (
@@ -8134,7 +8298,7 @@ function App() {
                           <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
                             <CompanyLogo company={item.company} size="small" />
                             <span>
-                              <strong>{item.company.name}</strong>
+                              <CompanyIdentityForCompany company={item.company} size="compact" />
                               <small>{item.relationship.demandConnection}</small>
                             </span>
                           </button>
@@ -8179,8 +8343,7 @@ function App() {
                       return (
                         <article key={company.id} className={`korea-listed-item connection-${connection.level}`}>
                           <div>
-                            <strong>{company.name}</strong>
-                            <small>{marketDisplayLabel(company)} · {company.ticker ?? '티커 확인 필요'}</small>
+                            <CompanyIdentityForCompany company={company} size="compact" />
                           </div>
                           <div className="connection-badge-row">
                             {connection.badges.map((badge) => (
@@ -8467,11 +8630,7 @@ function App() {
                   <CompanyLogo company={selectedCompany} size="large" />
                   <div>
                     <p className="eyebrow">현재 선택한 기업</p>
-                    <h2>{selectedCompany.name}</h2>
-                    <span>
-                      {hasTradableTicker(selectedCompany) && selectedCompany.ticker ? `${selectedCompany.ticker} · ` : ''}
-                      {marketDisplayLabel(selectedCompany)}
-                    </span>
+                    <CompanyIdentityForCompany company={selectedCompany} size="hero" />
                   </div>
                 </div>
                 <div className="panel-heading-actions">
