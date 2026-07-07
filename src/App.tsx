@@ -100,6 +100,14 @@ import {
   type MarketSecFilingsApiResponse,
   type SecFilingCategory,
 } from './content/disclosures';
+import {
+  eightKItemDefinitionByItem,
+  secPrimaryTransactionCodes,
+  secTransactionCodeDefinitionByCode,
+  type SecDerivativeTransaction,
+  type SecNonDerivativeTransaction,
+  type SecReportingOwner,
+} from './lib/sec';
 import { fetchMarketDisclosures, fetchMarketSecFilings } from './services/disclosures';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
@@ -3204,6 +3212,97 @@ function formatKstDate(value?: string | null, fallback = '접수일 확인 중')
   return `${parts.year}.${parts.month}.${parts.day}`;
 }
 
+const secNumberFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 6 });
+const secMoneyFormatter = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+
+function formatSecNumber(value?: number | null) {
+  return typeof value === 'number' && Number.isFinite(value) ? secNumberFormatter.format(value) : '';
+}
+
+function formatSecShares(value?: number | null) {
+  const formatted = formatSecNumber(value);
+  return formatted ? `${formatted}주` : '';
+}
+
+function formatSecPrice(value?: number | null) {
+  return typeof value === 'number' && Number.isFinite(value) ? `주당 $${secMoneyFormatter.format(value)}` : '';
+}
+
+function isSecAmendedFiling(formType: string) {
+  return formType.endsWith('/A');
+}
+
+function isEightKFiling(formType: string) {
+  return formType === '8-K' || formType === '8-K/A';
+}
+
+function isForm4Filing(formType: string) {
+  return formType === '4' || formType === '4/A';
+}
+
+function reportingOwnerRoleLabel(owner: SecReportingOwner) {
+  const roles = [
+    owner.isDirector ? 'Director' : '',
+    owner.isOfficer ? owner.officerTitle || 'Officer' : '',
+    owner.isTenPercentOwner ? '10% Owner' : '',
+    owner.isOther ? owner.otherText || 'Other' : '',
+  ].filter(Boolean);
+  return roles.join(' · ') || '관계 정보 없음';
+}
+
+type SecTransactionSummary =
+  | { kind: 'non-derivative'; transaction: SecNonDerivativeTransaction }
+  | { kind: 'derivative'; transaction: SecDerivativeTransaction };
+
+function secTransactionsForFiling(filing: MarketSecFiling): SecTransactionSummary[] {
+  return [
+    ...(filing.nonDerivativeTransactions ?? []).map((transaction) => ({ kind: 'non-derivative' as const, transaction })),
+    ...(filing.derivativeTransactions ?? []).map((transaction) => ({ kind: 'derivative' as const, transaction })),
+  ];
+}
+
+function secTransactionShares(transaction: SecTransactionSummary) {
+  return transaction.kind === 'non-derivative'
+    ? transaction.transaction.shares
+    : transaction.transaction.transactionShares;
+}
+
+function secTransactionPrice(transaction: SecTransactionSummary) {
+  return transaction.kind === 'non-derivative'
+    ? transaction.transaction.pricePerShare
+    : transaction.transaction.transactionPricePerShare;
+}
+
+function secTransactionCodeLabel(transaction: SecTransactionSummary) {
+  const code = transaction.transaction.transactionCode;
+  const label = transaction.transaction.transactionCodeLabelKo;
+  if (!code && !label) return transaction.kind === 'derivative' ? '파생상품 거래' : '거래 코드 확인 필요';
+  return [code, label].filter(Boolean).join(' · ');
+}
+
+function secTransactionMetaLine(transaction: SecTransactionSummary) {
+  return [
+    formatSecShares(secTransactionShares(transaction)),
+    formatSecPrice(secTransactionPrice(transaction)),
+    transaction.transaction.ownershipLabelKo,
+    transaction.transaction.sharesOwnedFollowingTransaction !== null
+      ? `거래 후 ${formatSecShares(transaction.transaction.sharesOwnedFollowingTransaction)}`
+      : '',
+  ].filter(Boolean).join(' · ');
+}
+
+function secFilingMatchesTransactionFilter(filing: MarketSecFiling, filter: string | 'all' | 'other') {
+  if (filter === 'all') return true;
+  const transactions = secTransactionsForFiling(filing);
+  if (filter === 'other') {
+    return transactions.some(({ transaction }) => {
+      const code = transaction.transactionCode ?? '';
+      return code && !secPrimaryTransactionCodes.includes(code as typeof secPrimaryTransactionCodes[number]);
+    });
+  }
+  return transactions.some(({ transaction }) => transaction.transactionCode === filter);
+}
+
 function latestPriceAsOfForPicks(picks: StockAutopsyPick[], prices: MarketPrice[]) {
   const timestamps = picks
     .map((pick) => getPriceForPick(pick, prices)?.asOf)
@@ -3513,6 +3612,70 @@ function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
   );
 }
 
+function SecFilingDetailSummary({ filing, compact = false }: { filing: MarketSecFiling; compact?: boolean }) {
+  if (isEightKFiling(filing.formType)) {
+    const items = filing.eightKItems ?? [];
+    return (
+      <div className={`sec-detail-block ${compact ? 'compact' : ''}`}>
+        <strong>공시 항목</strong>
+        {items.length ? (
+          <>
+            <ul className="sec-detail-list">
+              {items.slice(0, compact ? 2 : 3).map((item) => (
+                <li key={item.item}>{item.item} · {item.labelKo}</li>
+              ))}
+            </ul>
+            {items.length > (compact ? 2 : 3) ? <small>외 {items.length - (compact ? 2 : 3)}개</small> : null}
+          </>
+        ) : (
+          <small>공시 항목 정보 없음</small>
+        )}
+      </div>
+    );
+  }
+
+  if (isForm4Filing(filing.formType)) {
+    const owners = filing.reportingOwners ?? [];
+    const transactions = secTransactionsForFiling(filing);
+    const detailUnavailable = filing.parsingStatus === 'source-unavailable' || filing.parsingStatus === 'parse-error';
+
+    return (
+      <div className={`sec-detail-block ${compact ? 'compact' : ''}`}>
+        <strong>공시된 소유권 거래</strong>
+        {owners.length ? (
+          <div className="sec-owner-list">
+            {owners.slice(0, compact ? 1 : 2).map((owner, index) => (
+              <span key={`${owner.cik ?? owner.name ?? 'owner'}-${index}`}>
+                {owner.name ?? '보고자 이름 확인 필요'} · {reportingOwnerRoleLabel(owner)}
+              </span>
+            ))}
+            {owners.length > (compact ? 1 : 2) ? <small>보고자 외 {owners.length - (compact ? 1 : 2)}명</small> : null}
+          </div>
+        ) : null}
+        {transactions.length ? (
+          <>
+            <ul className="sec-detail-list">
+              {transactions.slice(0, compact ? 2 : 3).map((transaction, index) => (
+                <li key={`${transaction.transaction.transactionCode ?? 'code'}-${index}`}>
+                  <span>{secTransactionCodeLabel(transaction)}</span>
+                  <small>{secTransactionMetaLine(transaction) || '수량·가격 정보 없음'}</small>
+                  {transaction.transaction.footnoteIds.length ? <small>각주 {transaction.transaction.footnoteIds.length}개 있음 · 원문 조건 확인</small> : null}
+                </li>
+              ))}
+            </ul>
+            {transactions.length > (compact ? 2 : 3) ? <small>거래 외 {transactions.length - (compact ? 2 : 3)}건</small> : null}
+            {filing.footnoteCount ? <small>전체 각주 {filing.footnoteCount}개 있음 · SEC 원문에서 확인</small> : null}
+          </>
+        ) : (
+          <small>{detailUnavailable ? '거래 상세를 불러오지 못했습니다. SEC 원문에서 확인하세요.' : '거래 상세 준비 중'}</small>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
   const categoryLabel = secFilingCategoryLabels[filing.category];
   const checkpoint = secFilingCheckpoints[filing.category];
@@ -3529,6 +3692,7 @@ function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
       <div className="disclosure-card-topline">
         <span>SEC EDGAR</span>
         <span>{filing.formType}</span>
+        {isSecAmendedFiling(filing.formType) ? <span>수정 공시</span> : null}
         <time dateTime={filing.filedAt}>{formatKstDate(filing.filedAt)}</time>
       </div>
       <div className="disclosure-company-line">
@@ -3539,6 +3703,8 @@ function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
         <b>확인할 것:</b>
         {checkpoint}
       </p>
+      <SecFilingDetailSummary filing={filing} />
+      {isSecAmendedFiling(filing.formType) ? <small className="disclosure-card-submeta">수정 공시입니다. 원본과 함께 확인하세요.</small> : null}
       {filing.reportDate ? <small className="disclosure-card-submeta">보고 기준일 · {formatKstDate(filing.reportDate)}</small> : null}
       <a href={filing.sourceUrl} target="_blank" rel="noopener noreferrer">
         SEC EDGAR 원문 보기
@@ -3553,6 +3719,8 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
   const [categoryFilter, setCategoryFilter] = useState<DisclosureCategory | 'all'>('all');
   const [secCategoryFilter, setSecCategoryFilter] = useState<SecFilingCategory | 'all'>('all');
   const [secFormFilter, setSecFormFilter] = useState<string | 'all'>('all');
+  const [secItemFilter, setSecItemFilter] = useState<string | 'all'>('all');
+  const [secTransactionFilter, setSecTransactionFilter] = useState<string | 'all' | 'other'>('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const recent24 = disclosureItemsWithin(disclosures.items, 24);
   const recent7 = disclosureItemsWithin(disclosures.items, 24 * 7);
@@ -3580,6 +3748,8 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
     return secFilings.items
       .filter((item) => secCategoryFilter === 'all' || item.category === secCategoryFilter)
       .filter((item) => secFormFilter === 'all' || matchesSecFormPattern(item.formType, secFormFilter))
+      .filter((item) => secItemFilter === 'all' || item.eightKItems?.some((detail) => detail.item === secItemFilter))
+      .filter((item) => secFilingMatchesTransactionFilter(item, secTransactionFilter))
       .filter((item) => {
         if (companyFilter === 'all') return true;
         if (companyFilter === 'current-pick') return currentPickSecTickers.has(item.ticker);
@@ -3588,7 +3758,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
         return item.ticker === companyFilter;
       })
       .sort((a, b) => b.filedAt.localeCompare(a.filedAt));
-  }, [companyFilter, secCategoryFilter, secFilings.items, secFormFilter, shouldShowSec]);
+  }, [companyFilter, secCategoryFilter, secFilings.items, secFormFilter, secItemFilter, secTransactionFilter, shouldShowSec]);
 
   const filteredItems = officialDisclosureFeedItems(filteredDartItems, filteredSecItems);
 
@@ -3603,6 +3773,8 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
     setSourceFilter(next);
     setCompanyFilter('all');
   };
+  const secItemFilterOptions = ['2.02', '5.02', '7.01', '8.01', '9.01'];
+  const secTransactionFilterOptions = ['P', 'S', 'A', 'F', 'G', 'M'];
 
   return (
     <div className="pick-shell story-dark-shell disclosure-radar-shell">
@@ -3728,6 +3900,51 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                   ))}
                 </div>
               </div>
+              <div>
+                <span><Filter size={14} /> 8-K Item</span>
+                <div className="disclosure-chip-row">
+                  <button type="button" className={secItemFilter === 'all' ? 'active' : ''} onClick={() => setSecItemFilter('all')}>
+                    전체 Item
+                  </button>
+                  {secItemFilterOptions.map((item) => {
+                    const definition = eightKItemDefinitionByItem.get(item);
+                    return (
+                      <button
+                        type="button"
+                        key={item}
+                        className={secItemFilter === item ? 'active' : ''}
+                        onClick={() => setSecItemFilter(item)}
+                      >
+                        {definition?.labelKo ?? '공식 설명 확인 필요'} · {item}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <span><Filter size={14} /> Form 4 거래</span>
+                <div className="disclosure-chip-row">
+                  <button type="button" className={secTransactionFilter === 'all' ? 'active' : ''} onClick={() => setSecTransactionFilter('all')}>
+                    전체 거래
+                  </button>
+                  {secTransactionFilterOptions.map((code) => {
+                    const definition = secTransactionCodeDefinitionByCode.get(code);
+                    return (
+                      <button
+                        type="button"
+                        key={code}
+                        className={secTransactionFilter === code ? 'active' : ''}
+                        onClick={() => setSecTransactionFilter(code)}
+                      >
+                        {code} · {definition?.labelKo ?? '공식 코드 설명 확인 필요'}
+                      </button>
+                    );
+                  })}
+                  <button type="button" className={secTransactionFilter === 'other' ? 'active' : ''} onClick={() => setSecTransactionFilter('other')}>
+                    기타
+                  </button>
+                </div>
+              </div>
             </>
           ) : null}
           <div>
@@ -3837,8 +4054,9 @@ function PickDisclosurePanel({
             {recentSecItems.map((filing) => (
               <a key={filing.accessionNumber} href={filing.sourceUrl} target="_blank" rel="noopener noreferrer">
                 <span>{filing.formType} · {secFilingCategoryLabels[filing.category]} · {formatKstDate(filing.filedAt)}</span>
-                <strong>{filing.companyName} SEC filing</strong>
-                <small>{secFilingCheckpoints[filing.category]}</small>
+                <strong>{filing.companyName} SEC 원문 보기</strong>
+                <SecFilingDetailSummary filing={filing} compact />
+                {isSecAmendedFiling(filing.formType) ? <small>수정 공시 · 원본과 함께 확인</small> : null}
               </a>
             ))}
           </div>

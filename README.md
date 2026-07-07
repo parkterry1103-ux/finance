@@ -4042,6 +4042,121 @@ OpenDART 회귀 API는 `HTTP 200`, `ok:true`, `items:20`으로 기존 row가 유
 
 SEC cron 설정은 `/api/sync/sec-filings`, `15 21 * * 1-5`입니다. UTC/KST 변환은 `21:15 UTC / 다음 날 06:15 KST`이며, 2026-07-07 기준 다음 자동 실행 예정은 `2026-07-07 21:15 UTC / 2026-07-08 06:15 KST`입니다. 기존 가격 cron과 OpenDART cron은 유지됩니다. 첫 자동 cron 이후에는 `lastSyncedAt` 갱신, 신규 filing upsert, duplicate accession 0건을 재확인하면 됩니다.
 
+### SEC 8-K Item 및 Form 4 구조화
+
+이번 단계는 기존 `market_sec_filings` metadata row를 삭제하거나 다시 만들지 않고, 별도 detail table에 SEC 원문에서 기계적으로 확인 가능한 값만 저장합니다. 생성형 요약, 공시 본문 추측, 투자 판단 표현은 사용하지 않습니다.
+
+신규 schema:
+
+```text
+table: market_sec_filing_details
+primary key: accession_number
+foreign key: accession_number -> market_sec_filings.accession_number on delete cascade
+parser_version: sec-structured-v1
+parsing_status: pending | parsed | not-applicable | source-unavailable | parse-error
+jsonb: eight_k_items, reporting_owners, non_derivative_transactions, derivative_transactions, footnotes
+indexes: form_type, parsing_status, parsed_at desc
+RLS: enabled
+policy: 없음. browser direct anon/auth write를 열지 않고 server service-role path만 사용합니다.
+```
+
+파일 위치:
+
+- Migration: `supabase/migrations/20260707_create_market_sec_filing_details.sql`
+- Schema mirror: `supabase/schema.sql`
+- 8-K mapping: `src/lib/sec/eightKItems.ts`
+- Form 4 parser: `src/lib/sec/form4Parser.ts`, `src/lib/sec/xml.ts`
+- Transaction code mapping: `src/lib/sec/transactionCodes.ts`
+- Detail sync: `scripts/sync-sec-filing-details.ts`
+- 보호 route: `api/sync/sec-filing-details.ts`
+- 공개 API 확장: `api/market-sec-filings.ts`
+- UI 표시: `src/App.tsx`, `src/styles.css`
+
+8-K 구조화:
+
+- 대상 form은 `8-K`, `8-K/A`입니다.
+- SEC submissions JSON의 filing별 `items` 값만 사용합니다.
+- 쉼표 분리, 공백 제거, 유효 Item 번호 유지, 중복 제거, 원래 순서 보존 규칙으로 정규화합니다.
+- Item이 없으면 빈 배열로 저장하고 UI는 `공시 항목 정보 없음`으로 표시합니다.
+- Item mapping은 공식 Form 8-K 항목 기준 33개를 지원합니다. `2.02`, `5.02`, `7.01`, `8.01`, `9.01` 등은 중립적 한국어 설명으로 표시합니다.
+
+Form 4 구조화:
+
+- 대상 form은 `4`, `4/A`입니다.
+- primary XML의 `ownershipDocument`만 파싱합니다.
+- `reportingOwner`는 여러 명을 배열로 보존합니다.
+- `nonDerivativeTransaction`과 `derivativeTransaction`은 분리 저장합니다.
+- 수량, 가격, 행사 가격, 거래 후 보유량은 숫자 변환 실패 시 `null`입니다.
+- 비파생 거래의 `shares * pricePerShare`는 두 값이 모두 있을 때만 계산합니다.
+- 각주는 `footnote`와 거래별 `footnoteId`를 보존하고, UI에서는 `각주 있음 · 원문 조건 확인`처럼 짧게 안내합니다.
+
+Transaction code mapping:
+
+- SEC ownership form code table 기준으로 `P`, `S`, `V`, `A`, `D`, `F`, `I`, `M`, `C`, `E`, `H`, `O`, `X`, `G`, `L`, `W`, `Z`, `J`, `K`, `U` 20개를 지원합니다.
+- UI 상위 분류는 `open-market-purchase`, `open-market-sale`, `award`, `tax-withholding`, `gift`, `option-exercise`, `derivative`, `other`입니다.
+- `P`만 공개시장/사적 매수, `S`만 공개시장/사적 매도로 표시합니다.
+- `A`, `M`, `F`, `G` 등은 보상 취득, 옵션 행사/전환, 세금·행사가격 납부 목적 처분, 증여처럼 실제 코드 의미로 표시합니다.
+
+공개 API 호환:
+
+```text
+/api/market-sec-filings?limit=20
+/api/market-sec-filings?form=8-K&limit=20
+/api/market-sec-filings?form=4&limit=20
+/api/market-sec-filings?item=2.02&limit=20
+/api/market-sec-filings?transactionCode=P&limit=20
+/api/market-sec-filings?ownerRole=director&limit=20
+/api/market-sec-filings?ownership=direct&limit=20
+```
+
+기존 response field는 유지하고, 각 filing item에 선택 필드로 `parsingStatus`, `eightKItems`, `reportingOwners`, `nonDerivativeTransactions`, `derivativeTransactions`, `footnotes`, `footnoteCount`, `sourceDocumentUrl`, `parseError`를 붙입니다. Detail table이 아직 없거나 조회 실패해도 기존 filing 목록은 fallback으로 유지합니다.
+
+UI 적용:
+
+- `/ko/disclosures` SEC 카드에 8-K Item, Form 4 reporting owner, transaction code, 수량, 가격, 직접/간접 보유, 거래 후 보유량, 각주 안내를 표시합니다.
+- SEC 탭에는 8-K Item 필터와 Form 4 거래 코드 필터를 추가합니다.
+- 미국 Pick 상세의 `최근 SEC 공시`에도 같은 구조 요약을 표시합니다.
+- `8-K/A`, `4/A`는 `수정 공시` badge를 표시하고 원본과 함께 확인하라는 안내를 붙입니다.
+
+Backfill 절차:
+
+```bash
+npm run validate:content
+./node_modules/.bin/tsc -p tsconfig.scripts.json
+./node_modules/.bin/tsc --noEmit
+./node_modules/.bin/vite build
+```
+
+Production 적용 순서:
+
+1. Supabase SQL Editor에서 `20260707_create_market_sec_filing_details.sql` 적용
+2. production deploy 확인
+3. 보호 route `/api/sync/sec-filing-details`를 작은 batch로 실행
+4. `8-K`, `8-K/A`, `4`, `4/A` 대상만 backfill
+5. `parsed`, `source-unavailable`, `parse-error`, `skipped`, SEC `429/5xx` count 확인
+6. 실제 SEC 원문 표본 8-K 3건, Form 4 5건 대조
+7. `/ko/disclosures`, 미국 Pick 상세, OpenDART, 가격 API 회귀 확인
+
+운영 기록 표:
+
+| 항목 | 값 |
+| --- | --- |
+| 기존 SEC rows | production backfill 후 기록 |
+| 대상 8-K / 8-K-A | production backfill 후 기록 |
+| parsed 8-K | production backfill 후 기록 |
+| Item 없는 8-K | production backfill 후 기록 |
+| 대상 Form 4 / 4-A | production backfill 후 기록 |
+| parsed Form 4 | production backfill 후 기록 |
+| reporting owner | production backfill 후 기록 |
+| non-derivative transactions | production backfill 후 기록 |
+| derivative transactions | production backfill 후 기록 |
+| footnotes | production backfill 후 기록 |
+| source unavailable | production backfill 후 기록 |
+| parse error | production backfill 후 기록 |
+| skipped | production backfill 후 기록 |
+| duplicate accession / detail | production backfill 후 기록 |
+| SEC 429 / 5xx | production backfill 후 기록 |
+
 감시 기업 추가 절차:
 
 1. 공식 OpenDART `corpCode.xml`에서 ticker와 corpCode를 확인합니다.

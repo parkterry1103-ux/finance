@@ -33,6 +33,16 @@ import {
   secArchiveIndexUrl,
   secSubmissionsUrl,
 } from './sync-sec-filings.js';
+import {
+  SEC_FILING_DETAIL_PARSER_VERSION,
+  eightKItemDefinitions,
+  isEightKItemCode,
+  isSupportedTransactionCode,
+  normalizeEightKItems,
+  parseForm4OwnershipXml,
+  secTransactionCodeDefinitions,
+  transactionCategoryForCode,
+} from '../src/lib/sec/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -79,6 +89,14 @@ const secDisclosureValidation = {
   disabledCount: 0,
   duplicateCikCount: 0,
   duplicateTickerCount: 0,
+};
+const secDetailValidation = {
+  eightKItemCount: 0,
+  transactionCodeCount: 0,
+  fixtureReportingOwners: 0,
+  fixtureNonDerivativeTransactions: 0,
+  fixtureDerivativeTransactions: 0,
+  fixtureFootnotes: 0,
 };
 const identityValidation = {
   pickIdentityCount: 0,
@@ -517,6 +535,9 @@ function validateDisclosureClassification() {
 function validateSecDisclosureRegistry() {
   secDisclosureValidation.enabledCount = enabledSecTrackedCompanies.length;
   secDisclosureValidation.disabledCount = secTrackedCompanies.length - enabledSecTrackedCompanies.length;
+  if (secDisclosureValidation.enabledCount !== 12) {
+    addError(`SEC enabled tracked company count changed: ${secDisclosureValidation.enabledCount}`);
+  }
 
   const pickIds = new Set(stockAutopsyPicks.map((pick) => pick.id));
   const companyIds = new Set(companies.map((company) => company.id));
@@ -643,6 +664,173 @@ function validateSecFilingHelpers() {
     sampleCompany,
   );
   if (unevenRows.length !== 0) addError(`SEC uneven recent arrays should be ignored safely: ${unevenRows.length}`);
+}
+
+function validateSecFilingDetailParsers() {
+  if (SEC_FILING_DETAIL_PARSER_VERSION !== 'sec-structured-v1') {
+    addError(`SEC detail parser version mismatch: ${SEC_FILING_DETAIL_PARSER_VERSION}`);
+  }
+
+  secDetailValidation.eightKItemCount = eightKItemDefinitions.length;
+  duplicateValues(eightKItemDefinitions.map((definition) => definition.item))
+    .forEach((item) => addError(`duplicate 8-K item mapping: ${item}`));
+  eightKItemDefinitions.forEach((definition) => {
+    if (!isEightKItemCode(definition.item)) addError(`invalid 8-K item format: ${definition.item}`);
+    if (!definition.labelEn || !definition.labelKo || !definition.category) {
+      addError(`incomplete 8-K item definition: ${definition.item}`);
+    }
+  });
+
+  const requiredEightKItems = [
+    '1.01', '1.02', '1.03', '1.04', '1.05',
+    '2.01', '2.02', '2.03', '2.04', '2.05', '2.06',
+    '3.01', '3.02', '3.03',
+    '4.01', '4.02',
+    '5.01', '5.02', '5.03', '5.04', '5.05', '5.06', '5.07', '5.08',
+    '6.01', '6.02', '6.03', '6.04', '6.05',
+    '7.01', '8.01', '9.01',
+  ];
+  requiredEightKItems.forEach((item) => {
+    if (!eightKItemDefinitions.some((definition) => definition.item === item)) addError(`missing required 8-K item mapping: ${item}`);
+  });
+
+  const normalizedItems = normalizeEightKItems('2.02,9.01');
+  if (normalizedItems.map((item) => item.item).join('|') !== '2.02|9.01') {
+    addError(`8-K item normalization mismatch: ${normalizedItems.map((item) => item.item).join(',')}`);
+  }
+  const spacedItems = normalizeEightKItems(' 5.02, 8.01, 9.01 ');
+  if (spacedItems.map((item) => item.item).join('|') !== '5.02|8.01|9.01') {
+    addError(`8-K item whitespace normalization mismatch: ${spacedItems.map((item) => item.item).join(',')}`);
+  }
+  if (normalizeEightKItems('').length !== 0) addError('empty 8-K items should normalize to empty array');
+
+  secDetailValidation.transactionCodeCount = secTransactionCodeDefinitions.length;
+  duplicateValues(secTransactionCodeDefinitions.map((definition) => definition.code))
+    .forEach((code) => addError(`duplicate SEC transaction code mapping: ${code}`));
+  const requiredTransactionCodes = ['P', 'S', 'A', 'D', 'F', 'G', 'M', 'C', 'E', 'H', 'I', 'J', 'K', 'L', 'O', 'U', 'W', 'X', 'Z'];
+  requiredTransactionCodes.forEach((code) => {
+    if (!isSupportedTransactionCode(code)) addError(`missing SEC transaction code mapping: ${code}`);
+    if (!transactionCategoryForCode(code)) addError(`missing SEC transaction category: ${code}`);
+  });
+  if (transactionCategoryForCode('P') !== 'open-market-purchase') addError('SEC transaction code P category mismatch');
+  if (transactionCategoryForCode('S') !== 'open-market-sale') addError('SEC transaction code S category mismatch');
+  if (transactionCategoryForCode('M') !== 'option-exercise') addError('SEC transaction code M category mismatch');
+  if (transactionCategoryForCode('F') !== 'tax-withholding') addError('SEC transaction code F category mismatch');
+  if (transactionCategoryForCode('G') !== 'gift') addError('SEC transaction code G category mismatch');
+
+  const fixtureXml = `<?xml version="1.0"?>
+<ownershipDocument>
+  <reportingOwner>
+    <reportingOwnerId>
+      <rptOwnerCik>0000000001</rptOwnerCik>
+      <rptOwnerName>Example Person</rptOwnerName>
+    </reportingOwnerId>
+    <reportingOwnerRelationship>
+      <isDirector>1</isDirector>
+      <isOfficer>0</isOfficer>
+      <isTenPercentOwner>0</isTenPercentOwner>
+      <isOther>0</isOther>
+    </reportingOwnerRelationship>
+  </reportingOwner>
+  <reportingOwner>
+    <reportingOwnerId>
+      <rptOwnerCik>0000000002</rptOwnerCik>
+      <rptOwnerName>Example Officer</rptOwnerName>
+    </reportingOwnerId>
+    <reportingOwnerRelationship>
+      <isDirector>0</isDirector>
+      <isOfficer>true</isOfficer>
+      <isTenPercentOwner>0</isTenPercentOwner>
+      <isOther>0</isOther>
+      <officerTitle>Chief Example Officer</officerTitle>
+    </reportingOwnerRelationship>
+  </reportingOwner>
+  <nonDerivativeTable>
+    <nonDerivativeTransaction>
+      <securityTitle><value>Common Stock</value></securityTitle>
+      <transactionDate><value>2026-07-01</value></transactionDate>
+      <transactionCoding>
+        <transactionFormType>4</transactionFormType>
+        <transactionCode>P</transactionCode>
+        <equitySwapInvolved>0</equitySwapInvolved>
+      </transactionCoding>
+      <transactionAmounts>
+        <transactionShares><value>1,000</value></transactionShares>
+        <transactionPricePerShare><value>12.50</value></transactionPricePerShare>
+        <transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode>
+      </transactionAmounts>
+      <postTransactionAmounts><sharesOwnedFollowingTransaction><value>5,000</value></sharesOwnedFollowingTransaction></postTransactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+    </nonDerivativeTransaction>
+    <nonDerivativeTransaction>
+      <securityTitle><value>Common Stock</value></securityTitle>
+      <transactionDate><value>2026-07-02</value></transactionDate>
+      <transactionCoding><transactionFormType>4</transactionFormType><transactionCode>S</transactionCode><equitySwapInvolved>false</equitySwapInvolved></transactionCoding>
+      <transactionAmounts><transactionShares><value>250</value></transactionShares><transactionPricePerShare><value>13</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+      <postTransactionAmounts><sharesOwnedFollowingTransaction><value>4,750</value></sharesOwnedFollowingTransaction></postTransactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>I</value></directOrIndirectOwnership><natureOfOwnership><value>By trust</value></natureOfOwnership></ownershipNature>
+    </nonDerivativeTransaction>
+    <nonDerivativeTransaction>
+      <securityTitle><value>Common Stock</value></securityTitle>
+      <transactionDate><value>2026-07-03</value></transactionDate>
+      <transactionCoding><transactionFormType>4</transactionFormType><transactionCode>F</transactionCode><equitySwapInvolved>0</equitySwapInvolved></transactionCoding>
+      <transactionAmounts><transactionShares><value>40</value></transactionShares><transactionPricePerShare><value>11.25</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+    </nonDerivativeTransaction>
+    <nonDerivativeTransaction>
+      <securityTitle><value>Common Stock</value><footnoteId id="F1"/></securityTitle>
+      <transactionDate><value>2026-07-04</value></transactionDate>
+      <transactionCoding><transactionFormType>4</transactionFormType><transactionCode>G</transactionCode><equitySwapInvolved>0</equitySwapInvolved></transactionCoding>
+      <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+    </nonDerivativeTransaction>
+  </nonDerivativeTable>
+  <derivativeTable>
+    <derivativeTransaction>
+      <securityTitle><value>Stock Option</value></securityTitle>
+      <conversionOrExercisePrice><value>10</value></conversionOrExercisePrice>
+      <transactionDate><value>2026-07-05</value></transactionDate>
+      <transactionCoding><transactionFormType>4</transactionFormType><transactionCode>M</transactionCode></transactionCoding>
+      <transactionAmounts><transactionShares><value>100</value></transactionShares><transactionPricePerShare><value>0</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode></transactionAmounts>
+      <exerciseDate><value>2026-07-05</value></exerciseDate>
+      <expirationDate><value>2030-07-05</value></expirationDate>
+      <underlyingSecurity><underlyingSecurityTitle><value>Common Stock</value></underlyingSecurityTitle><underlyingSecurityShares><value>100</value></underlyingSecurityShares></underlyingSecurity>
+      <postTransactionAmounts><sharesOwnedFollowingTransaction><value>100</value></sharesOwnedFollowingTransaction></postTransactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+    </derivativeTransaction>
+  </derivativeTable>
+  <footnotes><footnote id="F1">Short fixture footnote.</footnote></footnotes>
+</ownershipDocument>`;
+  const parsed = parseForm4OwnershipXml(fixtureXml);
+  secDetailValidation.fixtureReportingOwners = parsed.reportingOwners.length;
+  secDetailValidation.fixtureNonDerivativeTransactions = parsed.nonDerivativeTransactions.length;
+  secDetailValidation.fixtureDerivativeTransactions = parsed.derivativeTransactions.length;
+  secDetailValidation.fixtureFootnotes = parsed.footnoteCount;
+
+  if (parsed.reportingOwners.length !== 2) addError(`Form 4 fixture reporting owner count mismatch: ${parsed.reportingOwners.length}`);
+  if (parsed.reportingOwners[0]?.isDirector !== true) addError('Form 4 fixture director relationship mismatch');
+  if (parsed.reportingOwners[1]?.officerTitle !== 'Chief Example Officer') addError('Form 4 fixture officer title mismatch');
+  if (parsed.nonDerivativeTransactions.map((transaction) => transaction.transactionCode).join('|') !== 'P|S|F|G') {
+    addError(`Form 4 fixture non-derivative order mismatch: ${parsed.nonDerivativeTransactions.map((transaction) => transaction.transactionCode).join(',')}`);
+  }
+  if (parsed.nonDerivativeTransactions[0]?.estimatedTransactionValue !== 12500) addError('Form 4 fixture P estimated value mismatch');
+  if (parsed.nonDerivativeTransactions[1]?.ownershipLabelKo !== '간접 보유') addError('Form 4 fixture indirect ownership mismatch');
+  if (parsed.nonDerivativeTransactions[2]?.transactionCategory !== 'tax-withholding') addError('Form 4 fixture F category mismatch');
+  if (parsed.nonDerivativeTransactions[3]?.pricePerShare !== null || parsed.nonDerivativeTransactions[3]?.estimatedTransactionValue !== null) {
+    addError('Form 4 fixture missing price should not calculate transaction value');
+  }
+  if (!parsed.nonDerivativeTransactions[3]?.footnoteIds.includes('F1')) addError('Form 4 fixture footnote id missing');
+  if (parsed.derivativeTransactions.length !== 1) addError(`Form 4 fixture derivative transaction count mismatch: ${parsed.derivativeTransactions.length}`);
+  if (parsed.derivativeTransactions[0]?.transactionCategory !== 'option-exercise') addError('Form 4 fixture derivative M category mismatch');
+  if (parsed.derivativeTransactions[0]?.underlyingSecurityShares !== 100) addError('Form 4 fixture underlying security shares mismatch');
+  if (parsed.footnoteCount !== 1) addError(`Form 4 fixture footnote count mismatch: ${parsed.footnoteCount}`);
+
+  [
+    ...parsed.nonDerivativeTransactions.map((transaction) => transaction.transactionCode),
+    ...parsed.derivativeTransactions.map((transaction) => transaction.transactionCode),
+  ].forEach((code) => {
+    if (code && !isSupportedTransactionCode(code)) addError(`Form 4 fixture unsupported transaction code: ${code}`);
+  });
 }
 
 type IdentityRecord = {
@@ -810,6 +998,7 @@ validateDisclosureRegistry();
 validateDisclosureClassification();
 validateSecDisclosureRegistry();
 validateSecFilingHelpers();
+validateSecFilingDetailParsers();
 
 warnings.forEach((warning) => console.warn(warning));
 
@@ -845,3 +1034,4 @@ console.log('✓ 공시 category 분류 정상');
 console.log(`✓ SEC EDGAR 감시 기업 ${secDisclosureValidation.enabledCount}개 검증`);
 console.log('✓ 중복 SEC ticker/CIK 없음');
 console.log('✓ SEC form/CIK/URL helper 정상');
+console.log(`✓ SEC 8-K/Form 4 구조화 parser 검증 (8-K Item ${secDetailValidation.eightKItemCount}개, 거래 코드 ${secDetailValidation.transactionCodeCount}개, fixture owner ${secDetailValidation.fixtureReportingOwners}명, 비파생 ${secDetailValidation.fixtureNonDerivativeTransactions}건, 파생 ${secDetailValidation.fixtureDerivativeTransactions}건, 각주 ${secDetailValidation.fixtureFootnotes}개)`);

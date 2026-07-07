@@ -30,9 +30,10 @@ type SecRecentFilings = {
   acceptanceDateTime?: unknown[];
   form?: unknown[];
   primaryDocument?: unknown[];
+  items?: unknown[];
 };
 
-type SecSubmissionPayload = {
+export type SecSubmissionPayload = {
   cik?: unknown;
   name?: unknown;
   filings?: {
@@ -66,6 +67,14 @@ export function secArchiveIndexUrl(cik: string | number, accessionNumber: string
   const normalizedCik = String(Number(normalizeSecCik(cik)));
   const accessionPath = accessionNumber.replace(/-/g, '');
   return `https://www.sec.gov/Archives/edgar/data/${normalizedCik}/${accessionPath}/${accessionNumber}-index.html`;
+}
+
+export function secPrimaryDocumentUrl(cik: string | number, accessionNumber: string, primaryDocument?: string | null) {
+  const documentName = String(primaryDocument ?? '').trim();
+  if (!documentName) return '';
+  const normalizedCik = String(Number(normalizeSecCik(cik)));
+  const accessionPath = accessionNumber.replace(/-/g, '');
+  return `https://www.sec.gov/Archives/edgar/data/${normalizedCik}/${accessionPath}/${documentName}`;
 }
 
 function syncDays() {
@@ -108,7 +117,7 @@ async function fetchSecSubmission(company: SecTrackedCompany, userAgent: string)
   }
 }
 
-async function fetchSecSubmissionWithRetry(company: SecTrackedCompany, userAgent: string) {
+export async function fetchSecSubmissionWithRetry(company: SecTrackedCompany, userAgent: string) {
   let lastError = '';
   for (let attempt = 0; attempt <= REQUEST_RETRIES; attempt += 1) {
     let response: Response | null = null;

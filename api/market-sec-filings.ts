@@ -5,6 +5,19 @@ import {
   type MarketSecFiling,
   type SecFilingCategory,
 } from '../src/content/disclosures/index.js';
+import {
+  isEightKItemCode,
+  isSupportedTransactionCode,
+  normalizeTransactionCode,
+} from '../src/lib/sec/index.js';
+import type {
+  EightKItemDetail,
+  SecDerivativeTransaction,
+  SecFilingParsingStatus,
+  SecFootnote,
+  SecNonDerivativeTransaction,
+  SecReportingOwner,
+} from '../src/lib/sec/index.js';
 
 declare const process: {
   env: Record<string, string | undefined>;
@@ -37,7 +50,27 @@ type SecFilingRow = {
   synced_at?: string | null;
 };
 
+type SecFilingDetailRow = {
+  accession_number: string;
+  form_type: string;
+  parser_version: string;
+  parsing_status: SecFilingParsingStatus;
+  eight_k_items?: unknown;
+  reporting_owners?: unknown;
+  non_derivative_transactions?: unknown;
+  derivative_transactions?: unknown;
+  footnotes?: unknown;
+  footnote_count?: number | null;
+  source_document_url?: string | null;
+  parsed_at?: string | null;
+  parse_error?: string | null;
+};
+
+type OwnerRoleFilter = 'director' | 'officer' | 'ten-percent-owner' | 'other';
+type OwnershipFilter = 'direct' | 'indirect';
+
 const MAX_LIMIT = 100;
+const DETAIL_FILTER_FETCH_LIMIT = 500;
 
 function env(key: string) {
   return process.env[key] || '';
@@ -83,6 +116,102 @@ function normalizeSecFiling(row: SecFilingRow): MarketSecFiling {
   };
 }
 
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value as T[] : [];
+}
+
+function normalizeDetailRow(row: SecFilingDetailRow) {
+  return {
+    accessionNumber: row.accession_number,
+    formType: row.form_type,
+    parserVersion: row.parser_version,
+    parsingStatus: row.parsing_status,
+    eightKItems: asArray<EightKItemDetail>(row.eight_k_items),
+    reportingOwners: asArray<SecReportingOwner>(row.reporting_owners),
+    nonDerivativeTransactions: asArray<SecNonDerivativeTransaction>(row.non_derivative_transactions),
+    derivativeTransactions: asArray<SecDerivativeTransaction>(row.derivative_transactions),
+    footnotes: asArray<SecFootnote>(row.footnotes),
+    footnoteCount: typeof row.footnote_count === 'number' && Number.isFinite(row.footnote_count) ? row.footnote_count : 0,
+    sourceDocumentUrl: row.source_document_url ?? null,
+    parseError: row.parse_error ?? null,
+  };
+}
+
+function mergeSecFilingDetail(item: MarketSecFiling, detail?: ReturnType<typeof normalizeDetailRow>): MarketSecFiling {
+  if (!detail) return item;
+  return {
+    ...item,
+    parsingStatus: detail.parsingStatus,
+    eightKItems: detail.eightKItems,
+    reportingOwners: detail.reportingOwners,
+    nonDerivativeTransactions: detail.nonDerivativeTransactions,
+    derivativeTransactions: detail.derivativeTransactions,
+    footnotes: detail.footnotes,
+    footnoteCount: detail.footnoteCount,
+    sourceDocumentUrl: detail.sourceDocumentUrl,
+    parseError: detail.parseError,
+  };
+}
+
+function normalizeOwnerRole(value: QueryValue): OwnerRoleFilter | '' {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? '').trim().toLowerCase();
+  if (['director', 'officer', 'ten-percent-owner', 'other'].includes(normalized)) return normalized as OwnerRoleFilter;
+  return '';
+}
+
+function normalizeOwnership(value: QueryValue): OwnershipFilter | '' {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const normalized = String(raw ?? '').trim().toLowerCase();
+  if (normalized === 'direct' || normalized === 'indirect') return normalized;
+  return '';
+}
+
+function ownerMatchesRole(owner: SecReportingOwner, role: OwnerRoleFilter) {
+  if (role === 'director') return owner.isDirector;
+  if (role === 'officer') return owner.isOfficer;
+  if (role === 'ten-percent-owner') return owner.isTenPercentOwner;
+  return owner.isOther;
+}
+
+function transactionMatchesOwnership(
+  transaction: SecNonDerivativeTransaction | SecDerivativeTransaction,
+  ownership: OwnershipFilter,
+) {
+  const code = String(transaction.directOrIndirectOwnership ?? '').trim().toUpperCase();
+  return ownership === 'direct' ? code === 'D' : code === 'I';
+}
+
+function filingMatchesDetailFilters(
+  filing: MarketSecFiling,
+  filters: {
+    item: string;
+    transactionCode: string;
+    ownerRole: OwnerRoleFilter | '';
+    ownership: OwnershipFilter | '';
+  },
+) {
+  if (filters.item && !filing.eightKItems?.some((detail) => detail.item === filters.item)) return false;
+  if (filters.transactionCode) {
+    const transactions = [
+      ...(filing.nonDerivativeTransactions ?? []),
+      ...(filing.derivativeTransactions ?? []),
+    ];
+    if (!transactions.some((transaction) => transaction.transactionCode === filters.transactionCode)) return false;
+  }
+  if (filters.ownerRole && !filing.reportingOwners?.some((owner) => ownerMatchesRole(owner, filters.ownerRole as OwnerRoleFilter))) {
+    return false;
+  }
+  if (filters.ownership) {
+    const transactions = [
+      ...(filing.nonDerivativeTransactions ?? []),
+      ...(filing.derivativeTransactions ?? []),
+    ];
+    if (!transactions.some((transaction) => transactionMatchesOwnership(transaction, filters.ownership as OwnershipFilter))) return false;
+  }
+  return true;
+}
+
 function emptyResponse(code: string, message: string) {
   return {
     ok: false,
@@ -120,6 +249,41 @@ async function latestSecFilingSync() {
   return row?.ended_at ?? row?.started_at ?? null;
 }
 
+async function fetchSecFilingDetails(accessionNumbers: string[]) {
+  const details = new Map<string, ReturnType<typeof normalizeDetailRow>>();
+  const uniqueAccessions = Array.from(new Set(accessionNumbers.filter(Boolean)));
+  if (!uniqueAccessions.length) return details;
+
+  for (let index = 0; index < uniqueAccessions.length; index += 80) {
+    const chunk = uniqueAccessions.slice(index, index + 80);
+    const url = new URL('/rest/v1/market_sec_filing_details', env('SUPABASE_URL'));
+    url.searchParams.set(
+      'select',
+      'accession_number,form_type,parser_version,parsing_status,eight_k_items,reporting_owners,non_derivative_transactions,derivative_transactions,footnotes,footnote_count,source_document_url,parsed_at,parse_error',
+    );
+    url.searchParams.set('accession_number', `in.(${chunk.join(',')})`);
+
+    const response = await fetch(url, {
+      headers: {
+        apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
+        Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) return new Map();
+
+    const rows = await response.json();
+    if (Array.isArray(rows)) {
+      rows.forEach((row) => {
+        if (row?.accession_number) details.set(String(row.accession_number), normalizeDetailRow(row as SecFilingDetailRow));
+      });
+    }
+  }
+
+  return details;
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Cache-Control', 's-maxage=180, stale-while-revalidate=900');
 
@@ -133,6 +297,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const form = typeof req.query?.form === 'string' ? normalizeSecFormType(req.query.form) : '';
   const category = typeof req.query?.category === 'string' ? req.query.category.trim() as SecFilingCategory : '';
   const validCategory = secFilingCategoryOrder.includes(category as SecFilingCategory) ? category : '';
+  const itemFilter = typeof req.query?.item === 'string' ? req.query.item.trim() : '';
+  const transactionCode = typeof req.query?.transactionCode === 'string' ? normalizeTransactionCode(req.query.transactionCode) : '';
+  const ownerRole = normalizeOwnerRole(req.query?.ownerRole);
+  const ownership = normalizeOwnership(req.query?.ownership);
+  const hasDetailFilter = Boolean(itemFilter || transactionCode || ownerRole || ownership);
+
+  if (itemFilter && !isEightKItemCode(itemFilter)) {
+    res.status(400).json(emptyResponse('SEC_FILINGS_INVALID_ITEM', 'SEC 8-K Item 형식이 올바르지 않습니다.'));
+    return;
+  }
+  if (transactionCode && !isSupportedTransactionCode(transactionCode)) {
+    res.status(400).json(emptyResponse('SEC_FILINGS_INVALID_TRANSACTION_CODE', 'SEC Form 4 transaction code가 올바르지 않습니다.'));
+    return;
+  }
+  if (req.query?.ownerRole && !ownerRole) {
+    res.status(400).json(emptyResponse('SEC_FILINGS_INVALID_OWNER_ROLE', 'SEC reporting owner role 필터가 올바르지 않습니다.'));
+    return;
+  }
+  if (req.query?.ownership && !ownership) {
+    res.status(400).json(emptyResponse('SEC_FILINGS_INVALID_OWNERSHIP', 'SEC ownership 필터가 올바르지 않습니다.'));
+    return;
+  }
 
   try {
     const url = new URL('/rest/v1/market_sec_filings', env('SUPABASE_URL'));
@@ -142,7 +328,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     );
     url.searchParams.set('filed_at', `gte.${sinceIso(req.query ?? {})}`);
     url.searchParams.set('order', 'filed_at.desc,synced_at.desc');
-    url.searchParams.set('limit', String(limit));
+    url.searchParams.set('limit', String(hasDetailFilter ? DETAIL_FILTER_FETCH_LIMIT : limit));
     if (ticker) url.searchParams.set('ticker', `eq.${ticker}`);
     if (form) url.searchParams.set('form_type', form === '424B' ? 'like.424B*' : `eq.${form}`);
     if (validCategory) url.searchParams.set('filing_category', `eq.${validCategory}`);
@@ -158,7 +344,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     if (!response.ok) throw new Error(`market_sec_filings ${response.status}`);
 
     const rows = await response.json();
-    const items = Array.isArray(rows) ? rows.map(normalizeSecFiling) : [];
+    const baseItems = Array.isArray(rows) ? rows.map(normalizeSecFiling) : [];
+    const details = await fetchSecFilingDetails(baseItems.map((item) => item.accessionNumber));
+    const items = baseItems
+      .map((item) => mergeSecFilingDetail(item, details.get(item.accessionNumber)))
+      .filter((item) => filingMatchesDetailFilters(item, { item: itemFilter, transactionCode, ownerRole, ownership }))
+      .slice(0, limit);
     const rowSyncedAt = Array.isArray(rows)
       ? rows
           .map((row) => row.synced_at)

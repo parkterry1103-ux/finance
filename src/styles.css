@@ -15440,6 +15440,61 @@ body {
   font-weight: 800;
 }
 
+.sec-detail-block {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.sec-detail-block.compact {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.sec-detail-block > strong {
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.sec-detail-block small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.sec-detail-list,
+.sec-owner-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sec-detail-list li,
+.sec-owner-list span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+}
+
+.sec-detail-list li > span {
+  color: #0f172a;
+}
+
 .disclosure-radar-card a {
   display: inline-flex;
   align-items: center;

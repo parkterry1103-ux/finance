@@ -1,3 +1,12 @@
+import type {
+  EightKItemDetail,
+  SecDerivativeTransaction,
+  SecFilingParsingStatus,
+  SecFootnote,
+  SecNonDerivativeTransaction,
+  SecReportingOwner,
+} from '../../lib/sec/types.js';
+
 export type DisclosureCategory =
   | 'supply-contract'
   | 'earnings'
@@ -70,6 +79,15 @@ export type MarketSecFiling = {
   primaryDocument: string | null;
   source: 'sec-edgar';
   sourceUrl: string;
+  parsingStatus?: SecFilingParsingStatus | null;
+  eightKItems?: EightKItemDetail[];
+  reportingOwners?: SecReportingOwner[];
+  nonDerivativeTransactions?: SecNonDerivativeTransaction[];
+  derivativeTransactions?: SecDerivativeTransaction[];
+  footnotes?: SecFootnote[];
+  footnoteCount?: number;
+  sourceDocumentUrl?: string | null;
+  parseError?: string | null;
 };
 
 export type MarketDisclosureMeta = {

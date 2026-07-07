@@ -36,6 +36,10 @@ export type FetchMarketSecFilingsOptions = {
   ticker?: string;
   form?: string | 'all';
   category?: SecFilingCategory | 'all';
+  item?: string | 'all';
+  transactionCode?: string | 'all';
+  ownerRole?: string | 'all';
+  ownership?: string | 'all';
   hours?: number;
   days?: number;
 };
@@ -85,6 +89,10 @@ export async function fetchMarketSecFilings(options: FetchMarketSecFilingsOption
   if (options.ticker) params.set('ticker', options.ticker);
   if (options.form && options.form !== 'all') params.set('form', options.form);
   if (options.category && options.category !== 'all') params.set('category', options.category);
+  if (options.item && options.item !== 'all') params.set('item', options.item);
+  if (options.transactionCode && options.transactionCode !== 'all') params.set('transactionCode', options.transactionCode);
+  if (options.ownerRole && options.ownerRole !== 'all') params.set('ownerRole', options.ownerRole);
+  if (options.ownership && options.ownership !== 'all') params.set('ownership', options.ownership);
 
   try {
     const response = await fetch(`/api/market-sec-filings?${params.toString()}`);
