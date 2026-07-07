@@ -3904,6 +3904,144 @@ Production UI HTTP 확인 결과 `/`, `/ko/`, `/ko/disclosures`, 동양파일/KC
 
 가격 cron은 `08:30 UTC / 17:30 KST`, `22:30 UTC / 07:30 KST`입니다. 첫 자동 cron 확인은 아직 남아 있으며, 다음 자동 실행 후 `lastSyncedAt` 갱신과 duplicate receipt 0건을 다시 보면 됩니다.
 
+### Production SEC EDGAR 운영 연결 완료 (2026-07-07 KST)
+
+기준 commit은 `2a7bbdd2626e5606e317cdde31f8f2c983507b0c`이며 로컬 `main`과 `origin/main`이 일치했습니다. Vercel project는 `finance1`, production domain은 `https://finance1-flax.vercel.app`이고 production deployment는 `main`의 `2a7bbdd`로 `Ready` 상태였습니다.
+
+Production env 값은 열람하거나 출력하지 않았습니다.
+
+```text
+SEC_USER_AGENT: Production configured
+CRON_SECRET: Production configured
+Supabase server env: Production configured
+```
+
+Supabase SQL Editor에서 `supabase/migrations/20260706_create_market_sec_filings.sql`을 적용했고, Dashboard의 RLS 경고에서는 `Run and enable RLS`로 실행했습니다. 적용 및 public API 정상화 확인 시각은 `2026-07-07 12:20 UTC / 2026-07-07 21:20 KST`입니다. 적용 후 `market_sec_filings`는 `accession_number` primary key, 필수 12개 column, `filed_at`, `ticker`, `cik`, `form_type` index와 primary key index를 갖습니다. RLS는 `true`, policy count는 `0`이라 browser direct anon/auth write는 차단되고, 서버 API는 service role 경로로 동작합니다.
+
+마이그레이션 직후 공개 API는 `HTTP 200`, `ok:true`, `items:[]`, `lastSyncedAt:null`, `trackedCompanyCount:12`로 바뀌어 `SEC_FILINGS_UNAVAILABLE` fallback이 제거됐습니다. env 변경은 없었고 production이 이미 최신 commit이어서 별도 redeploy 없이 route가 정상 table을 읽었습니다.
+
+Vercel Dashboard `finance1 -> Settings -> Cron Jobs`에서 `/api/sync/sec-filings`를 한 번 Run 했습니다. sync row의 `synced_at`은 `2026-07-07T12:22:54.138+00:00` (`2026-07-07 21:22:54 KST`)입니다. Vercel Logs 상세 화면은 timeout으로 duration을 확인하지 못했지만, sync route success path와 이후 public API/DB write로 완료를 확인했습니다.
+
+첫 sync 후 공개 API 기준 결과:
+
+```text
+tracked companies: 12
+successful ticker feeds: 12
+failed ticker feeds: 0 observed
+fetched/inserted rows: 225
+updated rows: 0
+duplicate accession: 0
+lastSyncedAt: 2026-07-07T12:22:54.138+00:00
+stale: false
+```
+
+Ticker별 count:
+
+```text
+META 13
+HTZ 9
+HUN 2
+QURE 21
+MRVL 21
+TMHC 3
+SMCI 20
+DKNG 5
+MU 10
+DELL 66
+SNOW 34
+NVDA 21
+```
+
+Form별 count:
+
+```text
+4 187
+8-K 30
+424B5 6
+10-Q 2
+```
+
+Category별 count:
+
+```text
+insider-transaction 187
+current-report 30
+capital-markets 6
+quarterly-report 2
+```
+
+공개 API 검증 결과는 모두 `HTTP 200`, `ok:true`, `lastSyncedAt` 존재, `stale:false`입니다.
+
+```text
+/api/market-sec-filings?limit=20
+items: 20
+
+/api/market-sec-filings?days=30&limit=20
+items: 20
+
+/api/market-sec-filings?ticker=META&limit=20
+items: 13
+
+/api/market-sec-filings?ticker=HTZ&limit=20
+items: 9
+
+/api/market-sec-filings?ticker=MU&limit=20
+items: 10
+
+/api/market-sec-filings?form=8-K&limit=20
+items: 20
+
+/api/market-sec-filings?form=10-Q&limit=20
+items: 2
+
+/api/market-sec-filings?form=4&limit=20
+items: 20
+
+/api/market-sec-filings?category=insider-transaction&limit=20
+items: 20
+```
+
+SEC Archives 원문 링크 표본은 모두 HTTP 200이며, URL의 CIK path와 accession path가 API row와 일치했습니다.
+
+```text
+META 0000950103-26-010283
+MU 0001632063-26-000003
+NVDA 0001197647-26-000005
+HTZ 0001886897-26-000006
+SMCI 0001392941-26-000011
+```
+
+Production UI 확인:
+
+```text
+/ko/disclosures
+- SEC EDGAR tab 클릭 시 SEC row만 표시
+- SEC 원문 link target="_blank", rel="noopener noreferrer"
+- OpenDART tab/data 유지
+- console error 0
+
+/ko/
+- 오늘 한눈에에서 SEC EDGAR sync 시각 표시
+- 최근 24시간 공식 공시 count에 OpenDART와 SEC 반영
+- 대표 Pick SK하이닉스 유지
+- console error 0
+
+미국 Pick 상세
+- Meta, Micron 상세에서 최근 SEC 공시 표시
+- 해당 ticker filing만 최근순 표시
+- SEC Archives link 정상
+- 가격 badge와 기존 본문 유지
+
+국내 Pick 회귀
+- SK하이닉스 상세에서 OpenDART 최근 공식 공시 유지
+- SEC section 미표시
+- 가격 badge와 기존 본문 유지
+```
+
+OpenDART 회귀 API는 `HTTP 200`, `ok:true`, `items:20`으로 기존 row가 유지됐습니다. 현재 OpenDART `stale:true`는 SEC 작업과 별개로 마지막 OpenDART sync가 2시간 stale 기준을 넘긴 상태입니다.
+
+SEC cron 설정은 `/api/sync/sec-filings`, `15 21 * * 1-5`입니다. UTC/KST 변환은 `21:15 UTC / 다음 날 06:15 KST`이며, 2026-07-07 기준 다음 자동 실행 예정은 `2026-07-07 21:15 UTC / 2026-07-08 06:15 KST`입니다. 기존 가격 cron과 OpenDART cron은 유지됩니다. 첫 자동 cron 이후에는 `lastSyncedAt` 갱신, 신규 filing upsert, duplicate accession 0건을 재확인하면 됩니다.
+
 감시 기업 추가 절차:
 
 1. 공식 OpenDART `corpCode.xml`에서 ticker와 corpCode를 확인합니다.
@@ -3916,7 +4054,6 @@ Production UI HTTP 확인 결과 `/`, `/ko/`, `/ko/disclosures`, 동양파일/KC
 
 - 공시 원문 세부 항목 구조화
 - 공급계약 금액과 매출 대비 비중 추출
-- 미국 기업 SEC EDGAR 레이더
 - 사용자 관심 기업 watchlist
 - 공시 알림
 - 공시와 기존 Pick 가설 연결
