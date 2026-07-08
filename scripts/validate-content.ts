@@ -31,6 +31,7 @@ import {
   normalizeSecCik,
   normalizeSecFilingRows,
   secArchiveIndexUrl,
+  secPrimaryDocumentUrl,
   secSubmissionsUrl,
 } from './sync-sec-filings.js';
 import {
@@ -610,6 +611,10 @@ function validateSecFilingHelpers() {
   const archiveUrl = secArchiveIndexUrl('0000723125', '0000723125-26-000006');
   if (archiveUrl !== 'https://www.sec.gov/Archives/edgar/data/723125/000072312526000006/0000723125-26-000006-index.html') {
     addError(`SEC archive URL mismatch: ${archiveUrl}`);
+  }
+  const primaryDocumentUrl = secPrimaryDocumentUrl('0000723125', '0001632063-26-000003', 'xslF345X06/primarydocument.xml');
+  if (primaryDocumentUrl !== 'https://www.sec.gov/Archives/edgar/data/723125/000163206326000003/primarydocument.xml') {
+    addError(`SEC primary document URL mismatch: ${primaryDocumentUrl}`);
   }
 
   const classificationExamples: Array<[string, ReturnType<typeof classifySecFilingForm>]> = [

@@ -70,7 +70,7 @@ export function secArchiveIndexUrl(cik: string | number, accessionNumber: string
 }
 
 export function secPrimaryDocumentUrl(cik: string | number, accessionNumber: string, primaryDocument?: string | null) {
-  const documentName = String(primaryDocument ?? '').trim();
+  const documentName = String(primaryDocument ?? '').trim().replace(/^xslF345X\d+\//i, '');
   if (!documentName) return '';
   const normalizedCik = String(Number(normalizeSecCik(cik)));
   const accessionPath = accessionNumber.replace(/-/g, '');

@@ -285,7 +285,7 @@ async function fetchSecFilingDetails(accessionNumbers: string[]) {
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  res.setHeader('Cache-Control', 's-maxage=180, stale-while-revalidate=900');
+  res.setHeader('Cache-Control', 'no-store');
 
   if (!hasSupabase()) {
     res.status(200).json(emptyResponse('SEC_FILINGS_NOT_CONFIGURED', '미국 공시 데이터가 아직 연결되지 않았습니다.'));
@@ -359,6 +359,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       : null;
     const lastSyncedAt = rowSyncedAt ?? (await latestSecFilingSync());
 
+    res.setHeader('Cache-Control', 's-maxage=180, stale-while-revalidate=900');
     res.status(200).json({
       ok: true,
       items,

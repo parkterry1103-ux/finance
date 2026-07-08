@@ -209,6 +209,95 @@ Production QA:
 - `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
 - `package.json`, `package-lock.json` 변경 없음
 
+## 2026-07-08 SEC filing detail production 활성화
+
+Production 복구:
+
+- 시작 HEAD: `94305e322e2c174236695a614e7d580e95ba4b64`
+- 기준 commit: `94305e3` (`Structure SEC 8-K items and Form 4 transactions`)
+- 원인: `finance1` production deployment `CRpvxbeuaPH1PwUHHh5RoCoGkj85`가 같은 commit에서 약 24시간 `Queued` 상태에 머물러 `/api/sync/sec-filing-details`가 production에 반영되지 않았습니다.
+- 복구: stuck deployment를 Dashboard에서 cancel한 뒤 같은 commit을 production으로 redeploy했습니다.
+- 복구 deployment: `86SGY1Z8FHmdRa8quyvUWXNDQmUv`
+- production alias: `https://finance1-flax.vercel.app`
+- production asset: `/assets/index-CcMqHaHT.js`, `/assets/index-BMH3Ig5A.css`
+- 신규 보호 route 확인: `/api/sync/sec-filing-details` 무인증 요청은 `HTTP 401`, `Unauthorized cron request`
+- 신규 필터 route 확인: `item=2.02`, `transactionCode=P` query가 구버전처럼 무시되지 않고 detail 기준 필터로 처리됩니다.
+
+Migration:
+
+- 적용 migration: `supabase/migrations/20260707_create_market_sec_filing_details.sql`
+- 적용 시각: 2026-07-08 약 22:15 KST
+- 적용 방식: Supabase production SQL Editor, `postgres`, primary database
+- destructive statement 없음, `create table if not exists`, accession PK/FK, index 3개, RLS enabled, public write policy 없음 확인
+- migration 직후: detail row 0, metadata row 226, duplicate accession 0
+- backfill 대상 metadata: `8-K:30`, `4:188`
+
+Backfill:
+
+- Dashboard에서 secret 없이 보호 route를 직접 실행할 수 있는 Run 기능이 없어, production SQL Editor와 동일 parser 결과를 사용해 detail table만 batch upsert했습니다. 기존 SEC metadata, 가격 sync, OpenDART sync는 실행하거나 삭제하지 않았습니다.
+- 8-K batch: 1회, 30건
+- Form 4 batch: 8회, `25/25/25/25/25/25/25/13`
+- 최종 parsed: 8-K 30건, Form 4 188건
+- 8-K item entry: 73개, itemless 0건
+- Form 4 reporting owner 398명, non-derivative transaction 1,120건, derivative transaction 120건, footnote 1,818개
+- skipped 0, source unavailable 0, final parse error 0
+- SEC 429/5xx: 0/0
+- 작업 중 확인된 parser 원인: SEC Form 4 `primary_document`가 `xslF345X06/...` viewer path인 경우 HTML 변환본을 받아 `OWNERSHIP_DOCUMENT_MISSING`이 발생했습니다. raw XML path로 정규화하도록 `secPrimaryDocumentUrl`을 수정하고 영향 batch를 재처리했습니다.
+
+DB 정합성:
+
+| 항목 | 결과 |
+| --- | --- |
+| total detail rows | 218 |
+| parsing status | `parsed:218` |
+| form distribution | `4:188`, `8-K:30` |
+| parser version | `sec-structured-v1:218` |
+| duplicate detail accession | 0 |
+| orphan detail rows | 0 |
+| metadata rows | 226 |
+
+공개 API 검증:
+
+- `/api/market-sec-filings?limit=20`: `HTTP 200`, `ok:true`, 20건, structured row 20건, duplicate accession 0
+- `form=8-K`: 20건, 첫 row TMHC `8.01`
+- `form=4`: 20건, 첫 row QURE owner/transaction/footnote 표시
+- `item=2.02`: 1건, MU `2.02`, `9.01`
+- `item=5.02`: 4건, NVDA `5.02`
+- `transactionCode=S`: 20건
+- `transactionCode=P`: 0건. production detail의 거래 코드 분포가 `A:62`, `F:64`, `G:14`, `J:16`, `M:174`, `S:910`이라 현재 매수 코드 `P` row가 없습니다.
+- `ownerRole=director`, `ownerRole=officer`, `ownership=direct`, `ownership=indirect`: 모두 `HTTP 200`, `ok:true`, structured rows 반환
+- invalid `transactionCode`, `ownerRole`, `ownership`: 모두 안전하게 `HTTP 400`
+- raw XML, secret, stack trace 노출 없음
+- `limit=100` broad feed는 backfill 중 발생한 fallback cache가 만료된 뒤 `ok:true`, 100건, META row 포함으로 확인했습니다. 이후 unavailable 응답은 `no-store`가 되도록 cache header를 수정했습니다.
+
+SEC 원문 대조:
+
+- 8-K 3건: DELL `0001193125-26-296224` (`3.03`, `5.03`, `9.01`), NVDA `0001045810-26-000060` (`5.02`), MU `0000723125-26-000013` (`2.02`, `9.01`) 모두 SEC submissions item과 API item/한국어 label 일치
+- Form 4 5건: META `0000950103-26-010283`, MU `0001632063-26-000003`, NVDA `0001197647-26-000005`, SMCI `0001392941-26-000011`, DELL `0001193125-26-290621` 모두 raw XML 대비 reporting owner, 역할/직책, transaction date/code/shares/price/acquired-disposed/ownership/shares after, derivative code, footnote count 일치
+
+Production UI와 회귀:
+
+- `/ko/disclosures` desktop: SEC 8-K Item, Form 4 보고자/거래/각주 안내, amended 구조, 회사명 -> 국가/ticker 순서, 원문 CTA 표시 확인
+- `/ko/disclosures` filter: `2.02` item filter는 Micron 8-K로 축소, `S` transaction filter는 Form 4 sale rows와 footnote 안내 표시
+- `/ko/disclosures` mobile `390x844`: horizontal overflow 0, SEC structured detail/owner names/source CTA/filter chip 표시, console error 0
+- 미국 Pick 상세 5개: Meta, Micron, NVIDIA, Super Micro Computer, Dell 모두 가격 badge 유지, 기존 Pick 본문 유지, 해당 ticker SEC section만 표시, structured detail 표시, OpenDART section 미표시
+- 국내 표본: SK하이닉스, 에스폴리텍, 금호건설 모두 OpenDART card 유지, SEC CTA 미표시
+- OpenDART API: `/api/market-disclosures?limit=20` `HTTP 200`, `ok:true`, 18건
+- 가격 API: `/api/market-prices?limit=200` `HTTP 200`, `ok:true`, 94개 고유 ticker, META 포함, 기존 KIS/Yahoo source 유지
+- Headless Pick 상세 QA에서 `logo.clearbit.com` 외부 logo image DNS 실패가 일부 관측되었습니다. SEC/OpenDART/runtime 오류는 아니며 repo package 또는 lock file은 변경하지 않았습니다.
+
+코드 수정과 검증:
+
+- 수정: `scripts/sync-sec-filings.ts` raw Form 4 XML URL 정규화
+- 수정: `api/market-sec-filings.ts` SEC unavailable/fallback 응답 `no-store`, 성공 응답만 `s-maxage=180, stale-while-revalidate=900`
+- 수정: `scripts/validate-content.ts` `xslF345X06/` primary document URL validator 추가
+- `git diff --check` 통과
+- `tsc -p tsconfig.scripts.json` 통과
+- `node .sync-build/scripts/validate-content.js` 통과
+- `tsc --noEmit` 통과
+- `vite build` 통과. 기존 `@xyflow/react` `"use client"` 및 chunk size 경고만 있음
+- `package.json`, `package-lock.json` 변경 없음
+
 ## 전체 기업 회사명 중심 표시 통일
 
 기업 식별 UI는 ticker를 첫 줄에 두던 방식에서 회사명을 첫 줄에 두는 방식으로 통일합니다.
