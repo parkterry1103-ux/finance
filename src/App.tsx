@@ -766,6 +766,70 @@ function picksArchivePath() {
   return '/ko/picks/archive';
 }
 
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'disclosures' | 'reports';
+
+type PrimaryNavigationProps = {
+  active: PrimaryNavKey;
+  variant?: 'home' | 'compact';
+  onHome: () => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+  onOpenDisclosures: () => void;
+  onOpenReports: (reportId?: string) => void;
+};
+
+function PrimaryNavigation({
+  active,
+  variant = 'compact',
+  onHome,
+  onOpenPicks,
+  onOpenMarketMap,
+  onOpenDisclosures,
+  onOpenReports,
+}: PrimaryNavigationProps) {
+  const navItems: Array<{ key: PrimaryNavKey; label: string; href: string; onClick: () => void }> = [
+    { key: 'today', label: '오늘', href: '/ko/', onClick: onHome },
+    { key: 'picks', label: 'Pick', href: picksPath(), onClick: onOpenPicks },
+    { key: 'market-map', label: '시장지도', href: marketMapPath(), onClick: onOpenMarketMap },
+    { key: 'disclosures', label: '공시', href: disclosuresPath(), onClick: onOpenDisclosures },
+    { key: 'reports', label: '보고서', href: reportsPath(), onClick: () => onOpenReports() },
+  ];
+
+  return (
+    <header className={`${variant === 'home' ? 'home-nav' : 'pick-nav'} primary-navigation`}>
+      <a
+        href="/ko/"
+        onClick={(event) => {
+          event.preventDefault();
+          onHome();
+        }}
+        className="home-brand"
+      >
+        <span className="home-logo">
+          <Network size={20} />
+        </span>
+        <strong>주가해부실</strong>
+      </a>
+      <nav aria-label="주요 탐색">
+        {navItems.map((item) => (
+          <a
+            key={item.key}
+            href={item.href}
+            className={active === item.key ? 'active' : ''}
+            aria-current={active === item.key ? 'page' : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              item.onClick();
+            }}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+    </header>
+  );
+}
+
 const analysisRouteAliases: Record<string, string> = {
   'ai-datacenter-nvidia': 'us-semiconductors-nvidia',
   'ai-datacenter-smci': 'ai-datacenter-supermicro',
@@ -3466,9 +3530,9 @@ function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onO
     <section className="today-overview-section" aria-labelledby="today-overview-title">
       <div className="today-overview-head">
         <div>
-          <p className="home-kicker">오늘성 체크</p>
-          <h2 id="today-overview-title">오늘 한눈에</h2>
-          <p>이번 주 Pick의 가격 변화와 새로 나온 공식 공시를 빠르게 확인합니다.</p>
+          <p className="home-kicker">오늘</p>
+          <h2 id="today-overview-title">오늘 봐야 할 것</h2>
+          <p>대표 Pick, 중요 공식 공시, 주요 시장 흐름을 짧게 확인합니다.</p>
         </div>
         <div className="today-asof-stack" aria-label="데이터 기준 시각">
           <span>가격 · {priceAsOf ? formatKstDateTime(priceAsOf) : '기준일 확인 중'}</span>
@@ -3498,7 +3562,7 @@ function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onO
             })}
           </div>
           <button type="button" className="today-card-action" onClick={onOpenPicks}>
-            이번 주 Pick 보기
+            전체 보기
             <ArrowRight size={15} />
           </button>
         </article>
@@ -3535,7 +3599,7 @@ function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onO
             )}
           </div>
           <button type="button" className="today-card-action" onClick={onOpenDisclosures}>
-            공시 레이더 보기
+            전체 보기
             <ArrowRight size={15} />
           </button>
         </article>
@@ -3559,7 +3623,7 @@ function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onO
             <strong>{actionCopy}</strong>
           </div>
           <button type="button" className="today-card-action secondary" onClick={onOpenDisclosures}>
-            원문 기준으로 보기
+            상세 보기
             <ArrowRight size={15} />
           </button>
         </article>
@@ -3574,6 +3638,7 @@ type MarketDisclosuresPageProps = {
   onHome: () => void;
   onOpenPicks: () => void;
   onOpenMarketMap: () => void;
+  onOpenReports: (reportId?: string) => void;
 };
 
 type DisclosureSourceFilter = 'all' | 'opendart' | 'sec-edgar';
@@ -3714,7 +3779,7 @@ function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
   );
 }
 
-function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, onOpenMarketMap }: MarketDisclosuresPageProps) {
+function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, onOpenMarketMap, onOpenReports }: MarketDisclosuresPageProps) {
   const [sourceFilter, setSourceFilter] = useState<DisclosureSourceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<DisclosureCategory | 'all'>('all');
   const [secCategoryFilter, setSecCategoryFilter] = useState<SecFilingCategory | 'all'>('all');
@@ -3728,6 +3793,8 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
   const recentSec30 = secFilingItemsWithin(secFilings.items, 24 * 30);
   const shouldShowDart = sourceFilter === 'all' || sourceFilter === 'opendart';
   const shouldShowSec = sourceFilter === 'all' || sourceFilter === 'sec-edgar';
+  const showDartSpecificFilters = sourceFilter === 'opendart';
+  const showSecSpecificFilters = sourceFilter === 'sec-edgar';
 
   const filteredDartItems = useMemo(() => {
     if (!shouldShowDart) return [];
@@ -3771,6 +3838,11 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
 
   const updateSourceFilter = (next: DisclosureSourceFilter) => {
     setSourceFilter(next);
+    setCategoryFilter('all');
+    setSecCategoryFilter('all');
+    setSecFormFilter('all');
+    setSecItemFilter('all');
+    setSecTransactionFilter('all');
     setCompanyFilter('all');
   };
   const secItemFilterOptions = ['2.02', '5.02', '7.01', '8.01', '9.01'];
@@ -3778,19 +3850,14 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
 
   return (
     <div className="pick-shell story-dark-shell disclosure-radar-shell">
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo">
-            <Network size={20} />
-          </span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenPicks}>이번 주</button>
-          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="disclosures"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={() => undefined}
+        onOpenReports={onOpenReports}
+      />
 
       <main className="disclosure-radar-main">
         <section className="disclosure-radar-hero">
@@ -3834,17 +3901,17 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
             전체
           </button>
           <button type="button" className={sourceFilter === 'opendart' ? 'active' : ''} onClick={() => updateSourceFilter('opendart')}>
-            OpenDART
+            한국 공시
           </button>
           <button type="button" className={sourceFilter === 'sec-edgar' ? 'active' : ''} onClick={() => updateSourceFilter('sec-edgar')}>
-            SEC EDGAR
+            미국 공시
           </button>
         </section>
 
         <section className="disclosure-filter-panel" aria-label="공시 필터">
-          {shouldShowDart ? (
+          {showDartSpecificFilters ? (
             <div>
-              <span><Filter size={14} /> OpenDART 유형</span>
+              <span><Filter size={14} /> 한국 공시 · OpenDART</span>
               <div className="disclosure-chip-row">
                 <button type="button" className={categoryFilter === 'all' ? 'active' : ''} onClick={() => setCategoryFilter('all')}>
                   전체
@@ -3862,10 +3929,10 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               </div>
             </div>
           ) : null}
-          {shouldShowSec ? (
+          {showSecSpecificFilters ? (
             <>
               <div>
-                <span><Filter size={14} /> SEC 유형</span>
+                <span><Filter size={14} /> 미국 공시 · SEC EDGAR</span>
                 <div className="disclosure-chip-row">
                   <button type="button" className={secCategoryFilter === 'all' ? 'active' : ''} onClick={() => setSecCategoryFilter('all')}>
                     전체
@@ -3956,17 +4023,17 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} onClick={() => setCompanyFilter('current-pick')}>
                 현재 Pick
               </button>
-              {shouldShowDart ? (
+              {sourceFilter !== 'sec-edgar' ? (
                 <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} onClick={() => setCompanyFilter('market-map')}>
                   시장지도 기업
                 </button>
               ) : null}
-              {shouldShowSec ? (
+              {sourceFilter !== 'opendart' ? (
                 <button type="button" className={companyFilter === 'us-pick' ? 'active' : ''} onClick={() => setCompanyFilter('us-pick')}>
                   미국 Pick
                 </button>
               ) : null}
-              {shouldShowDart ? enabledDartTrackedCompanies.map((company) => (
+              {sourceFilter === 'opendart' ? enabledDartTrackedCompanies.map((company) => (
                   <button
                     type="button"
                     key={`dart-${company.id}`}
@@ -3976,7 +4043,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                     {company.companyName}
                   </button>
                 )) : null}
-              {shouldShowSec ? enabledSecTrackedCompanies.map((company) => (
+              {sourceFilter === 'sec-edgar' ? enabledSecTrackedCompanies.map((company) => (
                   <button
                     type="button"
                     key={`sec-${company.id}`}
@@ -4333,22 +4400,32 @@ type AnalysisPageProps = {
 };
 
 type LandingPageProps = {
+  onHome: () => void;
   onOpenMarketMapLibrary: () => void;
   onOpenPicks: () => void;
   onOpenDisclosures: () => void;
+  onOpenReports: (reportId?: string) => void;
+  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   marketPrices: MarketPrice[];
   disclosures: MarketDisclosureApiResponse;
   secFilings: MarketSecFilingsApiResponse;
 };
 
-function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
+function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenReports, onOpenCategory, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
   const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
   const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
   const featuredPickPrice = featuredPick ? getPriceForPick(featuredPick, marketPrices) : null;
+  const weeklyCompactPicks = weeklyStockAutopsyPicks().slice(0, 4);
+  const recentOfficialItems = officialDisclosureFeedItems(disclosures.items, secFilings.items).slice(0, 6);
+  const homeMarketMaps = currentWeeklyDigest.marketMapItems.filter((item) => item.status === 'active').slice(0, 3);
+  const latestReports = industryReports
+    .filter(isCurrentPublicReport)
+    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+    .slice(0, 3);
 
   const openWeeklyPick = () => {
     if (featuredPick) {
@@ -4360,44 +4437,15 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, o
 
   return (
     <div className="home-shell story-dark-shell story-home-shell" id="top">
-      <header className="home-nav">
-        <a href="#top" className="home-brand">
-          <span className="home-logo">
-            <Network size={20} />
-          </span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <a href="#top">홈</a>
-          <a
-            href="/ko/picks"
-            onClick={(event) => {
-              event.preventDefault();
-              onOpenPicks();
-            }}
-          >
-            Pick
-          </a>
-          <a
-            href={marketMapPath()}
-            onClick={(event) => {
-              event.preventDefault();
-              onOpenMarketMapLibrary();
-            }}
-          >
-            시장 지도
-          </a>
-          <a
-            href={disclosuresPath()}
-            onClick={(event) => {
-              event.preventDefault();
-              onOpenDisclosures();
-            }}
-          >
-            공시
-          </a>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="today"
+        variant="home"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMapLibrary}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
 
       <main>
         <section className="home-hero mvp-hero editorial-feed-hero">
@@ -4467,15 +4515,144 @@ function LandingPage({ onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, o
           onOpenDisclosures={onOpenDisclosures}
         />
 
-        <section className="home-weekly-cta-strip" aria-label="다음에 볼 곳">
-          <article>
-            <span>이번 주 전체 Pick</span>
-            <p>동양파일, KCC, Hertz, 제주반도체를 한 번에 보려면 Pick 페이지로 이동하세요.</p>
+        <section className="home-dashboard-section" aria-labelledby="home-weekly-picks-title">
+          <div className="home-dashboard-head">
+            <div>
+              <span>이번 주 Pick</span>
+              <h2 id="home-weekly-picks-title">짧게 보고, 필요하면 해부로 들어갑니다</h2>
+            </div>
             <button type="button" onClick={onOpenPicks}>
-              이번 주 Pick 전체 보기
+              전체 보기
               <ArrowRight size={15} />
             </button>
-          </article>
+          </div>
+          <div className="home-compact-pick-grid">
+            {weeklyCompactPicks.map((pick) => (
+              <article className="home-compact-pick-card" key={pick.id}>
+                <div className="card-company-row">
+                  <div className="card-company-copy">
+                    <CompanyIdentityForPick pick={pick} size="compact" />
+                  </div>
+                  <div className="card-status">
+                    <span className={`home-status-pill ${pick.movementDirection}`}>{pick.movementDirection === 'up' ? '상승' : '하락'}</span>
+                  </div>
+                </div>
+                <h3>{pick.title}</h3>
+                <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
+                <strong className="home-card-one-line">{pick.movementLabel}</strong>
+                <p>{pick.reasonSummary}</p>
+                <button type="button" onClick={() => onOpenPick(pick)}>
+                  해부 보기
+                  <ArrowRight size={15} />
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-dashboard-section" aria-labelledby="home-disclosures-title">
+          <div className="home-dashboard-head">
+            <div>
+              <span>최근 공식 공시</span>
+              <h2 id="home-disclosures-title">공식 원문에서 새로 확인할 것</h2>
+            </div>
+            <button type="button" onClick={onOpenDisclosures}>
+              전체 보기
+              <ArrowRight size={15} />
+            </button>
+          </div>
+          <div className="home-official-feed">
+            {recentOfficialItems.length ? recentOfficialItems.map((item) => {
+              const isDart = item.source === 'opendart';
+              const companyName = isDart ? item.disclosure.companyName : item.filing.companyName;
+              const ticker = isDart ? item.disclosure.ticker : item.filing.ticker;
+              const kind = isDart
+                ? disclosureCategoryLabels[item.disclosure.category]
+                : `${item.filing.formType} · ${secFilingCategoryLabels[item.filing.category]}`;
+              const checkpoint = isDart
+                ? disclosureCheckpoints[item.disclosure.category]
+                : secFilingCheckpoints[item.filing.category];
+              const filedAt = isDart ? item.disclosure.receivedAt : item.filing.filedAt;
+              return (
+                <article className="home-official-card" key={`${item.source}-${item.id}`}>
+                  <span className="home-source-pill">{isDart ? '한국 공시 · OpenDART' : '미국 공시 · SEC EDGAR'}</span>
+                  <div className="card-company-row">
+                    <div className="card-company-copy">
+                      <CompanyIdentity companyName={companyName} ticker={ticker} countryLabel={isDart ? '한국' : '미국'} size="compact" />
+                    </div>
+                  </div>
+                  <strong>{kind}</strong>
+                  <p>{checkpoint}</p>
+                  <time dateTime={filedAt}>{formatKstDate(filedAt)}</time>
+                </article>
+              );
+            }) : (
+              <article className="home-official-card">
+                <span className="home-source-pill">공식 공시</span>
+                <strong>새 공시 없음</strong>
+                <p>현재 선택 범위에서 새 공식 공시가 없습니다.</p>
+              </article>
+            )}
+          </div>
+        </section>
+
+        <section className="home-dashboard-section" aria-labelledby="home-market-map-title">
+          <div className="home-dashboard-head">
+            <div>
+              <span>시장을 연결해서 보기</span>
+              <h2 id="home-market-map-title">대표 시장지도만 먼저 봅니다</h2>
+            </div>
+            <button type="button" onClick={onOpenMarketMapLibrary}>
+              전체 보기
+              <ArrowRight size={15} />
+            </button>
+          </div>
+          <div className="home-market-map-grid">
+            {homeMarketMaps.map((item) => {
+              const display = marketMapDisplayCopy(item);
+              return (
+                <article className="home-market-map-card" key={item.title}>
+                  <span>{display.subtitle}</span>
+                  <h3>{display.title}</h3>
+                  <p>{item.note}</p>
+                  <button type="button" onClick={() => {
+                    const sectorId = marketMapItemSectorId(item);
+                    if (sectorId) onOpenCategory(sectorId);
+                    else onOpenMarketMapLibrary();
+                  }}>
+                    시장지도 보기
+                    <ArrowRight size={15} />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="home-dashboard-section" aria-labelledby="home-reports-title">
+          <div className="home-dashboard-head">
+            <div>
+              <span>최신 보고서</span>
+              <h2 id="home-reports-title">산업 배경은 보고서에서 짧게 확인합니다</h2>
+            </div>
+            <button type="button" onClick={() => onOpenReports()}>
+              전체 보기
+              <ArrowRight size={15} />
+            </button>
+          </div>
+          <div className="home-report-grid">
+            {latestReports.map((report) => (
+              <article className="home-report-card" key={report.id}>
+                <span>{report.firm} · {reportPublishedLabel(report)}</span>
+                <h3>{report.title}</h3>
+                <p>{report.keyIdeas[0]}</p>
+                <button type="button" onClick={() => onOpenReports(report.id)}>
+                  보고서 보기
+                  <ArrowRight size={15} />
+                </button>
+              </article>
+            ))}
+          </div>
         </section>
 
       </main>
@@ -4487,6 +4664,7 @@ type StockAutopsyPicksPageProps = {
   selectedPickId?: string;
   isArchive?: boolean;
   onHome: () => void;
+  onOpenMarketMap: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
   onOpenAnalysis: (company: Company, anchor?: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
@@ -4502,6 +4680,7 @@ type StockAutopsyPicksPageProps = {
 type MarketMapLibraryPageProps = {
   onHome: () => void;
   onOpenPicks: () => void;
+  onOpenDisclosures: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
   onOpenReports: (reportId?: string) => void;
 };
@@ -4610,6 +4789,34 @@ function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
   if (item.sectorId) return item.sectorId;
   const categoryMatch = item.href?.match(/\/category\/([^/?#]+)/);
   return categoryMatch?.[1] ? decodeURIComponent(categoryMatch[1]) : undefined;
+}
+
+const marketMapDisplayLabels: Record<string, { title: string; subtitle: string }> = {
+  'us-semiconductors': {
+    title: 'AI 서버는 누가 만드는가',
+    subtitle: '반도체 · 서버 · 메모리',
+  },
+  'datacenter-power-cooling': {
+    title: '데이터센터 전력은 어디서 오는가',
+    subtitle: '전력 · 냉각 · 인프라',
+  },
+  'semiconductor-cluster-infrastructure': {
+    title: '반도체 공장에는 무엇이 필요한가',
+    subtitle: '건설 · 전력 · 용수 · 소재',
+  },
+  'reconstruction-infrastructure': {
+    title: '재건 수요는 어떤 기업으로 이어지는가',
+    subtitle: '건설 · 중장비 · 기반시설',
+  },
+};
+
+function marketMapDisplayCopy(item: { title: string; href?: string; sectorId?: string }) {
+  const sectorId = marketMapItemSectorId(item);
+  const display = sectorId ? marketMapDisplayLabels[sectorId] : undefined;
+  return {
+    title: display?.title ?? item.title,
+    subtitle: display?.subtitle ?? item.title,
+  };
 }
 
 const reportMapLabels: Record<string, string> = {
@@ -5077,12 +5284,14 @@ function RelatedIndustryReports({ title, description, reports, onOpenReports }: 
 type IndustryReportsPageProps = {
   onHome: () => void;
   onOpenMarketMap: () => void;
+  onOpenPicks: () => void;
+  onOpenDisclosures: () => void;
   onOpenCategory: (sectorId: string) => void;
   onOpenReport: (reportId: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
 };
 
-function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenReport, onOpenPick }: IndustryReportsPageProps) {
+function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDisclosures, onOpenCategory, onOpenReport, onOpenPick }: IndustryReportsPageProps) {
   const visibleReports = industryReports.filter(isCurrentPublicReport);
   const mapConnections = Object.entries(reportMapLabels).map(([mapId, label]) => ({
     mapId,
@@ -5092,16 +5301,14 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenCategory, onOpenRe
 
   return (
     <div className="pick-shell story-dark-shell industry-reports-shell">
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo"><Network size={20} /></span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="reports"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={() => undefined}
+      />
 
       <main>
         <section className="industry-reports-hero">
@@ -5203,18 +5410,25 @@ type IndustryReportDetailPageProps = {
   report?: IndustryReport;
   onHome: () => void;
   onOpenReports: (reportId?: string) => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+  onOpenDisclosures: () => void;
   onOpenCategory: (sectorId: string) => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
 };
 
-function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategory, onOpenPick }: IndustryReportDetailPageProps) {
+function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenCategory, onOpenPick }: IndustryReportDetailPageProps) {
   if (!report) {
     return (
       <div className="pick-shell story-dark-shell industry-reports-shell">
-        <header className="pick-nav">
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={() => onOpenReports()}>보고서 서재</button>
-        </header>
+        <PrimaryNavigation
+          active="reports"
+          onHome={onHome}
+          onOpenPicks={onOpenPicks}
+          onOpenMarketMap={onOpenMarketMap}
+          onOpenDisclosures={onOpenDisclosures}
+          onOpenReports={onOpenReports}
+        />
         <main className="pick-empty industry-report-detail-empty">
           <h1>보고서를 찾을 수 없습니다.</h1>
           <p>공개 상태로 등록된 보고서인지 확인해주세요.</p>
@@ -5230,16 +5444,14 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategor
 
   return (
     <div className="pick-shell story-dark-shell industry-reports-shell industry-report-detail-shell">
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo"><Network size={20} /></span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={() => onOpenReports()}>보고서 서재</button>
-          <button type="button" onClick={onHome}>홈</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="reports"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
 
       <main className="industry-report-detail-main">
         {report.editionStatus === 'previous' ? (
@@ -5327,7 +5539,7 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenCategor
   );
 }
 
-function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenReports }: MarketMapLibraryPageProps) {
+function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenDisclosures, onOpenCategory, onOpenReports }: MarketMapLibraryPageProps) {
   const marketMapItems = currentWeeklyDigest.marketMapItems;
   const openMarketMapItem = (item: (typeof marketMapItems)[number]) => {
     if (item.status !== 'active') return;
@@ -5337,19 +5549,14 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenRepor
 
   return (
     <div className="pick-shell story-dark-shell story-market-map-shell">
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo">
-            <Network size={20} />
-          </span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenPicks}>이번 주 Pick</button>
-          <button type="button" onClick={() => onOpenReports()}>보고서</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="market-map"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={() => undefined}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
 
       <main>
         <section className="market-map-library-hero">
@@ -5362,13 +5569,15 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenCategory, onOpenRepor
         <section className="market-map-library-grid" aria-label="시장지도 카테고리">
           {marketMapItems.map((item) => {
             const isActive = item.status === 'active';
+            const display = marketMapDisplayCopy(item);
             return (
               <article className={`market-map-library-card${isActive ? '' : ' disabled'}`} key={item.title} aria-disabled={!isActive}>
                 <div className="market-map-library-topline">
                   <span>{isActive ? '상세 지도' : '준비 중'}</span>
                   {isActive ? <Network size={18} /> : <Lock size={18} />}
                 </div>
-                <h2>{item.title}</h2>
+                <h2>{display.title}</h2>
+                <small>{display.subtitle}</small>
                 <p>{item.note}</p>
                 {item.supportingNote ? <small>{item.supportingNote}</small> : null}
                 {isActive ? (
@@ -5679,6 +5888,7 @@ function StockAutopsyPicksPage({
   selectedPickId,
   isArchive = false,
   onHome,
+  onOpenMarketMap,
   onOpenCategory,
   onOpenAnalysis,
   onOpenPick,
@@ -5695,15 +5905,29 @@ function StockAutopsyPicksPage({
   const weeklyPicks = weeklyStockAutopsyPicks();
   const archivePicks = archivedStockAutopsyPicks();
   const archivePickGroups = isArchive ? archivedStockAutopsyPickGroups() : [];
-  const visiblePicks = isArchive ? archivePicks : weeklyPicks;
+  const [pickMarketFilter, setPickMarketFilter] = useState<'all' | 'KR' | 'US'>('all');
+  const baseVisiblePicks = isArchive ? archivePicks : weeklyPicks;
+  const visiblePicks = pickMarketFilter === 'all'
+    ? baseVisiblePicks
+    : baseVisiblePicks.filter((pick) => pick.market === pickMarketFilter);
+  const visibleArchivePickGroups = archivePickGroups
+    .map((group) => ({
+      ...group,
+      picks: pickMarketFilter === 'all' ? group.picks : group.picks.filter((pick) => pick.market === pickMarketFilter),
+    }))
+    .filter((group) => group.picks.length);
 
   if (selectedPickId && !detailPick) {
     return (
       <div className="pick-shell story-dark-shell story-pick-shell">
-        <header className="pick-nav">
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenPicks}>Pick 목록</button>
-        </header>
+        <PrimaryNavigation
+          active="picks"
+          onHome={onHome}
+          onOpenPicks={onOpenPicks}
+          onOpenMarketMap={onOpenMarketMap}
+          onOpenDisclosures={onOpenDisclosures}
+          onOpenReports={onOpenReports}
+        />
         <main className="pick-empty">
           <h1>Pick을 찾을 수 없습니다.</h1>
           <p>아직 등록되지 않은 해부 종목입니다. Pick 목록에서 다시 선택해주세요.</p>
@@ -5956,17 +6180,14 @@ function StockAutopsyPicksPage({
 
     return (
       <div className="pick-shell story-dark-shell story-pick-shell">
-        <header className="pick-nav">
-          <div className="breadcrumb" aria-label="현재 위치">
-            <button type="button" onClick={onHome}>홈</button>
-            <button type="button" onClick={onOpenPicks}>주가해부실 Pick</button>
-            <strong>{detailPick.companyName}</strong>
-          </div>
-          <button type="button" className="ghost-action" onClick={onOpenPicks}>
-            <ArrowRight size={15} />
-            Pick 목록
-          </button>
-        </header>
+        <PrimaryNavigation
+          active="picks"
+          onHome={onHome}
+          onOpenPicks={onOpenPicks}
+          onOpenMarketMap={onOpenMarketMap}
+          onOpenDisclosures={onOpenDisclosures}
+          onOpenReports={onOpenReports}
+        />
 
         <main className="pick-detail pick-detail-page">
           <section className="pick-story-hero">
@@ -6165,13 +6386,15 @@ function StockAutopsyPicksPage({
 
   const renderPickCard = (pick: StockAutopsyPick) => (
     <article className="pick-card" key={pick.id}>
-      <div className="card-topline">
-        <CompanyIdentityForPick pick={pick} size="card" />
-        <div className="pick-card-badge-row">
-          {isArchive ? <span className="pick-archive-badge">보관함</span> : null}
-          <strong className={pick.movementDirection === 'up' ? 'up' : 'down'}>
+      <div className="card-company-row">
+        <div className="card-company-copy">
+          <CompanyIdentityForPick pick={pick} size="card" />
+        </div>
+        <div className="card-status">
+          <span className="pick-archive-badge">{isArchive ? '보관함' : '현재 Pick'}</span>
+          <span className={`pick-move-badge ${pick.movementDirection === 'up' ? 'up' : 'down'}`}>
             {pick.movementDirection === 'up' ? '상승' : '하락'}
-          </strong>
+          </span>
         </div>
       </div>
       <h2>{pick.title}</h2>
@@ -6180,24 +6403,7 @@ function StockAutopsyPicksPage({
         <span>움직임</span>
         <strong>{pick.movementLabel}</strong>
       </div>
-      <p>{pick.reasonSummary}</p>
-      <div className="pick-meta-grid">
-        <div>
-          <span>연결된 시장 흐름</span>
-          <strong>{pickFlowLabel(pick)}</strong>
-        </div>
-        <div>
-          <span>흐름 단계</span>
-          <strong>{pickFlowStage(pick)}</strong>
-        </div>
-      </div>
-      <span className="pick-section-kicker inline">같이 볼 기업</span>
-      <div className="pick-chip-row">
-        {pick.connectedLeaders.slice(0, 5).map((leader) => (
-          <span key={leader}>{leader}</span>
-        ))}
-      </div>
-      <p className="pick-helper-copy">{pick.beginnerSummary}</p>
+      <p className="pick-card-summary">{pick.reasonSummary}</p>
       <button type="button" className="pick-primary-action" onClick={() => onOpenPick(pick)}>
         해부 보기
         <ArrowRight size={16} />
@@ -6207,19 +6413,14 @@ function StockAutopsyPicksPage({
 
   return (
     <div className="pick-shell story-dark-shell story-pick-shell">
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo">
-            <Network size={20} />
-          </span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenPicks}>주가해부실 Pick</button>
-          <button type="button" onClick={onOpenDisclosures}>공시</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="picks"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
 
       <main>
         <section className="pick-hero">
@@ -6235,11 +6436,46 @@ function StockAutopsyPicksPage({
               ? '주차별로 묶어 시장이 어떤 이슈를 봤는지 다시 확인할 수 있습니다.'
               : '인스타그램에서 다룬 종목이 어떤 기업들과 연결되는지 확인해보세요.'}
           </small>
+          <div className="pick-category-tabs" aria-label="Pick 분류">
+            <button
+              type="button"
+              className={!isArchive ? 'active' : ''}
+              aria-pressed={!isArchive}
+              onClick={onOpenPicks}
+            >
+              이번 주
+            </button>
+            <button
+              type="button"
+              className={isArchive ? 'active' : ''}
+              aria-pressed={isArchive}
+              onClick={onOpenPicksArchive}
+            >
+              보관함
+            </button>
+          </div>
+          <div className="pick-market-filter" aria-label="시장 보조 필터">
+            {[
+              { value: 'all' as const, label: '전체' },
+              { value: 'KR' as const, label: '한국' },
+              { value: 'US' as const, label: '미국' },
+            ].map((item) => (
+              <button
+                type="button"
+                key={item.value}
+                className={pickMarketFilter === item.value ? 'active' : ''}
+                aria-pressed={pickMarketFilter === item.value}
+                onClick={() => setPickMarketFilter(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </section>
 
         {isArchive ? (
           <section className="pick-archive-groups" aria-label="지난 해부 주차별 목록">
-            {archivePickGroups.map((group) => (
+            {visibleArchivePickGroups.map((group) => (
               <section className="pick-archive-group" key={group.id} aria-labelledby={`archive-group-${group.id}`}>
                 <div className="pick-archive-group-header">
                   <div>
@@ -8009,6 +8245,7 @@ function App() {
         selectedPickId={routePickId}
         isArchive={isPickArchiveRoute}
         onHome={openHome}
+        onOpenMarketMap={openMarketMapLibrary}
         onOpenCategory={openCategory}
         onOpenAnalysis={openAnalysis}
         onOpenPick={openPick}
@@ -8031,12 +8268,13 @@ function App() {
         onHome={openHome}
         onOpenPicks={openPicks}
         onOpenMarketMap={openMarketMapLibrary}
+        onOpenReports={openReports}
       />
     );
   }
 
   if (isMarketMapRoute) {
-    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenCategory={openCategory} onOpenReports={openReports} />;
+    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenReports={openReports} />;
   }
 
   if (routeReportDetailMatch) {
@@ -8045,6 +8283,9 @@ function App() {
         report={routeIndustryReport}
         onHome={openHome}
         onOpenReports={openReports}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
         onOpenCategory={openCategory}
         onOpenPick={openPick}
       />
@@ -8056,6 +8297,8 @@ function App() {
       <IndustryReportsPage
         onHome={openHome}
         onOpenMarketMap={openMarketMapLibrary}
+        onOpenPicks={openPicks}
+        onOpenDisclosures={openDisclosures}
         onOpenCategory={openCategory}
         onOpenReport={openReports}
         onOpenPick={openPick}
@@ -8159,9 +8402,12 @@ function App() {
   if (!isCategoryRoute) {
     return (
       <LandingPage
+        onHome={openHome}
         onOpenMarketMapLibrary={openMarketMapLibrary}
         onOpenPicks={openPicks}
         onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+        onOpenCategory={openCategory}
         onOpenPick={openPick}
         marketPrices={marketPrices}
         disclosures={marketDisclosures}

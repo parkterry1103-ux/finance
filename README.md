@@ -66,6 +66,26 @@
 - 고급 정보는 조용하게 둡니다. 원문, 출처, 기관 동향, 전체 관계는 접힌 영역이나 보조 버튼으로만 접근하게 합니다.
 - 투자 추천처럼 보이는 표현은 쓰지 않습니다. `확정 수혜`, `급등 예상`, `지금 사야 할`, `보장`, `매수 추천` 대신 `같이 볼 기업`, `확인할 포인트`, `먼저 볼 숫자`를 사용합니다.
 
+## MSN 참고형 UI 간소화 및 타이포그래피 정비
+
+- 참고한 원칙: 짧은 상단 탐색, 첫 화면의 핵심 정보 우선 배치, 중립적인 산세리프 글꼴, 제목/보조 정보/수치의 분명한 위계, 조밀하지만 복잡하지 않은 카드 정렬입니다.
+- 복제하지 않은 요소: MSN의 브랜드, 로고, 색상 체계, 광고 구조, 콘텐츠 배열은 사용하지 않았습니다.
+- 최상위 navigation: `홈 / 이번 주 / 시장지도 / 공시` 중심에서 `오늘 / Pick / 시장지도 / 공시 / 보고서`로 단순화했습니다. 기존 route와 deep link는 유지합니다.
+- 내부 category 구조: Pick은 `이번 주 / 보관함`을 기본 분류로 두고 `전체 / 한국 / 미국`을 보조 필터로 둡니다. 공시는 `전체 / 한국 공시 / 미국 공시`로 보이게 하고, `OpenDART`와 `SEC EDGAR`는 출처 표기로 유지합니다.
+- 홈 section 순서: `오늘 봐야 할 것 -> 이번 주 Pick -> 최근 공식 공시 -> 시장을 연결해서 보기 -> 최신 보고서` 순서로 정리했습니다.
+- Pick card 간소화: 목록 카드에는 회사명, 국가/ticker, 상태, 제목, 가격/등락, 움직임 한 줄, 2~3줄 요약, `해부 보기`만 남겼습니다. 긴 배경, 관련 기업 다수, 전체 source 목록은 상세로 보냅니다.
+- font stack: `"Segoe UI Variable", "Segoe UI", "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif`를 전역 토큰으로 사용합니다. 외부 font CDN이나 font file은 추가하지 않았습니다.
+- typography token: `--font-sans`, `--text-xs`, `--text-sm`, `--text-base`, `--text-md`, `--text-lg`, `--text-xl`, `--text-2xl`, `--text-hero`를 `src/styles.css`에 정의했습니다.
+- badge/chip/button text-fit 규칙: 고정 높이 대신 `min-height`, `height:auto`, `inline-flex`, `overflow-wrap:anywhere`, `word-break:keep-all`, `min-width:0`, `max-width:100%`를 공통 적용했습니다.
+- ReactFlow node 처리: 시장지도 node는 콘텐츠에 맞춰 높이가 늘어나고, 회사명은 최대 2줄, 역할/상태 badge는 wrapping 가능하도록 정리했습니다.
+- line-clamp 정책: Pick 목록 제목/요약, 홈 보고서/시장지도 요약처럼 상세 진입 경로가 있는 목록 요약에만 사용합니다. 회사명, 가격, 날짜, 주요 상태는 의미가 가려지지 않도록 별도 text-fit 규칙을 적용합니다.
+- 적용 route: `/`, `/ko/`, `/ko/picks`, `/ko/picks/archive`, `/ko/disclosures`, `/ko/market-map`, `/ko/category/us-semiconductors`, `/ko/category/datacenter-power-cooling`, `/ko/category/reconstruction-infrastructure`, `/ko/category/semiconductor-cluster-infrastructure`, `/ko/reports`.
+- QA 기준: desktop/mobile에서 navigation, tab/filter, button, badge, chip, company identity, price row, source row, market-map node의 overflow와 overlap을 확인합니다. 320/360/390px 및 200% zoom에서 horizontal overflow 0을 목표로 합니다.
+- 로컬 QA 결과: 11개 route를 desktop, 390px, 360px, 320px에서 확인했고 horizontal overflow 0, clipped critical text 0, company/status overlap 0, console error 0입니다. 200% zoom 근사 viewport에서도 overflow/clip/overlap 0입니다.
+- 회귀 결과: `validate-content`, TypeScript, Vite build가 통과했습니다. Vite build에서는 기존 허용 경고인 `@xyflow/react`의 `"use client"` 및 chunk size 경고만 확인됐습니다.
+- 회귀 기준: 가격 API, OpenDART API, SEC EDGAR API와 sync script, Supabase schema, source registry, Pick 본문, 기존 route/slug는 UI 작업으로 변경하지 않습니다.
+- 관심목록 제외: 개인 관심목록, 즐겨찾기, 로그인, 회원가입, localStorage watchlist, 포트폴리오, 알림, 개인화 홈은 구현하지 않았고 placeholder도 추가하지 않습니다.
+
 ## 홈 화면 운영 원칙
 
 - 홈은 기능 대시보드가 아니라 주가해부실의 정체성을 전달하는 랜딩 페이지입니다.
