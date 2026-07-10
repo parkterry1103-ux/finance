@@ -108,6 +108,7 @@ import {
   type SecNonDerivativeTransaction,
   type SecReportingOwner,
 } from './lib/sec';
+import { companyLogoToneClass, resolveCompanyLogo, resolveCompanyLogoMonogramText, type CompanyLogoInput } from './lib/companyLogo';
 import { fetchMarketDisclosures, fetchMarketSecFilings } from './services/disclosures';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
@@ -450,128 +451,96 @@ const aiFinancialFocusCards = [
   },
 ];
 
-const companyVisualSymbols: Record<string, { label: string; tone: string }> = {
-  'us-semiconductors-nvidia': { label: 'NV', tone: 'nvidia' },
-  'ai-datacenter-microsoft': { label: 'MS', tone: 'microsoft' },
-  'ai-datacenter-google': { label: 'G', tone: 'google' },
-  'ai-datacenter-amazon': { label: 'AWS', tone: 'amazon' },
-  'ai-datacenter-broadcom': { label: 'AV', tone: 'broadcom' },
-  'ai-datacenter-tsmc': { label: 'TSMC', tone: 'tsmc' },
-  'ai-datacenter-sk-hynix': { label: 'SK', tone: 'hynix' },
-  'ai-datacenter-samsung': { label: '삼성', tone: 'samsung' },
-  'ai-datacenter-asml': { label: 'ASML', tone: 'asml' },
-  'ai-datacenter-vertiv': { label: 'V', tone: 'vertiv' },
-  'ai-datacenter-amd': { label: 'AMD', tone: 'amd' },
-  'ai-datacenter-supermicro': { label: 'SMC', tone: 'supermicro' },
-  'ai-datacenter-dell': { label: 'Dell', tone: 'dell' },
-  'ai-datacenter-arista': { label: 'AR', tone: 'arista' },
-  'ai-datacenter-hanmi': { label: '한미', tone: 'kr' },
-  'ai-datacenter-leeno': { label: '리노', tone: 'kr' },
-  'ai-datacenter-isc': { label: 'ISC', tone: 'kr' },
-  'ai-datacenter-wonikips': { label: '원익', tone: 'kr' },
-  'ai-datacenter-soulbrain': { label: '솔브', tone: 'kr' },
-  'datacenter-power-vertiv': { label: 'V', tone: 'vertiv' },
-  'datacenter-power-eaton': { label: 'E', tone: 'energy' },
-  'datacenter-power-schneider': { label: 'SE', tone: 'energy' },
-  'datacenter-power-lg-electronics': { label: 'LG', tone: 'kr' },
-  'datacenter-power-ai-server-growth': { label: 'AI', tone: 'neutral' },
-  'datacenter-power-power-use-growth': { label: 'KW', tone: 'energy' },
-  'datacenter-power-power-management': { label: 'UPS', tone: 'energy' },
-  'datacenter-power-cooling-hvac': { label: 'HVAC', tone: 'vertiv' },
-  'datacenter-power-operational-stability': { label: 'OPS', tone: 'neutral' },
-  'datacenter-power-investment-validation': { label: 'CHK', tone: 'neutral' },
-};
-
-function companyNameSymbolLabel(company: Company) {
-  const source = company.name || company.legalName || company.ticker || '';
-  const hangul = Array.from(source.match(/[가-힣]/g) ?? []).slice(0, 2).join('');
-  if (hangul) return hangul;
-
-  const words = source
-    .replace(/[,()]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length >= 2) {
-    return words
-      .slice(0, 3)
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase();
-  }
-
-  return source.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || company.name.slice(0, 2);
-}
-
-function companySymbol(company: Company) {
-  const mapped = companyVisualSymbols[company.id];
-  if (mapped) return mapped;
-  return {
-    label: companyNameSymbolLabel(company),
-    tone: isMainListedCompany(company) ? 'default' : 'reference',
-  };
-}
-
 function flowRepresentativeCompanyName(company: Company) {
   if (company.id === 'ai-datacenter-google') return 'Google';
   return company.name;
 }
 
-const companyLogoSources: Array<{ match: string[]; url: string }> = [
-  { match: ['nvidia', 'nvda'], url: 'https://upload.wikimedia.org/wikipedia/commons/2/21/Nvidia_logo.svg' },
-  { match: ['microsoft', 'msft'], url: 'https://logo.clearbit.com/microsoft.com' },
-  { match: ['google', 'alphabet', 'googl'], url: 'https://logo.clearbit.com/google.com' },
-  { match: ['amazon', 'amzn', 'aws'], url: 'https://logo.clearbit.com/amazon.com' },
-  { match: ['broadcom', 'avgo'], url: 'https://logo.clearbit.com/broadcom.com' },
-  { match: ['sk하이닉스', 'sk hynix', '000660'], url: 'https://upload.wikimedia.org/wikipedia/commons/2/24/SK_Hynix.svg' },
-  { match: ['삼성전자', 'samsung', '005930'], url: 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Samsung_logo.svg' },
-  { match: ['tsmc', 'taiwan semiconductor', 'tsm'], url: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Tsmc-text.svg' },
-  { match: ['asml'], url: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/ASML_Logo.svg' },
-  { match: ['vertiv', 'vrt'], url: 'https://logo.clearbit.com/vertiv.com' },
-  { match: ['amd'], url: 'https://logo.clearbit.com/amd.com' },
-  { match: ['micron', 'mu'], url: 'https://logo.clearbit.com/micron.com' },
-  { match: ['dell'], url: 'https://logo.clearbit.com/dell.com' },
-  { match: ['super micro', 'supermicro', 'smci'], url: 'https://logo.clearbit.com/supermicro.com' },
-  { match: ['arista', 'anet'], url: 'https://logo.clearbit.com/arista.com' },
-  { match: ['eaton'], url: 'https://logo.clearbit.com/eaton.com' },
-  { match: ['schneider'], url: 'https://logo.clearbit.com/se.com' },
-  { match: ['한미반도체', 'hanmi', '042700'], url: 'https://logo.clearbit.com/hanmisemi.com' },
-  { match: ['리노공업', 'leeno', '058470'], url: 'https://logo.clearbit.com/leeno.com' },
-  { match: ['isc', '095340'], url: 'https://logo.clearbit.com/isc21.kr' },
-  { match: ['원익ips', 'wonik', '240810'], url: 'https://logo.clearbit.com/wonikips.co.kr' },
-  { match: ['솔브레인', 'soulbrain', '357780'], url: 'https://logo.clearbit.com/soulbrain.co.kr' },
-];
+type CompanyLogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'small' | 'medium' | 'large' | 'hero';
+type CompanyLogoShape = 'rounded' | 'circle';
 
-function getCompanyLogoUrl(company: Company) {
-  const searchText = [
-    company.id,
-    company.name,
-    company.legalName,
-    company.ticker,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+type CompanyLogoProps = CompanyLogoInput & {
+  company?: Company;
+  size?: CompanyLogoSize;
+  shape?: CompanyLogoShape;
+  decorative?: boolean;
+  className?: string;
+};
 
-  return companyLogoSources.find((source) => source.match.some((token) => searchText.includes(token.toLowerCase())))?.url;
-}
+const failedLocalCompanyLogoSources = new Set<string>();
 
-function CompanyLogo({ company, size = 'medium', className = '' }: { company: Company; size?: 'small' | 'medium' | 'large' | 'hero'; className?: string }) {
-  const [failed, setFailed] = useState(false);
-  const symbol = companySymbol(company);
-  const logoUrl = getCompanyLogoUrl(company);
-  const classes = `company-logo ${logoUrl && !failed ? 'has-image' : `fallback symbol-${symbol.tone}`} size-${size} ${className}`.trim();
+const companyLogoSizeAliases: Record<CompanyLogoSize, { semantic: 'xs' | 'sm' | 'md' | 'lg'; legacy: 'small' | 'medium' | 'large' | 'hero' }> = {
+  xs: { semantic: 'xs', legacy: 'small' },
+  sm: { semantic: 'sm', legacy: 'small' },
+  md: { semantic: 'md', legacy: 'medium' },
+  lg: { semantic: 'lg', legacy: 'large' },
+  small: { semantic: 'sm', legacy: 'small' },
+  medium: { semantic: 'md', legacy: 'medium' },
+  large: { semantic: 'lg', legacy: 'large' },
+  hero: { semantic: 'lg', legacy: 'hero' },
+};
 
-  if (!logoUrl || failed) {
+function CompanyLogo({
+  company,
+  companyId,
+  companyName,
+  ticker,
+  localAssetPath,
+  size = 'medium',
+  shape = 'rounded',
+  decorative = true,
+  className = '',
+}: CompanyLogoProps) {
+  const input = {
+    companyId: companyId ?? company?.id,
+    companyName: companyName ?? company?.name ?? company?.legalName,
+    ticker: ticker ?? company?.ticker,
+    localAssetPath,
+  };
+  const resolved = resolveCompanyLogo(input);
+  const [failedLocalImage, setFailedLocalImage] = useState(() => (
+    resolved.kind === 'local-image' && failedLocalCompanyLogoSources.has(resolved.src)
+  ));
+
+  useEffect(() => {
+    setFailedLocalImage(resolved.kind === 'local-image' && failedLocalCompanyLogoSources.has(resolved.src));
+  }, [resolved.kind, resolved.kind === 'local-image' ? resolved.src : resolved.key]);
+
+  const sizeClass = companyLogoSizeAliases[size];
+  const showsImage = resolved.kind === 'local-image' && !failedLocalImage;
+  const classes = [
+    'company-logo',
+    `company-logo--${sizeClass.semantic}`,
+    `company-logo--${shape}`,
+    `size-${sizeClass.legacy}`,
+    showsImage ? 'has-image' : 'fallback',
+    showsImage ? '' : companyLogoToneClass(input),
+    className,
+  ].filter(Boolean).join(' ');
+  const accessibilityProps = decorative
+    ? { 'aria-hidden': true as const }
+    : { role: 'img' as const, 'aria-label': resolved.kind === 'local-image' ? resolved.alt : resolved.ariaLabel };
+
+  if (!showsImage) {
     return (
-      <span className={classes} aria-hidden="true">
-        {symbol.label}
+      <span className={classes} {...accessibilityProps}>
+        <span className="company-logo__monogram">{resolved.kind === 'monogram' ? resolved.text : resolveCompanyLogoMonogramText(input)}</span>
       </span>
     );
   }
 
   return (
-    <span className={classes} aria-hidden="true">
-      <img src={logoUrl} alt="" loading="lazy" onError={() => setFailed(true)} />
+    <span className={classes} {...accessibilityProps}>
+      <img
+        className="company-logo__image"
+        src={resolved.src}
+        alt={decorative ? '' : resolved.alt}
+        loading="lazy"
+        onError={() => {
+          failedLocalCompanyLogoSources.add(resolved.src);
+          setFailedLocalImage(true);
+        }}
+      />
     </span>
   );
 }
@@ -579,7 +548,6 @@ function CompanyLogo({ company, size = 'medium', className = '' }: { company: Co
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   const { company, isSelected, isDimmed, isExpanded, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
-  const symbol = companySymbol(company);
   const connection = companyConnectionState(company);
   const compactStage =
     company.sectorId === aiRelationshipSectorId && company.anchorId === aiRelationshipAnchorId
@@ -611,7 +579,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   >
       <Handle type="target" position={Position.Left} className="node-handle" />
       <div className="node-topline">
-        <span className={`company-symbol symbol-${symbol.tone}`} aria-hidden="true">{symbol.label}</span>
+        <CompanyLogo company={company} size="sm" className="node-company-logo" />
         <span className="node-badge-row">
           {isSelected && <span className="selected-company-badge">선택한 기업</span>}
           <span className={`role-badge role-${role.className}`}>{role.primary}</span>

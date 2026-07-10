@@ -382,6 +382,111 @@ validator 추가 항목:
 - 가격 API, 가격 sync, OpenDART sync, SEC API, Pick route/source/content는 수정하지 않았습니다.
 - `package.json`, `package-lock.json` 변경 없음
 
+## 기업 로고 외부 의존 제거
+
+기업 로고 UI는 외부 logo API와 원격 브랜드 이미지를 런타임에서 요청하지 않습니다. 기존 문제는 `src/App.tsx`의 `companyLogoSources`와 `getCompanyLogoUrl`이 Clearbit/Wikimedia logo URL을 반환하고, `CompanyLogo`가 해당 URL을 `<img>`로 렌더링하면서 DNS 실패, broken image, layout shift 가능성을 만들던 점입니다.
+
+변경 후 구조:
+
+- `src/lib/companyLogo.ts`: `resolveCompanyLogo`, `resolveCompanyLogoMonogramText`, `localCompanyLogoRegistry`, monogram sample, placeholder ticker 규칙
+- `src/App.tsx`: 전역 `CompanyLogo`가 resolver를 사용하고, 실패한 local asset URL은 세션 Set에 기록해 반복 요청을 막음
+- `src/styles.css`: `.company-logo`, `.company-logo__image`, `.company-logo__monogram`, `.company-logo-tone-*`, `.node-company-logo`
+- `scripts/validate-content.ts`: runtime Clearbit URL, legacy logo helper, registry 원격 URL, local asset 존재, monogram sample, duplicate ticker collision 검증
+
+fallback 우선순위:
+
+1. canonical `localCompanyLogoRegistry`의 실제 local asset
+2. props로 받은 유효한 `localAssetPath`
+3. `companyName` 기반 1-2자 monogram
+4. 회사명이 없고 ticker가 유효하면 ticker 기반 monogram
+5. 마지막 fallback은 `?`
+
+placeholder ticker는 `WATCH`, `PRIVATE`, `N/A`, `-`, `비상장`, `UNKNOWN`이며, 회사명이 없으면 monogram으로 쓰지 않고 `?`를 표시합니다. `GOOGL`처럼 같은 상장사를 `Alphabet`과 `Google / Alphabet`으로 함께 쓰는 경우는 canonical monogram `AL`로 통일합니다.
+
+monogram 표본:
+
+```text
+Meta -> ME
+Micron -> MI
+NVIDIA -> NV
+Super Micro Computer -> SM
+Dell Technologies -> DT
+Taylor Morrison -> TM
+Google / Alphabet + GOOGL -> AL
+SK하이닉스 -> SK
+에스폴리텍 -> 에스
+금호건설 -> 금호
+현대건설 -> 현대
+동양파일 -> 동양
+WATCH + 회사명 없음 -> ?
+```
+
+접근성:
+
+- 회사명 텍스트가 같은 카드 안에 있는 로고는 decorative로 처리해 `aria-hidden="true"`를 유지합니다.
+- standalone 사용이 필요하면 `decorative={false}`로 `role="img"`와 `${companyName} 로고` label을 사용할 수 있습니다.
+- `alt="logo"`나 ticker-only alt는 사용하지 않습니다.
+
+적용 화면:
+
+- 홈, Pick, Pick archive, Pick 상세 cover
+- `/ko/category/us-semiconductors`, `/ko/category/datacenter-power-cooling`
+- 시장지도 관계 카드와 선택 기업 카드
+- 기업 분석 hero, 관련 기업 목록, 오른쪽 선택 패널
+- 향후 local logo asset이 추가되는 경우 같은 resolver와 validator를 거칩니다.
+
+로컬 검증 결과:
+
+- 제거된 Clearbit URL: 17개
+- 제거된 외부 company logo source: 22개
+- local logo registry: mapping 0개
+- local asset: 0개, 총 0 bytes, missing 0개, SVG/PNG/WebP/JPG 0개
+- monogram fallback 기업 record: 925개
+- duplicate ticker collision: 0개
+- runtime Clearbit URL: 0개
+- legacy logo helper: 0개
+- `logo.clearbit.com` request: 0
+- 외부 회사 logo request: 0
+- broken image/company image: 0
+- local company logo 404: 0
+- logo 관련 console error: 0
+- horizontal overflow: desktop/390/360/320px 전체 0
+- layout shift: 0
+- local browser QA route: `/`, `/ko/`, `/ko/picks`, `/ko/picks/archive`, `/ko/disclosures`, `/ko/market-map`, `/ko/category/us-semiconductors`, `/ko/category/datacenter-power-cooling`, `/ko/category/reconstruction-infrastructure`, `/ko/category/semiconductor-cluster-infrastructure`, `/ko/reports`
+- 화면 표본: 홈, Pick, archive, 공시, 시장지도 카드, 기업 상세/관련 기업, reports에서 회사명 텍스트 유지 확인
+
+검증 명령:
+
+```bash
+git diff --check
+./node_modules/.bin/tsc -p tsconfig.scripts.json
+node .sync-build/scripts/validate-content.js
+./node_modules/.bin/tsc --noEmit
+./node_modules/.bin/vite build
+```
+
+결과:
+
+- `node .sync-build/scripts/validate-content.js`: CompanyLogo runtime Clearbit URL 0개, legacy helper 0개, local asset 0개, monogram 925개, 표본 16개
+- `vite build`: `dist/assets/index-ChO1SIY5.css`, `dist/assets/index-B0_j_z79.js`
+- 기존 허용 경고만 있음: `@xyflow/react` `"use client"`, chunk size
+- `package.json`, `package-lock.json` 변경 없음
+
+기능 회귀:
+
+- 가격 API `/api/market-prices?limit=200`: HTTP 200, `ok:true`, 고유 ticker 94개, META 포함, KIS/Yahoo source 유지, 가격 sync 미실행
+- OpenDART API `/api/market-disclosures?limit=20`: HTTP 200, `ok:true`
+- SEC API `/api/market-sec-filings?limit=20`, `?item=2.02&limit=5`, `?transactionCode=S&limit=5`: HTTP 200, `ok:true`, 필터 route 유지
+- 로고 작업으로 API 파일, Pick 본문/source/slug, price sync, OpenDART/SEC sync, Supabase 설정은 수정하지 않았습니다.
+
+Production 대상:
+
+- Vercel Project: `finance1`
+- Branch: `main`
+- Environment: `Production`
+- Alias: `https://finance1-flax.vercel.app`
+- 배포 성공 여부, deployment ID, commit SHA, production asset은 push 후 최종 QA 보고에 기록합니다.
+
 ## market-prices 최신 ticker별 조회 안정화
 
 2026-06-29 주간 Pick 배포 뒤 가격 저장과 개별 ticker 조회는 정상인데, 홈과 `/ko/picks`가 쓰는 전체 가격 API에서 Meta와 기존 Yahoo ticker가 빠지는 회귀를 수정했습니다.

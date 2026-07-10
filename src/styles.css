@@ -10229,16 +10229,60 @@ body {
   border: 1px solid rgba(213, 222, 235, 0.86);
   border-radius: 18px;
   background: #ffffff;
-  color: var(--jg-primary-blue);
+  color: #1f2937;
   font-weight: 950;
   letter-spacing: 0;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
-.company-logo img {
-  max-width: 74%;
-  max-height: 74%;
+.company-logo__image {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 22%;
   object-fit: contain;
+}
+
+.company-logo__monogram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.company-logo.company-logo--xs {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.company-logo.company-logo--sm {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.company-logo.company-logo--md {
+  width: 54px;
+  height: 54px;
+  font-size: 14px;
+}
+
+.company-logo.company-logo--lg {
+  width: 66px;
+  height: 66px;
+  border-radius: 22px;
+  font-size: 15px;
+}
+
+.company-logo.company-logo--circle {
+  border-radius: 999px;
 }
 
 .company-logo.size-small {
@@ -10269,8 +10313,53 @@ body {
 }
 
 .company-logo.fallback {
-  color: #ffffff;
-  background: linear-gradient(135deg, var(--jg-primary-blue), #5b7cfa);
+  background: #f8fafc;
+}
+
+.company-logo-tone-0 {
+  color: #24506f;
+  border-color: #d7e6f3;
+  background: #edf6fb;
+}
+
+.company-logo-tone-1 {
+  color: #365071;
+  border-color: #dce4f2;
+  background: #f0f5fb;
+}
+
+.company-logo-tone-2 {
+  color: #3f5368;
+  border-color: #dde6ee;
+  background: #f3f7fa;
+}
+
+.company-logo-tone-3 {
+  color: #2f4b62;
+  border-color: #d9e8ef;
+  background: #eff8f8;
+}
+
+.company-logo-tone-4 {
+  color: #4b5565;
+  border-color: #e1e7ee;
+  background: #f6f8fb;
+}
+
+.company-logo-tone-5 {
+  color: #344054;
+  border-color: #dfe5ef;
+  background: #f2f5fa;
+}
+
+.node-company-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  font-size: 11px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 10px 20px rgba(15, 23, 42, 0.09);
 }
 
 .pick-card-identity .company-logo {

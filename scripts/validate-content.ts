@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { extname, join } from 'node:path';
 import {
   anchors,
   companies,
@@ -14,6 +16,7 @@ import {
   semiconductorClusterInfrastructureMap,
   stockAutopsyPicks,
   weeklyPickCollections,
+  type Company,
 } from '../src/data.js';
 import { stockAutopsyPickEntries } from '../src/content/picks/entries.js';
 import {
@@ -44,6 +47,16 @@ import {
   secTransactionCodeDefinitions,
   transactionCategoryForCode,
 } from '../src/lib/sec/index.js';
+import {
+  allowedCompanyLogoExtensions,
+  companyLogoMonogramSamples,
+  getCompanyLogoRegistryEntries,
+  isAllowedLocalCompanyLogoPath,
+  isPlaceholderCompanyTicker,
+  resolveCompanyLogo,
+  resolveCompanyLogoMonogramText,
+  type CompanyLogoInput,
+} from '../src/lib/companyLogo.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -109,6 +122,27 @@ const identityValidation = {
   tickerOnlyNameCount: 0,
   conflictingTickerNameCount: 0,
   aliasTickerNameCount: 0,
+};
+const companyLogoValidation = {
+  logoRecordCount: 0,
+  registryCount: 0,
+  localAssetCount: 0,
+  localAssetBytes: 0,
+  largestAssetPath: '',
+  largestAssetBytes: 0,
+  svgAssetCount: 0,
+  pngAssetCount: 0,
+  webpAssetCount: 0,
+  jpgAssetCount: 0,
+  missingLocalAssetCount: 0,
+  invalidRegistryPathCount: 0,
+  duplicateMappingCount: 0,
+  duplicateTickerCollisionCount: 0,
+  monogramFallbackCount: 0,
+  placeholderFallbackCount: 0,
+  sampleCount: 0,
+  runtimeClearbitUrlCount: 0,
+  legacyHelperCount: 0,
 };
 
 const VALID_SOURCE_KINDS = new Set([
@@ -991,6 +1025,212 @@ function validateCompanyIdentities() {
   });
 }
 
+type CompanyLogoRecord = CompanyLogoInput & {
+  source: string;
+  id: string;
+};
+
+function runtimeSourceFiles(directory: string): string[] {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return runtimeSourceFiles(path);
+    return /\.(ts|tsx|css|html)$/.test(entry.name) ? [path] : [];
+  });
+}
+
+function validateRuntimeCompanyLogoPolicy() {
+  runtimeSourceFiles(join(process.cwd(), 'src')).forEach((filePath) => {
+    const content = readFileSync(filePath, 'utf8');
+    const clearbitMatches = content.match(/\b(?:https?:)?\/\/logo\.clearbit\.com|logo\.clearbit\.com/gi) ?? [];
+    if (clearbitMatches.length) {
+      companyLogoValidation.runtimeClearbitUrlCount += clearbitMatches.length;
+      addError(`runtime Clearbit company logo URL remains: ${filePath.replace(`${process.cwd()}/`, '')}`);
+    }
+
+    const legacyHelperMatches = content.match(/\b(companyLogoSources|getCompanyLogoUrl)\b/g) ?? [];
+    if (legacyHelperMatches.length) {
+      companyLogoValidation.legacyHelperCount += legacyHelperMatches.length;
+      addError(`legacy external company logo helper remains: ${filePath.replace(`${process.cwd()}/`, '')}`);
+    }
+  });
+}
+
+function publicCompanyLogoAssetPath(src: string) {
+  return join(process.cwd(), 'public', src.replace(/^\/+/, ''));
+}
+
+function validateLocalCompanyLogoRegistry() {
+  const entries = getCompanyLogoRegistryEntries();
+  companyLogoValidation.registryCount = entries.length;
+
+  duplicateValues(entries.map((entry) => entry.src)).forEach((src) => {
+    companyLogoValidation.duplicateMappingCount += 1;
+    addError(`duplicate local company logo mapping: ${src}`);
+  });
+
+  entries.forEach((entry) => {
+    if (!isAllowedLocalCompanyLogoPath(entry.src)) {
+      companyLogoValidation.invalidRegistryPathCount += 1;
+      addError(`invalid local company logo path: ${entry.companyId} / ${entry.src} (allowed: ${Array.from(allowedCompanyLogoExtensions).join(', ')})`);
+      return;
+    }
+
+    const assetPath = publicCompanyLogoAssetPath(entry.src);
+    if (!existsSync(assetPath)) {
+      companyLogoValidation.missingLocalAssetCount += 1;
+      addError(`missing local company logo asset: ${entry.companyId} / ${entry.src}`);
+      return;
+    }
+
+    const stat = statSync(assetPath);
+    const extension = extname(assetPath).toLowerCase();
+    companyLogoValidation.localAssetCount += 1;
+    companyLogoValidation.localAssetBytes += stat.size;
+    if (stat.size > companyLogoValidation.largestAssetBytes) {
+      companyLogoValidation.largestAssetBytes = stat.size;
+      companyLogoValidation.largestAssetPath = entry.src;
+    }
+    if (extension === '.svg') companyLogoValidation.svgAssetCount += 1;
+    if (extension === '.png') companyLogoValidation.pngAssetCount += 1;
+    if (extension === '.webp') companyLogoValidation.webpAssetCount += 1;
+    if (extension === '.jpg' || extension === '.jpeg') companyLogoValidation.jpgAssetCount += 1;
+  });
+}
+
+function canonicalLogoInput(input: CompanyLogoInput, companyById: Map<string, Company>, companyByTicker: Map<string, Company>) {
+  const companyId = String(input.companyId ?? '').trim();
+  const ticker = normalizeTicker(input.ticker);
+  const canonicalCompany = (companyId && companyById.get(companyId)) || (ticker && companyByTicker.get(ticker));
+  if (!canonicalCompany) return input;
+  return {
+    companyId: canonicalCompany.id,
+    companyName: canonicalCompany.name || canonicalCompany.legalName,
+    ticker: canonicalCompany.ticker,
+  };
+}
+
+function companyLogoRecords() {
+  const companyById = new Map(companies.map((company) => [company.id, company]));
+  const companyByTicker = new Map<string, Company>();
+  companies.forEach((company) => {
+    const ticker = normalizeTicker(company.ticker);
+    if (ticker && !isPlaceholderCompanyTicker(ticker) && !companyByTicker.has(ticker)) {
+      companyByTicker.set(ticker, company);
+    }
+  });
+
+  const records: CompanyLogoRecord[] = [];
+  const seen = new Set<string>();
+  const addRecord = (source: string, id: string, input: CompanyLogoInput) => {
+    const canonical = canonicalLogoInput(input, companyById, companyByTicker);
+    const key = canonical.companyId
+      ? `id:${canonical.companyId}`
+      : `name:${String(canonical.companyName ?? '').trim()}|ticker:${normalizeTicker(canonical.ticker)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    records.push({ source, id, ...canonical });
+  };
+
+  companies.forEach((company) => addRecord('company registry', company.id, {
+    companyId: company.id,
+    companyName: company.name || company.legalName,
+    ticker: company.ticker,
+  }));
+
+  anchors.forEach((anchor) => addRecord('anchor', anchor.id, {
+    companyId: anchor.id,
+    companyName: anchor.name || anchor.legalName,
+    ticker: anchor.ticker,
+  }));
+
+  [
+    ...reconstructionInfrastructureMap.companies,
+    ...semiconductorClusterInfrastructureMap.companies,
+  ].forEach((company) => addRecord('market map', company.id, {
+    companyId: company.id,
+    companyName: company.name,
+    ticker: company.ticker,
+  }));
+
+  stockAutopsyPicks.forEach((pick) => {
+    const companyId = pick.relatedCompanyId ?? pick.companyId;
+    addRecord('Pick', pick.id, {
+      companyId,
+      companyName: pick.companyName,
+      ticker: pick.ticker,
+    });
+  });
+
+  dartTrackedCompanies.forEach((company) => addRecord('DART registry', company.id, {
+    companyName: company.companyName,
+    ticker: company.ticker,
+  }));
+
+  secTrackedCompanies.forEach((company) => addRecord('SEC registry', company.id, {
+    companyName: company.companyName,
+    ticker: company.ticker,
+  }));
+
+  marketMovers.forEach((mover) => addRecord('market mover', mover.id, {
+    companyId: mover.companyId,
+    companyName: mover.companyName,
+    ticker: mover.ticker,
+  }));
+
+  return records;
+}
+
+function validateCompanyLogoFallbacks() {
+  validateRuntimeCompanyLogoPolicy();
+  validateLocalCompanyLogoRegistry();
+
+  companyLogoMonogramSamples.forEach((sample) => {
+    companyLogoValidation.sampleCount += 1;
+    const actual = resolveCompanyLogo(sample);
+    if (actual.kind !== 'monogram' || actual.text !== sample.expected) {
+      addError(`company logo monogram sample mismatch: ${sample.companyName ?? sample.ticker ?? '(empty)'} expected ${sample.expected} got ${actual.kind === 'monogram' ? actual.text : actual.src}`);
+    }
+  });
+
+  const monogramsByTicker = new Map<string, { text: string; records: string[] }>();
+  const records = companyLogoRecords();
+  companyLogoValidation.logoRecordCount = records.length;
+
+  records.forEach((record) => {
+    const resolved = resolveCompanyLogo(record);
+    if (resolved.kind === 'monogram') {
+      companyLogoValidation.monogramFallbackCount += 1;
+      if (!resolved.text.trim()) addError(`empty company logo monogram: ${record.source} / ${record.id}`);
+      if (!record.companyName && isPlaceholderCompanyTicker(record.ticker)) {
+        companyLogoValidation.placeholderFallbackCount += 1;
+        if (resolved.text !== '?') {
+          addError(`placeholder ticker should resolve to ?: ${record.source} / ${record.id} / ${record.ticker}`);
+        }
+      }
+    }
+
+    const expectedMonogram = resolveCompanyLogoMonogramText(record);
+    if (resolved.kind === 'monogram' && resolved.text !== expectedMonogram) {
+      addError(`company logo fallback drift: ${record.source} / ${record.id} expected ${expectedMonogram} got ${resolved.text}`);
+    }
+
+    const ticker = normalizeTicker(record.ticker);
+    if (!ticker || isPlaceholderCompanyTicker(ticker) || resolved.kind !== 'monogram') return;
+    const previous = monogramsByTicker.get(ticker);
+    if (!previous) {
+      monogramsByTicker.set(ticker, { text: resolved.text, records: [`${record.source}:${record.id}`] });
+      return;
+    }
+    previous.records.push(`${record.source}:${record.id}`);
+    if (previous.text !== resolved.text) {
+      companyLogoValidation.duplicateTickerCollisionCount += 1;
+      addError(`company logo ticker monogram collision: ${ticker} / ${previous.text} vs ${resolved.text} / ${previous.records.join(', ')}`);
+    }
+  });
+}
+
+validateCompanyLogoFallbacks();
 validateSourceRegistry();
 validatePickSources();
 validatePicks();
@@ -1030,6 +1270,10 @@ console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
 console.log('✓ ticker-only companyName 없음');
+console.log(`✓ CompanyLogo runtime 외부 의존 제거 확인 (Clearbit URL ${companyLogoValidation.runtimeClearbitUrlCount}개, legacy helper ${companyLogoValidation.legacyHelperCount}개)`);
+console.log(`✓ CompanyLogo registry 검증 (mapping ${companyLogoValidation.registryCount}개, local asset ${companyLogoValidation.localAssetCount}개, missing ${companyLogoValidation.missingLocalAssetCount}개, 중복 mapping ${companyLogoValidation.duplicateMappingCount}개)`);
+console.log(`✓ CompanyLogo asset 용량 ${companyLogoValidation.localAssetBytes} bytes (SVG ${companyLogoValidation.svgAssetCount}개, PNG ${companyLogoValidation.pngAssetCount}개, WebP ${companyLogoValidation.webpAssetCount}개, JPG ${companyLogoValidation.jpgAssetCount}개, 최대 ${companyLogoValidation.largestAssetPath || '없음'} ${companyLogoValidation.largestAssetBytes} bytes)`);
+console.log(`✓ CompanyLogo monogram fallback 검증 (기업 record ${companyLogoValidation.logoRecordCount}개, monogram ${companyLogoValidation.monogramFallbackCount}개, 표본 ${companyLogoValidation.sampleCount}개, ticker collision ${companyLogoValidation.duplicateTickerCollisionCount}개)`);
 console.log(`✓ 현재 주차 ticker 가격 universe 포함 (${priceUniverseCount}개 target)`);
 console.log(`✓ OpenDART 감시 기업 ${disclosureValidation.enabledCount}개 검증`);
 console.log('✓ 중복 corpCode 없음');
