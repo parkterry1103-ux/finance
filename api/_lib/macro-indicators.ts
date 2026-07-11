@@ -21,17 +21,17 @@ function round(value: number, digits = 6) {
 }
 
 function percentageChange(current: number, comparison?: number) {
-  if (!Number.isFinite(comparison) || comparison === 0) return undefined;
+  if (comparison === undefined || !Number.isFinite(comparison) || comparison === 0) return undefined;
   return round(((current - comparison) / comparison) * 100);
 }
 
 function difference(current: number, comparison?: number, multiplier = 1) {
-  if (!Number.isFinite(comparison)) return undefined;
+  if (comparison === undefined || !Number.isFinite(comparison)) return undefined;
   return round((current - comparison) * multiplier);
 }
 
 function atOffset(values: FredNumericObservation[], offset: number) {
-  return values.at(-(offset + 1))?.value;
+  return values[values.length - offset - 1]?.value;
 }
 
 function displayValue(definition: MacroIndicatorDefinition, value: number) {
@@ -44,7 +44,7 @@ export function calculateMacroChanges(
   definition: MacroIndicatorDefinition,
   history: FredNumericObservation[],
 ): MacroSeriesChanges {
-  const current = history.at(-1)?.value;
+  const current = history[history.length - 1]?.value;
   if (!Number.isFinite(current)) return {};
 
   if (definition.seriesId === 'DGS2' || definition.seriesId === 'DGS10') {
@@ -94,7 +94,7 @@ export function buildMacroSeriesResult(
   rawHistory: FredNumericObservation[],
 ): MacroSeriesResult {
   const history = rawHistory.slice(-definition.historyLimit);
-  const latest = history.at(-1);
+  const latest = history[history.length - 1];
   if (!latest) throw new Error('FRED_EMPTY_SERIES');
 
   return {

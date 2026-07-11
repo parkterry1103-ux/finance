@@ -5,6 +5,10 @@
  * All keys must use process.env - NO VITE_ prefix.
  */
 
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
 // -------------------------------------------------------------------------
 // Types
 // -------------------------------------------------------------------------
