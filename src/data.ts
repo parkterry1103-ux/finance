@@ -458,14 +458,14 @@ export interface WeeklyDigest {
 export interface MarketPrice {
   companyId?: string;
   ticker: string;
-  market: 'KOSPI' | 'KOSDAQ' | 'NASDAQ' | 'NYSE' | 'KR' | 'US';
+  market: string;
   price: string;
   open?: string;
   previousClose?: string;
   close?: string;
   change: string;
   changePercent: string;
-  currency: 'KRW' | 'USD';
+  currency: string;
   priceLabel?: PriceLabel;
   marketStatus: MarketStatus;
   asOf: string;

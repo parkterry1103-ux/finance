@@ -88,7 +88,7 @@ function mergeFallbackPrices(prices: MarketPrice[]) {
 
 export async function fetchMarketPrices(limit = 200): Promise<MarketPrice[]> {
   try {
-    const response = await fetch(`/api/market-prices?limit=${Math.min(Math.max(limit, 1), 200)}`);
+    const response = await fetch(`/api/market-prices?limit=${Math.min(Math.max(limit, 1), 200)}&include=market-brief`);
     if (!response.ok) throw new Error(`market prices ${response.status}`);
     const payload = await response.json();
     const rows = Array.isArray(payload.prices) ? payload.prices : [];
@@ -155,18 +155,24 @@ export function priceDisplay(price?: MarketPrice | null) {
     };
   }
   return {
-    amount: normalized.currency === 'KRW' ? `${formatPriceAmount(normalized.price)}원` : `$${formatPriceAmount(normalized.price)}`,
+    amount: normalized.currency === 'KRW'
+      ? `${formatPriceAmount(normalized.price, { maximumFractionDigits: 0 })}원`
+      : `$${formatPriceAmount(normalized.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     percent: normalized.changePercent,
     status: priceStatusLabel(normalized),
     basis: priceBasisLabel(normalized),
   };
 }
 
-function formatPriceAmount(value: string) {
+function formatPriceAmount(
+  value: string,
+  options: { minimumFractionDigits?: number; maximumFractionDigits?: number } = {},
+) {
   const parsed = parseNumeric(value);
   if (!Number.isFinite(parsed)) return value;
   return new Intl.NumberFormat('ko-KR', {
-    maximumFractionDigits: parsed >= 1000 ? 0 : 2,
+    minimumFractionDigits: options.minimumFractionDigits,
+    maximumFractionDigits: options.maximumFractionDigits ?? 2,
   }).format(parsed);
 }
 

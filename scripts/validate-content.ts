@@ -17,6 +17,7 @@ import {
   stockAutopsyPicks,
   weeklyPickCollections,
   type Company,
+  type MarketPrice,
 } from '../src/data.js';
 import { stockAutopsyPickEntries } from '../src/content/picks/entries.js';
 import {
@@ -29,7 +30,17 @@ import {
   secTrackedCompanies,
 } from '../src/content/disclosures/index.js';
 import { contentSources, sourceRegistry } from '../src/content/sources/index.js';
+import {
+  dailyMarketAssetRegistry,
+  dailyMarketAssets,
+  dailyMarketBriefEntries,
+  dailyMarketSyncTargets,
+  latestDailyMarketBrief,
+  marketDrivers,
+  marketFlows,
+} from '../src/content/daily-market/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
+import { priceDirection, priceDisplay } from '../src/services/prices.js';
 import {
   normalizeSecCik,
   normalizeSecFilingRows,
@@ -144,6 +155,14 @@ const companyLogoValidation = {
   runtimeClearbitUrlCount: 0,
   legacyHelperCount: 0,
 };
+const dailyMarketValidation = {
+  briefCount: 0,
+  driverCount: 0,
+  flowCount: 0,
+  stepCount: 0,
+  assetCount: 0,
+  invalidRefCount: 0,
+};
 
 const VALID_SOURCE_KINDS = new Set([
   'company-release',
@@ -221,6 +240,7 @@ function addPriceTarget(
 function uniquePriceTargets() {
   const targets = new Map<string, { ticker: string; lookupTicker: string; companyId?: string; market?: string }>();
   REQUIRED_PRICE_TICKERS.forEach((ticker) => addPriceTarget(targets, ticker));
+  dailyMarketSyncTargets.forEach((target) => addPriceTarget(targets, target.ticker, undefined, target.market));
   mockMarketPrices.forEach((price) => addPriceTarget(targets, price.ticker, price.companyId, price.market));
   marketMovers.forEach((mover) => addPriceTarget(targets, mover.ticker, mover.companyId, mover.market));
   stockAutopsyPicks.forEach((pick) => {
@@ -472,7 +492,168 @@ function validatePriceUniverse() {
         addError(`placeholder ticker included in price universe: ${pick.id} / ${pick.ticker}`);
       }
     });
+  dailyMarketSyncTargets.forEach((target) => {
+    if (!targetTickers.has(normalizeTicker(target.ticker))) {
+      addError(`daily market symbol missing from price universe: ${target.ticker}`);
+    }
+  });
   return targets.length;
+}
+
+function validateDailyMarketContent() {
+  dailyMarketValidation.briefCount = dailyMarketBriefEntries.length;
+  dailyMarketValidation.driverCount = marketDrivers.length;
+  dailyMarketValidation.flowCount = marketFlows.length;
+  dailyMarketValidation.assetCount = dailyMarketAssets.length;
+
+  duplicateValues(dailyMarketBriefEntries.map((brief) => brief.date)).forEach((date) => {
+    addError(`duplicate daily market brief date: ${date}`);
+  });
+  duplicateValues(marketDrivers.map((driver) => driver.id)).forEach((id) => {
+    addError(`duplicate daily market driver id: ${id}`);
+  });
+  duplicateValues(marketFlows.map((flow) => flow.id)).forEach((id) => {
+    addError(`duplicate daily market flow id: ${id}`);
+  });
+  duplicateValues(dailyMarketAssets.map((asset) => asset.id)).forEach((id) => {
+    addError(`duplicate daily market asset id: ${id}`);
+  });
+  duplicateValues(dailyMarketAssets.map((asset) => asset.symbol)).forEach((symbol) => {
+    addError(`duplicate daily market asset symbol: ${symbol}`);
+  });
+
+  const latestDate = [...dailyMarketBriefEntries].sort((left, right) => right.date.localeCompare(left.date))[0]?.date;
+  if (latestDailyMarketBrief()?.date !== latestDate) {
+    addError(`latest daily market selector mismatch: expected ${latestDate ?? 'none'} got ${latestDailyMarketBrief()?.date ?? 'none'}`);
+  }
+
+  const companyIds = new Set(companies.map((company) => company.id));
+  const marketMapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  const driverIds = new Set(marketDrivers.map((driver) => driver.id));
+  const flowIds = new Set(marketFlows.map((flow) => flow.id));
+  const assetIds = new Set(dailyMarketAssets.map((asset) => asset.id));
+  const evidenceTypes = new Set(['fact', 'relationship', 'interpretation']);
+  const forbiddenSignalPattern = /(호재|악재|매수|매도\s*추천)/;
+  const forbiddenProviderPattern = /(finnhub|twelve\s*data|fred)/i;
+
+  const validateRefs = (owner: string, sourceRefs: string[]) => {
+    if (!sourceRefs.length) addError(`daily market content has no sourceRefs: ${owner}`);
+    duplicateValues(sourceRefs).forEach((sourceId) => addError(`duplicate daily market sourceRef: ${owner} / ${sourceId}`));
+    sourceRefs.forEach((sourceId) => {
+      if (sourceRegistry[sourceId]) return;
+      dailyMarketValidation.invalidRefCount += 1;
+      addError(`missing daily market sourceRef: ${owner} / ${sourceId}`);
+    });
+  };
+
+  dailyMarketAssets.forEach((asset) => {
+    if (!asset.symbol) addError(`daily market asset missing symbol: ${asset.id}`);
+    if (!asset.unitLabel) addError(`daily market asset missing unit: ${asset.id}`);
+    if (asset.provider !== 'Yahoo Finance chart') addError(`unapproved daily market provider: ${asset.id} / ${asset.provider}`);
+    if (forbiddenProviderPattern.test(`${asset.provider} ${asset.sourceRef}`)) {
+      addError(`forbidden new provider in daily market asset: ${asset.id}`);
+    }
+    validateRefs(`asset ${asset.id}`, [asset.sourceRef, ...(asset.unitSourceRef ? [asset.unitSourceRef] : [])]);
+  });
+
+  marketDrivers.forEach((driver) => {
+    if (!driver.confirmedFact.trim()) addError(`daily market driver missing confirmedFact: ${driver.id}`);
+    if (!driver.marketInterpretation.trim()) addError(`daily market driver missing interpretation: ${driver.id}`);
+    if (driver.confirmedFact.trim() === driver.marketInterpretation.trim()) {
+      addError(`daily market driver fact/interpretation not separated: ${driver.id}`);
+    }
+    if (forbiddenSignalPattern.test(`${driver.label} ${driver.confirmedFact} ${driver.marketInterpretation}`)) {
+      addError(`investment signal wording in daily market driver: ${driver.id}`);
+    }
+    driver.affectedAssets.forEach((assetId) => {
+      if (!assetIds.has(assetId)) addError(`missing daily market driver asset: ${driver.id} / ${assetId}`);
+    });
+    validateRefs(`driver ${driver.id}`, driver.sourceRefs);
+  });
+
+  marketFlows.forEach((flow) => {
+    if (flow.steps.length < 2 || flow.steps.length > 4) {
+      addError(`daily market flow step count must be 2-4: ${flow.id} / ${flow.steps.length}`);
+    }
+    dailyMarketValidation.stepCount += flow.steps.length;
+    if (forbiddenSignalPattern.test(`${flow.title} ${flow.steps.map((step) => `${step.label} ${step.detail}`).join(' ')}`)) {
+      addError(`investment signal wording in daily market flow: ${flow.id}`);
+    }
+    flow.steps.forEach((step, index) => {
+      if (!step.label.trim() || !step.detail.trim()) addError(`empty daily market flow step: ${flow.id} / ${index + 1}`);
+      if (!evidenceTypes.has(step.type)) addError(`invalid daily market flow evidence type: ${flow.id} / ${step.type}`);
+      if (step.marketMapId && !marketMapIds.has(step.marketMapId)) {
+        addError(`missing daily market flow marketMapId: ${flow.id} / ${step.marketMapId}`);
+      }
+      step.companyIds?.forEach((companyId) => {
+        if (!companyIds.has(companyId)) addError(`missing daily market flow companyId: ${flow.id} / ${companyId}`);
+      });
+    });
+    validateRefs(`flow ${flow.id}`, flow.sourceRefs);
+  });
+
+  dailyMarketBriefEntries.forEach((brief) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(brief.date) || Number.isNaN(Date.parse(brief.date))) {
+      addError(`invalid daily market brief date: ${brief.date}`);
+    }
+    if (forbiddenSignalPattern.test(`${brief.title} ${brief.summary} ${Object.values(brief.assetNotes).join(' ')}`)) {
+      addError(`investment signal wording in daily market brief: ${brief.date}`);
+    }
+    duplicateValues(brief.marketDriverIds).forEach((id) => addError(`duplicate driver in daily market brief: ${brief.date} / ${id}`));
+    duplicateValues(brief.flowIds).forEach((id) => addError(`duplicate flow in daily market brief: ${brief.date} / ${id}`));
+    brief.marketDriverIds.forEach((id) => {
+      if (!driverIds.has(id)) addError(`missing daily market brief driver: ${brief.date} / ${id}`);
+    });
+    brief.flowIds.forEach((id) => {
+      if (!flowIds.has(id)) addError(`missing daily market brief flow: ${brief.date} / ${id}`);
+    });
+    [...brief.indexAssetIds, ...brief.macroAssetIds].forEach((assetId) => {
+      if (!dailyMarketAssetRegistry[assetId]) addError(`missing daily market brief asset: ${brief.date} / ${assetId}`);
+    });
+    validateRefs(`brief ${brief.date}`, brief.sourceRefs);
+  });
+
+  const productionContent = JSON.stringify({ dailyMarketBriefEntries, marketDrivers, marketFlows });
+  if (/(mock|fallback|example|샘플|예시)/i.test(productionContent)) {
+    addError('mock/example text found in production daily market content');
+  }
+  if (forbiddenProviderPattern.test(productionContent)) {
+    addError('forbidden new provider found in production daily market content');
+  }
+}
+
+function validateMarketDirectionDisplay() {
+  const samplePrice = (price: string, open: string, currency: string): MarketPrice => ({
+    ticker: currency === 'KRW' ? '005930.KS' : 'NVDA',
+    market: currency === 'KRW' ? 'KOSPI' : 'NASDAQ',
+    price,
+    open,
+    previousClose: open,
+    change: '',
+    changePercent: '',
+    currency,
+    priceLabel: 'latest',
+    marketStatus: 'open',
+    asOf: '2026-07-10T20:00:00.000Z',
+    source: 'yahoo-finance-chart',
+    isDelayed: true,
+  });
+  const up = samplePrice('101', '100', 'USD');
+  const down = samplePrice('99', '100', 'USD');
+  const flat = samplePrice('100', '100', 'USD');
+  if (priceDirection(up) !== 'up') addError('positive market direction should be up');
+  if (priceDirection(down) !== 'down') addError('negative market direction should be down');
+  if (priceDirection(flat) !== 'flat') addError('zero market direction should be flat');
+
+  const largeKrw = priceDisplay(samplePrice('2180000', '2296000', 'KRW'));
+  const largeUsd = priceDisplay(samplePrice('12345.67', '12000', 'USD'));
+  if (largeKrw.amount !== '2,180,000원') addError(`large KRW price format mismatch: ${largeKrw.amount}`);
+  if (largeUsd.amount !== '$12,345.67') addError(`large USD price format mismatch: ${largeUsd.amount}`);
 }
 
 function validateDisclosureRegistry() {
@@ -1238,6 +1419,8 @@ validateWeeks();
 validateReferences();
 validateCtaPolicy();
 validateCompanyIdentities();
+validateDailyMarketContent();
+validateMarketDirectionDisplay();
 const priceUniverseCount = validatePriceUniverse();
 validateDisclosureRegistry();
 validateDisclosureClassification();
@@ -1275,6 +1458,11 @@ console.log(`✓ CompanyLogo registry 검증 (mapping ${companyLogoValidation.re
 console.log(`✓ CompanyLogo asset 용량 ${companyLogoValidation.localAssetBytes} bytes (SVG ${companyLogoValidation.svgAssetCount}개, PNG ${companyLogoValidation.pngAssetCount}개, WebP ${companyLogoValidation.webpAssetCount}개, JPG ${companyLogoValidation.jpgAssetCount}개, 최대 ${companyLogoValidation.largestAssetPath || '없음'} ${companyLogoValidation.largestAssetBytes} bytes)`);
 console.log(`✓ CompanyLogo monogram fallback 검증 (기업 record ${companyLogoValidation.logoRecordCount}개, monogram ${companyLogoValidation.monogramFallbackCount}개, 표본 ${companyLogoValidation.sampleCount}개, ticker collision ${companyLogoValidation.duplicateTickerCollisionCount}개)`);
 console.log(`✓ 현재 주차 ticker 가격 universe 포함 (${priceUniverseCount}개 target)`);
+console.log(`✓ 오늘 시장 브리핑 검증 (brief ${dailyMarketValidation.briefCount}개, asset ${dailyMarketValidation.assetCount}개, driver ${dailyMarketValidation.driverCount}개, flow ${dailyMarketValidation.flowCount}개, step ${dailyMarketValidation.stepCount}개)`);
+console.log(`✓ 오늘 시장 브리핑 source/route/company 참조 정상 (잘못된 source ${dailyMarketValidation.invalidRefCount}개)`);
+console.log('✓ 오늘 시장 브리핑 fact/relationship/interpretation 구분 정상');
+console.log('✓ 오늘 시장 브리핑 mock/자동 투자 신호/신규 provider 없음');
+console.log('✓ 시장 방향 표기 helper 검증 (양수=상승, 음수=하락, 0=보합, 큰 원화·달러 가격 format)');
 console.log(`✓ OpenDART 감시 기업 ${disclosureValidation.enabledCount}개 검증`);
 console.log('✓ 중복 corpCode 없음');
 console.log('✓ ticker/corpCode 연결 정상');

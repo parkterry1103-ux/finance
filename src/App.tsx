@@ -115,6 +115,7 @@ import { resolveCompanyFilingLinks } from './services/filings';
 import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
+import { DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
 
 type NodeData = {
   company: Company;
@@ -3170,11 +3171,16 @@ function priceFreshnessInfo(value?: string) {
 function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; compact?: boolean }) {
   if (price === undefined) {
     return (
-      <span className={`price-badge pending ${compact ? 'compact' : ''}`}>
-        <strong>가격 불러오는 중</strong>
-        <span className="price-meta-line">
-          <span className="price-meta-source unknown">출처 확인 중</span>
-          <span>기준일 확인 중</span>
+      <span className={`price-badge price-panel pending ${compact ? 'compact' : ''}`} role="status">
+        <span className="price-panel__main">
+          <strong className="price-panel__price">가격 불러오는 중</strong>
+        </span>
+        <span className="price-panel__meta">
+          <small className="price-status-line">가격 준비 중</small>
+          <span className="price-meta-line">
+            <span className="price-meta-source unknown">출처 확인 중</span>
+            <span>기준일 확인 중</span>
+          </span>
         </span>
       </span>
     );
@@ -3182,11 +3188,16 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
   const direction = priceDirection(price);
   if (!price) {
     return (
-      <span className={`price-badge pending ${compact ? 'compact' : ''}`}>
-        <strong>가격 준비 중</strong>
-        <span className="price-meta-line">
-          <span className="price-meta-source unknown">출처 확인 중</span>
-          <span>기준일 확인 중</span>
+      <span className={`price-badge price-panel pending ${compact ? 'compact' : ''}`} role="status">
+        <span className="price-panel__main">
+          <strong className="price-panel__price">가격 준비 중</strong>
+        </span>
+        <span className="price-panel__meta">
+          <small className="price-status-line">데이터 없음</small>
+          <span className="price-meta-line">
+            <span className="price-meta-source unknown">출처 확인 중</span>
+            <span>기준일 확인 중</span>
+          </span>
         </span>
       </span>
     );
@@ -3196,10 +3207,12 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
   const freshness = priceFreshnessInfo(price.asOf);
   const freshnessIsQuiet = freshness.className === 'fresh' || freshness.className === 'unknown';
   const freshnessLabel = freshness.className === 'unknown' ? '' : freshness.label;
+  const directionMark = direction === 'up' ? '▲' : direction === 'down' ? '▼' : direction === 'flat' ? '—' : '';
+  const directionLabel = direction === 'up' ? '상승' : direction === 'down' ? '하락' : direction === 'flat' ? '보합' : '';
   const title = [source.fullLabel, formatPriceAsOfFull(price.asOf), freshnessLabel].filter(Boolean).join(' · ');
   const ariaLabel = [
     display.amount,
-    display.percent,
+    display.percent ? `${directionLabel} ${display.percent}` : '',
     source.fullLabel,
     formatPriceAsOfFull(price.asOf),
     freshnessLabel,
@@ -3207,17 +3220,22 @@ function PriceBadge({ price, compact = false }: { price?: MarketPrice | null; co
 
   return (
     <span
-      className={`price-badge ${direction} ${compact ? 'compact' : ''}`}
+      className={`price-badge price-panel ${direction} ${compact ? 'compact' : ''}`}
       title={title}
       aria-label={ariaLabel}
+      role="status"
     >
-      <strong>{display.amount}</strong>
-      {display.percent && <em>{display.percent}</em>}
-      <small className="price-status-line">{[display.status, display.basis].filter(Boolean).join(' · ')}</small>
-      <span className="price-meta-line">
-        <span className={`price-meta-source ${source.className}`}>{source.shortLabel}</span>
-        <span>{formatPriceAsOf(price.asOf)}</span>
-        {!freshnessIsQuiet && <span className={`price-freshness ${freshness.className}`}>{freshness.label}</span>}
+      <span className="price-panel__main">
+        <strong className="price-panel__price">{display.amount}</strong>
+        {display.percent && <em className="price-panel__change">{directionMark} {display.percent}</em>}
+      </span>
+      <span className="price-panel__meta">
+        <small className="price-status-line">{[display.status, display.basis].filter(Boolean).join(' · ')}</small>
+        <span className="price-meta-line">
+          <span className={`price-meta-source ${source.className}`}>{source.shortLabel}</span>
+          <span>{formatPriceAsOf(price.asOf)}</span>
+          {!freshnessIsQuiet && <span className={`price-freshness ${freshness.className}`}>{freshness.label}</span>}
+        </span>
       </span>
     </span>
   );
@@ -4416,6 +4434,16 @@ function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclo
       />
 
       <main>
+        <DailyMarketBrief marketPrices={marketPrices} onOpenCategory={onOpenCategory} />
+
+        <TodayOverview
+          marketPrices={marketPrices}
+          disclosures={disclosures}
+          secFilings={secFilings}
+          onOpenPicks={onOpenPicks}
+          onOpenDisclosures={onOpenDisclosures}
+        />
+
         <section className="home-hero mvp-hero editorial-feed-hero">
           <div className="home-hero-copy editorial-hero-copy">
             <p className="home-kicker">{currentWeeklyDigest.kicker}</p>
@@ -4474,14 +4502,6 @@ function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclo
             </button>
           </article>
         </section>
-
-        <TodayOverview
-          marketPrices={marketPrices}
-          disclosures={disclosures}
-          secFilings={secFilings}
-          onOpenPicks={onOpenPicks}
-          onOpenDisclosures={onOpenDisclosures}
-        />
 
         <section className="home-dashboard-section" aria-labelledby="home-weekly-picks-title">
           <div className="home-dashboard-head">
@@ -7626,12 +7646,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if ((!isAnalysisRoute && !isReportsRoute) || !routeHash) return;
+    const supportsHash = isAnalysisRoute || isReportsRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
+    if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isReportsRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isCategoryRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;

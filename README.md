@@ -4416,3 +4416,81 @@ CTA 역할은 겹치지 않게 관리합니다. `기업 해설 보기`는 분석
 - 미국 추가 섹터: 반도체, AI·클라우드, EV·모빌리티, 에너지·전력망, 보험·금융, 은행·핀테크, 헬스케어·바이오, 항공우주·방산
 - 기업 관계는 실제 납품 확정이 아니라 공시·감독기관·뉴스 원문으로 검증할 후보군으로 표시됩니다.
 - 미국 검증 소스: SEC EDGAR, NAIC, FDIC, Federal Reserve, 회사 IR/10-K/10-Q/8-K.
+
+## 오늘 시장 브리핑 및 거시 흐름 연결
+
+홈 `/`, `/ko/`의 첫 section에 최신 거래일의 시장 결과를 먼저 보여줍니다. 정보 순서는 `시장 결과 → 주요 원인 → 자산 간 연결 → 산업 영향 → 관련 기업`입니다. 개인 관심목록, 로그인, 포트폴리오, 알림, 자동 투자 신호는 포함하지 않습니다.
+
+운영 daily entry에는 mock 가격·샘플 해설이 없으며, 확인할 수 없는 원인을 가격 방향만으로 자동 생성하지 않습니다.
+
+### 가격 데이터와 기존 API 재사용
+
+클라이언트는 기존 `/api/market-prices`를 한 번만 호출합니다. `include=market-brief`일 때 서버가 Supabase의 최신 row를 우선 사용하고, 아직 저장되지 않은 거시 symbol만 기존 Yahoo Finance chart adapter로 보완합니다. 다음 가격 sync부터는 동일 symbol이 기존 `market_prices` 구조에 저장될 수 있도록 universe에도 추가했습니다. 페이지에서 asset별 요청을 만들지 않으며 KIS, Yahoo, Supabase 가격 row와 기존 shared price state를 그대로 재사용합니다.
+
+2026-07-11 작업 시작 시 production에는 개별주 94개 row(KIS 52, Yahoo 42)가 있었고 아래 거시 symbol의 저장 row는 0개였습니다. 신규 Supabase table, 신규 cron, 신규 chart library, 신규 외부 provider는 추가하지 않았습니다. Finnhub, Twelve Data, FRED 환경변수도 필요하지 않았습니다.
+
+| 구분 | 표시 이름 | symbol | provider | 통화·단위 |
+| --- | --- | --- | --- | --- |
+| 지수 | 코스피 | `^KS11` | Yahoo Finance chart | 지수 pt |
+| 지수 | 코스닥 | `^KQ11` | Yahoo Finance chart | 지수 pt |
+| 지수 | S&P 500 | `^GSPC` | Yahoo Finance chart | 지수 pt |
+| 지수 | 나스닥 종합 | `^IXIC` | Yahoo Finance chart | 지수 pt |
+| 환율 | USD/KRW | `KRW=X` | Yahoo Finance chart | KRW/USD |
+| 금리 | 미국 10년물 | `^TNX` | Yahoo Finance chart | %, 변화는 bp |
+| 원자재 | 금 선물 | `GC=F` | Yahoo Finance chart | USD/트로이온스 |
+| 원자재 | 구리 선물 | `HG=F` | Yahoo Finance chart | USD/파운드 |
+| 원자재 | WTI 선물 | `CL=F` | Yahoo Finance chart | USD/배럴 |
+
+전일 변화는 Yahoo `range=5d&interval=1d`의 마지막 두 유효 daily close를 비교합니다. `chartPreviousClose`는 조회 범위 앞쪽 기준값일 수 있어 직전 거래일 종가로 사용하지 않습니다. 미국 10년물은 수익률 값의 차이에 100을 곱해 bp로 표시합니다. 원자재 계약 단위는 CME 계약 명세를 source registry에 함께 연결했습니다.
+
+Yahoo에서 추가 조회 가능한 다우, SOX, USD/JPY, EUR/USD, Dollar Index, 은, Brent, 천연가스는 첫 화면을 compact하게 유지하기 위해 이번 버전에서는 제외했습니다. 미국 2년물 현물금리는 검증된 Yahoo symbol을 확인하지 못했으므로 10년-2년 spread도 표시하지 않습니다. 한국 기준금리·한국 국채 10년물도 현재 가격 adapter에 검증된 mapping이 없어 제외했습니다. 이 항목들이 꼭 필요해질 때만 기존 구조로 불가능한 이유와 provider·요금·호출 제한·라이선스를 먼저 검토합니다.
+
+### Daily content registry와 연결 흐름
+
+동적 가격과 정적 해설을 분리했습니다.
+
+- `src/content/daily-market/assets.ts`: symbol, provider, currency/unit, 일반적 자산 관계
+- `src/content/daily-market/entries.ts`: 최신 거래일 brief 1개, driver 3개, flow 2개
+- `src/content/daily-market/selectors.ts`: 최신 날짜, driver, flow selector
+- `src/content/daily-market/types.ts`: fact, relationship, interpretation을 구분하는 타입
+- `src/content/sources/entries.ts`: Yahoo, CME, IEA, 당일 공개 보도 source
+
+최신 entry는 `2026-07-10`이며 한국 시장, 미국 시장, USD/KRW, 미국 10년물, 금, 구리, WTI를 포함합니다. 흐름은 각각 4단계입니다.
+
+1. AI 대표 기업 강세 → AI 선도 기업 선호라는 당일 해석 → S&P 500·나스닥 상승 확인 → `us-semiconductors` 시장지도와 NVIDIA·SK하이닉스·Micron
+2. 구리 상승 확인 → 전력망의 구리 수요라는 일반적 관계 → 데이터센터 전력 수요 → `datacenter-power-cooling` 시장지도와 Eaton·Vertiv·Schneider Electric
+
+상관관계를 확정적 인과처럼 쓰지 않습니다. `MarketFlowStep.type`은 `fact`, `relationship`, `interpretation` 중 하나이며 UI에도 각각 `확인된 시장 데이터`, `일반적 경제 관계`, `오늘의 시장 해석`으로 표시합니다.
+
+### 방향 색상과 가격 panel
+
+가격·지수 방향은 전역 token으로 통일합니다.
+
+- 상승: 초록색 + `▲`
+- 하락: 빨간색 + `▼`
+- 보합: 중립 회색 + `—`
+
+기존 반대 방향 색상은 0개였습니다. 위험·경고 상태와 시장 방향 token은 분리했습니다. 공통 `PriceBadge`는 `price-panel__main`과 `price-panel__meta` 구조로 바꾸고 큰 box를 pill이 아닌 16~22px radius 카드로 정리했습니다. 가격과 등락률은 baseline 정렬하고, source·기준일은 별도 meta 행에서 wrap됩니다. 큰 원화 값은 정수 단위, 달러 가격은 소수 둘째 자리까지 표시합니다. 홈, Pick 목록·보관함·상세, 인프라 시장지도, 기업 분석, 일반 시장지도 우측 panel의 동일 컴포넌트에 적용됩니다.
+
+### Validator와 QA
+
+정적 validator는 brief 날짜, 최신 selector, driver/flow/asset id 중복, flow 2~4단계, sourceRefs, marketMapId, companyIds, 비어 있는 fact, fact/interpretation 분리, mock/예시 문구, 자동 투자 신호 문구, 승인되지 않은 provider를 검사합니다. 네트워크는 validator 필수 조건이 아닙니다. 양수·음수·0 방향 helper와 큰 원화·달러 가격 format도 함께 확인합니다.
+
+로컬 브라우저 QA 결과:
+
+| 항목 | 결과 |
+| --- | --- |
+| Desktop 브리핑·9개 asset·2개 flow | 정상 |
+| 390×844 | 2열, horizontal overflow 0, clipping 0 |
+| 360×800 | 2열, horizontal overflow 0, clipping 0 |
+| 320×700 | 1열, horizontal overflow 0, clipping 0 |
+| 200% 상당 640px CSS viewport | horizontal overflow 0, clipping 0 |
+| `/`, `/ko/`, Pick, 보관함, 시장지도, 공시, Pick 상세 | horizontal overflow 0 |
+| 가격 panel overflow | 0 |
+| CTA clipping | 0 |
+| broken image | 0 |
+| console warning/error | 0 |
+
+API 회귀 기준선은 `/api/market-prices?limit=200` 200/`ok:true`/94 rows/META 포함, `/api/market-disclosures?limit=20` 200/`ok:true`/20 rows, SEC 기본 20 rows, `item=2.02` 1 row, `transactionCode=S` 5 rows였습니다. Sync endpoint는 이번 작업에서 수동 실행하지 않았습니다.
+
+Production 대상은 Vercel `finance1`, branch `main`, URL `https://finance1-flax.vercel.app`입니다. 실제 deployment ID, commit SHA, asset hash와 production 회귀 결과는 push 후 이 section과 작업 완료 보고에 기록합니다.

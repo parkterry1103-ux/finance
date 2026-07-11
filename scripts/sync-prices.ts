@@ -1,4 +1,5 @@
 import { anchors, companies, marketMovers, mockMarketPrices, stockAutopsyPicks } from '../src/data.js';
+import { dailyMarketSyncTargets } from '../src/content/daily-market/assets.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 import { fetchKisDomesticQuoteRows, isKisDomesticTicker } from './price-sources/kis.js';
 import { envValue, errorMessage, hasSupabaseConfig, isDirectRun, nowIso, recordSyncRun, upsertRows } from './sync-utils.js';
@@ -23,6 +24,7 @@ const YAHOO_TICKER_ALIASES: Record<string, string> = {
   'BRK.B': 'BRK-B',
   SQ: 'XYZ',
 };
+const MARKET_BRIEF_PRICE_TICKERS = new Set(dailyMarketSyncTargets.map((target) => target.ticker));
 const YAHOO_CHUNK_SIZE = 4;
 const YAHOO_CHUNK_DELAY_MS = 250;
 const YAHOO_RETRY_COUNT = 1;
@@ -285,7 +287,12 @@ async function loadPriceRows() {
   };
 }
 function isPriceTicker(ticker?: string) {
-  return Boolean(ticker && ticker !== 'WATCH' && ticker !== '비상장' && (/\.KS$|\.KQ$|^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker)));
+  return Boolean(
+    ticker &&
+      ticker !== 'WATCH' &&
+      ticker !== '비상장' &&
+      (MARKET_BRIEF_PRICE_TICKERS.has(ticker) || /\.KS$|\.KQ$|^[A-Z][A-Z0-9.-]{0,6}$/.test(ticker)),
+  );
 }
 
 function priceLookupTicker(ticker: string) {
@@ -345,6 +352,7 @@ function uniquePriceTargets() {
   };
 
   REQUIRED_PRICE_TICKERS.forEach((ticker) => add(ticker));
+  dailyMarketSyncTargets.forEach((target) => add(target.ticker, undefined, target.market));
   mockMarketPrices.forEach((price) => add(price.ticker, price.companyId, price.market));
   marketMovers.forEach((mover) => add(mover.ticker, mover.companyId, mover.market));
   stockAutopsyPicks.forEach((pick) => add(pick.ticker, pick.relatedCompanyId, pick.market));
@@ -429,6 +437,18 @@ function lastFinite(values) {
   return null;
 }
 
+function previousFinite(values) {
+  if (!Array.isArray(values)) return null;
+  let seen = 0;
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    const value = Number(values[index]);
+    if (!Number.isFinite(value)) continue;
+    seen += 1;
+    if (seen === 2) return value;
+  }
+  return null;
+}
+
 function normalizeYahooRow(target, payload) {
   const result = payload?.chart?.result?.[0];
   const error = payload?.chart?.error;
@@ -438,8 +458,9 @@ function normalizeYahooRow(target, payload) {
   const status = yahooMarketStatus(meta.marketState, meta.currentTradingPeriod);
   const price = Number(meta.regularMarketPrice ?? lastFinite(quote.close));
   const open = Number(meta.regularMarketOpen ?? lastFinite(quote.open));
-  const previousClose = Number(meta.chartPreviousClose ?? meta.previousClose);
-  const basis = Number.isFinite(open) ? open : previousClose;
+  const previousDailyClose = previousFinite(quote.close);
+  const previousClose = Number(previousDailyClose ?? meta.previousClose ?? meta.chartPreviousClose);
+  const basis = previousClose;
   const change = Number.isFinite(price) && Number.isFinite(basis) ? price - basis : Number.NaN;
   const changePercent = Number.isFinite(change) && Number.isFinite(basis) && basis !== 0 ? (change / basis) * 100 : Number.NaN;
 
