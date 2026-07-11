@@ -6,7 +6,6 @@ import {
   currentWeeklyDigest,
   currentWeeklyPickOrder,
   currentWeeklyPicks,
-  industryReports,
   marketMapEvidencePickIds,
   marketMovers,
   mockMarketPrices,
@@ -39,6 +38,7 @@ import {
   marketDrivers,
   marketFlows,
 } from '../src/content/daily-market/index.js';
+import { industryReports } from '../src/content/reports/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 import { priceDirection, priceDisplay } from '../src/services/prices.js';
 import {
@@ -163,6 +163,21 @@ const dailyMarketValidation = {
   assetCount: 0,
   invalidRefCount: 0,
 };
+const reportValidation = {
+  reportCount: 0,
+  metricCount: 0,
+  categoryCount: 0,
+  featuredCount: 0,
+  invalidRefCount: 0,
+};
+
+const REQUIRED_REPORT_CATEGORIES = [
+  'macro',
+  'semiconductors-ai',
+  'power-data-centers',
+  'energy-commodities',
+  'construction-infrastructure',
+] as const;
 
 const VALID_SOURCE_KINDS = new Set([
   'company-release',
@@ -265,8 +280,6 @@ function validateSourceRegistry() {
   sourceValidation.duplicateUrlCount = duplicateSourceUrls.length;
   duplicateSourceUrls.forEach((url) => addError(`duplicate source URL: ${url}`));
 
-  const industryReportUrls = new Set(industryReports.map((report) => report.url));
-
   contentSources.forEach((source) => {
     if (!source.id) addError(`missing source id: ${source.title || '(unknown)'}`);
     if (!source.title) addError(`missing source title: ${source.id}`);
@@ -277,7 +290,6 @@ function validateSourceRegistry() {
     if (source.accessType && !VALID_SOURCE_ACCESS_TYPES.has(source.accessType)) {
       addError(`invalid source accessType: ${source.id} / ${source.accessType}`);
     }
-    if (industryReportUrls.has(source.url)) addError(`industry report URL duplicated in source registry: ${source.id}`);
   });
 }
 
@@ -410,7 +422,11 @@ function validateWeeks() {
 
 function validateReferences() {
   const pickIds = new Set(stockAutopsyPicks.map((pick) => pick.id));
-  const companyIds = new Set(companies.map((company) => company.id));
+  const companyIds = new Set([
+    ...companies.map((company) => company.id),
+    ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+    ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+  ]);
   const sectorIds = new Set([
     ...companies.map((company) => company.sectorId),
     reconstructionInfrastructureMap.sectorId,
@@ -418,14 +434,84 @@ function validateReferences() {
     'datacenter-power-cooling',
   ]);
 
+  reportValidation.reportCount = industryReports.length;
+  reportValidation.metricCount = industryReports.reduce((sum, report) => sum + report.keyMetrics.length, 0);
+  reportValidation.categoryCount = new Set(industryReports.map((report) => report.category)).size;
+  reportValidation.featuredCount = industryReports.filter((report) => report.featured).length;
+
+  if (industryReports.length < 12 || industryReports.length > 18) {
+    addError(`report registry count must be 12-18: ${industryReports.length}`);
+  }
+  if (reportValidation.featuredCount !== 1) addError(`report featured count must be 1: ${reportValidation.featuredCount}`);
+  duplicateValues(industryReports.map((report) => report.id)).forEach((id) => addError(`duplicate report id: ${id}`));
+  duplicateValues(industryReports.map((report) => report.slug)).forEach((slug) => addError(`duplicate report slug: ${slug}`));
+  REQUIRED_REPORT_CATEGORIES.forEach((category) => {
+    const count = industryReports.filter((report) => report.category === category).length;
+    if (!count) addError(`missing required report category: ${category}`);
+  });
+  const reportEntriesSource = readFileSync(join(process.cwd(), 'src/content/reports/entries.ts'), 'utf8');
+  if (/https?:\/\//.test(reportEntriesSource)) addError('report entries must not hardcode source URLs');
+  if (/(fetch\s*\(|\bsupabase\b|\bfinnhub\b|\btwelve\s*data\b|\bfred\b|\bcron\b|sync endpoint)/i.test(reportEntriesSource)) {
+    addError('report registry has forbidden runtime provider, DB, cron, or sync dependency');
+  }
+
   industryReports.forEach((report) => {
-    report.relatedPicks.forEach((pickId) => {
-      if (!pickIds.has(pickId)) addError(`missing report related pick: ${report.id} / ${pickId}`);
+    if (!report.id.trim() || !report.slug.trim() || !report.title.trim() || !report.titleKo.trim()) {
+      addError(`report missing identity/title: ${report.id || report.slug}`);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(report.publishedAt) || Number.isNaN(Date.parse(report.publishedAt))) {
+      addError(`invalid report publishedAt: ${report.id} / ${report.publishedAt}`);
+    }
+    if (report.summary.length !== 3 || report.summary.some((line) => !line.trim())) {
+      addError(`report summary must have 3 lines: ${report.id}`);
+    }
+    if (!report.keyMetrics.length) addError(`report has no verified metric: ${report.id}`);
+    if (report.keyMetrics.length > 3) addError(`report keyMetrics must be <= 3: ${report.id}`);
+    if (!REQUIRED_REPORT_CATEGORIES.includes(report.category)) addError(`invalid report category: ${report.id} / ${report.category}`);
+    if (!['public-institution', 'central-bank', 'industry-organization', 'company-ir'].includes(report.sourceType)) {
+      addError(`invalid report sourceType: ${report.id} / ${report.sourceType}`);
+    }
+    if (!['public-full', 'public-summary', 'registration-required', 'restricted'].includes(report.access)) {
+      addError(`invalid report access: ${report.id} / ${report.access}`);
+    }
+    if (report.companyIds.length > 5) addError(`report companyIds must be <= 5: ${report.id}`);
+    if (report.pickIds.length > 3) addError(`report pickIds must be <= 3: ${report.id}`);
+    duplicateValues(report.marketMapIds).forEach((mapId) => addError(`duplicate report marketMapId: ${report.id} / ${mapId}`));
+    duplicateValues(report.companyIds).forEach((companyId) => addError(`duplicate report companyId: ${report.id} / ${companyId}`));
+    duplicateValues(report.pickIds).forEach((pickId) => addError(`duplicate report pickId: ${report.id} / ${pickId}`));
+    const reportCopy = [report.title, report.titleKo, ...report.summary, ...report.howToUse].join(' ');
+    if (/(확실한 수혜주|매수 기회|주가 상승 예상|대장주|폭등 가능|실적 급증 확정)/.test(reportCopy)) {
+      addError(`investment recommendation wording in report: ${report.id}`);
+    }
+    if ((report.access === 'registration-required' || report.access === 'restricted') && report.summary.some((line) => line.trim())) {
+      addError(`restricted report must not contain direct summary: ${report.id}`);
+    }
+    report.keyMetrics.forEach((metric) => {
+      if (!metric.label.trim() || !metric.value.trim() || !metric.context.trim()) addError(`empty report metric: ${report.id}`);
+      if (!['actual', 'forecast', 'scope'].includes(metric.kind)) addError(`invalid report metric kind: ${report.id} / ${metric.kind}`);
     });
-    report.relatedMaps.forEach((mapId) => {
-      if (!sectorIds.has(mapId)) addError(`missing report related map: ${report.id} / ${mapId}`);
+    if (!report.sourceRefs.length) addError(`report has no sourceRefs: ${report.id}`);
+    duplicateValues(report.sourceRefs).forEach((sourceId) => addError(`duplicate report sourceRef: ${report.id} / ${sourceId}`));
+    report.sourceRefs.forEach((sourceId) => {
+      const source = sourceRegistry[sourceId];
+      if (!source) {
+        reportValidation.invalidRefCount += 1;
+        addError(`missing report sourceRef: ${report.id} / ${sourceId}`);
+      } else if (!isHttpUrl(source.url)) {
+        addError(`invalid report source URL: ${report.id} / ${source.url}`);
+      } else if (report.access === 'public-full' && source.accessType === 'restricted') {
+        addError(`public-full report points to restricted source: ${report.id} / ${sourceId}`);
+      }
     });
-    if (!isHttpUrl(report.url)) addError(`invalid report URL: ${report.id} / ${report.url}`);
+    report.pickIds.forEach((pickId) => {
+      if (!pickIds.has(pickId)) addError(`missing report pickId: ${report.id} / ${pickId}`);
+    });
+    report.marketMapIds.forEach((mapId) => {
+      if (!sectorIds.has(mapId)) addError(`missing report marketMapId: ${report.id} / ${mapId}`);
+    });
+    report.companyIds.forEach((companyId) => {
+      if (!companyIds.has(companyId)) addError(`missing report companyId: ${report.id} / ${companyId}`);
+    });
   });
 
   stockAutopsyPicks.forEach((pick) => {
@@ -536,6 +622,7 @@ function validateDailyMarketContent() {
   ]);
   const driverIds = new Set(marketDrivers.map((driver) => driver.id));
   const flowIds = new Set(marketFlows.map((flow) => flow.id));
+  const reportIds = new Set(industryReports.map((report) => report.id));
   const assetIds = new Set(dailyMarketAssets.map((asset) => asset.id));
   const evidenceTypes = new Set(['fact', 'relationship', 'interpretation']);
   const forbiddenSignalPattern = /(호재|악재|매수|매도\s*추천)/;
@@ -593,6 +680,10 @@ function validateDailyMarketContent() {
       step.companyIds?.forEach((companyId) => {
         if (!companyIds.has(companyId)) addError(`missing daily market flow companyId: ${flow.id} / ${companyId}`);
       });
+    });
+    duplicateValues(flow.reportIds ?? []).forEach((reportId) => addError(`duplicate daily market reportId: ${flow.id} / ${reportId}`));
+    flow.reportIds?.forEach((reportId) => {
+      if (!reportIds.has(reportId)) addError(`missing daily market reportId: ${flow.id} / ${reportId}`);
     });
     validateRefs(`flow ${flow.id}`, flow.sourceRefs);
   });
@@ -1451,6 +1542,8 @@ console.log(`✓ restricted source 명시 처리 (${sourceValidation.restrictedR
 console.log('✓ 관련 보고서 참조 정상');
 console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');
+console.log(`✓ 산업 리포트 허브 검증 (report ${reportValidation.reportCount}개, category ${reportValidation.categoryCount}개, metric ${reportValidation.metricCount}개, featured ${reportValidation.featuredCount}개)`);
+console.log(`✓ 산업 리포트 source/map/company/Pick 참조 정상 (잘못된 ref ${reportValidation.invalidRefCount}개)`);
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
 console.log('✓ ticker-only companyName 없음');
 console.log(`✓ CompanyLogo runtime 외부 의존 제거 확인 (Clearbit URL ${companyLogoValidation.runtimeClearbitUrlCount}개, legacy helper ${companyLogoValidation.legacyHelperCount}개)`);

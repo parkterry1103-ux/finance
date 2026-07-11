@@ -11,10 +11,12 @@ import {
   type MarketFlowStep as MarketFlowStepType,
 } from '../../content/daily-market/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
+import { reportById } from '../../content/reports/index.js';
 
 type DailyMarketBriefProps = {
   marketPrices: MarketPrice[];
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
+  onOpenReports: (reportId?: string) => void;
 };
 
 type MarketQuoteSnapshot = {
@@ -313,10 +315,13 @@ function MarketFlowStep({
 function MarketFlowChain({
   flow,
   onOpenCategory,
+  onOpenReports,
 }: {
   flow: MarketFlow;
   onOpenCategory: DailyMarketBriefProps['onOpenCategory'];
+  onOpenReports: DailyMarketBriefProps['onOpenReports'];
 }) {
+  const reports = (flow.reportIds ?? []).map((id) => reportById(id)).filter(Boolean);
   return (
     <article className="market-flow-chain">
       <div className="market-flow-chain__head">
@@ -332,11 +337,21 @@ function MarketFlowChain({
         ))}
       </div>
       <SourceLinks sourceRefs={flow.sourceRefs} limit={3} />
+      {reports.length ? (
+        <div className="market-flow-reports">
+          <span>이 흐름을 이해하는 보고서</span>
+          <div>
+            {reports.map((report) => report ? (
+              <button type="button" key={report.id} onClick={() => onOpenReports(report.id)}>{report.titleKo}</button>
+            ) : null)}
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }
 
-export function DailyMarketBrief({ marketPrices, onOpenCategory }: DailyMarketBriefProps) {
+export function DailyMarketBrief({ marketPrices, onOpenCategory, onOpenReports }: DailyMarketBriefProps) {
   const brief = latestDailyMarketBrief();
   if (!brief) {
     return (
@@ -421,7 +436,7 @@ export function DailyMarketBrief({ marketPrices, onOpenCategory }: DailyMarketBr
           </div>
         </div>
         <div className="market-flow-grid">
-          {flows.map((flow) => <MarketFlowChain key={flow.id} flow={flow} onOpenCategory={onOpenCategory} />)}
+          {flows.map((flow) => <MarketFlowChain key={flow.id} flow={flow} onOpenCategory={onOpenCategory} onOpenReports={onOpenReports} />)}
         </div>
       </div>
 

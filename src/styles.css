@@ -15720,6 +15720,38 @@ body {
   margin-top: auto;
 }
 
+.market-flow-reports {
+  display: grid;
+  gap: 7px;
+  padding-top: 11px;
+  border-top: 1px solid var(--home-line, #e4e7ec);
+}
+
+.market-flow-reports > span {
+  color: var(--home-muted, #667085);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.market-flow-reports > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.market-flow-reports button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 9px;
+  color: var(--home-blue-strong, #1d4ed8);
+  background: var(--home-blue-soft, #eff6ff);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
 .market-flow-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -17208,6 +17240,13 @@ textarea {
   gap: 22px;
 }
 
+.industry-report-detail-back {
+  width: fit-content;
+  color: #bfdbfe;
+  border-color: rgba(147, 197, 253, 0.28);
+  background: rgba(30, 64, 175, 0.16);
+}
+
 .industry-report-status-notice {
   display: flex;
   gap: 18px;
@@ -17334,6 +17373,56 @@ textarea {
   color: #475569;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.industry-report-detail-metrics {
+  grid-column: span 2;
+}
+
+.industry-report-detail-metrics > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.industry-report-detail-metrics section {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.industry-report-detail-metrics section small {
+  width: fit-content;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.industry-report-detail-metrics section strong {
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 25px;
+  letter-spacing: -0.04em;
+}
+
+.industry-report-detail-metrics section span {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.industry-report-detail-metrics section p {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.45;
 }
 
 .industry-report-detail-connections > div {
@@ -17474,6 +17563,10 @@ textarea {
   .reconstruction-focus-grid,
   .industry-report-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .industry-report-detail-metrics {
+    grid-column: auto;
   }
 }
 
@@ -17693,6 +17786,33 @@ textarea {
   margin: 0;
 }
 
+.industry-report-hero-stats {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: auto;
+}
+
+.industry-report-hero-stats > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 11px;
+  border: 1px solid rgba(147, 197, 253, 0.24);
+  border-radius: 10px;
+  color: #bfdbfe;
+  background: rgba(15, 23, 42, 0.34);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.industry-report-hero-stats strong {
+  color: #ffffff;
+  font-size: 18px;
+}
+
 .industry-reports-hero h1 {
   color: #f8fafc;
   font-size: clamp(38px, 6vw, 68px);
@@ -17822,6 +17942,57 @@ textarea {
   margin-top: 22px;
 }
 
+.industry-report-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.industry-report-category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.industry-report-category-filter button,
+.industry-report-filters select,
+.industry-report-empty button,
+.industry-report-detail-back {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #dbe4f0;
+  border-radius: 9px;
+  color: #475569;
+  background: #f8fafc;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.industry-report-category-filter button.active {
+  border-color: #2563eb;
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.industry-report-filters > label {
+  display: grid;
+  gap: 5px;
+}
+
+.industry-report-filters > label > span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .industry-report-card {
   display: grid;
   gap: 15px;
@@ -17830,6 +18001,94 @@ textarea {
   scroll-margin-top: 24px;
   border: 1px solid #dbe4f0;
   border-radius: 18px;
+  background: #ffffff;
+}
+
+.industry-report-card.featured {
+  border-color: #60a5fa;
+  background: linear-gradient(145deg, #ffffff, #eff6ff);
+  box-shadow: 0 16px 38px rgba(37, 99, 235, 0.12);
+}
+
+.industry-report-card-topline {
+  justify-content: space-between;
+}
+
+.industry-report-card-topline em {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.industry-report-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.industry-report-badges span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.industry-report-official-title {
+  margin-top: -8px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.industry-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.industry-report-metrics > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.industry-report-metrics span,
+.industry-report-metrics small {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.industry-report-metrics strong {
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+
+.industry-report-empty {
+  display: flex;
+  min-height: 160px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  color: #475569;
   background: #ffffff;
 }
 
@@ -17859,11 +18118,15 @@ textarea {
 
 .industry-report-card h3 {
   margin: 0;
+  overflow: hidden;
   overflow-wrap: anywhere;
   color: #0f172a;
   font-size: 20px;
   line-height: 1.3;
   letter-spacing: -0.025em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .industry-report-access {
@@ -17906,6 +18169,13 @@ textarea {
   color: #334155;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.industry-report-summary li {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .industry-report-insight,
@@ -18223,6 +18493,14 @@ textarea {
   .industry-report-access-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .industry-report-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .industry-report-category-filter {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
@@ -18260,6 +18538,26 @@ textarea {
 
   .industry-report-access-grid {
     grid-template-columns: 1fr;
+  }
+
+  .industry-report-filters,
+  .industry-report-detail-metrics > div,
+  .industry-report-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .industry-report-category-filter {
+    grid-column: auto;
+  }
+
+  .industry-report-category-filter button {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .industry-report-empty {
+    align-items: stretch;
+    padding: 20px;
+    flex-direction: column;
   }
 
   .industry-report-actions,

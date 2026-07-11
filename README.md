@@ -4494,3 +4494,30 @@ Yahoo에서 추가 조회 가능한 다우, SOX, USD/JPY, EUR/USD, Dollar Index,
 API 회귀 기준선은 `/api/market-prices?limit=200` 200/`ok:true`/94 rows/META 포함, `/api/market-disclosures?limit=20` 200/`ok:true`/20 rows, SEC 기본 20 rows, `item=2.02` 1 row, `transactionCode=S` 5 rows였습니다. Sync endpoint는 이번 작업에서 수동 실행하지 않았습니다.
 
 Production은 Vercel `finance1`, branch `main`, URL `https://finance1-flax.vercel.app`에서 2026-07-11 12:46 KST에 확인했습니다. 기능 배포 ID는 `GRu58UHogbV1WACSrgTJDEoDD4ch`, code commit은 `a4c3a530fb10c571cfc2a54d67850948ba1c5660`, asset은 `/assets/index-BWOPbUql.js`와 `/assets/index-DCi8d4HI.css`입니다. `/api/market-prices?limit=200&include=market-brief`는 200/`ok:true`, 기존 META를 포함한 103개 가격과 거시 symbol 9개를 반환했습니다. OpenDART와 SEC 기본·Item·transactionCode 회귀도 모두 200/`ok:true`였고 production desktop·390px·320px에서 horizontal overflow, price clipping, broken image, console warning/error가 0개였습니다.
+
+## 산업 리포트 허브 확대 및 거시·산업·기업 연결
+
+`/ko/reports`는 컨설팅 보고서 5건 중심의 목록에서 공공기관, 산업단체, 회사 IR의 공식 리포트 15건을 연결하는 허브로 확장했습니다. 카테고리는 `거시경제`, `반도체·AI`, `전력·데이터센터`, `에너지·원자재`, `건설·인프라` 5개이며 각 카테고리당 3건입니다.
+
+리포트 데이터는 다음처럼 분리합니다.
+
+- `src/content/reports/types.ts`: 카테고리, 접근 상태, 출처 유형, 실제·전망·범위 수치 타입
+- `src/content/reports/entries.ts`: 15개 리포트의 3줄 요약, 검증 수치, 시장지도·기업·Pick 연결
+- `src/content/reports/selectors.ts`: featured 우선 정렬, 카테고리·최근 1주/1개월·공식/회사 필터
+- `src/content/sources/entries.ts`: 공식 원문 URL의 단일 레지스트리
+
+리포트 entry에는 URL을 직접 넣지 않고 `sourceRefs`만 둡니다. `sourceRegistry`가 원문 URL과 발행처를 해석하므로 같은 링크를 여러 콘텐츠에 중복 저장하지 않습니다. 접근 상태는 `public-full`, `public-summary`, `registration-required`, `restricted`를 지원하며 현재 공개 전문 14건, 공개 요약 1건입니다. Featured는 `IEA Electricity 2026` 한 건입니다.
+
+카드와 상세 화면은 `공식 리포트 → 3줄 요약 → 원문에서 확인한 실제/전망/범위 수치 → 시장지도 → 기업 → Pick` 순서로 읽습니다. 홈 최신 리포트는 featured를 먼저 배치한 뒤 발행일 내림차순으로 최대 3건만 표시합니다. 오늘 시장 브리핑의 두 흐름에는 `reportIds`를 추가해 `이 흐름을 이해하는 보고서`에서 상세 화면으로 이동합니다.
+
+정적 validator는 12~18건 범위, 정확히 5개 카테고리, featured 1건, id/slug 중복, 발행일, 3줄 요약, 수치 타입, sourceRefs, 시장지도·회사·Pick 참조, daily market의 reportIds를 검사합니다. 현재 기준은 리포트 15건, 검증 수치 42개, 잘못된 참조 0개입니다.
+
+이번 확장은 정적 콘텐츠와 기존 route/UI만 사용합니다. 신규 dependency, provider, DB table, cron, sync endpoint, 환경변수는 추가하지 않았습니다. 기존 환경에 Finnhub, Twelve Data, FRED 키가 있더라도 이번 기능은 이를 호출하지 않으며 런타임 호출 수는 0입니다.
+
+요약은 `무엇이 달라졌나 → 왜 중요한가 → 어떤 산업·기업을 볼 것인가`를 직접 작성한 한국어 3개 bullet로 제한합니다. 원문 전체, 장문 인용, 표·차트, 유료 보고서 본문은 복제하지 않습니다. 자동 크롤링과 자동 AI 요약도 없습니다. 핵심 숫자는 단위·문맥·기준 시점과 함께 `actual`, `forecast`, `scope`로 구분합니다.
+
+공통 source registry에는 공식 원문 14개를 추가했고 기존 `iea-electricity-2026` source 1개를 재사용했습니다. 리포트별 연결은 4개 시장지도, 기존 회사 registry와 인프라 지도 회사, 실제 존재하는 Pick만 사용합니다. 시장 브리핑 2개 flow에는 배경 이해용 리포트 6개를 연결했습니다.
+
+로컬 QA는 `/`, `/ko/`, `/ko/reports`, 4개 활성 시장지도, Micron Pick 상세, IEA 리포트 상세에서 진행했습니다. 390×844 리포트 목록, 360×800 상세, 320×700 홈, 200% 확대 상당의 640px CSS viewport에서 horizontal overflow, 핵심 숫자·CTA clipping, broken image, console warning/error가 모두 0개였습니다. 카테고리 필터는 반도체·AI 3건, 출처 필터를 함께 적용하면 회사 IR 2건, 최근 1주 필터는 1건을 반환했습니다.
+
+배포 전 API 회귀는 Production `finance1`에서 확인했습니다. 가격 기본은 94개와 META를 유지했고 `include=market-brief`는 기존 94개와 거시 9개를 합친 103개를 반환했습니다. provider는 기존 KIS·Yahoo만 존재했습니다. OpenDART 20개, SEC 기본 20개, Item 2.02 1개, transactionCode S 5개가 모두 HTTP 200과 `ok:true`였습니다. 배포 대상은 branch `main`, canonical project `finance1`, alias `https://finance1-flax.vercel.app`입니다.

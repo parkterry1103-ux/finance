@@ -56,6 +56,7 @@ export const marketFlows: MarketFlow[] = [
       },
     ],
     sourceRefs: ['ap-us-market-20260710', 'yahoo-finance-chart-gspc', 'yahoo-finance-chart-ixic'],
+    reportIds: ['nvidia-fy2027-q1', 'micron-fy2026-q3', 'semi-300mm-memory-2026'],
   },
   {
     id: 'copper-to-power-infrastructure-2026-07-10',
@@ -85,6 +86,7 @@ export const marketFlows: MarketFlow[] = [
       },
     ],
     sourceRefs: ['yahoo-finance-chart-hg-f', 'iea-critical-minerals-grid-copper', 'iea-electricity-2026'],
+    reportIds: ['iea-critical-minerals-outlook-2025', 'iea-energy-and-ai-2025', 'iea-electricity-2026'],
   },
 ];
 
