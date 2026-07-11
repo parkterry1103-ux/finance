@@ -1,3 +1,5 @@
+import { handleMacroIndicators } from './_lib/macro-indicators.js';
+
 const MAX_LIMIT = 200;
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 25;
@@ -260,6 +262,11 @@ async function fetchMarketPriceRows({ ticker, companyId }) {
 }
 
 export default async function handler(req, res) {
+  if (req.query?.route === 'macro-indicators') {
+    await handleMacroIndicators(req, res);
+    return;
+  }
+
   const limit = clampLimit(req.query?.limit);
   const ticker = typeof req.query?.ticker === 'string' ? req.query.ticker.trim() : '';
   const companyId = typeof req.query?.companyId === 'string' ? req.query.companyId.trim() : '';

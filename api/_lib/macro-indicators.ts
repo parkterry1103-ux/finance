@@ -5,8 +5,15 @@ import type {
   MacroSeriesChanges,
   MacroSeriesResult,
 } from '../../src/content/macro/types.js';
+import { getProviderEnvStatus } from './provider-env.js';
 import type { FredNumericObservation } from './providers/fred.js';
-import { normalizeFredErrorCode } from './providers/fred.js';
+import { fetchFredSeriesBatch, normalizeFredErrorCode } from './providers/fred.js';
+
+type MacroApiResponse = {
+  status: (code: number) => MacroApiResponse;
+  json: (body: MacroIndicatorsResponse) => void;
+  setHeader: (name: string, value: string) => void;
+};
 
 function round(value: number, digits = 6) {
   const factor = 10 ** digits;
@@ -143,4 +150,41 @@ export function topLevelFredError(errors: MacroIndicatorsResponse['errors']) {
   if (codes.size === 1 && codes.has('FRED_AUTH_FAILED')) return 'FRED_AUTH_FAILED';
   if (codes.size === 1 && codes.has('FRED_RATE_LIMITED')) return 'FRED_RATE_LIMITED';
   return 'FRED_UPSTREAM_ERROR';
+}
+
+function emptyMacroResponse(error: string): MacroIndicatorsResponse {
+  return {
+    ok: false,
+    partial: false,
+    provider: 'fred',
+    fetchedAt: new Date().toISOString(),
+    series: [],
+    errors: [],
+    error,
+  };
+}
+
+export async function handleMacroIndicators(_req: unknown, res: MacroApiResponse) {
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+
+  if (!getProviderEnvStatus().fredConfigured) {
+    res.status(503).json(emptyMacroResponse('FRED_NOT_CONFIGURED'));
+    return;
+  }
+
+  const settled = await fetchFredSeriesBatch(
+    macroIndicatorDefinitions.map((definition) => ({
+      seriesId: definition.seriesId,
+      limit: definition.historyLimit,
+    })),
+    3,
+  );
+  const response = buildMacroIndicatorsResponse(settled);
+
+  if (!response.ok) {
+    res.status(502).json({ ...response, error: topLevelFredError(response.errors) });
+    return;
+  }
+
+  res.status(200).json(response);
 }

@@ -4567,7 +4567,7 @@ Validator는 병목 id/slug, 상태·방향·신뢰도, 날짜와 미래 날짜,
 | 산업·인프라 | CUMFNS | % | 월별 | 전월·전년 동월 대비 percentage point |
 | 산업·인프라 | PERMIT | 천 호, 계절조정 연율 | 월별 | 전월·전년 동월 대비 % |
 
-브라우저는 `/api/macro-indicators`를 한 번 호출하고, 이 서버 route가 기존 `api/_lib/providers/fred.ts` 헬퍼를 통해 series별 최대 한 번씩 FRED를 조회합니다. 서버 요청은 동시 3개로 제한하며 일부 series 실패는 성공한 결과를 보존합니다. 모든 series가 실패하면 안전한 `FRED_UPSTREAM_ERROR`, 인증 실패는 `FRED_AUTH_FAILED`, key가 없는 로컬 환경은 HTTP 503과 `FRED_NOT_CONFIGURED`를 반환합니다. raw provider body, API key, key가 포함된 URL은 응답이나 로그에 노출하지 않습니다.
+브라우저는 `/api/macro-indicators`를 한 번 호출하고, 이 공개 route는 Vercel rewrite로 기존 `market-prices` Serverless Function의 거시 분기에 연결됩니다. Hobby plan의 12개 함수 한도를 유지하면서 내부 `api/_lib/macro-indicators.ts`가 기존 `api/_lib/providers/fred.ts` 헬퍼를 통해 series별 최대 한 번씩 FRED를 조회합니다. 서버 요청은 동시 3개로 제한하며 일부 series 실패는 성공한 결과를 보존합니다. 모든 series가 실패하면 안전한 `FRED_UPSTREAM_ERROR`, 인증 실패는 `FRED_AUTH_FAILED`, key가 없는 로컬 환경은 HTTP 503과 `FRED_NOT_CONFIGURED`를 반환합니다. raw provider body, API key, key가 포함된 URL은 응답이나 로그에 노출하지 않습니다.
 
 응답 캐시는 `public, s-maxage=3600, stale-while-revalidate=86400`입니다. DB 영구 저장이나 cron을 추가하지 않고 Vercel CDN이 같은 시간대의 응답을 재사용하고, 재검증 중에는 기존 응답을 유지할 수 있게 합니다. FRED의 `.` 결측 관측은 0으로 바꾸지 않고 제외합니다. compact history는 일별 60개, 주별 52개, 월별 24개의 최신 유효 관측만 반환합니다. 월별·주별 공개값은 이후 수정될 수 있으며 이번 버전에는 ALFRED vintage 비교가 없습니다.
 

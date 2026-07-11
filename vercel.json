@@ -44,6 +44,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/macro-indicators",
+      "destination": "/api/market-prices?route=macro-indicators"
+    },
+    {
       "source": "/analysis",
       "destination": "/"
     },
