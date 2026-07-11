@@ -39,6 +39,7 @@ import {
   marketFlows,
 } from '../src/content/daily-market/index.js';
 import { industryReports } from '../src/content/reports/index.js';
+import { supplyChainBottlenecks } from '../src/content/bottlenecks/index.js';
 import { inferCompanyListing, isPriceSyncTarget } from '../src/services/listing.js';
 import { priceDirection, priceDisplay } from '../src/services/prices.js';
 import {
@@ -168,6 +169,13 @@ const reportValidation = {
   metricCount: 0,
   categoryCount: 0,
   featuredCount: 0,
+  invalidRefCount: 0,
+};
+const bottleneckValidation = {
+  bottleneckCount: 0,
+  evidenceCount: 0,
+  officialEvidenceCount: 0,
+  companyEvidenceCount: 0,
   invalidRefCount: 0,
 };
 
@@ -539,6 +547,159 @@ function validateReferences() {
     if (item.href && !/^\/ko\/category\/[^/?#]+$/.test(item.href)) {
       addError(`invalid weekly digest market map href: ${item.href}`);
     }
+  });
+}
+
+function validateBottlenecks() {
+  const statuses = new Set(['normal', 'watch', 'tight', 'critical']);
+  const trends = new Set(['easing', 'stable', 'tightening']);
+  const confidences = new Set(['high', 'medium', 'low']);
+  const evidenceKinds = new Set(['official-data', 'company-disclosure', 'industry-report', 'editorial-assessment']);
+  const companyRoles = new Set(['constrained-supplier', 'capacity-provider', 'demand-driver', 'procurement-exposure', 'alternative-supplier']);
+  const reportIds = new Set(industryReports.map((report) => report.id));
+  const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
+  const pickIds = new Set(stockAutopsyPicks.map((pick) => pick.id));
+  const companyIds = new Set([
+    ...companies.map((company) => company.id),
+    ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+    ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+  ]);
+  const marketMapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  const todayKst = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const forbiddenCopy = /(매수|매도|수혜주|폭등|대장주|주가\s*(상승|하락)\s*(예상|확실)|무조건\s*공급\s*부족)/;
+
+  bottleneckValidation.bottleneckCount = supplyChainBottlenecks.length;
+  bottleneckValidation.evidenceCount = supplyChainBottlenecks.reduce((sum, entry) => sum + entry.evidence.length, 0);
+  bottleneckValidation.officialEvidenceCount = supplyChainBottlenecks.reduce(
+    (sum, entry) => sum + entry.evidence.filter((evidence) => evidence.kind === 'official-data').length,
+    0,
+  );
+  bottleneckValidation.companyEvidenceCount = supplyChainBottlenecks.reduce(
+    (sum, entry) => sum + entry.evidence.filter((evidence) => evidence.kind === 'company-disclosure').length,
+    0,
+  );
+
+  if (supplyChainBottlenecks.length !== 6) addError(`bottleneck registry count must be 6: ${supplyChainBottlenecks.length}`);
+  duplicateValues(supplyChainBottlenecks.map((entry) => entry.id)).forEach((id) => addError(`duplicate bottleneck id: ${id}`));
+  duplicateValues(supplyChainBottlenecks.map((entry) => entry.slug)).forEach((slug) => addError(`duplicate bottleneck slug: ${slug}`));
+  const featuredCount = supplyChainBottlenecks.filter((entry) => entry.featured).length;
+  if (featuredCount > 1) addError(`bottleneck featured count must be <= 1: ${featuredCount}`);
+
+  const bottleneckEntriesSource = readFileSync(join(process.cwd(), 'src/content/bottlenecks/entries.ts'), 'utf8');
+  if (/https?:\/\//.test(bottleneckEntriesSource)) addError('bottleneck entries must not hardcode source URLs');
+  if (/(fetch\s*\(|\bsupabase\b|\bfinnhub\b|\btwelve\s*data\b|\bfred\b|\bcron\b|sync endpoint)/i.test(bottleneckEntriesSource)) {
+    addError('bottleneck registry has forbidden runtime provider, DB, cron, or sync dependency');
+  }
+
+  const evidenceIds: string[] = [];
+  supplyChainBottlenecks.forEach((entry) => {
+    if (!entry.id.trim() || !entry.slug.trim() || !entry.title.trim() || !entry.summary.trim() || !entry.assessment.trim()) {
+      addError(`bottleneck missing identity or copy: ${entry.id || entry.slug}`);
+    }
+    if (!statuses.has(entry.status)) addError(`invalid bottleneck status: ${entry.id} / ${entry.status}`);
+    if (!trends.has(entry.trend)) addError(`invalid bottleneck trend: ${entry.id} / ${entry.trend}`);
+    if (!confidences.has(entry.confidence)) addError(`invalid bottleneck confidence: ${entry.id} / ${entry.confidence}`);
+    if (entry.summary.trim() === entry.assessment.trim()) addError(`bottleneck fact and assessment not separated: ${entry.id}`);
+    if (forbiddenCopy.test([entry.title, entry.summary, entry.assessment, ...entry.pressureSignals, ...entry.reliefSignals].join(' '))) {
+      addError(`investment recommendation wording in bottleneck: ${entry.id}`);
+    }
+
+    ([['asOf', entry.asOf], ['reviewedAt', entry.reviewedAt]] as Array<[string, string]>).forEach(([label, value]) => {
+      const parsed = new Date(`${value}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(parsed.getTime())) {
+        addError(`invalid bottleneck ${label}: ${entry.id} / ${value}`);
+      } else if (value > todayKst) {
+        addError(`future bottleneck ${label}: ${entry.id} / ${value}`);
+      }
+    });
+
+    if (entry.evidence.length < 2 || entry.evidence.length > 5) {
+      addError(`bottleneck evidence count must be 2-5: ${entry.id} / ${entry.evidence.length}`);
+    }
+    if (!entry.pressureSignals.length) addError(`bottleneck missing pressureSignals: ${entry.id}`);
+    if (!entry.reliefSignals.length) addError(`bottleneck missing reliefSignals: ${entry.id}`);
+    if (!entry.uncertainties.length) addError(`bottleneck missing uncertainties: ${entry.id}`);
+    if (!entry.sourceRefs.length) addError(`bottleneck missing sourceRefs: ${entry.id}`);
+    if (!entry.reportIds.length) addError(`bottleneck missing reportIds: ${entry.id}`);
+    if (!entry.marketMapIds.length) addError(`bottleneck missing marketMapIds: ${entry.id}`);
+    duplicateValues(entry.sourceRefs).forEach((id) => addError(`duplicate bottleneck sourceRef: ${entry.id} / ${id}`));
+    duplicateValues(entry.reportIds).forEach((id) => addError(`duplicate bottleneck reportId: ${entry.id} / ${id}`));
+    duplicateValues(entry.marketMapIds).forEach((id) => addError(`duplicate bottleneck marketMapId: ${entry.id} / ${id}`));
+    duplicateValues(entry.companyLinks.map((link) => link.companyId)).forEach((id) => addError(`duplicate bottleneck companyId: ${entry.id} / ${id}`));
+    duplicateValues(entry.pickIds).forEach((id) => addError(`duplicate bottleneck pickId: ${entry.id} / ${id}`));
+
+    entry.sourceRefs.forEach((sourceId) => {
+      if (!sourceRegistry[sourceId]) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck sourceRef: ${entry.id} / ${sourceId}`);
+      }
+    });
+    entry.reportIds.forEach((reportId) => {
+      if (!reportIds.has(reportId)) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck reportId: ${entry.id} / ${reportId}`);
+      }
+    });
+    entry.marketMapIds.forEach((mapId) => {
+      if (!marketMapIds.has(mapId)) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck marketMapId: ${entry.id} / ${mapId}`);
+      }
+    });
+    entry.companyLinks.forEach((link) => {
+      if (!companyIds.has(link.companyId)) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck companyId: ${entry.id} / ${link.companyId}`);
+      }
+      if (!companyRoles.has(link.role)) addError(`invalid bottleneck company role: ${entry.id} / ${link.role}`);
+      if (!link.reason.trim()) addError(`empty bottleneck company reason: ${entry.id} / ${link.companyId}`);
+    });
+    entry.pickIds.forEach((pickId) => {
+      if (!pickIds.has(pickId)) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck pickId: ${entry.id} / ${pickId}`);
+      }
+    });
+
+    entry.evidence.forEach((evidence) => {
+      evidenceIds.push(evidence.id);
+      if (!evidence.id.trim() || !evidence.label.trim() || !evidence.context.trim()) addError(`empty bottleneck evidence: ${entry.id}`);
+      if (!evidenceKinds.has(evidence.kind)) addError(`invalid bottleneck evidence kind: ${entry.id} / ${evidence.kind}`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(evidence.asOf) || Number.isNaN(Date.parse(evidence.asOf))) {
+        addError(`invalid bottleneck evidence asOf: ${entry.id} / ${evidence.id}`);
+      }
+      if (!sourceRegistry[evidence.sourceRef]) {
+        bottleneckValidation.invalidRefCount += 1;
+        addError(`missing bottleneck evidence sourceRef: ${entry.id} / ${evidence.sourceRef}`);
+      }
+      if (!entry.sourceRefs.includes(evidence.sourceRef)) {
+        addError(`bottleneck evidence sourceRef not declared: ${entry.id} / ${evidence.sourceRef}`);
+      }
+    });
+  });
+  duplicateValues(evidenceIds).forEach((id) => addError(`duplicate bottleneck evidence id: ${id}`));
+
+  marketFlows.forEach((flow) => {
+    duplicateValues(flow.bottleneckIds ?? []).forEach((id) => addError(`duplicate daily market bottleneckId: ${flow.id} / ${id}`));
+    flow.bottleneckIds?.forEach((id) => {
+      if (!bottleneckIds.has(id)) addError(`missing daily market bottleneckId: ${flow.id} / ${id}`);
+    });
+  });
+  industryReports.forEach((report) => {
+    duplicateValues(report.bottleneckIds ?? []).forEach((id) => addError(`duplicate report bottleneckId: ${report.id} / ${id}`));
+    report.bottleneckIds?.forEach((id) => {
+      if (!bottleneckIds.has(id)) addError(`missing report bottleneckId: ${report.id} / ${id}`);
+    });
   });
 }
 
@@ -1508,6 +1669,7 @@ validatePickSources();
 validatePicks();
 validateWeeks();
 validateReferences();
+validateBottlenecks();
 validateCtaPolicy();
 validateCompanyIdentities();
 validateDailyMarketContent();
@@ -1544,6 +1706,8 @@ console.log('✓ 시장지도 참조 정상');
 console.log('✓ source URL 정상');
 console.log(`✓ 산업 리포트 허브 검증 (report ${reportValidation.reportCount}개, category ${reportValidation.categoryCount}개, metric ${reportValidation.metricCount}개, featured ${reportValidation.featuredCount}개)`);
 console.log(`✓ 산업 리포트 source/map/company/Pick 참조 정상 (잘못된 ref ${reportValidation.invalidRefCount}개)`);
+console.log(`✓ 공급망 병목 레이더 검증 (bottleneck ${bottleneckValidation.bottleneckCount}개, evidence ${bottleneckValidation.evidenceCount}개, 공식 데이터 ${bottleneckValidation.officialEvidenceCount}개, 기업 자료 ${bottleneckValidation.companyEvidenceCount}개)`);
+console.log(`✓ 병목 source/report/map/company/Pick/daily-market 참조 정상 (잘못된 ref ${bottleneckValidation.invalidRefCount}개)`);
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
 console.log('✓ ticker-only companyName 없음');
 console.log(`✓ CompanyLogo runtime 외부 의존 제거 확인 (Clearbit URL ${companyLogoValidation.runtimeClearbitUrlCount}개, legacy helper ${companyLogoValidation.legacyHelperCount}개)`);

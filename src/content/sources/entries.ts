@@ -711,4 +711,20 @@ export const contentSources: ContentSource[] = [
     url: 'https://www.census.gov/construction/c30/pdf/release.pdf',
     publishedAt: '2026-07-01',
   },
+  {
+    id: 'ge-vernova-q1-2026-results',
+    kind: 'company-ir',
+    title: 'GE Vernova Reports First Quarter 2026 Financial Results and Raises 2026 Guidance',
+    publisher: 'GE Vernova',
+    url: 'https://www.gevernova.com/news/press-releases/ge-vernova-reports-first-quarter-2026-financial',
+    publishedAt: '2026-04-22',
+  },
+  {
+    id: 'siemens-energy-q1-fy2026-results',
+    kind: 'company-ir',
+    title: 'Q1 FY 2026: Continued Market Momentum Drives Strong Start to the Year',
+    publisher: 'Siemens Energy',
+    url: 'https://www.siemens-energy.com/global/en/home/press-releases/earnings-release-q1-fy-2026.html',
+    publishedAt: '2026-02-11',
+  },
 ];

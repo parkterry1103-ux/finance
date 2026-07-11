@@ -66,4 +66,5 @@ export type MarketFlow = {
   steps: MarketFlowStep[];
   sourceRefs: string[];
   reportIds?: string[];
+  bottleneckIds?: string[];
 };

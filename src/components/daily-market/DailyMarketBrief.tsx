@@ -12,6 +12,7 @@ import {
 } from '../../content/daily-market/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { reportById } from '../../content/reports/index.js';
+import { bottleneckById } from '../../content/bottlenecks/index.js';
 
 type DailyMarketBriefProps = {
   marketPrices: MarketPrice[];
@@ -322,6 +323,7 @@ function MarketFlowChain({
   onOpenReports: DailyMarketBriefProps['onOpenReports'];
 }) {
   const reports = (flow.reportIds ?? []).map((id) => reportById(id)).filter(Boolean);
+  const bottlenecks = (flow.bottleneckIds ?? []).map((id) => bottleneckById(id)).filter(Boolean);
   return (
     <article className="market-flow-chain">
       <div className="market-flow-chain__head">
@@ -343,6 +345,16 @@ function MarketFlowChain({
           <div>
             {reports.map((report) => report ? (
               <button type="button" key={report.id} onClick={() => onOpenReports(report.id)}>{report.titleKo}</button>
+            ) : null)}
+          </div>
+        </div>
+      ) : null}
+      {bottlenecks.length ? (
+        <div className="market-flow-bottlenecks">
+          <span>이 흐름과 연결된 공급망 병목</span>
+          <div>
+            {bottlenecks.map((bottleneck) => bottleneck ? (
+              <a key={bottleneck.id} href={`/ko/bottlenecks/${encodeURIComponent(bottleneck.slug)}`}>{bottleneck.shortTitle}</a>
             ) : null)}
           </div>
         </div>

@@ -43,6 +43,7 @@ export interface IndustryReport {
   marketMapIds: string[];
   companyIds: string[];
   pickIds: string[];
+  bottleneckIds?: string[];
   tags: string[];
   howToUse: string[];
   featured?: boolean;

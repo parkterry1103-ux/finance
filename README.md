@@ -4521,3 +4521,30 @@ Production은 Vercel `finance1`, branch `main`, URL `https://finance1-flax.verce
 로컬 QA는 `/`, `/ko/`, `/ko/reports`, 4개 활성 시장지도, Micron Pick 상세, IEA 리포트 상세에서 진행했습니다. 390×844 리포트 목록, 360×800 상세, 320×700 홈, 200% 확대 상당의 640px CSS viewport에서 horizontal overflow, 핵심 숫자·CTA clipping, broken image, console warning/error가 모두 0개였습니다. 카테고리 필터는 반도체·AI 3건, 출처 필터를 함께 적용하면 회사 IR 2건, 최근 1주 필터는 1건을 반환했습니다.
 
 배포 전 API 회귀는 Production `finance1`에서 확인했습니다. 가격 기본은 94개와 META를 유지했고 `include=market-brief`는 기존 94개와 거시 9개를 합친 103개를 반환했습니다. provider는 기존 KIS·Yahoo만 존재했습니다. OpenDART 20개, SEC 기본 20개, Item 2.02 1개, transactionCode S 5개가 모두 HTTP 200과 `ok:true`였습니다. 배포 대상은 branch `main`, canonical project `finance1`, alias `https://finance1-flax.vercel.app`입니다.
+
+## 공급망 병목 레이더 MVP
+
+`/ko/bottlenecks`는 공급망 제약을 `공급 제약 → 확인된 근거 → 상태·변화 방향 → 산업 영향 → 시장지도 → 보고서 → 기업 역할 → Pick` 순서로 읽는 편집형 모니터링 화면입니다. 레이더 차트나 실시간 정밀 점수는 사용하지 않습니다.
+
+정적 registry는 `src/content/bottlenecks/types.ts`, `entries.ts`, `selectors.ts`, `index.ts`에 있습니다. 첫 버전은 다음 6개를 추적합니다.
+
+- 변압기·고압 전력기기
+- 데이터센터 전력·냉각
+- 대형 가스터빈 생산 슬롯
+- HBM·첨단 패키징
+- 구리·전력망 핵심 금속
+- 반도체 팹 전력·건설 인프라
+
+상태는 `normal(정상)`, `watch(관찰)`, `tight(타이트)`, `critical(심각)` 네 단계입니다. 변화 방향은 `easing(완화)`, `stable(변화 적음)`, `tightening(더 타이트해짐)`, 편집 판단 신뢰도는 `high(높음)`, `medium(보통)`, `low(제한적)`으로 구분합니다. 현재 구성은 타이트 4개·관찰 2개, 더 타이트해짐 4개·변화 적음 2개, 신뢰도 높음 4개·보통 1개·제한적 1개입니다. Featured는 변압기·고압 전력기기 한 건입니다.
+
+각 병목은 확인된 evidence와 편집 assessment를 별도 필드로 관리합니다. 전체 evidence는 18개이며 공식 데이터 7개, 기업 공식 자료 8개, 산업 보고서 3개입니다. evidence에는 값·단위·문맥·기준일·sourceRef·근거 유형이 포함됩니다. 각 entry에는 공급 압력, 완화 신호, 불확실성을 따로 기록합니다. 공개 직접 지표가 부족한 반도체 팹 인프라는 `관찰·신뢰도 제한적`으로 표시했습니다.
+
+기존 산업 리포트 15건과 source registry를 우선 재사용했습니다. 고유 source 10개 중 8개를 재사용하고, 가스터빈 직접 지표를 위해 GE Vernova 2026년 1분기 실적과 Siemens Energy FY2026 1분기 실적 source 2개만 추가했습니다. report 연결 13건, 시장지도 연결 10건, 기업 연결 24건, Pick 연결 5건입니다. 기업은 공급자·증설 중·수요 유발·조달 영향·대체 공급 역할과 연결 이유를 함께 표시합니다.
+
+오늘 시장 브리핑의 AI flow에는 HBM·첨단 패키징과 데이터센터 전력·냉각을, 구리 flow에는 구리·전력망 핵심 금속과 변압기·고압 전력기기를 배경 정보로 연결했습니다. 홈에는 featured·상태 심각도·악화 방향·검토일 순으로 최대 3개만 표시합니다. 산업 리포트 목록은 연결 병목 1개, 상세는 전체 연결 병목을 역참조해 보여줍니다.
+
+Validator는 병목 id/slug, 상태·방향·신뢰도, 날짜와 미래 날짜, featured, evidence 2~5개, source/report/map/company/Pick, 기업 역할, daily-market 및 report bottleneckIds, 공급 압력·완화 신호·불확실성, 투자 추천 문구, URL 하드코딩, DB·cron·provider 의존을 네트워크 없이 검사합니다.
+
+로컬 QA는 `/`, `/ko/`, 목록·상세 병목 route, 리포트, 시장지도, 활성 시장지도 3개, Micron Pick 상세에서 진행했습니다. 390×844 목록, 360×800 상세, 320×700 홈, 200% 확대 상당 640px CSS viewport에서 horizontal overflow, 제목·badge·숫자·기업 역할·CTA clipping, broken image, console warning/error가 모두 0개였습니다.
+
+자동 크롤링, 자동 뉴스 수집, 신규 DB, 신규 cron, 신규 sync endpoint, 신규 dependency, 신규 provider 호출, 가짜 정밀 점수, 자동 투자 신호는 없습니다. Finnhub·FRED·Twelve Data 런타임 요청은 각각 0이며 sync endpoint는 실행하지 않습니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.

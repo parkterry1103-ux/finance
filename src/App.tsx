@@ -90,6 +90,24 @@ import {
   type ReportSourceFilter,
 } from './content/reports';
 import {
+  bottleneckById,
+  bottleneckCategoryLabels,
+  bottleneckCompanyRoleLabels,
+  bottleneckConfidenceLabels,
+  bottlenecksForReport,
+  bottleneckStatusCounts,
+  bottleneckStatusLabels,
+  bottleneckTrendLabels,
+  featuredBottleneck,
+  filterBottlenecks,
+  homeBottlenecks,
+  supplyChainBottlenecks,
+  type BottleneckCategory,
+  type BottleneckStatus,
+  type BottleneckTrend,
+  type SupplyChainBottleneck,
+} from './content/bottlenecks';
+import {
   currentPickDisclosureTickers,
   currentPickSecTickers,
   disclosureCategoryLabels,
@@ -128,6 +146,7 @@ import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
 import { DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
+import { sourceRegistry } from './content/sources';
 
 type NodeData = {
   company: Company;
@@ -739,6 +758,12 @@ function reportsPath(reportId?: string) {
   return `/ko/reports/${encodeURIComponent(report?.slug ?? reportId)}`;
 }
 
+function bottlenecksPath(bottleneckId?: string) {
+  if (!bottleneckId) return '/ko/bottlenecks';
+  const bottleneck = bottleneckById(bottleneckId);
+  return `/ko/bottlenecks/${encodeURIComponent(bottleneck?.slug ?? bottleneckId)}`;
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -747,7 +772,7 @@ function picksArchivePath() {
   return '/ko/picks/archive';
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'disclosures' | 'reports';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'bottlenecks' | 'disclosures' | 'reports';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -768,10 +793,11 @@ function PrimaryNavigation({
   onOpenDisclosures,
   onOpenReports,
 }: PrimaryNavigationProps) {
-  const navItems: Array<{ key: PrimaryNavKey; label: string; href: string; onClick: () => void }> = [
+  const navItems: Array<{ key: PrimaryNavKey; label: string; href: string; onClick?: () => void }> = [
     { key: 'today', label: '오늘', href: '/ko/', onClick: onHome },
     { key: 'picks', label: 'Pick', href: picksPath(), onClick: onOpenPicks },
     { key: 'market-map', label: '시장지도', href: marketMapPath(), onClick: onOpenMarketMap },
+    { key: 'bottlenecks', label: '병목 레이더', href: bottlenecksPath() },
     { key: 'disclosures', label: '공시', href: disclosuresPath(), onClick: onOpenDisclosures },
     { key: 'reports', label: '보고서', href: reportsPath(), onClick: () => onOpenReports() },
   ];
@@ -799,6 +825,7 @@ function PrimaryNavigation({
             className={active === item.key ? 'active' : ''}
             aria-current={active === item.key ? 'page' : undefined}
             onClick={(event) => {
+              if (!item.onClick) return;
               event.preventDefault();
               item.onClick();
             }}
@@ -4397,6 +4424,37 @@ type AnalysisPageProps = {
   marketPrices: MarketPrice[];
 };
 
+function HomeBottleneckRadar() {
+  const entries = homeBottlenecks();
+  return (
+    <section className="home-bottleneck-section" aria-labelledby="home-bottleneck-title">
+      <div className="home-dashboard-head">
+        <div>
+          <span>공급망 병목 레이더</span>
+          <h2 id="home-bottleneck-title">공급이 수요를 따라가고 있는지 봅니다</h2>
+        </div>
+        <a href={bottlenecksPath()}>
+          전체 레이더 보기
+          <ArrowRight size={15} />
+        </a>
+      </div>
+      <div className="home-bottleneck-grid">
+        {entries.map((entry) => (
+          <article className={`status-${entry.status}`} key={entry.id}>
+            <div>
+              <span>{bottleneckStatusLabels[entry.status]}</span>
+              <em>{bottleneckTrendLabels[entry.trend]}</em>
+            </div>
+            <h3>{entry.shortTitle}</h3>
+            <p>{entry.summary}</p>
+            <a href={bottlenecksPath(entry.id)}>자세히 보기 <ArrowRight size={14} /></a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type LandingPageProps = {
   onHome: () => void;
   onOpenMarketMapLibrary: () => void;
@@ -4452,6 +4510,8 @@ function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclo
           onOpenPicks={onOpenPicks}
           onOpenDisclosures={onOpenDisclosures}
         />
+
+        <HomeBottleneckRadar />
 
         <section className="home-hero mvp-hero editorial-feed-hero">
           <div className="home-hero-copy editorial-hero-copy">
@@ -4843,6 +4903,22 @@ function reportCompanyNames(report: IndustryReport) {
     const clusterCompany = semiconductorClusterInfrastructureMap.companies.find((item) => item.id === companyId);
     return clusterCompany ? [clusterCompany.name] : [];
   });
+}
+
+function bottleneckCompanyDetail(companyId: string) {
+  const company = companies.find((item) => item.id === companyId);
+  if (company) return { id: company.id, name: company.name, ticker: company.ticker };
+  const reconstructionCompany = reconstructionInfrastructureMap.companies.find((item) => item.id === companyId);
+  if (reconstructionCompany) return { id: reconstructionCompany.id, name: reconstructionCompany.name, ticker: reconstructionCompany.ticker };
+  const clusterCompany = semiconductorClusterInfrastructureMap.companies.find((item) => item.id === companyId);
+  return clusterCompany ? { id: clusterCompany.id, name: clusterCompany.name, ticker: clusterCompany.ticker } : undefined;
+}
+
+function bottleneckDateLabel(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
 }
 
 const evidenceSourceTypeLabels: Record<EvidenceSourceType, string> = {
@@ -5278,6 +5354,396 @@ function RelatedIndustryReports({ title, description, reports, onOpenReports }: 
   );
 }
 
+type SupplyChainBottlenecksPageProps = {
+  onHome: () => void;
+  onOpenBottlenecks: (bottleneckId?: string) => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+  onOpenDisclosures: () => void;
+  onOpenReports: (reportId?: string) => void;
+  onOpenCategory: (sectorId: string) => void;
+};
+
+function BottleneckStatusBadge({ entry }: { entry: SupplyChainBottleneck }) {
+  return (
+    <div className="bottleneck-status-row" aria-label={`상태 ${bottleneckStatusLabels[entry.status]}, 방향 ${bottleneckTrendLabels[entry.trend]}`}>
+      <span className={`bottleneck-status-badge status-${entry.status}`}>{bottleneckStatusLabels[entry.status]}</span>
+      <span className={`bottleneck-trend-badge trend-${entry.trend}`}>{bottleneckTrendLabels[entry.trend]}</span>
+      <span className="bottleneck-confidence-badge">신뢰도 {bottleneckConfidenceLabels[entry.confidence]}</span>
+    </div>
+  );
+}
+
+function SupplyChainBottlenecksPage({
+  onHome,
+  onOpenBottlenecks,
+  onOpenPicks,
+  onOpenMarketMap,
+  onOpenDisclosures,
+  onOpenReports,
+  onOpenCategory,
+}: SupplyChainBottlenecksPageProps) {
+  const [category, setCategory] = useState<BottleneckCategory | 'all'>('all');
+  const [status, setStatus] = useState<BottleneckStatus | 'all'>('all');
+  const [trend, setTrend] = useState<BottleneckTrend | 'all'>('all');
+  const visibleBottlenecks = filterBottlenecks(category, status, trend);
+  const featured = featuredBottleneck();
+  const counts = bottleneckStatusCounts();
+  const tighteningCount = supplyChainBottlenecks.filter((entry) => entry.trend === 'tightening').length;
+  const latestAsOf = [...supplyChainBottlenecks].sort((a, b) => b.asOf.localeCompare(a.asOf))[0]?.asOf;
+  const latestReviewedAt = [...supplyChainBottlenecks].sort((a, b) => b.reviewedAt.localeCompare(a.reviewedAt))[0]?.reviewedAt;
+  const categoryOptions: Array<{ id: BottleneckCategory | 'all'; label: string }> = [
+    { id: 'all', label: '전체' },
+    ...Object.entries(bottleneckCategoryLabels).map(([id, label]) => ({ id: id as BottleneckCategory, label })),
+  ];
+
+  return (
+    <div className="pick-shell story-dark-shell bottleneck-shell">
+      <PrimaryNavigation
+        active="bottlenecks"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+
+      <main className="bottleneck-main">
+        <section className="bottleneck-hero">
+          <p className="home-kicker">공개 자료로 지속 관찰하는 편집형 모니터링</p>
+          <h1>공급망 병목 레이더</h1>
+          <p>공급 제약의 근거와 변화 방향을 확인하고, 산업·시장지도·보고서·기업으로 이어지는 구조를 봅니다.</p>
+          <small>기준일 {latestAsOf ? bottleneckDateLabel(latestAsOf) : '확인 중'} · 최근 검토 {latestReviewedAt ? bottleneckDateLabel(latestReviewedAt) : '확인 중'} · 투자 추천이나 실시간 점수가 아닙니다.</small>
+        </section>
+
+        <section className="bottleneck-summary" aria-labelledby="bottleneck-summary-title">
+          <div className="bottleneck-section-head">
+            <span>상태 요약</span>
+            <h2 id="bottleneck-summary-title">관찰 중인 병목 {supplyChainBottlenecks.length}개</h2>
+          </div>
+          <div className="bottleneck-summary-grid">
+            <article><span>정상</span><strong>{counts.normal}</strong></article>
+            <article><span>관찰</span><strong>{counts.watch}</strong></article>
+            <article><span>타이트</span><strong>{counts.tight}</strong></article>
+            <article><span>심각</span><strong>{counts.critical}</strong></article>
+            <article><span>최근 악화</span><strong>{tighteningCount}</strong></article>
+          </div>
+        </section>
+
+        {featured ? (
+          <section className={`bottleneck-featured status-${featured.status}`} aria-labelledby="bottleneck-featured-title">
+            <div className="bottleneck-featured-copy">
+              <span className="bottleneck-featured-label">Featured bottleneck</span>
+              <BottleneckStatusBadge entry={featured} />
+              <h2 id="bottleneck-featured-title">{featured.title}</h2>
+              <p>{featured.summary}</p>
+              <strong>{featured.assessment}</strong>
+              <div className="bottleneck-featured-relief">
+                <span>완화 확인 신호</span>
+                <p>{featured.reliefSignals[0]}</p>
+              </div>
+            </div>
+            <div className="bottleneck-featured-evidence">
+              {featured.evidence.slice(0, 2).map((evidence) => (
+                <article key={evidence.id}>
+                  <span>{evidence.label}</span>
+                  <strong>{evidence.value}{evidence.unit ? ` ${evidence.unit}` : ''}</strong>
+                  <p>{evidence.context}</p>
+                </article>
+              ))}
+              <div className="bottleneck-featured-links">
+                {featured.marketMapIds.slice(0, 2).map((mapId) => (
+                  <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>산업 구조 · {reportMapLabels[mapId] ?? mapId}</button>
+                ))}
+                {featured.reportIds.slice(0, 1).map((reportId) => (
+                  <button type="button" key={reportId} onClick={() => onOpenReports(reportId)}>관련 보고서 보기</button>
+                ))}
+                <button type="button" onClick={() => onOpenBottlenecks(featured.id)}>자세히 보기</button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="bottleneck-library" aria-labelledby="bottleneck-library-title">
+          <div className="bottleneck-section-head">
+            <span>현재 조건 {visibleBottlenecks.length}개</span>
+            <h2 id="bottleneck-library-title">공급 제약과 완화 신호</h2>
+            <p>상태와 변화 방향은 공개 자료를 바탕으로 한 편집 판단이며 모든 지역·제품에 동일하게 적용되지 않을 수 있습니다.</p>
+          </div>
+
+          <div className="bottleneck-filters" aria-label="공급망 병목 필터">
+            <div className="bottleneck-category-filter" role="group" aria-label="산업 카테고리">
+              {categoryOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  className={category === option.id ? 'active' : ''}
+                  aria-pressed={category === option.id}
+                  onClick={() => setCategory(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <label>
+              <span>상태</span>
+              <select value={status} onChange={(event) => setStatus(event.target.value as BottleneckStatus | 'all')}>
+                <option value="all">전체 상태</option>
+                <option value="normal">정상</option>
+                <option value="watch">관찰</option>
+                <option value="tight">타이트</option>
+                <option value="critical">심각</option>
+              </select>
+            </label>
+            <label>
+              <span>변화 방향</span>
+              <select value={trend} onChange={(event) => setTrend(event.target.value as BottleneckTrend | 'all')}>
+                <option value="all">전체 방향</option>
+                <option value="easing">완화</option>
+                <option value="stable">변화 적음</option>
+                <option value="tightening">더 타이트해짐</option>
+              </select>
+            </label>
+          </div>
+
+          {visibleBottlenecks.length ? (
+            <div className="bottleneck-grid">
+              {visibleBottlenecks.map((entry) => {
+                const linkedCompanies = entry.companyLinks
+                  .map((link) => ({ ...link, company: bottleneckCompanyDetail(link.companyId) }))
+                  .filter((item) => Boolean(item.company));
+                return (
+                  <article className={`bottleneck-card status-${entry.status}`} key={entry.id}>
+                    <div className="bottleneck-card-topline">
+                      <span>{bottleneckCategoryLabels[entry.category]}</span>
+                      <time dateTime={entry.asOf}>기준 {entry.asOf.replace(/-/g, '.')}</time>
+                    </div>
+                    <BottleneckStatusBadge entry={entry} />
+                    <h3>{entry.title}</h3>
+                    <p>{entry.summary}</p>
+                    <div className="bottleneck-card-evidence">
+                      {entry.evidence.slice(0, 2).map((evidence) => (
+                        <div key={evidence.id}>
+                          <span>{evidence.label}</span>
+                          <strong>{evidence.value ?? '공식 자료 확인'}{evidence.unit ? ` ${evidence.unit}` : ''}</strong>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bottleneck-card-companies">
+                      <span>관련 기업과 역할</span>
+                      <div>
+                        {linkedCompanies.slice(0, 3).map((item) => item.company ? (
+                          <span key={item.company.id}>{item.company.name} · {bottleneckCompanyRoleLabels[item.role]}</span>
+                        ) : null)}
+                      </div>
+                    </div>
+                    <div className="bottleneck-card-actions">
+                      {entry.marketMapIds.slice(0, 2).map((mapId) => (
+                        <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>산업 구조 · {reportMapLabels[mapId] ?? mapId}</button>
+                      ))}
+                      <button type="button" className="primary" onClick={() => onOpenBottlenecks(entry.id)}>자세히 보기</button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bottleneck-empty" role="status">
+              <strong>선택한 조건에 해당하는 병목이 없습니다.</strong>
+              <p>다른 상태나 산업을 선택해 보세요.</p>
+              <button type="button" onClick={() => { setCategory('all'); setStatus('all'); setTrend('all'); }}>필터 초기화</button>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+type SupplyChainBottleneckDetailPageProps = {
+  bottleneck?: SupplyChainBottleneck;
+  onHome: () => void;
+  onOpenBottlenecks: (bottleneckId?: string) => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+  onOpenDisclosures: () => void;
+  onOpenReports: (reportId?: string) => void;
+  onOpenCategory: (sectorId: string) => void;
+  onOpenPick: (pick: StockAutopsyPick) => void;
+};
+
+function SupplyChainBottleneckDetailPage({
+  bottleneck,
+  onHome,
+  onOpenBottlenecks,
+  onOpenPicks,
+  onOpenMarketMap,
+  onOpenDisclosures,
+  onOpenReports,
+  onOpenCategory,
+  onOpenPick,
+}: SupplyChainBottleneckDetailPageProps) {
+  if (!bottleneck) {
+    return (
+      <div className="pick-shell story-dark-shell bottleneck-shell">
+        <PrimaryNavigation
+          active="bottlenecks"
+          onHome={onHome}
+          onOpenPicks={onOpenPicks}
+          onOpenMarketMap={onOpenMarketMap}
+          onOpenDisclosures={onOpenDisclosures}
+          onOpenReports={onOpenReports}
+        />
+        <main className="pick-empty bottleneck-detail-empty">
+          <h1>병목 항목을 찾을 수 없습니다.</h1>
+          <p>등록된 공급망 병목인지 확인해주세요.</p>
+          <button type="button" onClick={() => onOpenBottlenecks()}>공급망 병목 레이더 보기</button>
+        </main>
+      </div>
+    );
+  }
+
+  const reports = bottleneck.reportIds
+    .map((reportId) => industryReports.find((report) => report.id === reportId))
+    .filter((report): report is IndustryReport => Boolean(report));
+  const picks = bottleneck.pickIds
+    .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
+    .filter((pick): pick is StockAutopsyPick => Boolean(pick));
+  const companyLinks = bottleneck.companyLinks
+    .map((link) => ({ ...link, company: bottleneckCompanyDetail(link.companyId) }))
+    .filter((item) => Boolean(item.company));
+  const sources = bottleneck.sourceRefs.map((sourceId) => sourceRegistry[sourceId]).filter(Boolean);
+
+  return (
+    <div className="pick-shell story-dark-shell bottleneck-shell bottleneck-detail-shell">
+      <PrimaryNavigation
+        active="bottlenecks"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+
+      <main className="bottleneck-detail-main">
+        <button className="bottleneck-detail-back" type="button" onClick={() => onOpenBottlenecks()}>← 공급망 병목 레이더</button>
+
+        <section className={`bottleneck-detail-hero status-${bottleneck.status}`}>
+          <p className="home-kicker">{bottleneckCategoryLabels[bottleneck.category]} · 공급망 병목</p>
+          <BottleneckStatusBadge entry={bottleneck} />
+          <h1>{bottleneck.title}</h1>
+          <p>{bottleneck.summary}</p>
+          <div className="bottleneck-detail-dates">
+            <span>근거 기준일 {bottleneckDateLabel(bottleneck.asOf)}</span>
+            <span>최근 검토 {bottleneckDateLabel(bottleneck.reviewedAt)}</span>
+          </div>
+          <small>병목 상태는 공개 자료와 기업 발표를 바탕으로 한 편집 판단입니다. 모든 지역·제품에 동일하게 적용되지 않을 수 있습니다.</small>
+        </section>
+
+        <section className="bottleneck-detail-assessment" aria-labelledby="bottleneck-assessment-title">
+          <div>
+            <span>현재 판단</span>
+            <h2 id="bottleneck-assessment-title">왜 이 상태로 보고 있나</h2>
+          </div>
+          <p>{bottleneck.assessment}</p>
+        </section>
+
+        <section className="bottleneck-detail-section" aria-labelledby="bottleneck-evidence-title">
+          <div className="bottleneck-section-head">
+            <span>확인된 근거</span>
+            <h2 id="bottleneck-evidence-title">숫자와 공식 발표</h2>
+            <p>사실 자료와 편집 판단을 분리했습니다.</p>
+          </div>
+          <div className="bottleneck-evidence-grid">
+            {bottleneck.evidence.map((evidence) => {
+              const source = sourceRegistry[evidence.sourceRef];
+              return (
+                <article key={evidence.id}>
+                  <span>{evidence.kind === 'official-data' ? '공식 데이터' : evidence.kind === 'company-disclosure' ? '기업 자료' : evidence.kind === 'industry-report' ? '산업 보고서' : '편집 판단'}</span>
+                  <strong>{evidence.value ?? '확인된 사실'}{evidence.unit ? ` ${evidence.unit}` : ''}</strong>
+                  <h3>{evidence.label}</h3>
+                  <p>{evidence.context}</p>
+                  <small>{evidence.asOf.replace(/-/g, '.')} 기준</small>
+                  {source ? <a href={source.url} target="_blank" rel="noopener noreferrer">원문 보기 <ExternalLink size={13} /></a> : null}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="bottleneck-signal-grid" aria-label="공급 압력과 완화 조건">
+          <article className="pressure">
+            <span>공급 압력</span>
+            <h2>병목을 지지하는 신호</h2>
+            <ul>{bottleneck.pressureSignals.map((signal) => <li key={signal}>{signal}</li>)}</ul>
+          </article>
+          <article className="relief">
+            <span>완화 신호</span>
+            <h2>무엇이 바뀌면 완화로 볼까</h2>
+            <ul>{bottleneck.reliefSignals.map((signal) => <li key={signal}>{signal}</li>)}</ul>
+          </article>
+          <article className="uncertainty">
+            <span>불확실성</span>
+            <h2>어디까지 조심해서 볼까</h2>
+            <ul>{bottleneck.uncertainties.map((signal) => <li key={signal}>{signal}</li>)}</ul>
+          </article>
+        </section>
+
+        <section className="bottleneck-detail-section" aria-labelledby="bottleneck-company-title">
+          <div className="bottleneck-section-head">
+            <span>기업 역할</span>
+            <h2 id="bottleneck-company-title">공급자·증설·수요·조달을 나눠 보기</h2>
+          </div>
+          <div className="bottleneck-company-grid">
+            {companyLinks.map((item) => item.company ? (
+              <article key={item.company.id}>
+                <span>{bottleneckCompanyRoleLabels[item.role]}</span>
+                <strong>{item.company.name}</strong>
+                <small>{item.company.ticker}</small>
+                <p>{item.reason}</p>
+              </article>
+            ) : null)}
+          </div>
+        </section>
+
+        <section className="bottleneck-related-grid" aria-label="연결 콘텐츠">
+          <article>
+            <span>시장지도</span>
+            <h2>산업 구조 보기</h2>
+            <div>{bottleneck.marketMapIds.map((mapId) => <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>)}</div>
+          </article>
+          <article>
+            <span>관련 보고서</span>
+            <h2>근거 배경 읽기</h2>
+            <div>{reports.map((report) => <button type="button" key={report.id} onClick={() => onOpenReports(report.id)}>{report.titleKo}</button>)}</div>
+          </article>
+          <article>
+            <span>관련 Pick</span>
+            <h2>기업 가설 확인</h2>
+            {picks.length ? <div>{picks.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}</div> : <p>현재 연결된 Pick이 없습니다.</p>}
+          </article>
+        </section>
+
+        <section className="bottleneck-source-list" aria-labelledby="bottleneck-source-title">
+          <div className="bottleneck-section-head">
+            <span>원문 출처</span>
+            <h2 id="bottleneck-source-title">판단에 사용한 공개 자료</h2>
+          </div>
+          <div>
+            {sources.map((source) => (
+              <a key={source.id} href={source.url} target="_blank" rel="noopener noreferrer">
+                <span>{source.publisher}</span>
+                <strong>{source.title}</strong>
+                <ExternalLink size={14} />
+              </a>
+            ))}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 type IndustryReportsPageProps = {
   onHome: () => void;
   onOpenMarketMap: () => void;
@@ -5385,6 +5851,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
                   .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
                   .filter((pick): pick is StockAutopsyPick => Boolean(pick));
                 const linkedCompanies = reportCompanyNames(report);
+                const linkedBottlenecks = bottlenecksForReport(report.id);
                 return (
                   <article className={`industry-report-card${report.featured ? ' featured' : ''}`} id={report.id} key={report.id}>
                     <div className="industry-report-card-topline">
@@ -5394,6 +5861,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
                     <div className="industry-report-badges">
                       <span>{reportCategoryLabels[report.category]}</span>
                       <span>{reportAccessLabels[report.access]}</span>
+                      {linkedBottlenecks[0] ? <a href={bottlenecksPath(linkedBottlenecks[0].id)}>연결된 병목 · {linkedBottlenecks[0].shortTitle}</a> : null}
                     </div>
                     <h3>{report.titleKo}</h3>
                     <small className="industry-report-official-title">{report.title}</small>
@@ -5503,6 +5971,7 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
     .map((pickId) => stockAutopsyPicks.find((pick) => pick.id === pickId))
     .filter((pick): pick is StockAutopsyPick => Boolean(pick));
   const linkedCompanies = reportCompanyNames(report);
+  const linkedBottlenecks = bottlenecksForReport(report.id);
   const source = reportSource(report);
 
   return (
@@ -5572,6 +6041,11 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
             {relatedPickItems.length ? (
               <div>
                 {relatedPickItems.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}
+              </div>
+            ) : null}
+            {linkedBottlenecks.length ? (
+              <div>
+                {linkedBottlenecks.map((entry) => <a key={entry.id} href={bottlenecksPath(entry.id)}>연결된 병목 · {entry.shortTitle}</a>)}
               </div>
             ) : null}
             {linkedCompanies.length ? <p>{linkedCompanies.join(' · ')}</p> : null}
@@ -7673,6 +8147,8 @@ function App() {
   const routeDisclosuresMatch = routePath.match(/^\/ko\/disclosures\/?$/) ?? routePath.match(/^\/disclosures\/?$/);
   const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
   const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
+  const routeBottlenecksMatch = routePath.match(/^\/ko\/bottlenecks\/?$/) ?? routePath.match(/^\/bottlenecks\/?$/);
+  const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
     (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) : null) ??
@@ -7687,6 +8163,8 @@ function App() {
   const routeIndustryReport = routeReportSlug
     ? industryReports.find((report) => report.slug === routeReportSlug || report.id === routeReportSlug)
     : undefined;
+  const routeBottleneckSlug = routeBottleneckDetailMatch?.[1] ? decodeURIComponent(routeBottleneckDetailMatch[1]) : undefined;
+  const routeSupplyChainBottleneck = bottleneckById(routeBottleneckSlug);
   const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
   const isSemiconductorClusterInfrastructureRoute = routeCategoryId === semiconductorClusterInfrastructureMap.sectorId;
   const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
@@ -7699,6 +8177,7 @@ function App() {
   const isMarketMapRoute = Boolean(routeMarketMapMatch);
   const isDisclosuresRoute = Boolean(routeDisclosuresMatch);
   const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
+  const isBottlenecksRoute = Boolean(routeBottlenecksMatch) || Boolean(routeBottleneckDetailMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -7714,13 +8193,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const supportsHash = isAnalysisRoute || isReportsRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
+    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isCategoryRoute, isReportsRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -8210,6 +8689,11 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
   }
 
+  function openBottlenecks(bottleneckId?: string) {
+    window.history.pushState({}, '', bottlenecksPath(bottleneckId));
+    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+  }
+
   function openHome() {
     window.history.pushState({}, '', '/ko/');
     setRoute(`${window.location.pathname}${window.location.search}`);
@@ -8332,6 +8816,36 @@ function App() {
 
   if (isMarketMapRoute) {
     return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenReports={openReports} />;
+  }
+
+  if (routeBottleneckDetailMatch) {
+    return (
+      <SupplyChainBottleneckDetailPage
+        bottleneck={routeSupplyChainBottleneck}
+        onHome={openHome}
+        onOpenBottlenecks={openBottlenecks}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+        onOpenCategory={openCategory}
+        onOpenPick={openPick}
+      />
+    );
+  }
+
+  if (routeBottlenecksMatch) {
+    return (
+      <SupplyChainBottlenecksPage
+        onHome={openHome}
+        onOpenBottlenecks={openBottlenecks}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+        onOpenCategory={openCategory}
+      />
+    );
   }
 
   if (routeReportDetailMatch) {
