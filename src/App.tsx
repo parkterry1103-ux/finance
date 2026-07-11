@@ -146,6 +146,8 @@ import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
 import { DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
+import { HomeMacroDashboard, MacroDashboard } from './components/macro/MacroDashboard';
+import { macroIndicatorById } from './content/macro';
 import { sourceRegistry } from './content/sources';
 
 type NodeData = {
@@ -764,6 +766,10 @@ function bottlenecksPath(bottleneckId?: string) {
   return `/ko/bottlenecks/${encodeURIComponent(bottleneck?.slug ?? bottleneckId)}`;
 }
 
+function macroDashboardPath() {
+  return '/ko/macro-dashboard';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -772,7 +778,7 @@ function picksArchivePath() {
   return '/ko/picks/archive';
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'bottlenecks' | 'disclosures' | 'reports';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'bottlenecks' | 'disclosures' | 'reports';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -797,6 +803,7 @@ function PrimaryNavigation({
     { key: 'today', label: '오늘', href: '/ko/', onClick: onHome },
     { key: 'picks', label: 'Pick', href: picksPath(), onClick: onOpenPicks },
     { key: 'market-map', label: '시장지도', href: marketMapPath(), onClick: onOpenMarketMap },
+    { key: 'macro', label: '거시 온도판', href: macroDashboardPath() },
     { key: 'bottlenecks', label: '병목 레이더', href: bottlenecksPath() },
     { key: 'disclosures', label: '공시', href: disclosuresPath(), onClick: onOpenDisclosures },
     { key: 'reports', label: '보고서', href: reportsPath(), onClick: () => onOpenReports() },
@@ -4455,6 +4462,30 @@ function HomeBottleneckRadar() {
   );
 }
 
+type MacroDashboardPageProps = {
+  onHome: () => void;
+  onOpenPicks: () => void;
+  onOpenMarketMap: () => void;
+  onOpenDisclosures: () => void;
+  onOpenReports: (reportId?: string) => void;
+};
+
+function MacroDashboardPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
+  return (
+    <div className="pick-shell story-dark-shell macro-dashboard-shell">
+      <PrimaryNavigation
+        active="macro"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+      <MacroDashboard />
+    </div>
+  );
+}
+
 type LandingPageProps = {
   onHome: () => void;
   onOpenMarketMapLibrary: () => void;
@@ -4502,6 +4533,8 @@ function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclo
 
       <main>
         <DailyMarketBrief marketPrices={marketPrices} onOpenCategory={onOpenCategory} onOpenReports={onOpenReports} />
+
+        <HomeMacroDashboard />
 
         <TodayOverview
           marketPrices={marketPrices}
@@ -5613,6 +5646,7 @@ function SupplyChainBottleneckDetailPage({
     .map((link) => ({ ...link, company: bottleneckCompanyDetail(link.companyId) }))
     .filter((item) => Boolean(item.company));
   const sources = bottleneck.sourceRefs.map((sourceId) => sourceRegistry[sourceId]).filter(Boolean);
+  const macroIndicators = (bottleneck.macroIndicatorIds ?? []).map((id) => macroIndicatorById(id)).filter(Boolean);
 
   return (
     <div className="pick-shell story-dark-shell bottleneck-shell bottleneck-detail-shell">
@@ -5723,6 +5757,17 @@ function SupplyChainBottleneckDetailPage({
             {picks.length ? <div>{picks.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}</div> : <p>현재 연결된 Pick이 없습니다.</p>}
           </article>
         </section>
+
+        {macroIndicators.length ? (
+          <section className="bottleneck-detail-section bottleneck-macro-links" aria-labelledby="bottleneck-macro-title">
+            <div className="bottleneck-section-head">
+              <span>거시 배경</span>
+              <h2 id="bottleneck-macro-title">이 병목을 볼 때 함께 확인할 거시 지표</h2>
+            </div>
+            <p>거시 지표는 구조적 배경을 보여주며 개별 병목의 직접 원인을 단정하지 않습니다.</p>
+            <div>{macroIndicators.map((indicator) => indicator ? <a key={indicator.id} href={`${macroDashboardPath()}#macro-indicator-${indicator.id}`}>{indicator.label}</a> : null)}</div>
+          </section>
+        ) : null}
 
         <section className="bottleneck-source-list" aria-labelledby="bottleneck-source-title">
           <div className="bottleneck-section-head">
@@ -8148,6 +8193,7 @@ function App() {
   const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
   const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
   const routeBottlenecksMatch = routePath.match(/^\/ko\/bottlenecks\/?$/) ?? routePath.match(/^\/bottlenecks\/?$/);
+  const routeMacroDashboardMatch = routePath.match(/^\/ko\/macro-dashboard\/?$/) ?? routePath.match(/^\/macro-dashboard\/?$/);
   const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -8178,6 +8224,7 @@ function App() {
   const isDisclosuresRoute = Boolean(routeDisclosuresMatch);
   const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
   const isBottlenecksRoute = Boolean(routeBottlenecksMatch) || Boolean(routeBottleneckDetailMatch);
+  const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -8193,13 +8240,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
+    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isReportsRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isMacroDashboardRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -8816,6 +8863,18 @@ function App() {
 
   if (isMarketMapRoute) {
     return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenReports={openReports} />;
+  }
+
+  if (isMacroDashboardRoute) {
+    return (
+      <MacroDashboardPage
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+      />
+    );
   }
 
   if (routeBottleneckDetailMatch) {

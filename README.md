@@ -4548,3 +4548,35 @@ Validator는 병목 id/slug, 상태·방향·신뢰도, 날짜와 미래 날짜,
 로컬 QA는 `/`, `/ko/`, 목록·상세 병목 route, 리포트, 시장지도, 활성 시장지도 3개, Micron Pick 상세에서 진행했습니다. 390×844 목록, 360×800 상세, 320×700 홈, 200% 확대 상당 640px CSS viewport에서 horizontal overflow, 제목·badge·숫자·기업 역할·CTA clipping, broken image, console warning/error가 모두 0개였습니다.
 
 자동 크롤링, 자동 뉴스 수집, 신규 DB, 신규 cron, 신규 sync endpoint, 신규 dependency, 신규 provider 호출, 가짜 정밀 점수, 자동 투자 신호는 없습니다. Finnhub·FRED·Twelve Data 런타임 요청은 각각 0이며 sync endpoint는 실행하지 않습니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.
+
+## 거시 유동성·금리·산업 수요 온도판 MVP
+
+`/ko/macro-dashboard`와 `/macro-dashboard`는 미국 금리 구조, 금융여건, 시중 유동성, 산업·인프라 수요를 같은 화면에서 확인하는 거시 온도판입니다. 경기 예측 모델이나 투자 추천 화면이 아니며 종합 점수, 경기침체 확률, 자동 매수·매도 신호를 만들지 않습니다.
+
+지원 시계열은 FRED 공식 series 9개입니다.
+
+| 영역 | Series | 표시 단위 | 빈도 | 변화 계산 |
+| --- | --- | --- | --- | --- |
+| 금리 구조 | DGS2 | % | 일별 | 직전·20개 유효 관측 대비 bp |
+| 금리 구조 | DGS10 | % | 일별 | 직전·20개 유효 관측 대비 bp |
+| 금리 구조 | T10Y2Y | %, bp 환산 | 일별 | 직전·20개 유효 관측 대비 bp |
+| 금융여건 | NFCI | index | 주별 | 직전·4주·13주 절대 변화 |
+| 유동성 | WALCL | 조 달러 | 주별 | 원본 백만 달러를 조 달러로 표시, 변화는 십억 달러 |
+| 유동성 | M2SL | 조 달러 | 월별 | 원본 십억 달러를 조 달러로 표시, 전월·전년 동월 대비 % |
+| 산업·인프라 | INDPRO | 2017=100 index | 월별 | 전월·전년 동월 대비 % |
+| 산업·인프라 | CUMFNS | % | 월별 | 전월·전년 동월 대비 percentage point |
+| 산업·인프라 | PERMIT | 천 호, 계절조정 연율 | 월별 | 전월·전년 동월 대비 % |
+
+브라우저는 `/api/macro-indicators`를 한 번 호출하고, 이 서버 route가 기존 `api/_lib/providers/fred.ts` 헬퍼를 통해 series별 최대 한 번씩 FRED를 조회합니다. 서버 요청은 동시 3개로 제한하며 일부 series 실패는 성공한 결과를 보존합니다. 모든 series가 실패하면 안전한 `FRED_UPSTREAM_ERROR`, 인증 실패는 `FRED_AUTH_FAILED`, key가 없는 로컬 환경은 HTTP 503과 `FRED_NOT_CONFIGURED`를 반환합니다. raw provider body, API key, key가 포함된 URL은 응답이나 로그에 노출하지 않습니다.
+
+응답 캐시는 `public, s-maxage=3600, stale-while-revalidate=86400`입니다. DB 영구 저장이나 cron을 추가하지 않고 Vercel CDN이 같은 시간대의 응답을 재사용하고, 재검증 중에는 기존 응답을 유지할 수 있게 합니다. FRED의 `.` 결측 관측은 0으로 바꾸지 않고 제외합니다. compact history는 일별 60개, 주별 52개, 월별 24개의 최신 유효 관측만 반환합니다. 월별·주별 공개값은 이후 수정될 수 있으며 이번 버전에는 ALFRED vintage 비교가 없습니다.
+
+정적 설명은 동적 관측값과 분리합니다. `src/content/macro/indicators.ts`에 공식 title, 단위, 빈도, 원 기관, 해석과 주의점을 두고 `src/content/macro/briefs.ts`에는 기준일·검토일이 있는 4개 영역 해설을 둡니다. API observation이나 변화값을 보고 브라우저가 원인을 자동 생성하지 않습니다. NFCI는 값 상승이 더 타이트한 방향, 값 하락이 더 느슨한 방향임을 별도 표시합니다. 연준 총자산 증가도 시장 유동성 증가와 바로 동일시하지 않습니다.
+
+홈은 9개 지표를 반복하지 않고 영역 요약 4개와 `거시 지표 전체 보기` CTA만 표시합니다. 오늘 시장 브리핑은 기존 Yahoo `^TNX`를 유지하고 `거시 배경 더 보기`로 FRED DGS10·장단기 금리차·금융여건 화면을 연결합니다. 거시 온도판 하단은 관련 산업 리포트 최대 4건과 5개 공급망 병목을 연결합니다. 병목 상세의 `macroIndicatorIds`는 산업생산, 제조업 가동률, 건축허가를 구조적 배경으로만 제시하며 직접 인과를 단정하지 않습니다.
+
+Sparkline은 신규 chart library 없이 responsive SVG로 그립니다. 결측·빈 history, 동일 값의 0 나눗셈, 좁은 화면을 안전하게 처리하고 일별 60개·주별 52개·월별 24개를 사용합니다. 거시 변화 색상은 주가 상승·하락 token과 분리해 증가를 중립 파랑, 감소를 중립 보라, 변화 없음을 회색으로 표시합니다.
+
+Validator는 정확히 9개 series, indicator/series/brief/domain 중복, 단위·빈도·변화 방식, source/report/bottleneck 참조, 날짜와 미래 날짜, 가짜 점수·경기침체 확률·투자 신호 문구, client FRED env 참조, Finnhub·Twelve Data 의존을 네트워크 없이 검사합니다. 단위 검증은 `.` 제외, 최신 유효값, history 제한, bp·percentage point, WALCL·M2 변환, NFCI 의미, partial·전체 실패, key 미설정과 raw key 비노출을 포함합니다.
+
+신규 DB, 신규 cron, 신규 sync endpoint, 신규 dependency는 없습니다. Finnhub와 Twelve Data는 호출하지 않으며 FRED key는 `process.env.FRED_API_KEY`를 사용하는 서버 코드에만 존재합니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다. 배포 후 desktop, 390×844, 360×800, 320×700, 200% 확대와 기존 가격·OpenDART·SEC·리포트·병목 회귀를 다시 확인합니다.

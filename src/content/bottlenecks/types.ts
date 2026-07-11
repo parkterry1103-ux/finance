@@ -60,6 +60,7 @@ export interface SupplyChainBottleneck {
   marketMapIds: string[];
   companyLinks: BottleneckCompanyLink[];
   pickIds: string[];
+  macroIndicatorIds?: string[];
   asOf: string;
   reviewedAt: string;
   featured?: boolean;

@@ -69,6 +69,11 @@ import {
   resolveCompanyLogoMonogramText,
   type CompanyLogoInput,
 } from '../src/lib/companyLogo.js';
+import { runMacroIndicatorUnitChecks } from './macro-indicators-unit.js';
+import {
+  macroDomainBriefs,
+  macroIndicatorDefinitions,
+} from '../src/content/macro/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -177,6 +182,12 @@ const bottleneckValidation = {
   officialEvidenceCount: 0,
   companyEvidenceCount: 0,
   invalidRefCount: 0,
+};
+const macroValidation = {
+  indicatorCount: 0,
+  briefCount: 0,
+  invalidRefCount: 0,
+  unitCheckCount: 12,
 };
 
 const REQUIRED_REPORT_CATEGORIES = [
@@ -701,6 +712,119 @@ function validateBottlenecks() {
       if (!bottleneckIds.has(id)) addError(`missing report bottleneckId: ${report.id} / ${id}`);
     });
   });
+}
+
+function validateMacroContent() {
+  const expectedSeries = ['DGS2', 'DGS10', 'T10Y2Y', 'NFCI', 'WALCL', 'M2SL', 'INDPRO', 'CUMFNS', 'PERMIT'];
+  const domains = new Set(['rates', 'financial-conditions', 'liquidity', 'industry-infrastructure']);
+  const frequencies = new Set(['daily', 'weekly', 'monthly']);
+  const unitKinds = new Set(['percent', 'index', 'millions-usd', 'billions-usd', 'thousands-saar']);
+  const changeModes = new Set(['basis-points', 'absolute', 'percentage', 'percentage-points']);
+  const trends = new Set(['improving', 'stable', 'worsening']);
+  const reportIds = new Set(industryReports.map((entry) => entry.id));
+  const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
+  const indicatorIds = new Set(macroIndicatorDefinitions.map((entry) => entry.id));
+  const todayKst = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const forbiddenCopy = /(거시\s*점수|유동성\s*지수\s*\d+\s*점|경기침체\s*(확률|가능성)\s*\d+\s*%|매수\s*환경|자동\s*(매수|매도)|수혜주)/;
+
+  macroValidation.indicatorCount = macroIndicatorDefinitions.length;
+  macroValidation.briefCount = macroDomainBriefs.length;
+  if (macroIndicatorDefinitions.length !== 9) addError(`macro indicator registry count must be 9: ${macroIndicatorDefinitions.length}`);
+  duplicateValues(macroIndicatorDefinitions.map((entry) => entry.id)).forEach((id) => addError(`duplicate macro indicator id: ${id}`));
+  duplicateValues(macroIndicatorDefinitions.map((entry) => entry.seriesId)).forEach((id) => addError(`duplicate FRED seriesId: ${id}`));
+  if ([...macroIndicatorDefinitions.map((entry) => entry.seriesId)].sort().join(',') !== [...expectedSeries].sort().join(',')) {
+    addError(`macro supported series must be exactly 9 approved IDs: ${macroIndicatorDefinitions.map((entry) => entry.seriesId).join(', ')}`);
+  }
+
+  macroIndicatorDefinitions.forEach((entry) => {
+    if (!domains.has(entry.domain)) addError(`invalid macro domain: ${entry.id} / ${entry.domain}`);
+    if (!frequencies.has(entry.frequency)) addError(`invalid macro frequency: ${entry.id} / ${entry.frequency}`);
+    if (!unitKinds.has(entry.unitKind)) addError(`invalid macro unitKind: ${entry.id} / ${entry.unitKind}`);
+    if (!changeModes.has(entry.changeMode)) addError(`invalid macro changeMode: ${entry.id} / ${entry.changeMode}`);
+    if (!sourceRegistry[entry.sourceRef]) {
+      macroValidation.invalidRefCount += 1;
+      addError(`missing macro sourceRef: ${entry.id} / ${entry.sourceRef}`);
+    }
+    const expectedLimit = entry.frequency === 'daily' ? 60 : entry.frequency === 'weekly' ? 52 : 24;
+    if (entry.historyLimit !== expectedLimit) addError(`invalid macro history limit: ${entry.id} / ${entry.historyLimit}`);
+    if (forbiddenCopy.test([entry.label, entry.interpretation, entry.higherMeaning, entry.lowerMeaning, entry.caution].join(' '))) {
+      addError(`forbidden score, probability, or investment wording in macro indicator: ${entry.id}`);
+    }
+  });
+
+  if (macroDomainBriefs.length !== 4) addError(`macro domain brief count must be 4: ${macroDomainBriefs.length}`);
+  duplicateValues(macroDomainBriefs.map((entry) => entry.id)).forEach((id) => addError(`duplicate macro brief id: ${id}`));
+  duplicateValues(macroDomainBriefs.map((entry) => entry.domain)).forEach((domain) => addError(`duplicate macro brief domain: ${domain}`));
+  macroDomainBriefs.forEach((brief) => {
+    if (!domains.has(brief.domain)) addError(`invalid macro brief domain: ${brief.id} / ${brief.domain}`);
+    if (!trends.has(brief.trend)) addError(`invalid macro brief trend: ${brief.id} / ${brief.trend}`);
+    if (forbiddenCopy.test([brief.state, brief.summary].join(' '))) addError(`forbidden score, probability, or investment wording in macro brief: ${brief.id}`);
+    duplicateValues(brief.evidenceIndicatorIds).forEach((id) => addError(`duplicate macro brief indicator: ${brief.id} / ${id}`));
+    duplicateValues(brief.sourceRefs).forEach((id) => addError(`duplicate macro brief sourceRef: ${brief.id} / ${id}`));
+    duplicateValues(brief.reportIds).forEach((id) => addError(`duplicate macro brief reportId: ${brief.id} / ${id}`));
+    duplicateValues(brief.bottleneckIds).forEach((id) => addError(`duplicate macro brief bottleneckId: ${brief.id} / ${id}`));
+    brief.evidenceIndicatorIds.forEach((id) => {
+      if (!indicatorIds.has(id)) addError(`missing macro brief indicator: ${brief.id} / ${id}`);
+    });
+    brief.sourceRefs.forEach((id) => {
+      if (!sourceRegistry[id]) {
+        macroValidation.invalidRefCount += 1;
+        addError(`missing macro brief sourceRef: ${brief.id} / ${id}`);
+      }
+    });
+    brief.reportIds.forEach((id) => {
+      if (!reportIds.has(id)) {
+        macroValidation.invalidRefCount += 1;
+        addError(`missing macro brief reportId: ${brief.id} / ${id}`);
+      }
+    });
+    brief.bottleneckIds.forEach((id) => {
+      if (!bottleneckIds.has(id)) {
+        macroValidation.invalidRefCount += 1;
+        addError(`missing macro brief bottleneckId: ${brief.id} / ${id}`);
+      }
+    });
+    ([['asOf', brief.asOf], ['reviewedAt', brief.reviewedAt]] as Array<[string, string]>).forEach(([label, value]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) {
+        addError(`invalid macro brief ${label}: ${brief.id} / ${value}`);
+      } else if (value > todayKst) {
+        addError(`future macro brief ${label}: ${brief.id} / ${value}`);
+      }
+    });
+  });
+
+  supplyChainBottlenecks.forEach((entry) => {
+    duplicateValues(entry.macroIndicatorIds ?? []).forEach((id) => addError(`duplicate bottleneck macroIndicatorId: ${entry.id} / ${id}`));
+    entry.macroIndicatorIds?.forEach((id) => {
+      if (!indicatorIds.has(id)) addError(`missing bottleneck macroIndicatorId: ${entry.id} / ${id}`);
+    });
+  });
+
+  runtimeSourceFiles(join(process.cwd(), 'src')).forEach((filePath) => {
+    const content = readFileSync(filePath, 'utf8');
+    if (/FRED_API_KEY|VITE_[A-Z0-9_]*FRED|import\.meta\.env[^\n]*FRED/.test(content)) {
+      addError(`client FRED environment reference: ${filePath.replace(`${process.cwd()}/`, '')}`);
+    }
+  });
+
+  const macroRuntimeSource = [
+    readFileSync(join(process.cwd(), 'src/content/macro/indicators.ts'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/content/macro/briefs.ts'), 'utf8'),
+  ].join('\n');
+  if (/\bfinnhub\b|twelve\s*data|\bsupabase\b|\bcron\b|sync endpoint/i.test(macroRuntimeSource)) {
+    addError('macro content has forbidden provider, DB, cron, or sync dependency');
+  }
+
+  try {
+    runMacroIndicatorUnitChecks();
+  } catch (error) {
+    addError(error instanceof Error ? error.message : String(error));
+  }
 }
 
 function validateCtaPolicy() {
@@ -1670,6 +1794,7 @@ validatePicks();
 validateWeeks();
 validateReferences();
 validateBottlenecks();
+validateMacroContent();
 validateCtaPolicy();
 validateCompanyIdentities();
 validateDailyMarketContent();
@@ -1708,6 +1833,8 @@ console.log(`✓ 산업 리포트 허브 검증 (report ${reportValidation.repor
 console.log(`✓ 산업 리포트 source/map/company/Pick 참조 정상 (잘못된 ref ${reportValidation.invalidRefCount}개)`);
 console.log(`✓ 공급망 병목 레이더 검증 (bottleneck ${bottleneckValidation.bottleneckCount}개, evidence ${bottleneckValidation.evidenceCount}개, 공식 데이터 ${bottleneckValidation.officialEvidenceCount}개, 기업 자료 ${bottleneckValidation.companyEvidenceCount}개)`);
 console.log(`✓ 병목 source/report/map/company/Pick/daily-market 참조 정상 (잘못된 ref ${bottleneckValidation.invalidRefCount}개)`);
+console.log(`✓ 거시 온도판 검증 (indicator ${macroValidation.indicatorCount}개, domain brief ${macroValidation.briefCount}개, 잘못된 ref ${macroValidation.invalidRefCount}개)`);
+console.log(`✓ FRED 결측·history·bp·pp·단위 변환·부분 실패·보안 단위 검증 (${macroValidation.unitCheckCount}개)`);
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
 console.log('✓ ticker-only companyName 없음');
 console.log(`✓ CompanyLogo runtime 외부 의존 제거 확인 (Clearbit URL ${companyLogoValidation.runtimeClearbitUrlCount}개, legacy helper ${companyLogoValidation.legacyHelperCount}개)`);

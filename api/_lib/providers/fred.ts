@@ -15,7 +15,9 @@ type FetchOptions = {
 };
 
 function classifyHttpStatus(status: number): string {
-  if (status === 401 || status === 403) return 'FRED_AUTH_FAILED';
+  // FRED reports malformed or invalid api_key values as HTTP 400 as well as
+  // conventional 401/403 statuses. Series IDs are fixed to a validated list.
+  if (status === 400 || status === 401 || status === 403) return 'FRED_AUTH_FAILED';
   if (status === 429) return 'FRED_RATE_LIMITED';
   return 'FRED_UPSTREAM_ERROR';
 }
@@ -81,7 +83,7 @@ export async function checkFredConnection(): Promise<boolean> {
   }
 }
 
-type FredObservation = {
+export type FredObservation = {
   date: string;
   value: string;
 };
@@ -114,4 +116,81 @@ export async function fetchFredSeriesLatest(
   }
 
   return (data as FredObservationsResponse).observations;
+}
+
+export type FredNumericObservation = {
+  date: string;
+  value: number;
+};
+
+const SAFE_FRED_ERROR_CODES = new Set([
+  'FRED_NOT_CONFIGURED',
+  'FRED_AUTH_FAILED',
+  'FRED_RATE_LIMITED',
+  'FRED_TIMEOUT',
+  'FRED_NETWORK_ERROR',
+  'FRED_INVALID_RESPONSE',
+  'FRED_EMPTY_SERIES',
+  'FRED_UPSTREAM_ERROR',
+]);
+
+export function normalizeFredErrorCode(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return SAFE_FRED_ERROR_CODES.has(message) ? message : 'FRED_UPSTREAM_ERROR';
+}
+
+export function parseFredObservations(
+  observations: FredObservation[],
+  limit: number,
+): FredNumericObservation[] {
+  return observations
+    .filter((observation) => /^\d{4}-\d{2}-\d{2}$/.test(observation.date))
+    .map((observation) => ({
+      date: observation.date,
+      value: observation.value === '.' ? Number.NaN : Number(observation.value),
+    }))
+    .filter((observation) => Number.isFinite(observation.value))
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .slice(-Math.max(1, limit));
+}
+
+/**
+ * Fetches a compact recent history and removes FRED's "." missing values.
+ * A buffer is requested so holidays or revised missing observations do not
+ * reduce the valid history length returned to the caller.
+ */
+export async function fetchFredSeriesHistory(
+  seriesId: string,
+  limit: number,
+): Promise<FredNumericObservation[]> {
+  const requestLimit = Math.min(Math.max(limit * 2, limit + 12), 240);
+  const observations = await fetchFredSeriesLatest(seriesId, requestLimit);
+  const history = parseFredObservations(observations, limit);
+  if (!history.length) throw new Error('FRED_EMPTY_SERIES');
+  return history;
+}
+
+export async function fetchFredSeriesBatch(
+  requests: Array<{ seriesId: string; limit: number }>,
+  concurrency = 3,
+): Promise<Array<PromiseSettledResult<FredNumericObservation[]>>> {
+  const results: Array<PromiseSettledResult<FredNumericObservation[]>> = new Array(requests.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < requests.length) {
+      const index = cursor;
+      cursor += 1;
+      const request = requests[index];
+      try {
+        const value = await fetchFredSeriesHistory(request.seriesId, request.limit);
+        results[index] = { status: 'fulfilled', value };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(Math.max(concurrency, 1), requests.length) }, worker));
+  return results;
 }
