@@ -4493,4 +4493,4 @@ Yahoo에서 추가 조회 가능한 다우, SOX, USD/JPY, EUR/USD, Dollar Index,
 
 API 회귀 기준선은 `/api/market-prices?limit=200` 200/`ok:true`/94 rows/META 포함, `/api/market-disclosures?limit=20` 200/`ok:true`/20 rows, SEC 기본 20 rows, `item=2.02` 1 row, `transactionCode=S` 5 rows였습니다. Sync endpoint는 이번 작업에서 수동 실행하지 않았습니다.
 
-Production 대상은 Vercel `finance1`, branch `main`, URL `https://finance1-flax.vercel.app`입니다. 실제 deployment ID, commit SHA, asset hash와 production 회귀 결과는 push 후 이 section과 작업 완료 보고에 기록합니다.
+Production은 Vercel `finance1`, branch `main`, URL `https://finance1-flax.vercel.app`에서 2026-07-11 12:46 KST에 확인했습니다. 기능 배포 ID는 `GRu58UHogbV1WACSrgTJDEoDD4ch`, code commit은 `a4c3a530fb10c571cfc2a54d67850948ba1c5660`, asset은 `/assets/index-BWOPbUql.js`와 `/assets/index-DCi8d4HI.css`입니다. `/api/market-prices?limit=200&include=market-brief`는 200/`ok:true`, 기존 META를 포함한 103개 가격과 거시 symbol 9개를 반환했습니다. OpenDART와 SEC 기본·Item·transactionCode 회귀도 모두 200/`ok:true`였고 production desktop·390px·320px에서 horizontal overflow, price clipping, broken image, console warning/error가 0개였습니다.
