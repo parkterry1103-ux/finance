@@ -152,6 +152,7 @@ export function MarketRelationsBoard() {
               <article><span>무엇을 함께 비교했나요?</span><p>{definition.comparisonDescription}</p></article>
               <article><span>왜 항상 같게 움직이지 않나요?</span><p>{definition.whyDifferent}</p></article>
             </div>
+            {selectedId === 'industrial-production-copper' ? <a className="relation-demand-supply-cta" href="/ko/demand-supply?industry=copper-grid-metals-demand-supply">구리 공급 병목까지 함께 보기 <ArrowRight size={14} /></a> : null}
           </>
         ) : (
           <div className="relation-unavailable" role={failedRelation ? 'alert' : 'status'}>{failedRelation ? '이 관계는 현재 비교할 관측값이 충분하지 않습니다.' : '선택한 관계의 계산 결과를 불러오고 있습니다.'}</div>

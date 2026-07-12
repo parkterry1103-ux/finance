@@ -284,6 +284,7 @@ export function MacroDashboard() {
               <MacroIndicatorCard key={definition.id} definition={definition} series={byId.get(definition.id)} loading={loading} />
             ))}
           </div>
+          {domain === 'industry-infrastructure' ? <a className="macro-demand-supply-cta" href="/ko/demand-supply">공급 부족 상태와 함께 보기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
         </section>
       ))}
 

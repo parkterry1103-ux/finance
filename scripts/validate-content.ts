@@ -88,6 +88,7 @@ import {
   homeOfficialReportReferences,
 } from '../src/content/home/index.js';
 import { relationDefinitions } from '../src/content/relations/index.js';
+import { demandSupplyEntries } from '../src/content/demand-supply/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -219,6 +220,10 @@ const relationValidation = {
   relationCount: 0,
   invalidRefCount: 0,
   serverlessFunctionCount: 0,
+};
+const demandSupplyValidation = {
+  entryCount: 0,
+  invalidRefCount: 0,
 };
 
 const REQUIRED_REPORT_CATEGORIES = [
@@ -879,6 +884,7 @@ function validateHomeExperience() {
     '/ko/',
     '/ko/macro-dashboard',
     '/ko/market-relations',
+    '/ko/demand-supply',
     '/ko/bottlenecks',
     '/ko/market-map',
     '/ko/picks',
@@ -1163,6 +1169,82 @@ function validateMarketRelations() {
   if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/api/market-relations' && rewrite.destination === '/api/market-prices?route=market-relations')) {
     addError('market relations rewrite missing');
   }
+}
+
+function validateDemandSupplyContent() {
+  const expectedIds = [
+    'grid-equipment-demand-supply',
+    'data-center-power-cooling-demand-supply',
+    'copper-grid-metals-demand-supply',
+    'semiconductor-fab-infrastructure-demand-supply',
+  ];
+  const allowedMacroIds = new Set(['us-industrial-production', 'us-manufacturing-utilization', 'us-building-permits']);
+  const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
+  const macroIds = new Set(macroIndicatorDefinitions.map((entry) => entry.id));
+  const relationIds = new Set(relationDefinitions.map((entry) => entry.id));
+  const reportIds = new Set(industryReports.map((entry) => entry.id));
+  const mapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  demandSupplyValidation.entryCount = demandSupplyEntries.length;
+  if (demandSupplyEntries.length !== 4) addError(`demand supply entry count must be exactly 4: ${demandSupplyEntries.length}`);
+  if (demandSupplyEntries.map((entry) => entry.id).join('|') !== expectedIds.join('|')) addError(`demand supply ids mismatch: ${demandSupplyEntries.map((entry) => entry.id).join(', ')}`);
+  duplicateValues(demandSupplyEntries.map((entry) => entry.id)).forEach((id) => addError(`duplicate demand supply entry id: ${id}`));
+  duplicateValues(demandSupplyEntries.map((entry) => entry.bottleneckId)).forEach((id) => addError(`duplicate demand supply bottleneck: ${id}`));
+  demandSupplyEntries.forEach((entry) => {
+    if (!bottleneckIds.has(entry.bottleneckId)) {
+      demandSupplyValidation.invalidRefCount += 1;
+      addError(`missing demand supply bottleneck: ${entry.id} / ${entry.bottleneckId}`);
+    }
+    if (entry.macroIndicatorIds.length < 2 || entry.macroIndicatorIds.length > 3) addError(`demand supply macro count must be 2-3: ${entry.id}`);
+    duplicateValues(entry.macroIndicatorIds).forEach((id) => addError(`duplicate demand supply macro: ${entry.id} / ${id}`));
+    entry.macroIndicatorIds.forEach((id) => {
+      if (!allowedMacroIds.has(id) || !macroIds.has(id)) {
+        demandSupplyValidation.invalidRefCount += 1;
+        addError(`invalid demand supply macro: ${entry.id} / ${id}`);
+      }
+    });
+    entry.relationIds?.forEach((id) => {
+      if (!relationIds.has(id)) {
+        demandSupplyValidation.invalidRefCount += 1;
+        addError(`missing demand supply relation: ${entry.id} / ${id}`);
+      }
+    });
+    entry.reportIds.forEach((id) => {
+      if (!reportIds.has(id)) {
+        demandSupplyValidation.invalidRefCount += 1;
+        addError(`missing demand supply report: ${entry.id} / ${id}`);
+      }
+    });
+    entry.marketMapIds.forEach((id) => {
+      if (!mapIds.has(id)) {
+        demandSupplyValidation.invalidRefCount += 1;
+        addError(`missing demand supply market map: ${entry.id} / ${id}`);
+      }
+    });
+    if (!entry.caution.trim()) addError(`demand supply caution required: ${entry.id}`);
+  });
+  const copper = demandSupplyEntries.find((entry) => entry.id === 'copper-grid-metals-demand-supply');
+  if (copper?.relationIds?.join('|') !== 'industrial-production-copper') addError('copper demand supply relation must reuse industrial-production-copper');
+  if (demandSupplyEntries.filter((entry) => entry.relationIds?.length).length !== 1) addError('only copper demand supply entry may link a relation');
+
+  const entrySource = [
+    readFileSync(join(process.cwd(), 'src/content/demand-supply/entries.ts'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/content/demand-supply/types.ts'), 'utf8'),
+  ].join('\n');
+  if (/\b(status|trend|reliefSignals|uncertainties|companyLinks|reviewedAt|asOf)\s*:/i.test(entrySource)) addError('demand supply registry duplicates bottleneck state data');
+  if (/https?:\/\/|fetch\s*\(|FRED_API_KEY|VITE_[A-Z0-9_]*(KEY|SECRET|TOKEN)|query[12]\.finance\.yahoo|finnhub|twelve\s*data/i.test(entrySource)) addError('demand supply registry has forbidden external runtime dependency');
+  const copy = JSON.stringify(demandSupplyEntries);
+  if (/(수혜주|매수|매도|대장주|폭등|확정\s*수혜|실적\s*상승\s*보장|수급\s*점수|병목\s*점수|직접\s*원인이다)/i.test(copy)) addError('forbidden recommendation, score, or causal wording in demand supply content');
+
+  const componentSource = readFileSync(join(process.cwd(), 'src/components/demand-supply/DemandSupplyMatrix.tsx'), 'utf8');
+  if (!/fetchMacroIndicators\(\)/.test(componentSource)) addError('demand supply page must reuse macro fetch cache');
+  if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
+  const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
+  if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
 }
 
 function validateCtaPolicy() {
@@ -2134,6 +2216,7 @@ validateReferences();
 validateBottlenecks();
 validateMacroContent();
 validateMarketRelations();
+validateDemandSupplyContent();
 validateHomeExperience();
 validateCtaPolicy();
 validateCompanyIdentities();
@@ -2176,6 +2259,7 @@ console.log(`✓ 병목 source/report/map/company/Pick/daily-market 참조 정�
 console.log(`✓ 거시 온도판 검증 (indicator ${macroValidation.indicatorCount}개, domain brief ${macroValidation.briefCount}개, 잘못된 ref ${macroValidation.invalidRefCount}개)`);
 console.log(`✓ FRED 결측·history·bp·pp·단위 변환·부분 실패·보안 단위 검증 (${macroValidation.unitCheckCount}개)`);
 console.log(`✓ 거시·시장 교차 관계판 검증 (relation ${relationValidation.relationCount}개, 잘못된 ref ${relationValidation.invalidRefCount}개, Serverless Function ${relationValidation.serverlessFunctionCount}개)`);
+console.log(`✓ 거시 수요 배경 × 공급망 병목 매트릭스 검증 (entry ${demandSupplyValidation.entryCount}개, 잘못된 ref ${demandSupplyValidation.invalidRefCount}개)`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');

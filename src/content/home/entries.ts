@@ -69,6 +69,7 @@ export const homeNavigationGroups: HomeNavigationGroup[] = [
     label: '산업',
     items: [
       { id: 'bottleneck-radar', label: '공급이 부족한 곳', href: '/ko/bottlenecks', activeKey: 'bottlenecks' },
+      { id: 'demand-supply', label: '수요와 공급을 함께 보기', href: '/ko/demand-supply', activeKey: 'demand-supply' },
       { id: 'market-map', label: '산업이 연결되는 구조', href: '/ko/market-map', activeKey: 'market-map' },
     ],
   },

@@ -163,6 +163,7 @@ import { latestDailyMarketBrief, marketDriverRegistry } from './content/daily-ma
 import { macroDomainBriefs } from './content/macro';
 import { TermHelp } from './components/common/TermHelp';
 import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
+import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
 
 type NodeData = {
   company: Company;
@@ -796,6 +797,10 @@ function marketRelationsPath() {
   return '/ko/market-relations';
 }
 
+function demandSupplyPath() {
+  return '/ko/demand-supply';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -809,7 +814,7 @@ function navigateWithinApp(href: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -865,7 +870,7 @@ function PrimaryNavigation({
     else if (key === 'market-map') onOpenMarketMap();
     else if (key === 'disclosures') onOpenDisclosures();
     else if (key === 'reports') onOpenReports();
-    else if (key === 'macro' || key === 'relations' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
+    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
     else return false;
     return true;
   };
@@ -4634,6 +4639,22 @@ function MarketRelationsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDiscl
   );
 }
 
+function DemandSupplyPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
+  return (
+    <div className="pick-shell story-dark-shell demand-supply-shell">
+      <PrimaryNavigation
+        active="demand-supply"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+      <DemandSupplyMatrix />
+    </div>
+  );
+}
+
 type LandingPageProps = {
   onHome: () => void;
   onOpenMarketMapLibrary: () => void;
@@ -4855,6 +4876,10 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
             event.preventDefault();
             navigateWithinApp(marketRelationsPath());
           }}>시장과 함께 비교해 보기 <ArrowRight size={14} /></a>
+          <a className="home-demand-supply-shortcut" href={demandSupplyPath()} onClick={(event) => {
+            event.preventDefault();
+            navigateWithinApp(demandSupplyPath());
+          }}>수요와 공급을 함께 보기 <ArrowRight size={14} /></a>
           <HomeMacroDashboard onOpen={() => navigateWithinApp(macroDashboardPath())} />
           <section className="home-bottleneck-track-section" aria-labelledby="home-bottleneck-track-title">
             <div className="beginner-section-head">
@@ -5906,6 +5931,11 @@ function SupplyChainBottlenecksPage({
             <article><span>최근 악화</span><strong>{tighteningCount}</strong></article>
           </div>
         </section>
+
+        <a className="bottleneck-demand-supply-cta" href={demandSupplyPath()} onClick={(event) => {
+          event.preventDefault();
+          navigateWithinApp(demandSupplyPath());
+        }}>수요 배경과 함께 보기 <ArrowRight size={15} /></a>
 
         {featured ? (
           <section className={`bottleneck-featured status-${featured.status}`} aria-labelledby="bottleneck-featured-title">
@@ -8656,6 +8686,7 @@ function App() {
   const routeBottlenecksMatch = routePath.match(/^\/ko\/bottlenecks\/?$/) ?? routePath.match(/^\/bottlenecks\/?$/);
   const routeMacroDashboardMatch = routePath.match(/^\/ko\/macro-dashboard\/?$/) ?? routePath.match(/^\/macro-dashboard\/?$/);
   const routeMarketRelationsMatch = routePath.match(/^\/ko\/market-relations\/?$/) ?? routePath.match(/^\/market-relations\/?$/);
+  const routeDemandSupplyMatch = routePath.match(/^\/ko\/demand-supply\/?$/) ?? routePath.match(/^\/demand-supply\/?$/);
   const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -8688,6 +8719,7 @@ function App() {
   const isBottlenecksRoute = Boolean(routeBottlenecksMatch) || Boolean(routeBottleneckDetailMatch);
   const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
   const isMarketRelationsRoute = Boolean(routeMarketRelationsMatch);
+  const isDemandSupplyRoute = Boolean(routeDemandSupplyMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -8703,13 +8735,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || isMarketRelationsRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
+    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || isMarketRelationsRoute || isDemandSupplyRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isDemandSupplyRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -9343,6 +9375,18 @@ function App() {
   if (isMarketRelationsRoute) {
     return (
       <MarketRelationsPage
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+      />
+    );
+  }
+
+  if (isDemandSupplyRoute) {
+    return (
+      <DemandSupplyPage
         onHome={openHome}
         onOpenPicks={openPicks}
         onOpenMarketMap={openMarketMapLibrary}

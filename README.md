@@ -4662,3 +4662,29 @@ Validator는 정확히 9개 series, indicator/series/brief/domain 중복, 단위
 검증은 `scripts/market-relations-unit.ts` fixture와 `scripts/validate-content.ts`에서 수행합니다. 동일 날짜, 휴일, 이전 거래일, 미래값 금지, 월말 종가, 결측값, 방향 변환, 수익률, Pearson, 최소 표본, 분산 0, threshold, 잘못된 query fallback, 부분 성공과 secret 비노출을 네트워크 없이 확인합니다. 390·360·320px와 200% 상당 viewport에서 카드 1열, 기간 버튼 wrap, SVG/CTA/긴 제목 overflow를 확인합니다.
 
 이번 MVP에는 신규 DB, cron, sync endpoint, dependency, 종합 점수, 자동 투자 신호가 없습니다. FRED와 Yahoo는 server-only이며 client 직접 호출은 없습니다. Finnhub와 Twelve Data도 사용하지 않습니다. 기존 가격·거시·OpenDART·SEC·리포트 15개·병목 6개 계약을 그대로 유지합니다. Production 기준 프로젝트는 `finance1`, alias는 `https://finance1-flax.vercel.app`입니다.
+## 거시 수요 배경 × 공급망 병목 매트릭스 MVP
+
+`/ko/demand-supply`의 사용자 제목은 **수요와 공급을 함께 보기**입니다. 산업 수요의 직접 주문량이 아니라 산업생산·제조업 가동률·건축허가라는 넓은 거시 배경과, 기존 공식 근거·편집 검토에 기반한 공급 병목 상태를 나란히 보여줍니다. 거시지표 변화가 개별 병목이나 특정 기업 실적의 직접 원인이라는 뜻은 아닙니다.
+
+지원 산업은 정확히 네 개입니다.
+
+| 산업 | 기존 bottleneck | 기존 거시지표 |
+| --- | --- | --- |
+| 변압기·고압 전력기기 | `grid-transformers-high-voltage` | `INDPRO`, `CUMFNS`, `PERMIT` |
+| 데이터센터 전력·냉각 | `data-center-power-cooling` | `INDPRO`, `CUMFNS` |
+| 구리·전력망 핵심 금속 | `copper-grid-metals` | `INDPRO`, `PERMIT` |
+| 반도체 팹 인프라 | `semiconductor-fab-infrastructure` | `CUMFNS`, `PERMIT`, `INDPRO` |
+
+개별 지표는 기존 `/api/macro-indicators`의 `previous`와 `yearOverYear`를 사용합니다. 둘 다 양수면 개선, 둘 다 음수면 약화, 방향이 다르거나 0이 섞이면 혼조, 하나라도 없으면 판단 제한입니다. 산업 단위에서는 유효 지표가 두 개보다 적으면 판단 제한으로 두며, 개선과 약화 지표가 동시에 있으면 항상 혼조입니다. 가중 평균이나 0~100 수요·공급 점수는 만들지 않습니다.
+
+공급 상태·추세·신뢰도·검토일·완화 신호·불확실성·기업 역할은 `src/content/bottlenecks`의 기존 값을 selector로 읽습니다. 새 registry인 `src/content/demand-supply`에는 산업 설명과 macro/bottleneck/report/map/relation ID만 있으며 병목 상태 데이터는 복제하지 않습니다. 구리 가격은 새로 조회하거나 계산하지 않고 기존 `industrial-production-copper` 관계판으로만 연결합니다.
+
+수요 개선·혼조·약화·판단 제한과 공급 정상·관찰/타이트·심각 조합은 점수가 아닌 결정적인 문장으로 표시합니다. macro API 일부 실패 시 유효한 지표와 공급 상태를 계속 표시하고, 전체 실패 시 수요를 판단 제한으로 낮추되 기존 병목·완화 신호는 유지합니다.
+
+브라우저 동적 요청은 기존 module-scope cache가 있는 `/api/macro-indicators` 최대 1회뿐입니다. 산업 변경은 이미 받은 응답에서 계산하므로 추가 요청이 없습니다. 신규 공개 API와 Serverless Function은 없고 기존 12개 Function을 유지합니다. `/api/market-relations`, `/api/market-prices`, FRED, Yahoo, Finnhub, Twelve Data를 이 페이지에서 호출하지 않습니다.
+
+홈에는 새 section을 추가하지 않고 기존 더 깊게 보기 아래 보조 CTA만 추가했습니다. 거시 온도판 산업 수요 영역, 공급망 병목 목록, 산업생산·구리 관계 상세, 산업 navigation 그룹에서도 한 번씩 연결합니다. 상위 navigation 4그룹과 더 깊게 보기 4카드를 유지합니다.
+
+fixture 단위 테스트는 `scripts/demand-supply-unit.ts`, 정적 참조·금지 문구·client 요청·홈 상한 검증은 `scripts/validate-content.ts`에서 수행합니다. 선택 카드는 키보드·`aria-selected`를 지원하고, 병목 track은 현재 상태를 텍스트와 `aria-label`로 표시합니다. Desktop matrix는 모바일에서 산업 카드 1열로 바뀌며 390·360·320px와 200% 상당 640px에서 overflow·marker·숫자·CTA·긴 제목을 확인합니다.
+
+이번 MVP의 신규 API, Serverless Function, DB, migration, cron, sync, dependency, FRED series, Yahoo symbol은 모두 0입니다. 가짜 종합 점수와 자동 투자 신호도 없습니다. 기존 가격·거시·관계·OpenDART·SEC·리포트 15개·병목 6개 계약을 유지합니다. Production은 Vercel `finance1`, alias `https://finance1-flax.vercel.app`을 기준으로 검증합니다.
