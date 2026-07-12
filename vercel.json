@@ -96,6 +96,10 @@
       "destination": "/"
     },
     {
+      "source": "/company-events",
+      "destination": "/"
+    },
+    {
       "source": "/ko",
       "destination": "/"
     },
