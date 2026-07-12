@@ -1157,7 +1157,12 @@ function validateMarketRelations() {
   });
   relationValidation.serverlessFunctionCount = apiFunctions.length;
   if (apiFunctions.length !== 12) addError(`serverless function count must remain 12: ${apiFunctions.length}`);
-  if (!readFileSync(join(process.cwd(), 'vercel.json'), 'utf8').includes('"source": "/api/market-relations"')) addError('market relations rewrite missing');
+  const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as {
+    rewrites?: Array<{ source?: string; destination?: string }>;
+  };
+  if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/api/market-relations' && rewrite.destination === '/api/market-prices?route=market-relations')) {
+    addError('market relations rewrite missing');
+  }
 }
 
 function validateCtaPolicy() {
