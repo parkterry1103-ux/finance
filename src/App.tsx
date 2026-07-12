@@ -164,6 +164,17 @@ import { macroDomainBriefs } from './content/macro';
 import { TermHelp } from './components/common/TermHelp';
 import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
 import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
+import { CompanyEventsRadar } from './components/company-events/CompanyEventsRadar';
+import {
+  companyEventCompany,
+  companyEventGroupLabels,
+  companyEventStageLabels,
+  companyEventTypeLabels,
+  companyEventsForBottleneck,
+  companyEventsForCompany,
+  companyEventsForPick,
+  latestCompanyEvents,
+} from './content/company-events';
 
 type NodeData = {
   company: Company;
@@ -801,6 +812,10 @@ function demandSupplyPath() {
   return '/ko/demand-supply';
 }
 
+function companyEventsPath(eventId?: string) {
+  return eventId ? `/ko/company-events?event=${encodeURIComponent(eventId)}` : '/ko/company-events';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -814,7 +829,7 @@ function navigateWithinApp(href: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -841,18 +856,21 @@ function PrimaryNavigation({
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const groupButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
+  const closeNavigation = () => {
+    setOpenGroup(null);
+    setMobileOpen(false);
+  };
+
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as unknown as HTMLElement)) {
-        setOpenGroup(null);
-        setMobileOpen(false);
+        closeNavigation();
       }
     };
     const closeEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       const groupToFocus = openGroup;
-      setOpenGroup(null);
-      setMobileOpen(false);
+      closeNavigation();
       if (mobileOpen) mobileButtonRef.current?.focus();
       else if (groupToFocus) groupButtonRefs.current[groupToFocus]?.focus();
     };
@@ -864,13 +882,23 @@ function PrimaryNavigation({
     };
   }, [mobileOpen, openGroup]);
 
+  useEffect(() => {
+    const closeAfterLocationChange = () => closeNavigation();
+    window.addEventListener('popstate', closeAfterLocationChange);
+    return () => window.removeEventListener('popstate', closeAfterLocationChange);
+  }, []);
+
+  useEffect(() => {
+    closeNavigation();
+  }, [active]);
+
   const activate = (key: PrimaryNavKey, href: string) => {
     if (key === 'today') onHome();
     else if (key === 'picks') onOpenPicks();
     else if (key === 'market-map') onOpenMarketMap();
     else if (key === 'disclosures') onOpenDisclosures();
     else if (key === 'reports') onOpenReports();
-    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
+    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'company-events' || key === 'analysis') navigateWithinApp(href);
     else return false;
     return true;
   };
@@ -883,6 +911,7 @@ function PrimaryNavigation({
         href="/ko/"
         onClick={(event) => {
           event.preventDefault();
+          closeNavigation();
           onHome();
         }}
         className="home-brand"
@@ -940,10 +969,9 @@ function PrimaryNavigation({
                     className={active === item.activeKey ? 'active' : ''}
                     aria-current={active === item.activeKey ? 'page' : undefined}
                     onClick={(event) => {
+                      closeNavigation();
                       const handled = activate(item.activeKey, item.href);
                       if (handled) event.preventDefault();
-                      setOpenGroup(null);
-                      setMobileOpen(false);
                     }}
                     onKeyDown={(event) => {
                       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
@@ -4022,6 +4050,10 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
             현재 Pick과 시장지도 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
             공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
           </p>
+          <a className="disclosure-company-events-cta" href={companyEventsPath()} onClick={(event) => {
+            event.preventDefault();
+            navigateWithinApp(companyEventsPath());
+          }}>해석된 기업 변화만 보기 <ArrowRight size={14} aria-hidden="true" /></a>
         </section>
 
         <section className="disclosure-status-section" aria-labelledby="disclosure-status-title">
@@ -4641,7 +4673,7 @@ function MarketRelationsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDiscl
 
 function DemandSupplyPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
   return (
-    <div className="pick-shell story-dark-shell demand-supply-shell">
+    <div className="pick-shell demand-supply-shell">
       <PrimaryNavigation
         active="demand-supply"
         onHome={onHome}
@@ -4651,6 +4683,22 @@ function DemandSupplyPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosu
         onOpenReports={onOpenReports}
       />
       <DemandSupplyMatrix />
+    </div>
+  );
+}
+
+function CompanyEventsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
+  return (
+    <div className="pick-shell company-events-shell">
+      <PrimaryNavigation
+        active="company-events"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+      <CompanyEventsRadar />
     </div>
   );
 }
@@ -4786,7 +4834,7 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
   });
   const [marketDetailOpen, setMarketDetailOpen] = useState(false);
   const weeklyPicks = weeklyStockAutopsyPicks().slice(0, homeContentLimits.picks);
-  const recentOfficialItems = officialDisclosureFeedItems(disclosures.items, secFilings.items).slice(0, homeContentLimits.disclosures);
+  const recentReviewedEvents = latestCompanyEvents(homeContentLimits.disclosures);
   const deeperFeatures = homeDeeperFeatureIds.map((id) => homeFeatureLabels.find((feature) => feature.id === id)).filter((feature): feature is (typeof homeFeatureLabels)[number] => Boolean(feature));
   const officialReports = homeOfficialReportReferences.map((reference) => {
     const report = industryReports.find((entry) => entry.id === reference.reportId);
@@ -4831,31 +4879,29 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
         <section className="beginner-home-section home-beginner-disclosures" aria-labelledby="home-beginner-disclosures-title">
           <div className="beginner-section-head">
             <div><p>5 · 기업</p><h2 id="home-beginner-disclosures-title">기업이 직접 밝힌 변화</h2><span>공식 <TermHelp termId="disclosure" label="공시" /></span></div>
-            <button type="button" onClick={onOpenDisclosures}>전체 공시 보기 <ArrowRight size={15} /></button>
+            <button type="button" onClick={() => navigateWithinApp(companyEventsPath())}>기업 변화 전체 보기 <ArrowRight size={15} /></button>
           </div>
-          <p className="beginner-section-lead">기사의 해석보다 먼저 OpenDART와 SEC EDGAR에 공개된 문서를 확인합니다.</p>
+          <p className="beginner-section-lead">공식 발표에서 확인된 사실과 편집 해설, 다음 확인 항목을 나눠 봅니다.</p>
           <div className="home-beginner-disclosure-grid">
-            {recentOfficialItems.length ? recentOfficialItems.map((item) => {
-              const isDart = item.source === 'opendart';
-              const eventType = disclosureEventTypeForItem(item);
-              const eventDefinition = disclosureEventRegistry[eventType];
-              const companyName = isDart ? item.disclosure.companyName : item.filing.companyName;
-              const ticker = isDart ? item.disclosure.ticker : item.filing.ticker;
-              const officialLabel = isDart ? item.disclosure.reportName : `${item.filing.formType} · ${secFilingCategoryLabels[item.filing.category]}`;
-              const filedAt = isDart ? item.disclosure.receivedAt : item.filing.filedAt;
-              const sourceUrl = isDart ? item.disclosure.sourceUrl : item.filing.sourceUrl;
+            {recentReviewedEvents.map((event) => {
+              const company = companyEventCompany(event.companyId);
+              const iconType: DisclosureEventType = event.group === 'earnings-guidance'
+                ? 'earnings'
+                : event.group === 'orders-contracts'
+                  ? 'contract'
+                  : event.group === 'capex-capacity'
+                    ? 'investment'
+                    : 'financing';
               return (
-                <article key={`${item.source}-${item.id}`}>
-                  <div className={`home-disclosure-event-icon event-${eventType}`}><DisclosureEventIcon type={eventType} /><span>{eventDefinition.label}</span></div>
-                  <CompanyIdentity companyName={companyName} ticker={ticker} countryLabel={isDart ? '한국' : '미국'} size="compact" />
-                  <h3>{officialLabel}</h3>
-                  <p>{eventDefinition.description}</p>
-                  <div><time dateTime={filedAt}>{formatKstDate(filedAt)}</time><a href={sourceUrl} target="_blank" rel="noreferrer noopener">원문 <ExternalLink size={13} /></a></div>
+                <article key={event.id}>
+                  <div className={`home-disclosure-event-icon event-${iconType}`}><DisclosureEventIcon type={iconType} /><span>{companyEventTypeLabels[event.eventType]}</span></div>
+                  <CompanyIdentity companyName={company?.name ?? event.companyId} ticker={company?.ticker} countryLabel={company?.countryLabel} size="compact" />
+                  <h3>{event.title}</h3>
+                  <p>{event.factualSummary}</p>
+                  <div><time dateTime={event.eventDate}>{formatKstDate(event.eventDate)}</time><a href={companyEventsPath(event.id)} onClick={(clickEvent) => { clickEvent.preventDefault(); navigateWithinApp(companyEventsPath(event.id)); }}>자세히 <ArrowRight size={13} /></a></div>
                 </article>
               );
-            }) : (
-              <article><div className="home-disclosure-event-icon event-other"><Newspaper size={19} aria-hidden="true" /><span>공식 공시</span></div><h3>새 공시를 확인하고 있습니다</h3><p>현재 선택 범위에서 표시할 새 공식 공시가 없습니다.</p></article>
-            )}
+            })}
           </div>
         </section>
 
@@ -6121,6 +6167,7 @@ function SupplyChainBottleneckDetailPage({
     .filter((item) => Boolean(item.company));
   const sources = bottleneck.sourceRefs.map((sourceId) => sourceRegistry[sourceId]).filter(Boolean);
   const macroIndicators = (bottleneck.macroIndicatorIds ?? []).map((id) => macroIndicatorById(id)).filter(Boolean);
+  const relatedCompanyEvents = companyEventsForBottleneck(bottleneck.id, 2);
 
   return (
     <div className="pick-shell story-dark-shell bottleneck-shell bottleneck-detail-shell">
@@ -6216,6 +6263,22 @@ function SupplyChainBottleneckDetailPage({
             ) : null)}
           </div>
         </section>
+
+        {relatedCompanyEvents.length ? (
+          <section className="bottleneck-detail-section company-event-connection-section" aria-labelledby="bottleneck-company-event-title">
+            <div className="bottleneck-section-head">
+              <span>공식 발표 연결</span>
+              <h2 id="bottleneck-company-event-title">기업 공식 발표로 확인하기</h2>
+              <p>기업 발표가 병목 상태를 자동으로 바꾸는 것은 아니며 함께 볼 근거로만 연결합니다.</p>
+            </div>
+            <div className="company-event-connection-grid">
+              {relatedCompanyEvents.map((event) => {
+                const company = companyEventCompany(event.companyId);
+                return <a key={event.id} href={companyEventsPath(event.id)} onClick={(clickEvent) => { clickEvent.preventDefault(); navigateWithinApp(companyEventsPath(event.id)); }}><span>{companyEventStageLabels[event.stage]}</span><strong>{company?.name} · {event.title}</strong><small>{event.factualSummary}</small></a>;
+              })}
+            </div>
+          </section>
+        ) : null}
 
         <section className="bottleneck-related-grid" aria-label="연결 콘텐츠">
           <article>
@@ -7015,6 +7078,7 @@ function StockAutopsyPicksPage({
     const watchMetricCards = pickWatchMetricCards(detailPick, relatedCompany).slice(0, 3);
     const signalSet = pickSignalSet(detailPick, relatedCompany);
     const relatedIndustryReports = reportsForPick(detailPick.id).slice(0, 2);
+    const relatedCompanyEvents = companyEventsForPick(detailPick.id, 2);
     const usesEvidenceLayer = evidenceEnabledPickIds.has(detailPick.id);
     const pickEvidenceGroups = usesEvidenceLayer ? evidenceGroupsForPick(detailPick) : [];
     const conclusion = detailPick.oneLineConclusion ?? detailPick.reasonSummary;
@@ -7342,6 +7406,18 @@ function StockAutopsyPicksPage({
           />
 
           <PickDisclosurePanel pick={detailPick} disclosures={disclosures} secFilings={secFilings} />
+
+          {relatedCompanyEvents.length ? (
+            <section className="pick-company-events company-event-connection-section" aria-labelledby="pick-company-events-title">
+              <div>
+                <span>검토된 공식 발표</span>
+                <h2 id="pick-company-events-title">이 기업이 최근 공식적으로 밝힌 변화</h2>
+              </div>
+              <div className="company-event-connection-grid">
+                {relatedCompanyEvents.map((event) => <a key={event.id} href={companyEventsPath(event.id)} onClick={(clickEvent) => { clickEvent.preventDefault(); navigateWithinApp(companyEventsPath(event.id)); }}><span>{companyEventGroupLabels[event.group]} · {companyEventStageLabels[event.stage]}</span><strong>{event.title}</strong><small>{event.factualSummary}</small></a>)}
+              </div>
+            </section>
+          ) : null}
 
           {pendingMarketMapNote ? (
             <aside className="pick-market-map-note" aria-label="관련 시장지도 안내">
@@ -8687,6 +8763,7 @@ function App() {
   const routeMacroDashboardMatch = routePath.match(/^\/ko\/macro-dashboard\/?$/) ?? routePath.match(/^\/macro-dashboard\/?$/);
   const routeMarketRelationsMatch = routePath.match(/^\/ko\/market-relations\/?$/) ?? routePath.match(/^\/market-relations\/?$/);
   const routeDemandSupplyMatch = routePath.match(/^\/ko\/demand-supply\/?$/) ?? routePath.match(/^\/demand-supply\/?$/);
+  const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
   const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -8720,6 +8797,7 @@ function App() {
   const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
   const isMarketRelationsRoute = Boolean(routeMarketRelationsMatch);
   const isDemandSupplyRoute = Boolean(routeDemandSupplyMatch);
+  const isCompanyEventsRoute = Boolean(routeCompanyEventsMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -8744,7 +8822,7 @@ function App() {
   }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isDemandSupplyRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => {
       if (!cancelled) setMarketPrices(items);
@@ -8752,10 +8830,10 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [isDemandSupplyRoute]);
+  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
     let cancelled = false;
 
     async function loadDisclosures() {
@@ -8775,7 +8853,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isDemandSupplyRoute]);
+  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
 
   useEffect(() => {
     if (!routeCategoryId) return;
@@ -9078,7 +9156,7 @@ function App() {
   }, [flowInstance, isAiRelationshipMap, isCategoryRoute, selectedCompany?.id, shouldShowRelationshipCanvas]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
     let cancelled = false;
 
     async function loadNews() {
@@ -9126,7 +9204,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isDemandSupplyRoute, newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
+  }, [isCompanyEventsRoute, isDemandSupplyRoute, newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
 
   useEffect(() => {
     if (!shouldShowRelationshipCanvas || !isAiRelationshipMap || !selectedCompany) return;
@@ -9354,6 +9432,18 @@ function App() {
         onHome={openHome}
         onOpenPicks={openPicks}
         onOpenMarketMap={openMarketMapLibrary}
+        onOpenReports={openReports}
+      />
+    );
+  }
+
+  if (isCompanyEventsRoute) {
+    return (
+      <CompanyEventsPage
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
         onOpenReports={openReports}
       />
     );
@@ -9876,6 +9966,7 @@ function App() {
                   <span>선택한 기업</span>
                   <CompanyIdentityForCompany company={selectedCompany} size="compact" />
                   <em>{selectedCompanyStatusLabel}</em>
+                  {companyEventsForCompany(selectedCompany.id, 1).map((event) => <a key={event.id} href={companyEventsPath(event.id)} onClick={(clickEvent) => { clickEvent.preventDefault(); navigateWithinApp(companyEventsPath(event.id)); }}>최근 공식 변화 · {event.title} <ArrowRight size={12} aria-hidden="true" /></a>)}
                 </div>
               )}
             </div>

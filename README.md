@@ -4688,3 +4688,25 @@ Validator는 정확히 9개 series, indicator/series/brief/domain 중복, 단위
 fixture 단위 테스트는 `scripts/demand-supply-unit.ts`, 정적 참조·금지 문구·client 요청·홈 상한 검증은 `scripts/validate-content.ts`에서 수행합니다. 선택 카드는 키보드·`aria-selected`를 지원하고, 병목 track은 현재 상태를 텍스트와 `aria-label`로 표시합니다. Desktop matrix는 모바일에서 산업 카드 1열로 바뀌며 390·360·320px와 200% 상당 640px에서 overflow·marker·숫자·CTA·긴 제목을 확인합니다.
 
 이번 MVP의 신규 API, Serverless Function, DB, migration, cron, sync, dependency, FRED series, Yahoo symbol은 모두 0입니다. 가짜 종합 점수와 자동 투자 신호도 없습니다. 기존 가격·거시·관계·OpenDART·SEC·리포트 15개·병목 6개 계약을 유지합니다. Production은 Vercel `finance1`, alias `https://finance1-flax.vercel.app`을 기준으로 검증합니다.
+
+## Navigation dropdown backdrop 회귀 수정
+
+Production 홈에서 `산업 → 수요와 공급을 함께 보기`로 이동했을 때 페이지가 어두운 overlay에 덮인 것처럼 보인다는 조건을 실제 DOM과 route state로 재현했습니다. route 이동 뒤 dropdown은 닫혀 있었고 `aria-expanded=false`, 열린 menu 0개, backdrop·overlay DOM 0개였으며 body의 인라인 scroll lock도 없었습니다. 실제 원인은 navigation state가 아니라 `/ko/demand-supply` wrapper에 직접 지정된 `story-dark-shell`과 dark surface CSS였습니다.
+
+`PrimaryNavigation`은 route별 임시 handler 대신 `closeNavigation`을 공통 사용합니다. 내부 route link와 홈 brand는 이동 전에 desktop group과 mobile menu를 함께 닫고, `popstate`와 active route 변경도 navigation state만 정리합니다. Escape는 열려 있던 top-level trigger 또는 mobile trigger로 focus를 돌려주고, 외부 클릭과 route link는 이전 trigger로 focus를 강제 이동하지 않습니다. desktop navigation에는 시각 backdrop이 없으며 mobile menu도 별도의 fixed overlay를 만들지 않습니다.
+
+`/ko/demand-supply`에서는 잘못 붙어 있던 dark shell을 제거하고 기존 초보자 화면의 라이트 surface·text token을 적용했습니다. `background:white !important` 같은 덮어쓰기나 fixed click-catcher는 사용하지 않았습니다. Production QA는 오늘·산업·기업·자료 네 그룹에서 내부 route, Escape, 외부 클릭, 다른 그룹 전환, 뒤로·앞으로, query 변경, mobile route 이동을 확인하고 overlay·scroll lock 잔류가 모두 0인지 검사합니다.
+
+## 기업 실적·수주·설비투자 변화 레이더 MVP
+
+`/ko/company-events`와 `/company-events`의 사용자 제목은 **기업이 실제로 밝힌 변화**이며 보조 명칭은 **실적·수주·설비투자 변화 레이더**입니다. 검토된 정적 registry는 `src/content/company-events`에 있고 공식 source URL은 기존 `src/content/sources` registry에서만 해석합니다. 공시 제목만으로 의미를 자동 추론하거나 API 응답 limit에 따라 콘텐츠가 사라지지 않도록 회사 공식 발표·IR·SEC 원문을 사람이 확인한 12개 event만 등록했습니다.
+
+구성은 한국 2개사(SK하이닉스·LG전자), 미국 6개사(NVIDIA·Micron·Dell·Eaton·Meta·Supermicro)입니다. 기업별 event는 SK하이닉스 2개, LG전자 1개, NVIDIA 1개, Micron 2개, Dell 2개, Eaton 1개, Meta 2개, Supermicro 1개입니다. 상위 group은 실적·가이던스 4개, 수주·계약 3개, 설비투자·생산능력 3개, 자금조달·재무구조 2개로 정확히 네 종류이며 회사당 최대 2개입니다.
+
+각 event는 `factualSummary`, `whyItMatters`, `nextCheckpoints`를 분리하고 발표됨·계획 단계·진행 중·완료 확인·계획 변경 stage를 텍스트로 표시합니다. 공식 source는 고유 12개이며 SEC 1개, 회사 IR·공식 발표 11개, media-only 0개입니다. 공식 발표는 투자 신호나 병목 상태 변경 명령이 아니며 가격, 자동 중요도 점수, AI 자동 요약을 사용하지 않습니다.
+
+12개 중 병목 연결 11개, 수요·공급 연결 11개, 시장지도 연결 12개, 보고서 연결 11개, Pick 연결 11개입니다. 홈에는 새 section을 만들지 않고 기존 `기업이 직접 밝힌 변화`에 최신 reviewed event 3개만 표시합니다. 공시 페이지는 전체 OpenDART·SEC 원문 목록 역할을 유지하고 `해석된 기업 변화만 보기` CTA만 제공합니다. 수요·공급 상세와 병목 상세은 최신 2개, Pick 상세은 회사별 최신 2개, 시장지도 선택 기업은 최신 1개까지만 연결합니다.
+
+페이지 filter는 전체와 네 group만 제공하며 event·filter 변경은 정적 registry에서 처리해 추가 request가 없습니다. 잘못된 group과 event query는 결정적으로 fallback하고, filter와 event가 충돌하면 event의 group으로 맞춥니다. 카드 선택은 native button의 Enter·Space와 `aria-selected`, filter는 `aria-pressed`, stage는 색상과 텍스트를 함께 사용합니다. desktop, 390×844, 360×800, 320×700, 200% 상당 640px에서 카드·filter·source CTA가 1열 또는 wrap되도록 구성했습니다.
+
+신규 공개 API, Serverless Function, rewrite, DB, migration, cron, sync endpoint, dependency, chart library는 없습니다. 회사 변화 route는 전역 가격·공시·뉴스 preload를 건너뛰므로 페이지 전용 request, FRED·Yahoo·Finnhub·Twelve Data·SEC·OpenDART browser 직접 request가 모두 0입니다. 기존 Serverless Function 12개, 수요·공급 4개, 보고서 15개, 병목 6개와 기존 API 계약을 유지합니다. validator와 `scripts/company-events-unit.ts`가 event 수·국가·회사·group·source·filing·참조·날짜·금지 문구·정렬·query fallback·연결 상한을 네트워크 없이 검사합니다.

@@ -89,6 +89,11 @@ import {
 } from '../src/content/home/index.js';
 import { relationDefinitions } from '../src/content/relations/index.js';
 import { demandSupplyEntries } from '../src/content/demand-supply/index.js';
+import {
+  companyEventCompanies,
+  companyEventGroupOrder,
+  companyEvents,
+} from '../src/content/company-events/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -223,6 +228,22 @@ const relationValidation = {
 };
 const demandSupplyValidation = {
   entryCount: 0,
+  invalidRefCount: 0,
+};
+const companyEventValidation = {
+  eventCount: 0,
+  companyCount: 0,
+  koreanCompanyCount: 0,
+  usCompanyCount: 0,
+  officialSourceCount: 0,
+  secSourceCount: 0,
+  dartSourceCount: 0,
+  companySourceCount: 0,
+  bottleneckLinkedCount: 0,
+  demandSupplyLinkedCount: 0,
+  marketMapLinkedCount: 0,
+  reportLinkedCount: 0,
+  pickLinkedCount: 0,
   invalidRefCount: 0,
 };
 
@@ -885,6 +906,7 @@ function validateHomeExperience() {
     '/ko/macro-dashboard',
     '/ko/market-relations',
     '/ko/demand-supply',
+    '/ko/company-events',
     '/ko/bottlenecks',
     '/ko/market-map',
     '/ko/picks',
@@ -1245,7 +1267,137 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if ((appSource.match(/if \(isDemandSupplyRoute\) return;/g) ?? []).length < 3) addError('demand supply route must skip unrelated global API preloads');
+  if ((appSource.match(/isDemandSupplyRoute \|\| isCompanyEventsRoute/g) ?? []).length < 3) addError('demand supply and company events routes must skip unrelated global API preloads');
+}
+
+function validateCompanyEventContent() {
+  const canonicalCompanyIds = new Set([
+    ...companies.map((company) => company.id),
+    ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+    ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+    ...enabledDartTrackedCompanies.map((company) => company.id),
+    ...enabledSecTrackedCompanies.map((company) => company.id),
+  ]);
+  const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
+  const demandSupplyIds = new Set(demandSupplyEntries.map((entry) => entry.id));
+  const marketMapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  const reportIds = new Set(industryReports.map((entry) => entry.id));
+  const pickIds = new Set(stockAutopsyPicks.map((entry) => entry.id));
+  const validTypes = new Set(['earnings', 'guidance', 'order', 'contract', 'backlog', 'capex', 'facility', 'capacity-expansion', 'supply-agreement', 'financing', 'debt', 'equity-financing']);
+  const validStages = new Set(['reported', 'planned', 'in-progress', 'completed', 'revised', 'delayed', 'confirmation-needed']);
+  const officialSourceKinds = new Set(['company-release', 'company-ir', 'company-filing', 'sec-filing', 'dart-filing', 'kind-filing', 'government']);
+  const forbiddenCopy = /(매수|매도|수혜주|대장주|폭등|급등\s*예상|확정\s*수혜|주가\s*상승\s*보장|실적\s*개선\s*확정|목표주가|투자\s*기회|자동\s*(점수|인과))/i;
+  const todayKst = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+
+  companyEventValidation.eventCount = companyEvents.length;
+  companyEventValidation.companyCount = companyEventCompanies.length;
+  companyEventValidation.koreanCompanyCount = companyEventCompanies.filter((company) => company.country === 'KR').length;
+  companyEventValidation.usCompanyCount = companyEventCompanies.filter((company) => company.country === 'US').length;
+
+  if (companyEvents.length !== 12) addError(`company event count must be exactly 12: ${companyEvents.length}`);
+  if (companyEventCompanies.length < 6 || companyEventCompanies.length > 8) addError(`company event company count must be 6-8: ${companyEventCompanies.length}`);
+  if (companyEventValidation.koreanCompanyCount < 2) addError(`company event Korean company count must be >= 2: ${companyEventValidation.koreanCompanyCount}`);
+  if (companyEventValidation.usCompanyCount < 2) addError(`company event US company count must be >= 2: ${companyEventValidation.usCompanyCount}`);
+  if (companyEventGroupOrder.length !== 4 || new Set(companyEventGroupOrder).size !== 4) addError(`company event groups must be exactly 4: ${companyEventGroupOrder.join(', ')}`);
+  duplicateValues(companyEventCompanies.map((company) => company.id)).forEach((id) => addError(`duplicate company event company id: ${id}`));
+  duplicateValues(companyEvents.map((event) => event.id)).forEach((id) => addError(`duplicate company event id: ${id}`));
+
+  companyEventCompanies.forEach((company) => {
+    if (!canonicalCompanyIds.has(company.id)) {
+      companyEventValidation.invalidRefCount += 1;
+      addError(`invalid company event canonical companyId: ${company.id}`);
+    }
+    if (!company.name || !company.ticker) addError(`company event company identity missing: ${company.id}`);
+  });
+
+  companyEventGroupOrder.forEach((group) => {
+    const count = companyEvents.filter((event) => event.group === group).length;
+    if (count < 2) addError(`company event group requires at least 2 events: ${group} / ${count}`);
+  });
+
+  companyEventCompanies.forEach((company) => {
+    const count = companyEvents.filter((event) => event.companyId === company.id).length;
+    if (count > 3) addError(`company event per-company limit exceeded: ${company.id} / ${count}`);
+    if (!count) addError(`company event company has no events: ${company.id}`);
+  });
+
+  const filingKeys: string[] = [];
+  const sourceIds = new Set<string>();
+  companyEvents.forEach((event) => {
+    if (!companyEventCompanies.some((company) => company.id === event.companyId)) addError(`missing company event company: ${event.id} / ${event.companyId}`);
+    if (!companyEventGroupOrder.includes(event.group)) addError(`invalid company event group: ${event.id} / ${event.group}`);
+    if (!validTypes.has(event.eventType)) addError(`invalid company event type: ${event.id} / ${event.eventType}`);
+    if (!validStages.has(event.stage)) addError(`invalid company event stage: ${event.id} / ${event.stage}`);
+    ([['eventDate', event.eventDate], ['reviewedAt', event.reviewedAt]] as Array<[string, string]>).forEach(([label, value]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) addError(`invalid company event ${label}: ${event.id} / ${value}`);
+      else if (value > todayKst) addError(`future company event ${label}: ${event.id} / ${value}`);
+    });
+    if (!event.title.trim() || !event.factualSummary.trim() || !event.whyItMatters.trim()) addError(`company event fact or interpretation missing: ${event.id}`);
+    if (event.factualSummary.trim() === event.whyItMatters.trim()) addError(`company event fact and interpretation not separated: ${event.id}`);
+    if (event.nextCheckpoints.length < 1 || event.nextCheckpoints.length > 3) addError(`company event checkpoints must be 1-3: ${event.id} / ${event.nextCheckpoints.length}`);
+    if (!event.sourceRefs.length) addError(`company event sourceRefs required: ${event.id}`);
+    if (forbiddenCopy.test(JSON.stringify(event))) addError(`forbidden recommendation, fake score, or causal wording in company event: ${event.id}`);
+    if (![event.bottleneckIds, event.demandSupplyIds, event.marketMapIds, event.reportIds, event.pickIds].some((ids) => ids.length)) addError(`company event requires at least one existing connection: ${event.id}`);
+
+    const validateRefs = (kind: string, refs: string[], validIds: Set<string>) => {
+      duplicateValues(refs).forEach((id) => addError(`duplicate company event ${kind}: ${event.id} / ${id}`));
+      refs.forEach((id) => {
+        if (validIds.has(id)) return;
+        companyEventValidation.invalidRefCount += 1;
+        addError(`missing company event ${kind}: ${event.id} / ${id}`);
+      });
+    };
+    validateRefs('bottleneckId', event.bottleneckIds, bottleneckIds);
+    validateRefs('demandSupplyId', event.demandSupplyIds, demandSupplyIds);
+    validateRefs('marketMapId', event.marketMapIds, marketMapIds);
+    validateRefs('reportId', event.reportIds, reportIds);
+    validateRefs('pickId', event.pickIds, pickIds);
+
+    event.sourceRefs.forEach((sourceId) => {
+      sourceIds.add(sourceId);
+      const source = sourceRegistry[sourceId];
+      if (!source) {
+        companyEventValidation.invalidRefCount += 1;
+        addError(`missing company event sourceRef: ${event.id} / ${sourceId}`);
+      } else if (!officialSourceKinds.has(source.kind)) {
+        addError(`company event source must be official: ${event.id} / ${sourceId} / ${source.kind}`);
+      }
+    });
+
+    if (event.officialFiling?.accessionNumber) filingKeys.push(`us:${event.officialFiling.accessionNumber}`);
+    if (event.officialFiling?.rceptNo) filingKeys.push(`kr:${event.officialFiling.rceptNo}`);
+  });
+  duplicateValues(filingKeys).forEach((key) => addError(`duplicate company event filing: ${key}`));
+
+  companyEventValidation.officialSourceCount = sourceIds.size;
+  companyEventValidation.secSourceCount = [...sourceIds].filter((id) => sourceRegistry[id]?.kind === 'sec-filing').length;
+  companyEventValidation.dartSourceCount = [...sourceIds].filter((id) => ['dart-filing', 'kind-filing'].includes(sourceRegistry[id]?.kind ?? '')).length;
+  companyEventValidation.companySourceCount = [...sourceIds].filter((id) => ['company-release', 'company-ir', 'company-filing'].includes(sourceRegistry[id]?.kind ?? '')).length;
+  companyEventValidation.bottleneckLinkedCount = companyEvents.filter((event) => event.bottleneckIds.length).length;
+  companyEventValidation.demandSupplyLinkedCount = companyEvents.filter((event) => event.demandSupplyIds.length).length;
+  companyEventValidation.marketMapLinkedCount = companyEvents.filter((event) => event.marketMapIds.length).length;
+  companyEventValidation.reportLinkedCount = companyEvents.filter((event) => event.reportIds.length).length;
+  companyEventValidation.pickLinkedCount = companyEvents.filter((event) => event.pickIds.length).length;
+  if (companyEvents.filter((event) => event.bottleneckIds.length || event.demandSupplyIds.length).length < 8) addError('at least 8 company events must link bottleneck or demand-supply content');
+
+  const entrySource = readFileSync(join(process.cwd(), 'src/content/company-events/entries.ts'), 'utf8');
+  if (/https?:\/\//.test(entrySource)) addError('company event entries must not hardcode source URLs');
+  if (/fetch\s*\(|\/api\/|\bsupabase\b|\bfinnhub\b|twelve\s*data|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(entrySource)) addError('company event registry has forbidden runtime data dependency');
+  const componentSource = readFileSync(join(process.cwd(), 'src/components/company-events/CompanyEventsRadar.tsx'), 'utf8');
+  if (/fetch\s*\(|\/api\//.test(componentSource)) addError('company event page must make zero page-specific API requests');
+  const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
+  if (!/window\.addEventListener\('popstate', closeAfterLocationChange\)/.test(appSource)) addError('navigation must close after pathname or history changes');
+  if (!/closeNavigation\(\);\s*const handled = activate/.test(appSource)) addError('navigation internal route click must close before activation');
+  if (/story-dark-shell demand-supply-shell/.test(appSource)) addError('demand-supply page must not retain the dark shell that resembled a backdrop');
+  if ((appSource.match(/className="beginner-home-section home-beginner-disclosures"/g) ?? []).length !== 1) addError('home reviewed events must reuse the existing company section');
+  if (!homeNavigationGroups.find((group) => group.id === 'company')?.items.some((item) => item.activeKey === 'company-events')) addError('company events navigation item missing from company group');
 }
 
 function validateCtaPolicy() {
@@ -2218,6 +2370,7 @@ validateBottlenecks();
 validateMacroContent();
 validateMarketRelations();
 validateDemandSupplyContent();
+validateCompanyEventContent();
 validateHomeExperience();
 validateCtaPolicy();
 validateCompanyIdentities();
@@ -2261,6 +2414,9 @@ console.log(`✓ 거시 온도판 검증 (indicator ${macroValidation.indicatorC
 console.log(`✓ FRED 결측·history·bp·pp·단위 변환·부분 실패·보안 단위 검증 (${macroValidation.unitCheckCount}개)`);
 console.log(`✓ 거시·시장 교차 관계판 검증 (relation ${relationValidation.relationCount}개, 잘못된 ref ${relationValidation.invalidRefCount}개, Serverless Function ${relationValidation.serverlessFunctionCount}개)`);
 console.log(`✓ 거시 수요 배경 × 공급망 병목 매트릭스 검증 (entry ${demandSupplyValidation.entryCount}개, 잘못된 ref ${demandSupplyValidation.invalidRefCount}개)`);
+console.log(`✓ 기업 변화 레이더 검증 (event ${companyEventValidation.eventCount}개, company ${companyEventValidation.companyCount}개, KR ${companyEventValidation.koreanCompanyCount}개, US ${companyEventValidation.usCompanyCount}개)`);
+console.log(`✓ 기업 변화 공식 source ${companyEventValidation.officialSourceCount}개 (SEC ${companyEventValidation.secSourceCount}, OpenDART·KIND ${companyEventValidation.dartSourceCount}, 기업 IR·발표 ${companyEventValidation.companySourceCount})`);
+console.log(`✓ 기업 변화 연결 검증 (병목 ${companyEventValidation.bottleneckLinkedCount}, 수요공급 ${companyEventValidation.demandSupplyLinkedCount}, 시장지도 ${companyEventValidation.marketMapLinkedCount}, 보고서 ${companyEventValidation.reportLinkedCount}, Pick ${companyEventValidation.pickLinkedCount}, 잘못된 ref ${companyEventValidation.invalidRefCount})`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');

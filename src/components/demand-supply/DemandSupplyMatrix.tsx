@@ -21,6 +21,7 @@ import type { MacroIndicatorsResponse, MacroSeriesResult } from '../../content/m
 import { reportById } from '../../content/reports/index.js';
 import { companies, reconstructionInfrastructureMap, semiconductorClusterInfrastructureMap } from '../../data.js';
 import { fetchMacroIndicators } from '../../services/macro.js';
+import { companyEventCompany, companyEventsForDemandSupply, companyEventStageLabels } from '../../content/company-events/index.js';
 
 const matrixDemandOrder: DemandBackgroundState[] = ['improving', 'mixed', 'weakening', 'limited'];
 const matrixMapLabels: Record<string, string> = {
@@ -94,6 +95,7 @@ export function DemandSupplyMatrix() {
   const entry = selected.entry;
   const bottleneck = selected.bottleneck;
   const reports = entry.reportIds.map(reportById).filter((report): report is NonNullable<typeof report> => Boolean(report)).slice(0, 2);
+  const relatedCompanyEvents = companyEventsForDemandSupply(entry.id, 2);
   const companyLinks = (bottleneck?.companyLinks ?? []).slice(0, 3).map((link) => ({ ...link, company: companyRecord(link.companyId) })).filter((link) => Boolean(link.company));
   const loading = macroResponse === null;
   const failed = macroResponse !== null && !macroResponse.ok;
@@ -208,6 +210,10 @@ export function DemandSupplyMatrix() {
       <section className="demand-supply-related" aria-labelledby="demand-supply-related-title">
         <div className="demand-supply-section-head"><span>관련 맥락</span><h2 id="demand-supply-related-title">자료와 산업 구조를 이어서 봅니다</h2></div>
         <div className="demand-supply-related-grid">
+          {relatedCompanyEvents.map((event) => {
+            const company = companyEventCompany(event.companyId);
+            return <a key={event.id} href={`/ko/company-events?event=${encodeURIComponent(event.id)}`}><span>관련 기업이 밝힌 변화 · {companyEventStageLabels[event.stage]}</span><strong>{company?.name} · {event.title}</strong><small>공식 발표 해설 보기 <ArrowRight size={13} /></small></a>;
+          })}
           {reports.map((report) => <a key={report.id} href={`/ko/reports/${encodeURIComponent(report.slug)}`}><span>{report.publisher}</span><strong>{report.titleKo}</strong><small>보고서 보기 <ArrowRight size={13} /></small></a>)}
           {entry.marketMapIds.slice(0, 1).map((mapId) => <a key={mapId} href={`/ko/category/${encodeURIComponent(mapId)}`}><span>관련 산업 구조</span><strong>{matrixMapLabels[mapId] ?? mapId}</strong><small>시장지도 보기 <ArrowRight size={13} /></small></a>)}
           {companyLinks.map((link) => <article key={link.companyId}><span>{bottleneckCompanyRoleLabels[link.role]}</span><strong>{link.company?.name}</strong><small>{link.reason}</small></article>)}
