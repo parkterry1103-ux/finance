@@ -1,4 +1,4 @@
-const YAHOO_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+const YAHOO_HOSTS = ['query1.finance.yahoo.com'];
 
 export type YahooHistoryPoint = {
   date: string;
