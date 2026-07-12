@@ -8744,6 +8744,7 @@ function App() {
   }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isDemandSupplyRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
+    if (isDemandSupplyRoute) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => {
       if (!cancelled) setMarketPrices(items);
@@ -8751,9 +8752,10 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isDemandSupplyRoute]);
 
   useEffect(() => {
+    if (isDemandSupplyRoute) return;
     let cancelled = false;
 
     async function loadDisclosures() {
@@ -8773,7 +8775,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [isDemandSupplyRoute]);
 
   useEffect(() => {
     if (!routeCategoryId) return;
@@ -9076,6 +9078,7 @@ function App() {
   }, [flowInstance, isAiRelationshipMap, isCategoryRoute, selectedCompany?.id, shouldShowRelationshipCanvas]);
 
   useEffect(() => {
+    if (isDemandSupplyRoute) return;
     let cancelled = false;
 
     async function loadNews() {
@@ -9123,7 +9126,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
+  }, [isDemandSupplyRoute, newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
 
   useEffect(() => {
     if (!shouldShowRelationshipCanvas || !isAiRelationshipMap || !selectedCompany) return;
