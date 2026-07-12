@@ -74,6 +74,19 @@ import {
   macroDomainBriefs,
   macroIndicatorDefinitions,
 } from '../src/content/macro/index.js';
+import {
+  beginnerTermDefinitions,
+  disclosureEventDefinitions,
+  homeContentLimits,
+  homeDeeperFeatureIds,
+  homeFeatureLabels,
+  homeIndustryFlowReferences,
+  homeInsightReferences,
+  homeMacroReferences,
+  homeMarketAssetIds,
+  homeNavigationGroups,
+  homeOfficialReportReferences,
+} from '../src/content/home/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -188,6 +201,18 @@ const macroValidation = {
   briefCount: 0,
   invalidRefCount: 0,
   unitCheckCount: 12,
+};
+const homeValidation = {
+  featureCount: 0,
+  navigationGroupCount: 0,
+  insightCount: 0,
+  macroCardCount: 0,
+  bottleneckCardCount: 0,
+  flowCount: 0,
+  disclosureEventTypeCount: 0,
+  reportCount: 0,
+  termCount: 0,
+  invalidRefCount: 0,
 };
 
 const REQUIRED_REPORT_CATEGORIES = [
@@ -824,6 +849,227 @@ function validateMacroContent() {
     runMacroIndicatorUnitChecks();
   } catch (error) {
     addError(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function validateHomeExperience() {
+  const companyIds = new Set([
+    ...companies.map((company) => company.id),
+    ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+    ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+  ]);
+  const marketMapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  const driverIds = new Set(marketDrivers.map((driver) => driver.id));
+  const macroBriefIds = new Set(macroDomainBriefs.map((brief) => brief.id));
+  const macroIndicatorIds = new Set(macroIndicatorDefinitions.map((indicator) => indicator.id));
+  const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
+  const reportIds = new Set(industryReports.map((report) => report.id));
+  const allowedRoutes = new Set([
+    '/ko/',
+    '/ko/macro-dashboard',
+    '/ko/bottlenecks',
+    '/ko/market-map',
+    '/ko/picks',
+    '/analysis',
+    '/ko/reports',
+    '/ko/disclosures',
+  ]);
+  const expectedEasyNames = [
+    '돈의 흐름과 경기',
+    '공급이 부족한 곳',
+    '산업을 이해하는 자료',
+    '기업이 직접 밝힌 변화',
+    '산업이 연결되는 구조',
+    '이번 주에 살펴볼 기업',
+  ];
+  const expectedEventTypes = ['contract', 'earnings', 'financing', 'insider', 'investment', 'merger', 'other'];
+  const forbiddenCopy = /(매수|매도|수혜주|대장주|폭등|확실한\s*상승|무조건|투자\s*기회)/;
+  const fakeScoreCopy = /(거시|경기|유동성|위험).{0,8}\d+\s*점/;
+
+  homeValidation.featureCount = homeFeatureLabels.length;
+  homeValidation.navigationGroupCount = homeNavigationGroups.length;
+  homeValidation.insightCount = homeInsightReferences.length;
+  homeValidation.macroCardCount = homeMacroReferences.length;
+  homeValidation.bottleneckCardCount = homeContentLimits.bottlenecks;
+  homeValidation.flowCount = homeIndustryFlowReferences.length;
+  homeValidation.disclosureEventTypeCount = disclosureEventDefinitions.length;
+  homeValidation.reportCount = homeOfficialReportReferences.length;
+  homeValidation.termCount = beginnerTermDefinitions.length;
+
+  if (homeFeatureLabels.length !== 6) addError(`home easy feature count must be 6: ${homeFeatureLabels.length}`);
+  duplicateValues(homeFeatureLabels.map((feature) => feature.easyName)).forEach((title) => addError(`duplicate home easy feature title: ${title}`));
+  if ([...homeFeatureLabels.map((feature) => feature.easyName)].sort().join('|') !== [...expectedEasyNames].sort().join('|')) {
+    addError(`home easy feature titles mismatch: ${homeFeatureLabels.map((feature) => feature.easyName).join(', ')}`);
+  }
+  homeFeatureLabels.forEach((feature) => {
+    if (!allowedRoutes.has(feature.href)) addError(`invalid home feature route: ${feature.id} / ${feature.href}`);
+  });
+
+  if (homeNavigationGroups.length !== 4) addError(`home navigation group count must be 4: ${homeNavigationGroups.length}`);
+  if (homeNavigationGroups.map((group) => group.label).join('|') !== '오늘|산업|기업|자료') {
+    addError(`home navigation labels must be 오늘|산업|기업|자료: ${homeNavigationGroups.map((group) => group.label).join('|')}`);
+  }
+  duplicateValues(homeNavigationGroups.map((group) => group.id)).forEach((id) => addError(`duplicate home navigation group id: ${id}`));
+  const navigationItems = homeNavigationGroups.flatMap((group) => group.items);
+  duplicateValues(navigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate home navigation item id: ${id}`));
+  navigationItems.forEach((item) => {
+    if (!allowedRoutes.has(item.href)) addError(`invalid home navigation route: ${item.id} / ${item.href}`);
+  });
+
+  if (homeMarketAssetIds.length !== homeContentLimits.marketAssets || homeMarketAssetIds.length > 4) {
+    addError(`home market asset count must be ${homeContentLimits.marketAssets}: ${homeMarketAssetIds.length}`);
+  }
+  duplicateValues([...homeMarketAssetIds]).forEach((id) => addError(`duplicate home market asset: ${id}`));
+  homeMarketAssetIds.forEach((id) => {
+    if (!dailyMarketAssetRegistry[id]) addError(`missing home market asset: ${id}`);
+  });
+
+  if (homeInsightReferences.length !== 3 || homeInsightReferences.length > homeContentLimits.insights) {
+    addError(`home insight count must be exactly 3: ${homeInsightReferences.length}`);
+  }
+  duplicateValues(homeInsightReferences.map((reference) => reference.id)).forEach((id) => addError(`duplicate home insight id: ${id}`));
+  duplicateValues(homeInsightReferences.map((reference) => reference.kind)).forEach((kind) => addError(`duplicate home insight topic kind: ${kind}`));
+  homeInsightReferences.forEach((reference) => {
+    if (reference.kind === 'market-driver') {
+      if (!driverIds.has(reference.referenceId)) {
+        homeValidation.invalidRefCount += 1;
+        addError(`missing home market driver reference: ${reference.referenceId}`);
+      }
+      if (!latestDailyMarketBrief()?.marketDriverIds.includes(reference.referenceId)) {
+        addError(`home market driver not in latest brief: ${reference.referenceId}`);
+      }
+    } else if (reference.kind === 'macro-brief') {
+      if (!macroBriefIds.has(reference.referenceId)) {
+        homeValidation.invalidRefCount += 1;
+        addError(`missing home macro brief reference: ${reference.referenceId}`);
+      }
+    } else if (!bottleneckIds.has(reference.referenceId)) {
+      homeValidation.invalidRefCount += 1;
+      addError(`missing home bottleneck reference: ${reference.referenceId}`);
+    }
+    if (!(allowedRoutes.has(reference.href) || reference.href === '#daily-market-detail' || /^\/ko\/bottlenecks\/[a-z0-9-]+$/.test(reference.href))) {
+      addError(`invalid home insight route: ${reference.id} / ${reference.href}`);
+    }
+  });
+
+  if (homeMacroReferences.length < 2 || homeMacroReferences.length > homeContentLimits.macroCards) {
+    addError(`home macro card count must be 2-${homeContentLimits.macroCards}: ${homeMacroReferences.length}`);
+  }
+  duplicateValues(homeMacroReferences.map((reference) => reference.id)).forEach((id) => addError(`duplicate home macro reference: ${id}`));
+  homeMacroReferences.forEach((reference) => {
+    const brief = macroDomainBriefs.find((entry) => entry.id === reference.briefId);
+    const indicator = macroIndicatorDefinitions.find((entry) => entry.id === reference.indicatorId);
+    if (!macroBriefIds.has(reference.briefId) || !brief) {
+      homeValidation.invalidRefCount += 1;
+      addError(`missing home macro brief: ${reference.id} / ${reference.briefId}`);
+    }
+    if (!macroIndicatorIds.has(reference.indicatorId) || !indicator) {
+      homeValidation.invalidRefCount += 1;
+      addError(`missing home macro indicator: ${reference.id} / ${reference.indicatorId}`);
+    }
+    if (brief && indicator && (!brief.evidenceIndicatorIds.includes(indicator.id) || brief.domain !== indicator.domain)) {
+      addError(`home macro brief/indicator mismatch: ${reference.id}`);
+    }
+  });
+
+  if (homeIndustryFlowReferences.length < 1 || homeIndustryFlowReferences.length > homeContentLimits.industryFlows) {
+    addError(`home industry flow count must be 1-${homeContentLimits.industryFlows}: ${homeIndustryFlowReferences.length}`);
+  }
+  duplicateValues(homeIndustryFlowReferences.map((flow) => flow.id)).forEach((id) => addError(`duplicate home industry flow: ${id}`));
+  homeIndustryFlowReferences.forEach((flow) => {
+    if (flow.steps.length < 3 || flow.steps.length > 5) addError(`home industry flow step count must be 3-5: ${flow.id} / ${flow.steps.length}`);
+    if (!marketMapIds.has(flow.marketMapId)) {
+      homeValidation.invalidRefCount += 1;
+      addError(`missing home industry market map: ${flow.id} / ${flow.marketMapId}`);
+    }
+    flow.steps.forEach((step, index) => {
+      if (!step.label.trim() || !step.detail.trim()) addError(`empty home industry flow step: ${flow.id} / ${index + 1}`);
+      if (step.marketMapId && (!marketMapIds.has(step.marketMapId) || step.marketMapId !== flow.marketMapId)) {
+        addError(`invalid home industry step market map: ${flow.id} / ${step.marketMapId}`);
+      }
+      step.companyIds?.forEach((companyId) => {
+        if (!companyIds.has(companyId)) {
+          homeValidation.invalidRefCount += 1;
+          addError(`missing home industry company: ${flow.id} / ${companyId}`);
+        }
+      });
+    });
+  });
+
+  if ([...disclosureEventDefinitions.map((entry) => entry.id)].sort().join('|') !== expectedEventTypes.join('|')) {
+    addError(`home disclosure event types must be exactly 7 approved types: ${disclosureEventDefinitions.map((entry) => entry.id).join(', ')}`);
+  }
+  duplicateValues(disclosureEventDefinitions.map((entry) => entry.label)).forEach((label) => addError(`duplicate home disclosure event label: ${label}`));
+
+  if (homeOfficialReportReferences.length < 2 || homeOfficialReportReferences.length > homeContentLimits.reports) {
+    addError(`home report count must be 2-${homeContentLimits.reports}: ${homeOfficialReportReferences.length}`);
+  }
+  duplicateValues(homeOfficialReportReferences.map((reference) => reference.reportId)).forEach((id) => addError(`duplicate home report reference: ${id}`));
+  homeOfficialReportReferences.forEach((reference) => {
+    const report = industryReports.find((entry) => entry.id === reference.reportId);
+    if (!reportIds.has(reference.reportId) || !report) {
+      homeValidation.invalidRefCount += 1;
+      addError(`missing home report reference: ${reference.reportId}`);
+    } else if (!report.keyMetrics.some((metric) => metric.label === reference.metricLabel)) {
+      addError(`missing home report metric: ${reference.reportId} / ${reference.metricLabel}`);
+    }
+  });
+
+  if (homeDeeperFeatureIds.length !== homeContentLimits.deeperCards || homeDeeperFeatureIds.length > 4) {
+    addError(`home deeper feature count must be exactly 4: ${homeDeeperFeatureIds.length}`);
+  }
+  duplicateValues([...homeDeeperFeatureIds]).forEach((id) => addError(`duplicate home deeper feature: ${id}`));
+  homeDeeperFeatureIds.forEach((id) => {
+    if (!homeFeatureLabels.some((feature) => feature.id === id)) addError(`missing home deeper feature: ${id}`);
+  });
+
+  if (beginnerTermDefinitions.length !== 9) addError(`beginner term definition count must be 9: ${beginnerTermDefinitions.length}`);
+  duplicateValues(beginnerTermDefinitions.map((entry) => entry.id)).forEach((id) => addError(`duplicate beginner term id: ${id}`));
+  duplicateValues(beginnerTermDefinitions.map((entry) => entry.term)).forEach((term) => addError(`duplicate beginner term: ${term}`));
+
+  if (homeContentLimits.marketDrivers > 2 || homeContentLimits.disclosures > 3 || homeContentLimits.picks > 3 || homeContentLimits.bottlenecks > 3) {
+    addError(`home display limit exceeds approved cap: ${JSON.stringify(homeContentLimits)}`);
+  }
+  const homeCopy = JSON.stringify({
+    homeFeatureLabels,
+    homeNavigationGroups,
+    homeInsightReferences,
+    homeIndustryFlowReferences,
+    disclosureEventDefinitions,
+    beginnerTermDefinitions,
+  });
+  if (forbiddenCopy.test(homeCopy)) addError('investment recommendation wording in home content');
+  if (fakeScoreCopy.test(homeCopy)) addError('fake score wording in home content');
+
+  const homeSource = [
+    readFileSync(join(process.cwd(), 'src/content/home/entries.ts'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/content/home/types.ts'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/content/home/selectors.ts'), 'utf8'),
+  ].join('\n');
+  if (/https?:\/\/|<img\b|url\s*\(/i.test(homeSource)) addError('external image or URL dependency in home content');
+  if (/VITE_[A-Z0-9_]*(KEY|SECRET|TOKEN)|import\.meta\.env|process\.env/i.test(homeSource)) addError('client secret or environment reference in home content');
+
+  const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
+  const macroComponentSource = readFileSync(join(process.cwd(), 'src/components/macro/MacroDashboard.tsx'), 'utf8');
+  const termHelpSource = readFileSync(join(process.cwd(), 'src/components/common/TermHelp.tsx'), 'utf8');
+  const stylesSource = readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
+  if (!/open=\{marketDetailOpen\}/.test(appSource) || !/onOpenDetail=\{openMarketDetail\}/.test(appSource)) {
+    addError('home market detail CTA must open the existing details content directly');
+  }
+  if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) {
+    addError('home macro request must be deferred until its section approaches the viewport');
+  }
+  if (!/navigateWithinApp\(href\)/.test(appSource)) addError('grouped navigation must preserve SPA transitions for internal detail routes');
+  (['normal', 'watch', 'tight', 'critical'] as const).forEach((status) => {
+    if (!stylesSource.includes(`article.status-${status}`)) addError(`missing home bottleneck status color rule: ${status}`);
+  });
+  if (!/closeFromOutside[\s\S]*buttonRef\.current\?\.focus\(\)/.test(termHelpSource)) {
+    addError('TermHelp outside close must restore focus');
   }
 }
 
@@ -1795,6 +2041,7 @@ validateWeeks();
 validateReferences();
 validateBottlenecks();
 validateMacroContent();
+validateHomeExperience();
 validateCtaPolicy();
 validateCompanyIdentities();
 validateDailyMarketContent();
@@ -1835,6 +2082,9 @@ console.log(`✓ 공급망 병목 레이더 검증 (bottleneck ${bottleneckValid
 console.log(`✓ 병목 source/report/map/company/Pick/daily-market 참조 정상 (잘못된 ref ${bottleneckValidation.invalidRefCount}개)`);
 console.log(`✓ 거시 온도판 검증 (indicator ${macroValidation.indicatorCount}개, domain brief ${macroValidation.briefCount}개, 잘못된 ref ${macroValidation.invalidRefCount}개)`);
 console.log(`✓ FRED 결측·history·bp·pp·단위 변환·부분 실패·보안 단위 검증 (${macroValidation.unitCheckCount}개)`);
+console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
+console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
+console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
 console.log('✓ ticker-only companyName 없음');
 console.log(`✓ CompanyLogo runtime 외부 의존 제거 확인 (Clearbit URL ${companyLogoValidation.runtimeClearbitUrlCount}개, legacy helper ${companyLogoValidation.legacyHelperCount}개)`);

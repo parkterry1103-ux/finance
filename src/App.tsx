@@ -145,10 +145,23 @@ import { resolveCompanyFilingLinks } from './services/filings';
 import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
-import { DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
+import { BeginnerIndustryFlows, BeginnerMarketDrivers, BeginnerMarketOverview, DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
 import { HomeMacroDashboard, MacroDashboard } from './components/macro/MacroDashboard';
 import { macroIndicatorById } from './content/macro';
 import { sourceRegistry } from './content/sources';
+import {
+  disclosureEventRegistry,
+  homeContentLimits,
+  homeDeeperFeatureIds,
+  homeFeatureLabels,
+  homeInsightReferences,
+  homeNavigationGroups,
+  homeOfficialReportReferences,
+  type DisclosureEventType,
+} from './content/home';
+import { latestDailyMarketBrief, marketDriverRegistry } from './content/daily-market';
+import { macroDomainBriefs } from './content/macro';
+import { TermHelp } from './components/common/TermHelp';
 
 type NodeData = {
   company: Company;
@@ -176,6 +189,14 @@ type NewsState = {
   updatedAt?: string;
   error?: string;
 };
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function preferredScrollBehavior(): ScrollBehavior {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
+}
 
 const initialDisclosureResponse: MarketDisclosureApiResponse = {
   ok: false,
@@ -778,7 +799,12 @@ function picksArchivePath() {
   return '/ko/picks/archive';
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'bottlenecks' | 'disclosures' | 'reports';
+function navigateWithinApp(href: string) {
+  window.history.pushState({}, '', href);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -799,18 +825,50 @@ function PrimaryNavigation({
   onOpenDisclosures,
   onOpenReports,
 }: PrimaryNavigationProps) {
-  const navItems: Array<{ key: PrimaryNavKey; label: string; href: string; onClick?: () => void }> = [
-    { key: 'today', label: '오늘', href: '/ko/', onClick: onHome },
-    { key: 'picks', label: 'Pick', href: picksPath(), onClick: onOpenPicks },
-    { key: 'market-map', label: '시장지도', href: marketMapPath(), onClick: onOpenMarketMap },
-    { key: 'macro', label: '거시 온도판', href: macroDashboardPath() },
-    { key: 'bottlenecks', label: '병목 레이더', href: bottlenecksPath() },
-    { key: 'disclosures', label: '공시', href: disclosuresPath(), onClick: onOpenDisclosures },
-    { key: 'reports', label: '보고서', href: reportsPath(), onClick: () => onOpenReports() },
-  ];
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
+  const groupButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as unknown as HTMLElement)) {
+        setOpenGroup(null);
+        setMobileOpen(false);
+      }
+    };
+    const closeEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      const groupToFocus = openGroup;
+      setOpenGroup(null);
+      setMobileOpen(false);
+      if (mobileOpen) mobileButtonRef.current?.focus();
+      else if (groupToFocus) groupButtonRefs.current[groupToFocus]?.focus();
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeEscape);
+    };
+  }, [mobileOpen, openGroup]);
+
+  const activate = (key: PrimaryNavKey, href: string) => {
+    if (key === 'today') onHome();
+    else if (key === 'picks') onOpenPicks();
+    else if (key === 'market-map') onOpenMarketMap();
+    else if (key === 'disclosures') onOpenDisclosures();
+    else if (key === 'reports') onOpenReports();
+    else if (key === 'macro' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
+    else return false;
+    return true;
+  };
+
+  const activeGroup = homeNavigationGroups.find((group) => group.items.some((item) => item.activeKey === active))?.id;
 
   return (
-    <header className={`${variant === 'home' ? 'home-nav' : 'pick-nav'} primary-navigation`}>
+    <header ref={rootRef} className={`${variant === 'home' ? 'home-nav' : 'pick-nav'} primary-navigation`}>
       <a
         href="/ko/"
         onClick={(event) => {
@@ -824,22 +882,76 @@ function PrimaryNavigation({
         </span>
         <strong>주가해부실</strong>
       </a>
-      <nav aria-label="주요 탐색">
-        {navItems.map((item) => (
-          <a
-            key={item.key}
-            href={item.href}
-            className={active === item.key ? 'active' : ''}
-            aria-current={active === item.key ? 'page' : undefined}
-            onClick={(event) => {
-              if (!item.onClick) return;
-              event.preventDefault();
-              item.onClick();
-            }}
-          >
-            {item.label}
-          </a>
-        ))}
+      <button
+        className="primary-navigation__mobile-toggle"
+        type="button"
+        ref={mobileButtonRef}
+        aria-expanded={mobileOpen}
+        aria-controls="primary-navigation-groups"
+        onClick={() => {
+          setMobileOpen((value) => !value);
+          setOpenGroup(null);
+        }}
+      >
+        <span>메뉴</span>
+        <ChevronDown size={17} aria-hidden="true" />
+      </button>
+      <nav id="primary-navigation-groups" aria-label="주요 탐색" className={mobileOpen ? 'is-mobile-open' : ''}>
+        {homeNavigationGroups.map((group) => {
+          const expanded = openGroup === group.id;
+          const menuId = `primary-nav-${group.id}`;
+          return (
+            <div className={`primary-navigation__group${activeGroup === group.id ? ' is-active' : ''}`} key={group.id}>
+              <button
+                type="button"
+                ref={(node) => { groupButtonRefs.current[group.id] = node; }}
+                aria-expanded={expanded}
+                aria-controls={menuId}
+                aria-haspopup="menu"
+                onClick={() => setOpenGroup((current) => current === group.id ? null : group.id)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowDown') return;
+                  event.preventDefault();
+                  setOpenGroup(group.id);
+                  window.requestAnimationFrame(() => {
+                    document.querySelector<HTMLAnchorElement>(`#${menuId} a`)?.focus();
+                  });
+                }}
+              >
+                {group.label}
+                <ChevronDown size={15} aria-hidden="true" />
+              </button>
+              <div className="primary-navigation__menu" id={menuId} role="menu" hidden={!expanded}>
+                {group.items.map((item, itemIndex) => (
+                  <a
+                    key={item.id}
+                    role="menuitem"
+                    href={item.href}
+                    className={active === item.activeKey ? 'active' : ''}
+                    aria-current={active === item.activeKey ? 'page' : undefined}
+                    onClick={(event) => {
+                      const handled = activate(item.activeKey, item.href);
+                      if (handled) event.preventDefault();
+                      setOpenGroup(null);
+                      setMobileOpen(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+                      event.preventDefault();
+                      const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(`#${menuId} a`));
+                      const nextIndex = event.key === 'ArrowDown'
+                        ? (itemIndex + 1) % links.length
+                        : (itemIndex - 1 + links.length) % links.length;
+                      links[nextIndex]?.focus();
+                    }}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
     </header>
   );
@@ -3696,7 +3808,7 @@ function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
       <div className="disclosure-company-line">
         <CompanyIdentity {...identity} size="compact" />
       </div>
-      <h2>{disclosure.reportName}</h2>
+      <h3>{disclosure.reportName}</h3>
       <p>
         <b>확인할 것:</b>
         {checkpoint}
@@ -3795,7 +3907,7 @@ function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
       <div className="disclosure-company-line">
         <CompanyIdentity {...identity} size="compact" />
       </div>
-      <h2>{categoryLabel}</h2>
+      <h3>{categoryLabel}</h3>
       <p>
         <b>확인할 것:</b>
         {checkpoint}
@@ -3893,15 +4005,18 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
 
       <main className="disclosure-radar-main">
         <section className="disclosure-radar-hero">
-          <p className="home-kicker">공식 공시 레이더</p>
-          <h1>공시 레이더</h1>
+          <p className="home-kicker">공식 공시</p>
+          <h1>기업이 직접 밝힌 변화</h1>
+          <span className="beginner-professional-name">OpenDART·SEC EDGAR 공시 레이더</span>
           <p>
             현재 Pick과 시장지도 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
             공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
           </p>
         </section>
 
-        <section className="disclosure-status-grid" aria-label="공시 레이더 상태">
+        <section className="disclosure-status-section" aria-labelledby="disclosure-status-title">
+          <div className="beginner-page-subhead"><span>한눈에 보기</span><h2 id="disclosure-status-title">지금 확인 가능한 공식 문서</h2></div>
+          <div className="disclosure-status-grid">
           <article>
             <span>출처</span>
             <strong>OpenDART · SEC EDGAR</strong>
@@ -3926,26 +4041,29 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
             <span>표시 범위</span>
             <strong>OpenDART 7일 {recent7.length}건 · SEC 30일 {recentSec30.length}건</strong>
           </article>
+          </div>
         </section>
 
         <section className="disclosure-source-tabs" aria-label="공시 출처 선택">
-          <button type="button" className={sourceFilter === 'all' ? 'active' : ''} onClick={() => updateSourceFilter('all')}>
+          <button type="button" className={sourceFilter === 'all' ? 'active' : ''} aria-pressed={sourceFilter === 'all'} onClick={() => updateSourceFilter('all')}>
             전체
           </button>
-          <button type="button" className={sourceFilter === 'opendart' ? 'active' : ''} onClick={() => updateSourceFilter('opendart')}>
+          <button type="button" className={sourceFilter === 'opendart' ? 'active' : ''} aria-pressed={sourceFilter === 'opendart'} onClick={() => updateSourceFilter('opendart')}>
             한국 공시
           </button>
-          <button type="button" className={sourceFilter === 'sec-edgar' ? 'active' : ''} onClick={() => updateSourceFilter('sec-edgar')}>
+          <button type="button" className={sourceFilter === 'sec-edgar' ? 'active' : ''} aria-pressed={sourceFilter === 'sec-edgar'} onClick={() => updateSourceFilter('sec-edgar')}>
             미국 공시
           </button>
         </section>
 
+        <details className="disclosure-filter-details">
+          <summary>자세한 필터</summary>
         <section className="disclosure-filter-panel" aria-label="공시 필터">
           {showDartSpecificFilters ? (
             <div>
               <span><Filter size={14} /> 한국 공시 · OpenDART</span>
               <div className="disclosure-chip-row">
-                <button type="button" className={categoryFilter === 'all' ? 'active' : ''} onClick={() => setCategoryFilter('all')}>
+                <button type="button" className={categoryFilter === 'all' ? 'active' : ''} aria-pressed={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>
                   전체
                 </button>
                 {disclosureCategoryOrder.map((category) => (
@@ -3953,6 +4071,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                     type="button"
                     key={category}
                     className={categoryFilter === category ? 'active' : ''}
+                    aria-pressed={categoryFilter === category}
                     onClick={() => setCategoryFilter(category)}
                   >
                     {disclosureCategoryLabels[category]}
@@ -3966,7 +4085,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               <div>
                 <span><Filter size={14} /> 미국 공시 · SEC EDGAR</span>
                 <div className="disclosure-chip-row">
-                  <button type="button" className={secCategoryFilter === 'all' ? 'active' : ''} onClick={() => setSecCategoryFilter('all')}>
+                  <button type="button" className={secCategoryFilter === 'all' ? 'active' : ''} aria-pressed={secCategoryFilter === 'all'} onClick={() => setSecCategoryFilter('all')}>
                     전체
                   </button>
                   {secFilingCategoryOrder.map((category) => (
@@ -3974,6 +4093,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                       type="button"
                       key={category}
                       className={secCategoryFilter === category ? 'active' : ''}
+                      aria-pressed={secCategoryFilter === category}
                       onClick={() => setSecCategoryFilter(category)}
                     >
                       {secFilingCategoryLabels[category]}
@@ -3984,7 +4104,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               <div>
                 <span><Filter size={14} /> SEC Form</span>
                 <div className="disclosure-chip-row">
-                  <button type="button" className={secFormFilter === 'all' ? 'active' : ''} onClick={() => setSecFormFilter('all')}>
+                  <button type="button" className={secFormFilter === 'all' ? 'active' : ''} aria-pressed={secFormFilter === 'all'} onClick={() => setSecFormFilter('all')}>
                     전체
                   </button>
                   {secSupportedFormPatterns.map((formType) => (
@@ -3992,6 +4112,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                       type="button"
                       key={formType}
                       className={secFormFilter === formType ? 'active' : ''}
+                      aria-pressed={secFormFilter === formType}
                       onClick={() => setSecFormFilter(formType)}
                     >
                       {formType === '424B' ? '424B 계열' : formType}
@@ -4002,7 +4123,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               <div>
                 <span><Filter size={14} /> 8-K Item</span>
                 <div className="disclosure-chip-row">
-                  <button type="button" className={secItemFilter === 'all' ? 'active' : ''} onClick={() => setSecItemFilter('all')}>
+                  <button type="button" className={secItemFilter === 'all' ? 'active' : ''} aria-pressed={secItemFilter === 'all'} onClick={() => setSecItemFilter('all')}>
                     전체 Item
                   </button>
                   {secItemFilterOptions.map((item) => {
@@ -4012,6 +4133,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                         type="button"
                         key={item}
                         className={secItemFilter === item ? 'active' : ''}
+                        aria-pressed={secItemFilter === item}
                         onClick={() => setSecItemFilter(item)}
                       >
                         {definition?.labelKo ?? '공식 설명 확인 필요'} · {item}
@@ -4023,7 +4145,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               <div>
                 <span><Filter size={14} /> Form 4 거래</span>
                 <div className="disclosure-chip-row">
-                  <button type="button" className={secTransactionFilter === 'all' ? 'active' : ''} onClick={() => setSecTransactionFilter('all')}>
+                  <button type="button" className={secTransactionFilter === 'all' ? 'active' : ''} aria-pressed={secTransactionFilter === 'all'} onClick={() => setSecTransactionFilter('all')}>
                     전체 거래
                   </button>
                   {secTransactionFilterOptions.map((code) => {
@@ -4033,13 +4155,14 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                         type="button"
                         key={code}
                         className={secTransactionFilter === code ? 'active' : ''}
+                        aria-pressed={secTransactionFilter === code}
                         onClick={() => setSecTransactionFilter(code)}
                       >
                         {code} · {definition?.labelKo ?? '공식 코드 설명 확인 필요'}
                       </button>
                     );
                   })}
-                  <button type="button" className={secTransactionFilter === 'other' ? 'active' : ''} onClick={() => setSecTransactionFilter('other')}>
+                  <button type="button" className={secTransactionFilter === 'other' ? 'active' : ''} aria-pressed={secTransactionFilter === 'other'} onClick={() => setSecTransactionFilter('other')}>
                     기타
                   </button>
                 </div>
@@ -4049,19 +4172,19 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
           <div>
             <span><Filter size={14} /> 회사</span>
             <div className="disclosure-chip-row">
-              <button type="button" className={companyFilter === 'all' ? 'active' : ''} onClick={() => setCompanyFilter('all')}>
+              <button type="button" className={companyFilter === 'all' ? 'active' : ''} aria-pressed={companyFilter === 'all'} onClick={() => setCompanyFilter('all')}>
                 전체
               </button>
-              <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} onClick={() => setCompanyFilter('current-pick')}>
+              <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} aria-pressed={companyFilter === 'current-pick'} onClick={() => setCompanyFilter('current-pick')}>
                 현재 Pick
               </button>
               {sourceFilter !== 'sec-edgar' ? (
-                <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} onClick={() => setCompanyFilter('market-map')}>
+                <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} aria-pressed={companyFilter === 'market-map'} onClick={() => setCompanyFilter('market-map')}>
                   시장지도 기업
                 </button>
               ) : null}
               {sourceFilter !== 'opendart' ? (
-                <button type="button" className={companyFilter === 'us-pick' ? 'active' : ''} onClick={() => setCompanyFilter('us-pick')}>
+                <button type="button" className={companyFilter === 'us-pick' ? 'active' : ''} aria-pressed={companyFilter === 'us-pick'} onClick={() => setCompanyFilter('us-pick')}>
                   미국 Pick
                 </button>
               ) : null}
@@ -4070,6 +4193,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                     type="button"
                     key={`dart-${company.id}`}
                     className={companyFilter === company.ticker ? 'active' : ''}
+                    aria-pressed={companyFilter === company.ticker}
                     onClick={() => setCompanyFilter(company.ticker)}
                   >
                     {company.companyName}
@@ -4080,6 +4204,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
                     type="button"
                     key={`sec-${company.id}`}
                     className={companyFilter === company.ticker ? 'active' : ''}
+                    aria-pressed={companyFilter === company.ticker}
                     onClick={() => setCompanyFilter(company.ticker)}
                   >
                     {company.companyName}
@@ -4088,6 +4213,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
             </div>
           </div>
         </section>
+        </details>
 
         {sourceNotices.length ? (
           <section className="disclosure-source-notice" aria-label="공시 데이터 상태">
@@ -4099,7 +4225,8 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
         ) : null}
 
         {filteredItems.length ? (
-          <section className="disclosure-card-grid" aria-label="공시 목록">
+          <section className="disclosure-card-grid" aria-labelledby="disclosure-list-title">
+            <h2 className="disclosure-list-title" id="disclosure-list-title">공시 목록</h2>
             {filteredItems.map((item) => (
               item.source === 'opendart'
                 ? <DisclosureCard key={`dart-${item.id}`} disclosure={item.disclosure} />
@@ -4499,7 +4626,298 @@ type LandingPageProps = {
   secFilings: MarketSecFilingsApiResponse;
 };
 
-function LandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenReports, onOpenCategory, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
+const beginnerGuideStorageKey = 'finance1.beginner-guide.dismissed.v1';
+
+function HomeFirstVisitGuide({ open, onDismiss }: { open: boolean; onDismiss: () => void }) {
+  if (!open) return null;
+  return (
+    <aside className="home-first-visit-guide" aria-labelledby="home-first-visit-title">
+      <div>
+        <span>이 사이트 보는 법</span>
+        <p className="home-first-visit-title" id="home-first-visit-title">주가해부실은 이렇게 보면 됩니다</p>
+        <p>큰 흐름을 먼저 읽고, 궁금한 카드에서 자세한 데이터와 공식 원문을 여세요.</p>
+      </div>
+      <ol>
+        <li><b>1</b><span>오늘 시장이 왜 움직였는지 확인</span></li>
+        <li><b>2</b><span>돈과 경기의 큰 흐름 확인</span></li>
+        <li><b>3</b><span>공급이 부족한 산업 확인</span></li>
+        <li><b>4</b><span>관련 기업과 공식 자료 확인</span></li>
+      </ol>
+      <button type="button" onClick={onDismiss}>알겠어요</button>
+    </aside>
+  );
+}
+
+function HomeInsightCards({ onOpenMarketDetail }: { onOpenMarketDetail: () => void }) {
+  return (
+    <section className="beginner-home-section home-insight-section" aria-labelledby="home-insight-title">
+      <div className="beginner-section-head">
+        <div><p>3 · 핵심</p><h2 id="home-insight-title">오늘 알아둘 세 가지</h2></div>
+      </div>
+      <p className="beginner-section-lead">시장, 돈의 흐름, 공급 상황에서 하나씩 골랐습니다.</p>
+      <div className="home-insight-grid">
+        {homeInsightReferences.map((reference, index) => {
+          const driver = reference.kind === 'market-driver' ? marketDriverRegistry[reference.referenceId] : undefined;
+          const macroBrief = reference.kind === 'macro-brief' ? macroDomainBriefs.find((brief) => brief.id === reference.referenceId) : undefined;
+          const bottleneck = reference.kind === 'bottleneck' ? bottleneckById(reference.referenceId) : undefined;
+          const detail = driver?.confirmedFact ?? macroBrief?.summary ?? bottleneck?.summary ?? '';
+          const meta = driver
+            ? latestDailyMarketBrief()?.date.replace(/-/g, '.')
+            : macroBrief
+              ? `해설 기준 ${macroBrief.asOf.replace(/-/g, '.')}`
+              : bottleneck
+                ? `${bottleneckStatusLabels[bottleneck.status]} · ${bottleneckTrendLabels[bottleneck.trend]}`
+                : '';
+          return (
+            <article key={reference.id}>
+              <div><span>{index + 1}</span><em>{reference.eyebrow}</em></div>
+              <h3>{reference.title}</h3>
+              <p>{detail}</p>
+              <strong>왜 중요한가요?</strong>
+              <p>{reference.whyItMatters}</p>
+              <small>{meta}</small>
+              <a href={reference.href} onClick={(event) => {
+                event.preventDefault();
+                if (reference.href === '#daily-market-detail') onOpenMarketDetail();
+                else navigateWithinApp(reference.href);
+              }}>자세히 보기 <ArrowRight size={14} /></a>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function disclosureEventTypeForItem(item: OfficialDisclosureFeedItem): DisclosureEventType {
+  if (item.source === 'opendart') {
+    const name = item.disclosure.reportName;
+    if (/(합병|분할|영업양수|영업양도|타법인.*주식)/.test(name)) return 'merger';
+    if (item.disclosure.category === 'investment' || /(시설투자|신규시설|유형자산|생산시설|설비)/.test(name)) return 'investment';
+    if (item.disclosure.category === 'supply-contract') return 'contract';
+    if (item.disclosure.category === 'earnings' || item.disclosure.category === 'periodic-report') return 'earnings';
+    if (item.disclosure.category === 'capital') return 'financing';
+    if (item.disclosure.category === 'ownership' && /(임원|주요주주|소유주식|특정증권)/.test(name)) return 'insider';
+    return 'other';
+  }
+  const filing = item.filing;
+  const itemCodes = new Set((filing.eightKItems ?? []).map((entry) => entry.item));
+  if (filing.category === 'insider-transaction') return 'insider';
+  if (filing.category === 'quarterly-report' || filing.category === 'annual-report' || itemCodes.has('2.02')) return 'earnings';
+  if (itemCodes.has('2.01') || itemCodes.has('5.01')) return 'merger';
+  if (filing.category === 'capital-markets' || itemCodes.has('2.03') || itemCodes.has('3.02')) return 'financing';
+  if (itemCodes.has('1.01')) return 'contract';
+  return 'other';
+}
+
+function DisclosureEventIcon({ type }: { type: DisclosureEventType }) {
+  if (type === 'earnings') return <BarChart3 size={19} aria-hidden="true" />;
+  if (type === 'investment') return <Factory size={19} aria-hidden="true" />;
+  if (type === 'contract') return <FileSearch size={19} aria-hidden="true" />;
+  if (type === 'financing') return <CircleDollarSign size={19} aria-hidden="true" />;
+  if (type === 'insider') return <Target size={19} aria-hidden="true" />;
+  if (type === 'merger') return <Network size={19} aria-hidden="true" />;
+  return <Newspaper size={19} aria-hidden="true" />;
+}
+
+function homeFeatureCurrentState(featureId: string) {
+  if (featureId === 'macro') {
+    return macroDomainBriefs.find((brief) => brief.id === 'financial-conditions-brief')?.state ?? '네 가지 거시 영역을 확인합니다.';
+  }
+  if (featureId === 'bottlenecks') {
+    const entry = featuredBottleneck();
+    return entry ? `${entry.shortTitle} · ${bottleneckStatusLabels[entry.status]}` : '공급 제약 근거를 확인합니다.';
+  }
+  if (featureId === 'market-map') {
+    return `상세 지도 ${currentWeeklyDigest.marketMapItems.filter((item) => item.status === 'active').length}개`;
+  }
+  return `공식 자료 ${industryReports.length}개 · 검증 수치 ${industryReports.reduce((sum, report) => sum + report.keyMetrics.length, 0)}개`;
+}
+
+function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenReports, onOpenCategory, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
+  const [guideOpen, setGuideOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(beginnerGuideStorageKey) !== 'dismissed';
+    } catch {
+      return true;
+    }
+  });
+  const [marketDetailOpen, setMarketDetailOpen] = useState(false);
+  const weeklyPicks = weeklyStockAutopsyPicks().slice(0, homeContentLimits.picks);
+  const recentOfficialItems = officialDisclosureFeedItems(disclosures.items, secFilings.items).slice(0, homeContentLimits.disclosures);
+  const deeperFeatures = homeDeeperFeatureIds.map((id) => homeFeatureLabels.find((feature) => feature.id === id)).filter((feature): feature is (typeof homeFeatureLabels)[number] => Boolean(feature));
+  const officialReports = homeOfficialReportReferences.map((reference) => {
+    const report = industryReports.find((entry) => entry.id === reference.reportId);
+    const metric = report?.keyMetrics.find((entry) => entry.label === reference.metricLabel);
+    return report && metric ? { report, metric } : null;
+  }).filter((entry): entry is { report: IndustryReport; metric: IndustryReport['keyMetrics'][number] } => Boolean(entry));
+
+  const dismissGuide = () => {
+    try { window.localStorage.setItem(beginnerGuideStorageKey, 'dismissed'); } catch { /* storage is optional */ }
+    setGuideOpen(false);
+  };
+  const reopenGuide = () => {
+    try { window.localStorage.removeItem(beginnerGuideStorageKey); } catch { /* storage is optional */ }
+    setGuideOpen(true);
+    window.requestAnimationFrame(() => document.getElementById('home-first-visit-title')?.scrollIntoView({ block: 'center' }));
+  };
+  const openMarketDetail = () => {
+    setMarketDetailOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById('daily-market-detail')?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
+    });
+  };
+
+  return (
+    <div className="home-shell story-dark-shell story-home-shell beginner-home-shell" id="top">
+      <PrimaryNavigation
+        active="today"
+        variant="home"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMapLibrary}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+      <main>
+        <HomeFirstVisitGuide open={guideOpen} onDismiss={dismissGuide} />
+        <BeginnerMarketOverview marketPrices={marketPrices} onOpenDetail={openMarketDetail} />
+        <BeginnerMarketDrivers />
+        <HomeInsightCards onOpenMarketDetail={openMarketDetail} />
+        <BeginnerIndustryFlows onOpenCategory={onOpenCategory} />
+
+        <section className="beginner-home-section home-beginner-disclosures" aria-labelledby="home-beginner-disclosures-title">
+          <div className="beginner-section-head">
+            <div><p>5 · 기업</p><h2 id="home-beginner-disclosures-title">기업이 직접 밝힌 변화</h2><span>공식 <TermHelp termId="disclosure" label="공시" /></span></div>
+            <button type="button" onClick={onOpenDisclosures}>전체 공시 보기 <ArrowRight size={15} /></button>
+          </div>
+          <p className="beginner-section-lead">기사의 해석보다 먼저 OpenDART와 SEC EDGAR에 공개된 문서를 확인합니다.</p>
+          <div className="home-beginner-disclosure-grid">
+            {recentOfficialItems.length ? recentOfficialItems.map((item) => {
+              const isDart = item.source === 'opendart';
+              const eventType = disclosureEventTypeForItem(item);
+              const eventDefinition = disclosureEventRegistry[eventType];
+              const companyName = isDart ? item.disclosure.companyName : item.filing.companyName;
+              const ticker = isDart ? item.disclosure.ticker : item.filing.ticker;
+              const officialLabel = isDart ? item.disclosure.reportName : `${item.filing.formType} · ${secFilingCategoryLabels[item.filing.category]}`;
+              const filedAt = isDart ? item.disclosure.receivedAt : item.filing.filedAt;
+              const sourceUrl = isDart ? item.disclosure.sourceUrl : item.filing.sourceUrl;
+              return (
+                <article key={`${item.source}-${item.id}`}>
+                  <div className={`home-disclosure-event-icon event-${eventType}`}><DisclosureEventIcon type={eventType} /><span>{eventDefinition.label}</span></div>
+                  <CompanyIdentity companyName={companyName} ticker={ticker} countryLabel={isDart ? '한국' : '미국'} size="compact" />
+                  <h3>{officialLabel}</h3>
+                  <p>{eventDefinition.description}</p>
+                  <div><time dateTime={filedAt}>{formatKstDate(filedAt)}</time><a href={sourceUrl} target="_blank" rel="noreferrer noopener">원문 <ExternalLink size={13} /></a></div>
+                </article>
+              );
+            }) : (
+              <article><div className="home-disclosure-event-icon event-other"><Newspaper size={19} aria-hidden="true" /><span>공식 공시</span></div><h3>새 공시를 확인하고 있습니다</h3><p>현재 선택 범위에서 표시할 새 공식 공시가 없습니다.</p></article>
+            )}
+          </div>
+        </section>
+
+        <section className="beginner-home-section home-deeper-section" aria-labelledby="home-deeper-title">
+          <div className="beginner-section-head"><div><p>6 · 탐색</p><h2 id="home-deeper-title">더 깊게 보기</h2></div></div>
+          <p className="beginner-section-lead">궁금한 질문에 맞는 화면 하나를 골라 들어가세요.</p>
+          <div className="home-deeper-grid">
+            {deeperFeatures.map((feature) => (
+              <a key={feature.id} href={feature.href} onClick={(event) => {
+                event.preventDefault();
+                navigateWithinApp(feature.href);
+              }}>
+                <span>{feature.professionalName}</span><h3>{feature.easyName}</h3><p>{feature.description}</p><small><b>현재</b> {homeFeatureCurrentState(feature.id)}</small><strong>열어 보기 <ArrowRight size={14} /></strong>
+              </a>
+            ))}
+          </div>
+          <HomeMacroDashboard onOpen={() => navigateWithinApp(macroDashboardPath())} />
+          <section className="home-bottleneck-track-section" aria-labelledby="home-bottleneck-track-title">
+            <div className="beginner-section-head">
+              <div><p>공급 상황</p><h2 id="home-bottleneck-track-title">공급이 부족한 곳</h2><span><TermHelp termId="supply-chain-bottleneck" label="공급망 병목" />을 상태별로 봅니다.</span></div>
+              <a href={bottlenecksPath()}>전체 보기 <ArrowRight size={15} /></a>
+            </div>
+            <p className="beginner-section-lead"><TermHelp termId="order-backlog" label="수주잔고" />와 <TermHelp termId="lead-time" label="리드타임" /> 같은 근거가 완화되는지 함께 확인합니다.</p>
+            <div className="home-bottleneck-track-grid">
+              {homeBottlenecks().map((entry) => (
+                <article className={`status-${entry.status}`} key={entry.id}>
+                  <div className="home-bottleneck-card-top"><span>{bottleneckStatusLabels[entry.status]}</span><em>{bottleneckTrendLabels[entry.trend]}</em></div>
+                  <h3>{entry.shortTitle}</h3>
+                  <div className="bottleneck-status-track" aria-label={`현재 상태 ${bottleneckStatusLabels[entry.status]}`}>
+                    {(['normal', 'watch', 'tight', 'critical'] as BottleneckStatus[]).map((status) => <span key={status} className={status === entry.status ? 'is-current' : ''}>{bottleneckStatusLabels[status]}</span>)}
+                  </div>
+                  <p>{entry.summary}</p>
+                  <small><b>완화 단서</b> {entry.reliefSignals[0]}</small>
+                  <a href={bottlenecksPath(entry.id)} onClick={(event) => {
+                    event.preventDefault();
+                    navigateWithinApp(bottlenecksPath(entry.id));
+                  }}>근거 보기 <ArrowRight size={14} /></a>
+                </article>
+              ))}
+            </div>
+          </section>
+        </section>
+
+        <section className="beginner-home-section home-beginner-picks" aria-labelledby="home-beginner-picks-title">
+          <div className="beginner-section-head">
+            <div><p>7 · 기업</p><h2 id="home-beginner-picks-title">이번 주에 살펴볼 기업</h2><span>주가해부실 Pick</span></div>
+            <button type="button" onClick={onOpenPicks}>전체 보기 <ArrowRight size={15} /></button>
+          </div>
+          <p className="beginner-section-lead">주가 움직임을 출발점으로 삼되, 실적과 공시에서 이유를 다시 확인합니다.</p>
+          <div className="home-compact-pick-grid beginner-pick-grid">
+            {weeklyPicks.map((pick) => (
+              <article className="home-compact-pick-card" key={pick.id}>
+                <CompanyIdentityForPick pick={pick} size="compact" />
+                <h3>{pick.title}</h3>
+                <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
+                <p>{pick.reasonSummary}</p>
+                <button type="button" onClick={() => onOpenPick(pick)}>기업 살펴보기 <ArrowRight size={15} /></button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="beginner-home-section home-official-materials" aria-labelledby="home-official-materials-title">
+          <div className="beginner-section-head">
+            <div><p>8 · 근거</p><h2 id="home-official-materials-title">공식 자료</h2><span>산업을 이해하는 자료</span></div>
+            <button type="button" onClick={() => onOpenReports()}>전체 자료 보기 <ArrowRight size={15} /></button>
+          </div>
+          <p className="beginner-section-lead">공공기관·산업단체의 원문과 그 안에서 확인한 대표 수치입니다.</p>
+          <div className="home-report-grid beginner-report-grid">
+            {officialReports.map(({ report, metric }) => (
+              <article className="home-report-card" key={report.id}>
+                <span>{report.publisher} · {reportCategoryLabels[report.category]} · {reportPublishedLabel(report)}</span>
+                <h3>{report.titleKo}</h3>
+                <div><small>{metric.label}</small><strong>{metric.value}</strong><em>{metric.kind === 'actual' ? '실제' : metric.kind === 'forecast' ? '전망' : '범위'}</em></div>
+                <p>{report.summary[0]}</p>
+                <small className="home-report-related-industry">관련 산업 · {report.marketMapIds.map((mapId) => reportMapLabels[mapId] ?? mapId).join(' · ')}</small>
+                <button type="button" onClick={() => onOpenReports(report.id)}>자료 읽기 <ArrowRight size={15} /></button>
+              </article>
+            ))}
+          </div>
+          <details
+            className="home-daily-market-detail"
+            id="daily-market-detail"
+            open={marketDetailOpen}
+            onToggle={(event) => setMarketDetailOpen(event.currentTarget.open)}
+          >
+            <summary>오늘 시장 전체 브리핑 펼치기</summary>
+            <DailyMarketBrief marketPrices={marketPrices} onOpenCategory={onOpenCategory} onOpenReports={onOpenReports} />
+          </details>
+          <footer className="beginner-home-footer">
+            <p>표시된 연결은 이해를 돕기 위한 분석 구조이며 자동 투자 신호가 아닙니다.</p>
+            <button type="button" onClick={reopenGuide}>이 사이트 보는 법 다시 보기</button>
+          </footer>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function LandingPage(props: LandingPageProps) {
+  return <BeginnerLandingPage {...props} />;
+}
+
+function LegacyLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenReports, onOpenCategory, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
   const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
   const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
   const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
@@ -5444,14 +5862,15 @@ function SupplyChainBottlenecksPage({
       <main className="bottleneck-main">
         <section className="bottleneck-hero">
           <p className="home-kicker">공개 자료로 지속 관찰하는 편집형 모니터링</p>
-          <h1>공급망 병목 레이더</h1>
+          <h1>공급이 부족한 곳</h1>
+          <span className="beginner-professional-name">공급망 병목 레이더</span>
           <p>공급 제약의 근거와 변화 방향을 확인하고, 산업·시장지도·보고서·기업으로 이어지는 구조를 봅니다.</p>
           <small>기준일 {latestAsOf ? bottleneckDateLabel(latestAsOf) : '확인 중'} · 최근 검토 {latestReviewedAt ? bottleneckDateLabel(latestReviewedAt) : '확인 중'} · 투자 추천이나 실시간 점수가 아닙니다.</small>
         </section>
 
         <section className="bottleneck-summary" aria-labelledby="bottleneck-summary-title">
           <div className="bottleneck-section-head">
-            <span>상태 요약</span>
+            <span>한눈에 보기</span>
             <h2 id="bottleneck-summary-title">관찰 중인 병목 {supplyChainBottlenecks.length}개</h2>
           </div>
           <div className="bottleneck-summary-grid">
@@ -5466,7 +5885,7 @@ function SupplyChainBottlenecksPage({
         {featured ? (
           <section className={`bottleneck-featured status-${featured.status}`} aria-labelledby="bottleneck-featured-title">
             <div className="bottleneck-featured-copy">
-              <span className="bottleneck-featured-label">Featured bottleneck</span>
+              <span className="bottleneck-featured-label">현재 무엇을 봐야 하나요?</span>
               <BottleneckStatusBadge entry={featured} />
               <h2 id="bottleneck-featured-title">{featured.title}</h2>
               <p>{featured.summary}</p>
@@ -5663,7 +6082,7 @@ function SupplyChainBottleneckDetailPage({
         <button className="bottleneck-detail-back" type="button" onClick={() => onOpenBottlenecks()}>← 공급망 병목 레이더</button>
 
         <section className={`bottleneck-detail-hero status-${bottleneck.status}`}>
-          <p className="home-kicker">{bottleneckCategoryLabels[bottleneck.category]} · 공급망 병목</p>
+          <p className="home-kicker">한눈에 보기 · {bottleneckCategoryLabels[bottleneck.category]}</p>
           <BottleneckStatusBadge entry={bottleneck} />
           <h1>{bottleneck.title}</h1>
           <p>{bottleneck.summary}</p>
@@ -5676,15 +6095,15 @@ function SupplyChainBottleneckDetailPage({
 
         <section className="bottleneck-detail-assessment" aria-labelledby="bottleneck-assessment-title">
           <div>
-            <span>현재 판단</span>
-            <h2 id="bottleneck-assessment-title">왜 이 상태로 보고 있나</h2>
+            <span>왜 중요한가요?</span>
+            <h2 id="bottleneck-assessment-title">왜 이 상태로 보고 있나요?</h2>
           </div>
           <p>{bottleneck.assessment}</p>
         </section>
 
         <section className="bottleneck-detail-section" aria-labelledby="bottleneck-evidence-title">
           <div className="bottleneck-section-head">
-            <span>확인된 근거</span>
+            <span>핵심 숫자</span>
             <h2 id="bottleneck-evidence-title">숫자와 공식 발표</h2>
             <p>사실 자료와 편집 판단을 분리했습니다.</p>
           </div>
@@ -5705,7 +6124,9 @@ function SupplyChainBottleneckDetailPage({
           </div>
         </section>
 
-        <section className="bottleneck-signal-grid" aria-label="공급 압력과 완화 조건">
+        <section className="bottleneck-signal-section" aria-labelledby="bottleneck-signal-title">
+          <div className="bottleneck-section-head"><span>현재 무엇을 봐야 하나요?</span><h2 id="bottleneck-signal-title">공급 압력과 완화 조건</h2><p><TermHelp termId="lead-time" label="리드타임" />이 실제로 줄어드는지도 함께 확인합니다.</p></div>
+          <div className="bottleneck-signal-grid">
           <article className="pressure">
             <span>공급 압력</span>
             <h2>병목을 지지하는 신호</h2>
@@ -5721,6 +6142,7 @@ function SupplyChainBottleneckDetailPage({
             <h2>어디까지 조심해서 볼까</h2>
             <ul>{bottleneck.uncertainties.map((signal) => <li key={signal}>{signal}</li>)}</ul>
           </article>
+          </div>
         </section>
 
         <section className="bottleneck-detail-section" aria-labelledby="bottleneck-company-title">
@@ -5829,7 +6251,8 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
         <section className="industry-reports-hero">
           <p className="home-kicker industry-reports-kicker">공식 원문에서 기업 실적까지 연결하는 리서치 허브</p>
           <div className="industry-reports-hero-mark" aria-hidden="true"><BookOpen size={30} /></div>
-          <h1>산업 리포트 허브</h1>
+          <h1>산업을 이해하는 자료</h1>
+          <span className="beginner-professional-name">산업 리포트 허브</span>
           <p>거시 전망, 산업 수요, 기업 실적을 한 흐름에서 읽습니다. 모든 수치는 발행처의 공식 원문과 연결하고 전망과 실제를 구분했습니다.</p>
           <div className="industry-report-hero-stats" aria-label="리포트 현황">
             <span><strong>{industryReports.length}</strong> 공식 리포트</span>
@@ -5840,7 +6263,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
 
         <section className="industry-reports-why" aria-labelledby="industry-reports-why-title">
           <div>
-            <span>읽는 순서</span>
+            <span>한눈에 보기</span>
             <h2 id="industry-reports-why-title">원문 → 핵심 수치 → 시장 흐름 → 기업 검증</h2>
           </div>
           <div className="industry-reports-principles">
@@ -6048,14 +6471,14 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
 
         <section className="industry-report-detail-grid">
           <article className="industry-report-detail-card">
-            <span>3줄 요약</span>
-            <h2>먼저 읽을 핵심</h2>
+            <span>한눈에 보기</span>
+            <h2>먼저 읽을 세 가지</h2>
             <ul>
               {report.summary.map((bullet) => <li key={bullet}>{bullet}</li>)}
             </ul>
           </article>
           <article className="industry-report-detail-card industry-report-detail-metrics">
-            <span>원문에서 확인한 수치</span>
+            <span>핵심 숫자</span>
             <h2>전망과 실제를 구분해서 보기</h2>
             <div>
               {report.keyMetrics.map((metric) => (
@@ -6069,14 +6492,14 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
             </div>
           </article>
           <article className="industry-report-detail-card">
-            <span>어떻게 사용할까</span>
+            <span>왜 중요한가요?</span>
             <h2>기업 공시와 함께 확인하기</h2>
             <ul>
               {report.howToUse.map((item) => <li key={item}>{item}</li>)}
             </ul>
           </article>
           <article className="industry-report-detail-card industry-report-detail-connections">
-            <span>연결해서 보기</span>
+            <span>현재 무엇을 봐야 하나요?</span>
             <h2>시장지도·기업·Pick</h2>
             <div>
               {report.marketMapIds.map((mapId) => (
@@ -6135,10 +6558,17 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenDisclosures, onOpenCa
 
       <main>
         <section className="market-map-library-hero">
-          <p className="home-kicker">시장지도 보관함</p>
-          <h1>어떤 시장 흐름을 볼까요?</h1>
-          <p>대표 해부를 본 뒤, 필요한 시장지도만 선택해서 들어갑니다.</p>
+          <p className="home-kicker">시장지도·공급망 구조</p>
+          <h1>산업이 연결되는 구조</h1>
+          <span className="beginner-professional-name">시장지도 보관함</span>
+          <p>원재료와 장비에서 완제품 기업까지 이어지는 구조를 골라 봅니다.</p>
           <small>준비 중 카테고리는 빈 상세 화면으로 보내지 않습니다.</small>
+        </section>
+
+        <section className="beginner-page-overview market-map-library-overview" aria-labelledby="market-map-overview-title">
+          <span>한눈에 보기</span>
+          <h2 id="market-map-overview-title">지금 열어볼 수 있는 구조 {marketMapItems.filter((item) => item.status === 'active').length}개</h2>
+          <p><strong>왜 중요한가요?</strong> 한 기업의 변화가 원재료·장비·고객사 가운데 어디에서 시작됐는지 연결해서 볼 수 있습니다.</p>
         </section>
 
         <section className="market-map-library-grid" aria-label="시장지도 카테고리">
@@ -6419,12 +6849,18 @@ function InfrastructureStoryMapPage({
               <span>{map.graphIntro.eyebrow}</span>
               <h2 id="reconstruction-connections-title">{map.graphIntro.description}</h2>
             </div>
-            <button type="button" className="primary" onClick={() => setShowConnections((current) => !current)}>
+            <button
+              type="button"
+              className="primary"
+              aria-expanded={showConnections}
+              aria-controls={`${map.sectorId}-connection-canvas`}
+              onClick={() => setShowConnections((current) => !current)}
+            >
               {showConnections ? '5단계 흐름으로 돌아가기' : '전체 연결 보기'}
             </button>
           </div>
           {showConnections && (
-            <div className="reconstruction-flow-canvas" aria-label={graphAriaLabel}>
+            <div className="reconstruction-flow-canvas" id={`${map.sectorId}-connection-canvas`} aria-label={graphAriaLabel}>
               <ReactFlow
                 nodes={graphNodes}
                 edges={graphEdges}
@@ -7197,7 +7633,7 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     })
     .slice(0, 3);
   const scrollToAnalysisSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(id)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
   };
   const financialConclusion = financialOneLineConclusion(company, disclosureAnalysis);
   const financialNumberCards = financialPriorityMetrics.slice(0, 3).map((metric, index) => ({
@@ -8243,7 +8679,7 @@ function App() {
     const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
-      document.getElementById(routeHash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(routeHash)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isMacroDashboardRoute, isReportsRoute, routeHash]);
@@ -8304,7 +8740,7 @@ function App() {
     window.requestAnimationFrame(() => {
       flowInstance.fitView({
         padding: isAiRelationshipMap ? 0.14 : 0.22,
-        duration: 420,
+        duration: prefersReducedMotion() ? 0 : 420,
         includeHiddenNodes: false,
       });
       if (isAiRelationshipMap && selectedCompany) {
@@ -8324,7 +8760,7 @@ function App() {
     if (!flowInstance) return;
     flowInstance.fitView({
       padding: isAiRelationshipMap ? 0.28 : 0.24,
-      duration: 420,
+      duration: prefersReducedMotion() ? 0 : 420,
       includeHiddenNodes: false,
     });
   }
@@ -8342,7 +8778,7 @@ function App() {
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
         zoom: isAiRelationshipMap ? (isAdvancedRelationshipView ? 0.72 : 0.9) : Math.max(flowInstance.getZoom(), 0.58),
-        duration: 420,
+        duration: prefersReducedMotion() ? 0 : 420,
       });
     });
   }
@@ -8523,7 +8959,7 @@ function App() {
       }
       flowInstance.fitView({
         padding: isAiRelationshipMap ? 0.2 : 0.22,
-        duration: 420,
+        duration: prefersReducedMotion() ? 0 : 420,
         includeHiddenNodes: false,
       });
     }, 80);
@@ -8566,7 +9002,7 @@ function App() {
         }
         flowInstance.fitView({
           padding: isAiRelationshipMap ? 0.2 : 0.22,
-          duration: 320,
+          duration: prefersReducedMotion() ? 0 : 320,
           includeHiddenNodes: false,
         });
       }, 120);
@@ -8645,7 +9081,7 @@ function App() {
     setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
     if (anchor) {
       window.setTimeout(() => {
-        document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById(anchor)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
       }, 140);
     }
   }
@@ -9922,7 +10358,7 @@ function App() {
               onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
               onInit={(instance) => setFlowInstance(instance)}
               fitView={!isAiRelationshipMap}
-              fitViewOptions={{ padding: isAdvancedRelationshipView ? 0.32 : isAiRelationshipMap ? 0.18 : 0.2, duration: 420 }}
+              fitViewOptions={{ padding: isAdvancedRelationshipView ? 0.32 : isAiRelationshipMap ? 0.18 : 0.2, duration: prefersReducedMotion() ? 0 : 420 }}
               minZoom={isAdvancedRelationshipView ? 0.36 : isAiRelationshipMap ? 0.52 : 0.32}
               maxZoom={isAdvancedRelationshipView ? 1.18 : isAiRelationshipMap ? 1.4 : 1.45}
               nodesDraggable={!isMapLocked}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ExternalLink, Info } from 'lucide-react';
 import {
   macroBriefTrendLabels,
@@ -6,6 +6,7 @@ import {
   macroDomainLabels,
   macroDomainOrder,
   macroFrequencyLabels,
+  macroIndicatorById,
   macroIndicatorDefinitions,
   macroIndicatorsByDomain,
   macroRelatedBottlenecks,
@@ -17,6 +18,8 @@ import {
 import { sourceRegistry } from '../../content/sources/index.js';
 import { fetchMacroIndicators } from '../../services/macro.js';
 import { MacroSparkline } from './MacroSparkline.js';
+import { TermHelp } from '../common/TermHelp.js';
+import { homeMacroReferences } from '../../content/home/index.js';
 
 function dateLabel(date: string, frequency?: MacroIndicatorDefinition['frequency']) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
@@ -154,18 +157,68 @@ export function MacroDomainSummaryCards({ compact = false }: { compact?: boolean
   );
 }
 
-export function HomeMacroDashboard() {
+export function HomeMacroDashboard({ onOpen }: { onOpen?: () => void }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [response, setResponse] = useState<MacroIndicatorsResponse | null>(null);
+  useEffect(() => {
+    const element = rootRef.current;
+    if (!element) return;
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      setShouldLoad(true);
+      observer.disconnect();
+    }, { rootMargin: '160px 0px' });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!shouldLoad) return;
+    let active = true;
+    fetchMacroIndicators().then((result) => {
+      if (active) setResponse(result);
+    });
+    return () => { active = false; };
+  }, [shouldLoad]);
+  const byId = useMemo(() => new Map((response?.series ?? []).map((series) => [series.id, series])), [response]);
+
   return (
-    <section className="home-macro-section" aria-labelledby="home-macro-title">
-      <div className="home-dashboard-head">
+    <div className="home-macro-section" aria-labelledby="home-macro-title" ref={rootRef}>
+      <div className="beginner-section-head">
         <div>
-          <span>거시 온도판</span>
-          <h2 id="home-macro-title">금리·유동성·산업 수요의 배경을 함께 봅니다</h2>
+          <p>돈의 흐름</p>
+          <h2 id="home-macro-title">돈의 흐름과 경기</h2>
+          <span>금리·유동성·산업 수요</span>
         </div>
-        <a href="/ko/macro-dashboard">거시 지표 전체 보기 <ArrowRight size={15} /></a>
+        <a href="/ko/macro-dashboard" onClick={(event) => {
+          if (!onOpen) return;
+          event.preventDefault();
+          onOpen();
+        }}>지표 전체 보기 <ArrowRight size={15} /></a>
       </div>
-      <MacroDomainSummaryCards compact />
-    </section>
+      <p className="beginner-section-lead">네 가지 배경을 먼저 보고, 필요할 때 세부 지표를 펼쳐 확인하세요.</p>
+      <div className="home-macro-beginner-grid" aria-busy={shouldLoad && response === null}>
+        {homeMacroReferences.map((reference) => {
+          const brief = macroDomainBriefs.find((entry) => entry.id === reference.briefId);
+          const definition = macroIndicatorById(reference.indicatorId);
+          const series = definition ? byId.get(definition.id) : undefined;
+          if (!brief) return null;
+          return (
+            <article key={reference.id}>
+              <div><span>{reference.easyLabel}</span><em className={`trend-${brief.trend}`}>{macroBriefTrendLabels[brief.trend]}</em></div>
+              <h3>{brief.state}</h3>
+              <p>{brief.summary}</p>
+              {definition && series ? <MacroSparkline history={series.history} label={definition.label} /> : <div className="macro-sparkline-empty">{!shouldLoad ? '이 영역에 오면 추세를 불러옵니다.' : response === null ? '추세를 불러오는 중입니다.' : '현재 추세를 표시할 수 없습니다.'}</div>}
+              <small>{definition?.label ?? '대표 지표'} · 해설 기준 {dateLabel(brief.asOf)}</small>
+            </article>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -189,9 +242,21 @@ export function MacroDashboard() {
     <main className="macro-dashboard-main">
       <section className="macro-dashboard-intro">
         <p className="home-kicker">공식 거시 데이터 · FRED</p>
-        <h1>거시 온도판</h1>
-        <p>금리·금융여건·유동성·산업 수요를 함께 봅니다.</p>
+        <h1>돈의 흐름과 경기</h1>
+        <p className="beginner-professional-name">금리·유동성·산업 수요 온도판</p>
+        <p>금리와 돈의 흐름이 산업 수요에 어떤 배경이 되는지 차근차근 봅니다.</p>
         <div><Info size={16} /><span>지표마다 발표 주기가 다르며 최신 값은 같은 날짜의 데이터가 아닐 수 있습니다.</span></div>
+      </section>
+
+      <section className="beginner-page-overview" aria-labelledby="macro-overview-title">
+        <span>한눈에 보기</span>
+        <h2 id="macro-overview-title">네 가지 질문부터 확인하세요</h2>
+        <div>
+          <p><strong>금리는 높은가요?</strong> 만기별 금리와 <TermHelp termId="yield-spread" label="장단기 금리차" />를 함께 봅니다.</p>
+          <p><strong>돈을 구하기 쉬운가요?</strong> <TermHelp termId="financial-conditions" label="금융여건" />의 방향을 확인합니다.</p>
+          <p><strong>시장에 돈이 늘고 있나요?</strong> <TermHelp termId="liquidity" label="유동성" /> 지표의 주기를 나눠 봅니다.</p>
+          <p><strong>실제 수요가 움직이나요?</strong> <TermHelp termId="industrial-production" label="산업생산" />과 <TermHelp termId="capacity-utilization" label="가동률" />을 봅니다.</p>
+        </div>
       </section>
 
       <section className="macro-dashboard-summary" aria-labelledby="macro-summary-title">

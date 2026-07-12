@@ -4580,3 +4580,57 @@ Sparkline은 신규 chart library 없이 responsive SVG로 그립니다. 결측�
 Validator는 정확히 9개 series, indicator/series/brief/domain 중복, 단위·빈도·변화 방식, source/report/bottleneck 참조, 날짜와 미래 날짜, 가짜 점수·경기침체 확률·투자 신호 문구, client FRED env 참조, Finnhub·Twelve Data 의존을 네트워크 없이 검사합니다. 단위 검증은 `.` 제외, 최신 유효값, history 제한, bp·percentage point, WALCL·M2 변환, NFCI 의미, partial·전체 실패, key 미설정과 raw key 비노출을 포함합니다.
 
 신규 DB, 신규 cron, 신규 sync endpoint, 신규 dependency는 없습니다. Finnhub와 Twelve Data는 호출하지 않으며 FRED key는 `process.env.FRED_API_KEY`를 사용하는 서버 코드에만 존재합니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다. 배포 후 desktop, 390×844, 360×800, 320×700, 200% 확대와 기존 가격·OpenDART·SEC·리포트·병목 회귀를 다시 확인합니다.
+
+## 초보자용 홈 정보 구조·시각 언어 개편
+
+기존 홈은 시장 브리핑, 거시 지표, 병목, Pick, 공시, 시장지도, 보고서가 비슷한 비중으로 이어져 처음 방문한 사용자가 무엇부터 볼지 판단하기 어려웠습니다. 이번 개편은 전문 데이터를 삭제하지 않고 입구만 `오늘 시장 → 움직인 배경 → 오늘의 핵심 변화 → 산업 연결 → 기업 공식 문서 → 상세 기능 → 기업 → 공식 자료` 순서로 정리했습니다. 거대한 hero와 장식 이미지는 사용하지 않습니다.
+
+홈의 최종 순서는 다음 8단계입니다.
+
+1. 오늘 시장 한눈에
+2. 왜 움직였나요?
+3. 오늘 알아둘 세 가지
+4. 산업이 연결되는 과정
+5. 기업이 직접 밝힌 변화
+6. 더 깊게 보기
+7. 이번 주에 살펴볼 기업
+8. 공식 자료
+
+쉬운 이름을 먼저 표시하고 전문 명칭은 부제로 유지합니다.
+
+| 쉬운 이름 | 함께 표시하는 전문 명칭 |
+| --- | --- |
+| 돈의 흐름과 경기 | 금리·유동성·산업 수요 |
+| 공급이 부족한 곳 | 공급망 병목 레이더 |
+| 산업을 이해하는 자료 | 공식 보고서·기업 자료 |
+| 기업이 직접 밝힌 변화 | 공식 공시 |
+| 산업이 연결되는 구조 | 시장지도·공급망 구조 |
+| 이번 주에 살펴볼 기업 | 주가해부실 Pick |
+
+상단 navigation은 `오늘`, `산업`, `기업`, `자료` 네 그룹입니다. Desktop은 키보드로 열 수 있는 dropdown, mobile은 하나의 메뉴 안에서 네 그룹을 여는 구조입니다. 실제 leaf에 `aria-current`를 표시하고, Escape와 외부 클릭으로 닫으며 focus-visible과 최소 44px 터치 영역을 유지합니다. 기존 deep link와 route는 삭제하지 않았습니다.
+
+첫 방문 안내 `주가해부실은 이렇게 보면 됩니다`는 홈을 가리지 않는 compact card입니다. 닫기 상태는 localStorage 하나에만 저장하고 로그인이나 서버 저장을 사용하지 않습니다. 공식 자료 아래의 `이 사이트 보는 법 다시 보기` 버튼으로 언제든 다시 열 수 있습니다.
+
+홈 콘텐츠는 `src/content/home/`의 결정적 reference registry를 사용합니다. `오늘 알아둘 세 가지`는 시장 driver, 거시 brief, featured 병목을 정확히 한 개씩 참조합니다. 시장은 KOSPI, Nasdaq, USD/KRW, 구리 네 자산만 먼저 표시하고 전체 9개 자산·3개 driver·2개 flow는 같은 홈의 접힌 전체 브리핑에 유지합니다. `왜 움직였나요?`는 기존 daily-market flow 두 개를 각각 4단계로 재사용하며 사실·일반 관계·당일 해석을 계속 구분합니다.
+
+거시 요약은 금리 부담, 금융여건, 시중 유동성, 산업 수요 4카드입니다. 각 카드가 기존 brief와 evidence indicator를 참조하고 실제 `/api/macro-indicators` history를 기존 `MacroSparkline`으로 표시합니다. 첫 화면에서는 호출하지 않고 거시 요약이 viewport 가까이에 들어올 때 한 번만 불러옵니다. module-scope Promise와 내부 SPA 이동을 함께 사용하므로 홈에서 이미 불러온 뒤 상세로 이동해도 같은 API가 중복 호출되지 않습니다. 가짜 계기판, 종합 점수, 경기 확률은 없습니다.
+
+병목은 기존 selector의 상위 3개만 `정상 → 관찰 → 타이트 → 심각` CSS 상태 막대로 표시합니다. 색상과 함께 현재 상태 텍스트, 변화 방향, 설명, 완화 신호를 제공합니다. 산업 미니 flow는 기존 시장지도와 회사 ID만 사용하는 2개 흐름이며 각 4~5단계입니다. 전체 ReactFlow 그래프는 홈에 넣지 않고 기존 상세 시장지도에 유지합니다.
+
+기업 공식 문서는 기존 OpenDART·SEC 응답을 다시 fetch하지 않고 shared state에서 최대 3건을 선택합니다. 기존 lucide SVG를 재사용해 `실적`, `투자·증설`, `계약·수주`, `자금 조달`, `임원·주주 거래`, `인수·합병`, `그 밖의 변화` 7개 사건 유형을 표시합니다. SEC 구조화 정보가 없는 사건은 추정하지 않고 그 밖의 변화로 둡니다. 공식 자료는 검증된 metric을 가진 보고서 3개를 기관·카테고리·핵심 숫자·관련 산업과 함께 표시합니다.
+
+`더 깊게 보기`는 돈의 흐름과 경기, 공급이 부족한 곳, 산업이 연결되는 구조, 산업을 이해하는 자료 4카드만 제공합니다. 각 카드에는 기능 설명과 현재 상태가 함께 있습니다. 상세 macro, 병목 목록·상세, 보고서 목록·상세, 공시, 시장지도에는 `한눈에 보기`, `왜 중요한가요?`, `현재 무엇을 봐야 하나요?`, `핵심 숫자` 순서를 앞단에 두고 기존 전문 지표·evidence·원문 출처는 아래에 유지했습니다.
+
+공통 `TermHelp`는 장단기 금리차, 금융여건, 유동성, 산업생산, 가동률, 공급망 병목, 공시, 수주잔고, 리드타임 9개 정의를 제공합니다. click·Enter·Space로 열고 Escape·외부 클릭·닫기 버튼으로 닫을 수 있으며 focus가 호출 버튼으로 돌아갑니다. 모바일 panel은 viewport 안에 고정됩니다.
+
+시각화 우선순위는 실제 데이터 SVG `MacroSparkline`, CSS 병목 상태 막대, 기존 vector icon, 텍스트입니다. 생성형 이미지, PNG/JPG stock photo, AI 자동 요약, 고정 데이터 이미지, 가짜 점수는 사용하지 않습니다. `prefers-reduced-motion`에서는 CSS motion과 ReactFlow 이동 시간을 제거합니다.
+
+홈은 기존 가격 shared request 1회와 공시 shared state를 재사용합니다. 초기 viewport의 macro API 호출은 기존과 같은 0회이고, 거시 요약에 접근하면 `/api/macro-indicators`를 최대 1회 호출합니다. 이후 SPA 상세 이동 때도 누적 1회를 유지합니다. 브라우저의 FRED 직접 요청, Finnhub 요청, Twelve Data 요청은 각각 0입니다. 신규 API, Serverless Function, DB, cron, sync endpoint, dependency는 모두 0이며 기존 전문 데이터 삭제와 초보자·전문가 모드 분리도 없습니다.
+
+정적 validator는 쉬운 제목, 4개 navigation route, 홈 노출 상한, insight·macro·병목·시장지도·회사·보고서 참조, 산업 flow 3~5단계, 공시 유형 7개, 용어 9개, 투자 추천·가짜 점수·외부 이미지·client secret 부재를 네트워크 없이 검사합니다. 모바일 QA 기준은 390×844, 360×800, 320×700, 200% 확대이며 horizontal overflow, 텍스트·숫자·marker·flow·icon·CTA clipping, tooltip viewport 이탈, broken route와 console error가 없어야 합니다.
+
+가격·거시·OpenDART·SEC의 기존 공개 응답 계약은 변경하지 않았고 보고서 15개, 병목 6개, 기존 시장지도와 Pick route를 유지합니다. `package.json`과 `package-lock.json`은 변경하지 않습니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.
+
+로컬 브라우저 QA에서는 desktop, 390×844, 360×800, 320×700, 1280px 화면의 200% 확대 상당 640px CSS viewport에서 horizontal overflow, 텍스트·숫자·marker·CTA clipping, tooltip viewport 이탈, broken image, console warning/error가 모두 0개였습니다. 390px과 360px에서는 시장·거시 카드가 2열, 320px에서는 1열이며 insight·공시·flow는 모바일 1열입니다. Desktop dropdown과 mobile menu, leaf `aria-current`, ArrowDown, Escape, TermHelp click·Escape·외부 클릭·focus 복귀, 첫 방문 안내 dismiss·재열기, 접힌 전체 시장 브리핑의 즉시 열기를 확인했습니다.
+
+배포 전 Production API 기준선은 가격 기본 94개, `include=market-brief` 103개, 거시 series 9개, OpenDART 20개, SEC 기본 20개, Item 2.02 1개, transactionCode S 5개이며 모두 HTTP 200과 `ok:true`입니다. 배포는 main push 뒤 `finance1` Production이 `Ready · Current`인지, canonical alias의 JS·CSS asset과 같은 회귀 수가 유지되는지 다시 확인합니다.

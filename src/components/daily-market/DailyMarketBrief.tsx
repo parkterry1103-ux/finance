@@ -13,6 +13,7 @@ import {
 import { sourceRegistry } from '../../content/sources/index.js';
 import { reportById } from '../../content/reports/index.js';
 import { bottleneckById } from '../../content/bottlenecks/index.js';
+import { homeIndustryFlows, homeMarketAssetIds } from '../../content/home/index.js';
 
 type DailyMarketBriefProps = {
   marketPrices: MarketPrice[];
@@ -127,19 +128,22 @@ function MarketQuoteCard({
   asset,
   price,
   note,
+  headingLevel = 'h4',
 }: {
   asset: DailyMarketAsset;
   price?: MarketPrice;
   note?: string;
+  headingLevel?: 'h3' | 'h4';
 }) {
   const snapshot = quoteSnapshot(price);
   const source = sourceRegistry[asset.sourceRef];
+  const Heading = headingLevel;
 
   return (
     <article className={`market-quote-card market-quote-card--${asset.group}`}>
       <div className="market-quote-card__head">
         <div>
-          <h4>{asset.label}</h4>
+          <Heading>{asset.label}</Heading>
           <span>{asset.symbol}</span>
         </div>
         <span className="market-quote-card__status">{marketDateLabel(asset, price?.asOf)} · 지연 가능</span>
@@ -254,6 +258,98 @@ function MarketDriverList() {
         </li>
       ))}
     </ol>
+  );
+}
+
+export function BeginnerMarketOverview({ marketPrices, onOpenDetail }: Pick<DailyMarketBriefProps, 'marketPrices'> & { onOpenDetail?: () => void }) {
+  const brief = latestDailyMarketBrief();
+  if (!brief) return null;
+  const assetIds: DailyMarketAsset['id'][] = [...homeMarketAssetIds];
+
+  return (
+    <section className="beginner-home-section beginner-market-overview" aria-labelledby="beginner-market-title">
+      <div className="beginner-section-head">
+        <div>
+          <p>1 · 오늘</p>
+          <h1 id="beginner-market-title">오늘 시장 한눈에</h1>
+          <span>{brief.title}</span>
+        </div>
+        <a href="#daily-market-detail" onClick={(event) => {
+          if (!onOpenDetail) return;
+          event.preventDefault();
+          onOpenDetail();
+        }}>오늘 시장 자세히 보기 <ArrowRight size={15} /></a>
+      </div>
+      <p className="beginner-section-lead">대표 시장 네 곳만 먼저 확인합니다. 서로 거래 시간이 다르므로 각 카드의 기준일도 함께 보세요.</p>
+      <div className="beginner-market-grid">
+        {assetIds.map((assetId) => {
+          const asset = dailyMarketAssetRegistry[assetId];
+          return <MarketQuoteCard key={assetId} asset={asset} price={quoteForAsset(asset, marketPrices)} note={brief.assetNotes[assetId]} headingLevel="h3" />;
+        })}
+      </div>
+    </section>
+  );
+}
+
+export function BeginnerMarketDrivers() {
+  const flows = flowsForDailyMarketBrief().slice(0, 2);
+  return (
+    <section className="beginner-home-section beginner-driver-section" aria-labelledby="beginner-driver-title">
+      <div className="beginner-section-head">
+        <div><p>2 · 배경</p><h2 id="beginner-driver-title">왜 움직였나요?</h2></div>
+      </div>
+      <p className="beginner-section-lead">시장이 주목한 주요 배경을 간단히 연결한 설명입니다. 항상 같은 방향으로 움직이는 것은 아닙니다.</p>
+      <div className="beginner-driver-grid">
+        {flows.map((flow, index) => (
+          <article key={flow.id}>
+            <span>{index + 1}</span>
+            <h3>{flow.title}</h3>
+            <ol className="beginner-market-flow-list">
+              {flow.steps.map((step, stepIndex) => (
+                <li key={`${flow.id}-${step.label}`}>
+                  <span>{stepIndex + 1}</span>
+                  <div><em>{evidenceLabels[step.type]}</em><strong>{step.label}</strong><p>{step.detail}</p></div>
+                </li>
+              ))}
+            </ol>
+            <SourceLinks sourceRefs={flow.sourceRefs} />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function BeginnerIndustryFlows({ onOpenCategory }: Pick<DailyMarketBriefProps, 'onOpenCategory'>) {
+  const flows = homeIndustryFlows();
+  return (
+    <section className="beginner-home-section beginner-industry-flow-section" aria-labelledby="beginner-industry-flow-title">
+      <div className="beginner-section-head">
+        <div><p>4 · 연결</p><h2 id="beginner-industry-flow-title">산업이 연결되는 과정</h2></div>
+        <a href="/ko/market-map">산업 구조 전체 보기 <ArrowRight size={15} /></a>
+      </div>
+      <p className="beginner-section-lead">시장 변화가 산업과 기업으로 이어질 수 있는 대표 경로입니다. 당일 성과를 보장하는 관계는 아닙니다.</p>
+      <div className="beginner-industry-flow-grid">
+        {flows.map((flow) => (
+          <article key={flow.id}>
+            <h3>{flow.title}</h3>
+            <ol>
+              {flow.steps.map((step, index) => (
+                <li key={`${flow.id}-${step.label}`}>
+                  <span>{index + 1}</span>
+                  <div><strong>{step.label}</strong><small>{step.detail}</small></div>
+                </li>
+              ))}
+            </ol>
+            {flow.steps.find((step) => step.marketMapId)?.marketMapId ? (
+              <button type="button" onClick={() => onOpenCategory(flow.steps.find((step) => step.marketMapId)!.marketMapId!)}>
+                연결된 시장지도 보기 <ArrowRight size={14} />
+              </button>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
