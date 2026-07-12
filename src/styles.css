@@ -31361,3 +31361,321 @@ button.flow-stage-company-chip:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+/* Macro and market relationship board */
+.market-relations-shell {
+  min-height: 100vh;
+}
+
+.market-relations-main {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 38px 0 80px;
+  color: #eef3f8;
+}
+
+.market-relations-intro,
+.relation-reading-guide,
+.relation-choice-section,
+.relation-detail,
+.relation-related,
+.relation-methodology {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(10, 20, 31, 0.88);
+  border-radius: 22px;
+}
+
+.market-relations-intro {
+  padding: 28px;
+}
+
+.market-relations-intro h1 {
+  margin: 7px 0 10px;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.04;
+}
+
+.market-relations-intro > p:last-of-type {
+  max-width: 760px;
+  color: #cbd5e1;
+  font-size: 1.02rem;
+}
+
+.market-relations-intro > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #bfdbfe;
+}
+
+.relation-reading-guide,
+.relation-choice-section,
+.relation-detail,
+.relation-related,
+.relation-methodology {
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.relation-reading-guide > span,
+.relation-section-head > span {
+  color: #93c5fd;
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.relation-reading-guide h2,
+.relation-section-head h2 {
+  margin: 5px 0 0;
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
+}
+
+.relation-reading-guide p {
+  margin: 10px 0 0;
+  color: #aebdca;
+}
+
+.relation-load-state,
+.relation-unavailable {
+  margin-top: 18px;
+  padding: 15px 17px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.85);
+  color: #dce6ef;
+}
+
+.relation-load-state.is-partial { border-color: rgba(245, 158, 11, 0.4); }
+.relation-load-state.is-error { border-color: rgba(248, 113, 113, 0.45); }
+
+.relation-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.relation-choice-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 17px;
+  background: rgba(15, 29, 43, 0.92);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.relation-choice-card.is-selected {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.2);
+}
+
+.relation-choice-card > span {
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.relation-choice-card h3 {
+  margin: 8px 0;
+  font-size: 1.08rem;
+}
+
+.relation-choice-card strong {
+  display: block;
+  color: #dbeafe;
+  font-size: 0.88rem;
+}
+
+.relation-choice-card.state-opposite-direction strong { color: #ddd6fe; }
+.relation-choice-card.state-weak strong,
+.relation-choice-card.state-limited strong { color: #cbd5e1; }
+
+.relation-choice-card p {
+  margin: 11px 0 0;
+  color: #9fb0bf;
+  font-size: 0.87rem;
+  line-height: 1.55;
+}
+
+.relation-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.relation-periods button {
+  padding: 9px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  background: rgba(15, 29, 43, 0.9);
+  color: #cbd5e1;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.relation-periods button[aria-pressed="true"] {
+  border-color: #7dd3fc;
+  background: rgba(14, 116, 144, 0.3);
+  color: #e0f2fe;
+}
+
+.relation-comparison-basis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.relation-comparison-basis > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(15, 29, 43, 0.6);
+}
+
+.relation-comparison-basis dt { color: #94a3b8; font-size: 0.72rem; }
+.relation-comparison-basis dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 0.86rem; font-weight: 760; }
+
+.relation-result-summary {
+  padding: 20px;
+  border: 1px solid rgba(96, 165, 250, 0.42);
+  border-radius: 17px;
+  background: rgba(30, 64, 175, 0.1);
+}
+
+.relation-result-summary.state-opposite-direction {
+  border-color: rgba(167, 139, 250, 0.42);
+  background: rgba(91, 33, 182, 0.1);
+}
+
+.relation-result-summary.state-weak,
+.relation-result-summary.state-limited {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(71, 85, 105, 0.12);
+}
+
+.relation-result-summary > span { color: #aebdca; font-size: 0.78rem; font-weight: 750; }
+.relation-result-summary > strong { display: block; margin-top: 5px; font-size: clamp(1.55rem, 4vw, 2.25rem); }
+.relation-result-summary > p { max-width: 760px; margin: 10px 0 0; color: #cbd5e1; }
+
+.relation-result-summary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin: 17px 0 0;
+}
+
+.relation-result-summary dl > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.66);
+}
+
+.relation-result-summary dt { color: #94a3b8; font-size: 0.72rem; }
+.relation-result-summary dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 0.86rem; font-weight: 760; }
+
+.relation-dual-chart { margin: 18px 0 0; }
+.relation-trend-panel { padding: 15px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 15px; background: rgba(7, 18, 29, 0.82); }
+.relation-trend-panel + .relation-trend-panel { margin-top: 10px; }
+.relation-trend-panel > div { display: flex; justify-content: space-between; gap: 10px; }
+.relation-trend-panel > div span { color: #94a3b8; font-size: 0.76rem; }
+.relation-trend-panel svg { display: block; width: 100%; height: 100px; margin: 8px 0; overflow: visible; }
+.relation-trend-panel svg line { stroke: rgba(148, 163, 184, 0.16); stroke-dasharray: 4 5; }
+.relation-trend-panel svg path { fill: none; stroke: #60a5fa; stroke-width: 2.5; }
+.relation-trend-panel.is-market svg path { stroke: #a78bfa; }
+.relation-trend-panel small { color: #94a3b8; }
+.relation-dual-chart figcaption { margin-top: 9px; color: #9fb0bf; font-size: 0.78rem; line-height: 1.55; }
+
+.relation-explanation-grid,
+.relation-related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 18px;
+}
+
+.relation-explanation-grid article,
+.relation-related-grid a {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 15px;
+  background: rgba(15, 29, 43, 0.72);
+}
+
+.relation-explanation-grid span,
+.relation-related-grid span { color: #93c5fd; font-size: 0.75rem; font-weight: 760; }
+.relation-explanation-grid p { margin: 9px 0 0; color: #b8c5d1; font-size: 0.88rem; line-height: 1.6; }
+.relation-related-grid a { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none; }
+.relation-related-grid strong { overflow-wrap: anywhere; }
+.relation-related-grid small { display: inline-flex; align-items: center; gap: 5px; color: #bfdbfe; }
+
+.relation-methodology summary { cursor: pointer; font-weight: 780; }
+.relation-methodology h2 { margin: 20px 0 8px; font-size: 1.2rem; }
+.relation-methodology ul { display: grid; gap: 7px; padding-left: 20px; color: #b8c5d1; }
+.relation-source-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.relation-source-links a { display: inline-flex; align-items: center; gap: 5px; color: #bfdbfe; }
+
+.macro-relations-cta,
+.home-relations-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #dbeafe;
+  text-decoration: none;
+}
+
+.macro-relations-cta {
+  margin: 18px 0 0;
+  padding: 15px 17px;
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  border-radius: 15px;
+  background: rgba(30, 64, 175, 0.1);
+}
+
+.macro-relations-cta span { display: grid; gap: 3px; }
+.macro-relations-cta small { color: #9fb0bf; }
+.home-relations-shortcut { width: fit-content; margin: 12px 0 2px; color: #bfdbfe; font-size: 0.86rem; font-weight: 760; }
+
+.relation-choice-card:focus-visible,
+.relation-periods button:focus-visible,
+.relation-related-grid a:focus-visible,
+.relation-source-links a:focus-visible,
+.macro-relations-cta:focus-visible,
+.home-relations-shortcut:focus-visible {
+  outline: 3px solid #f8fafc;
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .market-relations-main { width: min(100% - 24px, 1120px); padding: 20px 0 58px; }
+  .market-relations-intro,
+  .relation-reading-guide,
+  .relation-choice-section,
+  .relation-detail,
+  .relation-related,
+  .relation-methodology { padding: 17px; border-radius: 17px; }
+  .relation-choice-grid,
+  .relation-explanation-grid,
+  .relation-related-grid,
+  .relation-comparison-basis,
+  .relation-result-summary dl { grid-template-columns: 1fr; }
+  .relation-choice-card { width: 100%; }
+  .relation-trend-panel > div { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .relation-trend-panel svg { height: 86px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relation-choice-card,
+  .relation-periods button { transition: none !important; }
+}

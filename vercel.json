@@ -48,6 +48,10 @@
       "destination": "/api/market-prices?route=macro-indicators"
     },
     {
+      "source": "/api/market-relations",
+      "destination": "/api/market-prices?route=market-relations"
+    },
+    {
       "source": "/analysis",
       "destination": "/"
     },

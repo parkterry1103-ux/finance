@@ -552,6 +552,7 @@ export function DailyMarketBrief({ marketPrices, onOpenCategory, onOpenReports }
         <Info size={16} />
         <p>자산 간 연결은 일반적인 경제 관계와 당일 시장 해석을 함께 보여줍니다. 항상 같은 방향으로 움직이는 것은 아니며 자동 투자 신호가 아닙니다.</p>
         <a className="daily-market-macro-link" href="/ko/macro-dashboard">거시 배경 더 보기</a>
+        <a className="daily-market-macro-link" href="/ko/market-relations">거시 흐름과 시장 비교</a>
         <SourceLinks sourceRefs={brief.sourceRefs.filter((sourceId) => sourceRegistry[sourceId]?.kind !== 'market-data')} limit={5} />
       </footer>
     </section>

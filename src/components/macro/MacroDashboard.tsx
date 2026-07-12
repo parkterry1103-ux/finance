@@ -259,6 +259,11 @@ export function MacroDashboard() {
         </div>
       </section>
 
+      <a className="macro-relations-cta" href="/ko/market-relations">
+        <span><strong>이 지표가 시장과 함께 움직였는지 보기</strong><small>금리·금융여건·산업생산을 대표 시장과 비교합니다.</small></span>
+        <ArrowRight size={17} aria-hidden="true" />
+      </a>
+
       <section className="macro-dashboard-summary" aria-labelledby="macro-summary-title">
         <div className="macro-section-head"><span>편집 해설</span><h2 id="macro-summary-title">현재 거시 환경 요약</h2></div>
         <MacroDomainSummaryCards />

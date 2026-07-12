@@ -87,6 +87,7 @@ import {
   homeNavigationGroups,
   homeOfficialReportReferences,
 } from '../src/content/home/index.js';
+import { relationDefinitions } from '../src/content/relations/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -213,6 +214,11 @@ const homeValidation = {
   reportCount: 0,
   termCount: 0,
   invalidRefCount: 0,
+};
+const relationValidation = {
+  relationCount: 0,
+  invalidRefCount: 0,
+  serverlessFunctionCount: 0,
 };
 
 const REQUIRED_REPORT_CATEGORIES = [
@@ -872,6 +878,7 @@ function validateHomeExperience() {
   const allowedRoutes = new Set([
     '/ko/',
     '/ko/macro-dashboard',
+    '/ko/market-relations',
     '/ko/bottlenecks',
     '/ko/market-map',
     '/ko/picks',
@@ -1071,6 +1078,86 @@ function validateHomeExperience() {
   if (!/closeFromOutside[\s\S]*buttonRef\.current\?\.focus\(\)/.test(termHelpSource)) {
     addError('TermHelp outside close must restore focus');
   }
+}
+
+function validateMarketRelations() {
+  const expectedIds = ['rates-nasdaq', 'financial-conditions-sp500', 'industrial-production-copper'];
+  const expectedSeries = new Set(['DGS10', 'NFCI', 'INDPRO']);
+  const expectedSymbols = new Set(['^IXIC', '^GSPC', 'HG=F']);
+  const expectedFrequencies = new Set(['daily', 'weekly', 'monthly']);
+  const expectedOrientations = new Set(['raw', 'inverse']);
+  const expectedWindows = new Set(['3m', '6m', '1y', '2y']);
+  const reportIds = new Set(industryReports.map((report) => report.id));
+  const mapIds = new Set([
+    ...companies.map((company) => company.sectorId),
+    reconstructionInfrastructureMap.sectorId,
+    semiconductorClusterInfrastructureMap.sectorId,
+    'datacenter-power-cooling',
+  ]);
+  relationValidation.relationCount = relationDefinitions.length;
+  if (relationDefinitions.length !== 3) addError(`market relation count must be exactly 3: ${relationDefinitions.length}`);
+  if (relationDefinitions.map((definition) => definition.id).join('|') !== expectedIds.join('|')) {
+    addError(`market relation ids mismatch: ${relationDefinitions.map((definition) => definition.id).join(', ')}`);
+  }
+  duplicateValues(relationDefinitions.map((definition) => definition.id)).forEach((id) => addError(`duplicate market relation id: ${id}`));
+  relationDefinitions.forEach((definition) => {
+    if (!expectedSeries.has(definition.macroSeriesId)) addError(`invalid relation macro series: ${definition.id} / ${definition.macroSeriesId}`);
+    if (!expectedSymbols.has(definition.marketSymbol)) addError(`invalid relation market symbol: ${definition.id} / ${definition.marketSymbol}`);
+    if (!expectedFrequencies.has(definition.frequency)) addError(`invalid relation frequency: ${definition.id} / ${definition.frequency}`);
+    if (!expectedOrientations.has(definition.macroOrientation)) addError(`invalid relation orientation: ${definition.id} / ${definition.macroOrientation}`);
+    if (!definition.availableWindows.length || !definition.availableWindows.includes(definition.defaultWindow)) addError(`invalid relation default window: ${definition.id}`);
+    definition.availableWindows.forEach((window) => {
+      if (!expectedWindows.has(window)) addError(`invalid relation window: ${definition.id} / ${window}`);
+    });
+    if (definition.frequency === 'monthly' && definition.availableWindows.some((window) => window === '3m' || window === '6m')) {
+      addError(`monthly relation has short window: ${definition.id}`);
+    }
+    if (!definition.caveats.length) addError(`relation caveat required: ${definition.id}`);
+    definition.sourceRefs.forEach((sourceRef) => {
+      if (!sourceRegistry[sourceRef]) {
+        relationValidation.invalidRefCount += 1;
+        addError(`missing relation source: ${definition.id} / ${sourceRef}`);
+      }
+    });
+    definition.reportIds.forEach((reportId) => {
+      if (!reportIds.has(reportId)) {
+        relationValidation.invalidRefCount += 1;
+        addError(`missing relation report: ${definition.id} / ${reportId}`);
+      }
+    });
+    definition.marketMapIds.forEach((marketMapId) => {
+      if (!mapIds.has(marketMapId)) {
+        relationValidation.invalidRefCount += 1;
+        addError(`missing relation market map: ${definition.id} / ${marketMapId}`);
+      }
+    });
+  });
+
+  const relationCopy = JSON.stringify(relationDefinitions);
+  if (/(인과관계가\s*확정|직접적인\s*원인이다|반드시\s*(상승|하락))/i.test(relationCopy)) addError('causal certainty wording in relation content');
+  if (/(매수\s*신호|매도\s*신호|상승\s*확률|경기침체\s*확률|거시\s*종합\s*점수|시장\s*위험\s*점수)/i.test(relationCopy)) addError('forbidden score or trading wording in relation content');
+
+  const clientSource = [
+    readFileSync(join(process.cwd(), 'src/components/relations/MarketRelationsBoard.tsx'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/components/relations/RelationDualTrendChart.tsx'), 'utf8'),
+    readFileSync(join(process.cwd(), 'src/services/relations.ts'), 'utf8'),
+  ].join('\n');
+  if (/api\.stlouisfed\.org|query[12]\.finance\.yahoo\.com|FRED_API_KEY|VITE_[A-Z0-9_]*(KEY|SECRET|TOKEN)/i.test(clientSource)) {
+    addError('relation client contains direct provider or secret reference');
+  }
+  const packageSource = readFileSync(join(process.cwd(), 'package.json'), 'utf8');
+  if (/chart\.js|recharts|victory|d3-|simple-statistics/i.test(packageSource)) addError('market relations must not add chart or statistics dependency');
+  const apiFunctions = readdirSync(join(process.cwd(), 'api'), { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name === '_lib') return [];
+    const path = join(process.cwd(), 'api', entry.name);
+    if (!entry.isDirectory()) return /\.(js|ts)$/.test(entry.name) ? [entry.name] : [];
+    return readdirSync(path, { withFileTypes: true })
+      .filter((child) => !child.isDirectory() && /\.(js|ts)$/.test(child.name))
+      .map((child) => `${entry.name}/${child.name}`);
+  });
+  relationValidation.serverlessFunctionCount = apiFunctions.length;
+  if (apiFunctions.length !== 12) addError(`serverless function count must remain 12: ${apiFunctions.length}`);
+  if (!readFileSync(join(process.cwd(), 'vercel.json'), 'utf8').includes('"source": "/api/market-relations"')) addError('market relations rewrite missing');
 }
 
 function validateCtaPolicy() {
@@ -2041,6 +2128,7 @@ validateWeeks();
 validateReferences();
 validateBottlenecks();
 validateMacroContent();
+validateMarketRelations();
 validateHomeExperience();
 validateCtaPolicy();
 validateCompanyIdentities();
@@ -2082,6 +2170,7 @@ console.log(`✓ 공급망 병목 레이더 검증 (bottleneck ${bottleneckValid
 console.log(`✓ 병목 source/report/map/company/Pick/daily-market 참조 정상 (잘못된 ref ${bottleneckValidation.invalidRefCount}개)`);
 console.log(`✓ 거시 온도판 검증 (indicator ${macroValidation.indicatorCount}개, domain brief ${macroValidation.briefCount}개, 잘못된 ref ${macroValidation.invalidRefCount}개)`);
 console.log(`✓ FRED 결측·history·bp·pp·단위 변환·부분 실패·보안 단위 검증 (${macroValidation.unitCheckCount}개)`);
+console.log(`✓ 거시·시장 교차 관계판 검증 (relation ${relationValidation.relationCount}개, 잘못된 ref ${relationValidation.invalidRefCount}개, Serverless Function ${relationValidation.serverlessFunctionCount}개)`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');

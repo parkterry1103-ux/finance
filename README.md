@@ -4634,3 +4634,31 @@ Validator는 정확히 9개 series, indicator/series/brief/domain 중복, 단위
 로컬 브라우저 QA에서는 desktop, 390×844, 360×800, 320×700, 1280px 화면의 200% 확대 상당 640px CSS viewport에서 horizontal overflow, 텍스트·숫자·marker·CTA clipping, tooltip viewport 이탈, broken image, console warning/error가 모두 0개였습니다. 390px과 360px에서는 시장·거시 카드가 2열, 320px에서는 1열이며 insight·공시·flow는 모바일 1열입니다. Desktop dropdown과 mobile menu, leaf `aria-current`, ArrowDown, Escape, TermHelp click·Escape·외부 클릭·focus 복귀, 첫 방문 안내 dismiss·재열기, 접힌 전체 시장 브리핑의 즉시 열기를 확인했습니다.
 
 배포 전 Production API 기준선은 가격 기본 94개, `include=market-brief` 103개, 거시 series 9개, OpenDART 20개, SEC 기본 20개, Item 2.02 1개, transactionCode S 5개이며 모두 HTTP 200과 `ok:true`입니다. 배포는 main push 뒤 `finance1` Production이 `Ready · Current`인지, canonical alias의 JS·CSS asset과 같은 회귀 수가 유지되는지 다시 확인합니다.
+## 거시·시장 교차 관계판 MVP
+
+`/ko/market-relations`의 사용자 제목은 **함께 움직였나요?**입니다. 상관계수를 점수처럼 먼저 보여주지 않고, 최근 변화가 `비슷한 방향`, `엇갈린 방향`, `뚜렷한 관계 없음`, `판단 제한` 중 어디에 가까운지부터 설명합니다. 이 화면은 인과관계나 미래 수익률을 판정하지 않습니다.
+
+지원 관계는 정확히 세 개입니다.
+
+| 관계 | FRED | Yahoo | 정렬 | 기간 |
+| --- | --- | --- | --- | --- |
+| 금리 부담 완화 ↔ 나스닥 | `DGS10` | `^IXIC` | 같은 거래일의 일별 변화 | 3개월·6개월·1년 |
+| 금융여건 완화 ↔ S&P 500 | `NFCI` | `^GSPC` | FRED 관측일 또는 이전 4일 안의 마지막 거래일 | 3개월·6개월·1년 |
+| 산업생산 ↔ 구리 | `INDPRO` | `HG=F` | 같은 월의 마지막 유효 구리 종가 | 1년·2년 |
+
+- 금리와 NFCI는 원본 level을 바꾸지 않습니다. 비교 변화값에서만 하락을 `완화 방향`의 양수로 변환합니다.
+- 산업생산과 구리는 각각 전월 대비 변화율과 월말 가격의 전월 대비 수익률을 사용합니다.
+- 날짜와 빈도를 맞춘 변화값에 Pearson correlation을 계산하며 최소 관측 수는 8개입니다. 표본이 부족하거나 분산이 0이면 `판단 제한`입니다.
+- `r >= 0.35`는 비슷한 방향, `r <= -0.35`는 엇갈린 방향, 그 사이는 뚜렷한 관계 없음으로 분류합니다. 이 경계는 설명용 편집 구간이지 경제 법칙이 아닙니다.
+- 두 그래프는 날짜 범위만 공유하고 각자 자체 범위를 씁니다. 이중 y축이나 선 높이의 직접 비교는 사용하지 않습니다.
+- 상관관계는 인과관계가 아니며 기간, 발표 주기, 기업 실적, 정책과 시장 심리에 따라 달라질 수 있습니다.
+
+공개 API는 `/api/market-relations`입니다. Vercel Hobby Function이 이미 12개이므로 신규 Function을 만들지 않고 `vercel.json` rewrite로 기존 `api/market-prices.js` Function을 공유합니다. 실제 handler는 `api/_lib/market-relations.ts`, Yahoo history helper는 `api/_lib/providers/yahoo-history.ts`에 분리되어 있습니다. 브라우저는 공개 API를 session당 한 번만 호출하고 관계·기간 변경은 받은 응답 안에서 처리합니다.
+
+응답은 `public, s-maxage=3600, stale-while-revalidate=86400`으로 캐시합니다. cache miss에서 FRED 3회와 Yahoo 3회를 병렬 실행하며 관계별 부분 실패를 HTTP 200의 `partial:true`로 반환합니다. 전체 실패만 안전한 `MARKET_RELATIONS_UNAVAILABLE` 계약으로 처리하며 provider 원문 오류, upstream URL, key 또는 stack trace를 노출하지 않습니다.
+
+정적 설명은 `src/content/relations`, UI는 `src/components/relations`, 단일 client fetch cache는 `src/services/relations.ts`에 있습니다. 홈에는 새 section을 추가하지 않고 기존 더 깊게 보기의 보조 링크만 연결했습니다. 거시 온도판, 오늘 시장 브리핑, `오늘` navigation 그룹에서도 한 번씩 진입할 수 있습니다.
+
+검증은 `scripts/market-relations-unit.ts` fixture와 `scripts/validate-content.ts`에서 수행합니다. 동일 날짜, 휴일, 이전 거래일, 미래값 금지, 월말 종가, 결측값, 방향 변환, 수익률, Pearson, 최소 표본, 분산 0, threshold, 잘못된 query fallback, 부분 성공과 secret 비노출을 네트워크 없이 확인합니다. 390·360·320px와 200% 상당 viewport에서 카드 1열, 기간 버튼 wrap, SVG/CTA/긴 제목 overflow를 확인합니다.
+
+이번 MVP에는 신규 DB, cron, sync endpoint, dependency, 종합 점수, 자동 투자 신호가 없습니다. FRED와 Yahoo는 server-only이며 client 직접 호출은 없습니다. Finnhub와 Twelve Data도 사용하지 않습니다. 기존 가격·거시·OpenDART·SEC·리포트 15개·병목 6개 계약을 그대로 유지합니다. Production 기준 프로젝트는 `finance1`, alias는 `https://finance1-flax.vercel.app`입니다.

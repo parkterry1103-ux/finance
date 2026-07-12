@@ -163,7 +163,7 @@ export async function fetchFredSeriesHistory(
   seriesId: string,
   limit: number,
 ): Promise<FredNumericObservation[]> {
-  const requestLimit = Math.min(Math.max(limit * 2, limit + 12), 240);
+  const requestLimit = Math.min(Math.max(limit * 2, limit + 12), 500);
   const observations = await fetchFredSeriesLatest(seriesId, requestLimit);
   const history = parseFredObservations(observations, limit);
   if (!history.length) throw new Error('FRED_EMPTY_SERIES');

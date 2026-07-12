@@ -162,6 +162,7 @@ import {
 import { latestDailyMarketBrief, marketDriverRegistry } from './content/daily-market';
 import { macroDomainBriefs } from './content/macro';
 import { TermHelp } from './components/common/TermHelp';
+import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
 
 type NodeData = {
   company: Company;
@@ -791,6 +792,10 @@ function macroDashboardPath() {
   return '/ko/macro-dashboard';
 }
 
+function marketRelationsPath() {
+  return '/ko/market-relations';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -804,7 +809,7 @@ function navigateWithinApp(href: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'bottlenecks' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -860,7 +865,7 @@ function PrimaryNavigation({
     else if (key === 'market-map') onOpenMarketMap();
     else if (key === 'disclosures') onOpenDisclosures();
     else if (key === 'reports') onOpenReports();
-    else if (key === 'macro' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
+    else if (key === 'macro' || key === 'relations' || key === 'bottlenecks' || key === 'analysis') navigateWithinApp(href);
     else return false;
     return true;
   };
@@ -4613,6 +4618,22 @@ function MacroDashboardPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclo
   );
 }
 
+function MarketRelationsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
+  return (
+    <div className="pick-shell story-dark-shell market-relations-shell">
+      <PrimaryNavigation
+        active="relations"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
+      <MarketRelationsBoard />
+    </div>
+  );
+}
+
 type LandingPageProps = {
   onHome: () => void;
   onOpenMarketMapLibrary: () => void;
@@ -4830,6 +4851,10 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
               </a>
             ))}
           </div>
+          <a className="home-relations-shortcut" href={marketRelationsPath()} onClick={(event) => {
+            event.preventDefault();
+            navigateWithinApp(marketRelationsPath());
+          }}>시장과 함께 비교해 보기 <ArrowRight size={14} /></a>
           <HomeMacroDashboard onOpen={() => navigateWithinApp(macroDashboardPath())} />
           <section className="home-bottleneck-track-section" aria-labelledby="home-bottleneck-track-title">
             <div className="beginner-section-head">
@@ -8630,6 +8655,7 @@ function App() {
   const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
   const routeBottlenecksMatch = routePath.match(/^\/ko\/bottlenecks\/?$/) ?? routePath.match(/^\/bottlenecks\/?$/);
   const routeMacroDashboardMatch = routePath.match(/^\/ko\/macro-dashboard\/?$/) ?? routePath.match(/^\/macro-dashboard\/?$/);
+  const routeMarketRelationsMatch = routePath.match(/^\/ko\/market-relations\/?$/) ?? routePath.match(/^\/market-relations\/?$/);
   const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -8661,6 +8687,7 @@ function App() {
   const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
   const isBottlenecksRoute = Boolean(routeBottlenecksMatch) || Boolean(routeBottleneckDetailMatch);
   const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
+  const isMarketRelationsRoute = Boolean(routeMarketRelationsMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
   const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
@@ -8676,13 +8703,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
+    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || isMarketRelationsRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
       document.getElementById(routeHash)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isMacroDashboardRoute, isReportsRoute, routeHash]);
+  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
     let cancelled = false;
@@ -9304,6 +9331,18 @@ function App() {
   if (isMacroDashboardRoute) {
     return (
       <MacroDashboardPage
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+      />
+    );
+  }
+
+  if (isMarketRelationsRoute) {
+    return (
+      <MarketRelationsPage
         onHome={openHome}
         onOpenPicks={openPicks}
         onOpenMarketMap={openMarketMapLibrary}

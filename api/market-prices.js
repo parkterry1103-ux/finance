@@ -1,4 +1,5 @@
 import { handleMacroIndicators } from './_lib/macro-indicators.js';
+import { handleMarketRelations } from './_lib/market-relations.js';
 
 const MAX_LIMIT = 200;
 const PAGE_SIZE = 1000;
@@ -264,6 +265,10 @@ async function fetchMarketPriceRows({ ticker, companyId }) {
 export default async function handler(req, res) {
   if (req.query?.route === 'macro-indicators') {
     await handleMacroIndicators(req, res);
+    return;
+  }
+  if (req.query?.route === 'market-relations') {
+    await handleMarketRelations(req, res);
     return;
   }
 

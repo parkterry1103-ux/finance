@@ -61,6 +61,7 @@ export const homeNavigationGroups: HomeNavigationGroup[] = [
     items: [
       { id: 'today-overview', label: '오늘 시장 한눈에', href: '/ko/', activeKey: 'today' },
       { id: 'macro-dashboard', label: '돈의 흐름과 경기', href: '/ko/macro-dashboard', activeKey: 'macro' },
+      { id: 'market-relations', label: '함께 움직였나요?', href: '/ko/market-relations', activeKey: 'relations' },
     ],
   },
   {
