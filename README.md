@@ -4710,3 +4710,17 @@ Production 홈에서 `산업 → 수요와 공급을 함께 보기`로 이동했
 페이지 filter는 전체와 네 group만 제공하며 event·filter 변경은 정적 registry에서 처리해 추가 request가 없습니다. 잘못된 group과 event query는 결정적으로 fallback하고, filter와 event가 충돌하면 event의 group으로 맞춥니다. 카드 선택은 native button의 Enter·Space와 `aria-selected`, filter는 `aria-pressed`, stage는 색상과 텍스트를 함께 사용합니다. desktop, 390×844, 360×800, 320×700, 200% 상당 640px에서 카드·filter·source CTA가 1열 또는 wrap되도록 구성했습니다.
 
 신규 공개 API, Serverless Function, rewrite, DB, migration, cron, sync endpoint, dependency, chart library는 없습니다. 회사 변화 route는 전역 가격·공시·뉴스 preload를 건너뛰므로 페이지 전용 request, FRED·Yahoo·Finnhub·Twelve Data·SEC·OpenDART browser 직접 request가 모두 0입니다. 기존 Serverless Function 12개, 수요·공급 4개, 보고서 15개, 병목 6개와 기존 API 계약을 유지합니다. validator와 `scripts/company-events-unit.ts`가 event 수·국가·회사·group·source·filing·참조·날짜·금지 문구·정렬·query fallback·연결 상한을 네트워크 없이 검사합니다.
+
+## 시장지도 상세 페이지 공통 템플릿·UI 일관성 정비
+
+읽기형 시장지도 네 개(`/ko/category/us-semiconductors`, `/ko/category/datacenter-power-cooling`, `/ko/category/reconstruction-infrastructure`, `/ko/category/semiconductor-cluster-infrastructure`)를 `MarketMapDetailTemplate`과 `MarketMapDetailViewModel`로 통일했습니다. 기존에는 AI·전력 지도와 재건·클러스터 지도가 서로 다른 hero, 선택 기업 카드, 관련 기업 카드, flow JSX를 사용했지만, 이제 페이지 소개 → 선택 기업 → 같이 볼 기업 → Compact 흐름 → 전체 관계 → 주의사항 → 출처 순서를 모두 공유합니다. 원본 registry는 유지하고 `src/content/market-map-details/selectors.ts`에서 상태 label, CTA 우선순위, 대표 기업 수와 query fallback만 정규화합니다.
+
+Hero는 desktop `clamp(2rem, 4vw, 3.25rem)`과 32~44px padding, mobile 28~36px과 24px padding을 사용합니다. 선택 기업은 42%, 같이 볼 기업은 58% 비율이며 모바일에서는 1열입니다. 회사명·ticker·역할·상태는 분리된 요소와 compact pill로 표시하고 `Pick only`는 `관련 Pick 있음`, `대장주`는 `핵심 기업`, `해설 준비 중`은 `기업 해설 준비 중`으로 정규화합니다. 선택 기업 CTA는 기업 해설 → 숫자 3개 → 관련 Pick → 시장 흐름 우선순위로 최대 2개, 관련 기업은 최대 1개입니다.
+
+가격 row가 실제로 준비된 경우에만 compact `PriceBadge`를 표시합니다. 가격이 없으면 `가격 준비 중` placeholder 영역을 렌더하지 않습니다. Compact flow는 4~6단계, 단계별 대표 기업 최대 2개를 사용하고 현재 단계를 text·border·`aria-current`로 함께 표시합니다. ReactFlow는 `전체 연결 보기`를 누르기 전에는 렌더하지 않으며 열린 뒤 CTA는 `전체 연결 접기`입니다. 모바일에서는 단계 흐름을 세로로 바꾸고 화살표가 카드와 겹치지 않게 합니다.
+
+재건 지도 제목은 `재건 기대가 커질 때 함께 보는 인프라 흐름`으로 중립화했습니다. 재건 기대·정책 기대·시장 관심은 실제 예산, 발주, 착공, 계약, 확정 수혜를 뜻하지 않으며 모든 지도에서 직접 계약과 공급 관계는 공시·IR을 별도로 확인하도록 안내합니다. 기존 company query와 legacy alias, invalid fallback, browser back/forward를 유지하고 선택 변경은 URL query와 React state를 함께 갱신합니다.
+
+상단 navigation은 오늘·산업·기업·자료 4그룹을 유지하고 공통 close 동작을 그대로 사용합니다. 상세 지도와 보관함에서 `story-dark-shell`을 제거해 라이트 surface를 사용하며 desktop backdrop, mobile overlay, body scroll lock 잔류를 만들지 않습니다. `scripts/market-map-detail-unit.ts`와 콘텐츠 validator가 공통 view model, 기본·유효·legacy·invalid query, CTA 상한, status label, 가격 없음 생략, 4~6단계와 대표 기업 상한을 네트워크 없이 검사합니다.
+
+이번 정비는 신규 시장지도, API, Serverless Function, DB, migration, cron, sync, dependency, 자동 관계 생성, AI 해설, 추천 점수를 추가하지 않습니다. 기존 시장지도 콘텐츠 의미와 가격·거시·관계·공시·수요공급·기업 이벤트·리포트·병목 계약을 유지하며 Production은 Vercel `finance1`과 `https://finance1-flax.vercel.app`에서 검증합니다.

@@ -7389,9 +7389,10 @@ export const reconstructionInfrastructureMap = {
     'hyundai-engineering-construction': 'reconstruction-hyundai-ec',
   },
   hero: {
-    title: '전쟁이 멈출 수 있다는 기대가 커지면, 시장은 다시 짓는 회사를 봅니다',
-    description: '재건 기대감은 도로, 플랜트, 주택, 항만 같은 인프라 발주 가능성으로 이어집니다. 하지만 기대가 실제 수주와 실적으로 이어지는지는 따로 확인해야 합니다.',
-    note: '테마는 주가를 먼저 움직이고, 수주와 매출·이익이 그 기대를 검증합니다.',
+    title: '재건 기대가 커질 때 함께 보는 인프라 흐름',
+    description: '휴전과 재건에 대한 기대가 생기면 도로·전력·주택·산업시설과 관련된 기업들이 함께 주목될 수 있습니다.',
+    note: '재건 기대는 실제 발주와 다릅니다. 수주와 계약은 기업의 공식 발표를 별도로 확인합니다.',
+    caution: '시장 관심과 후보 기업 관계는 직접 계약이나 확정 수혜를 뜻하지 않습니다.',
   },
   companies: [
     {

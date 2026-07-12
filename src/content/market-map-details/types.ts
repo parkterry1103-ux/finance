@@ -1,0 +1,61 @@
+export type MarketMapConnectionLevel =
+  | 'complete'
+  | 'partial'
+  | 'pick'
+  | 'reference'
+  | 'planned'
+  | 'private';
+
+export type MarketMapDetailActionKind = 'analysis' | 'financials' | 'pick' | 'flow';
+
+export type MarketMapDetailAction = {
+  id: string;
+  kind: MarketMapDetailActionKind;
+  label: string;
+};
+
+export type MarketMapDetailCompany = {
+  id: string;
+  name: string;
+  ticker?: string;
+  countryLabel?: string;
+  mark?: string;
+  role: string;
+  statusLabel: string;
+  connectionLevel: MarketMapConnectionLevel;
+  description: string;
+  reason: string;
+  note?: string;
+  actions: MarketMapDetailAction[];
+  hasPrice: boolean;
+};
+
+export type MarketMapFlowStep = {
+  id: string;
+  title: string;
+  description: string;
+  roleTag: string;
+  representativeCompanies: string[];
+  isCurrent?: boolean;
+};
+
+export type MarketMapDetailViewModel = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  summary: string;
+  heroNote: string;
+  selectedCompany: MarketMapDetailCompany;
+  relatedCompanies: MarketMapDetailCompany[];
+  flowTitle: string;
+  flowSteps: MarketMapFlowStep[];
+  advancedDescription: string;
+  caution: string;
+  policyCaution?: string;
+};
+
+export type MarketMapDetailViewModelInput = Omit<MarketMapDetailViewModel, 'selectedCompany' | 'relatedCompanies' | 'flowSteps'> & {
+  selectedCompany: MarketMapDetailCompany;
+  relatedCompanies: MarketMapDetailCompany[];
+  flowSteps: MarketMapFlowStep[];
+};

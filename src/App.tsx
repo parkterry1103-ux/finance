@@ -165,6 +165,13 @@ import { TermHelp } from './components/common/TermHelp';
 import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
 import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
 import { CompanyEventsRadar } from './components/company-events/CompanyEventsRadar';
+import { MarketMapDetailTemplate } from './components/market-map/MarketMapDetailTemplate';
+import {
+  createMarketMapDetailViewModel,
+  resolveMarketMapCompanyQuery,
+  type MarketMapDetailAction,
+  type MarketMapDetailCompany,
+} from './content/market-map-details';
 import {
   companyEventCompany,
   companyEventGroupLabels,
@@ -1198,9 +1205,9 @@ function companyConnectionState(company: Company): {
     if (datacenterPowerCoolingPickOnlyIds.has(company.id)) {
       return {
         level: 'reference',
-        label: 'Pick only',
+        label: '관련 Pick 있음',
         detail: '관련 Pick 상세에서 냉각/HVAC 흐름을 확인합니다. 현재 지도에서는 기업해설이나 숫자 CTA로 이동하지 않습니다.',
-        badges: ['Pick only', '시장 흐름 참고'],
+        badges: ['관련 Pick 있음', '시장 흐름 참고'],
         canOpenAnalysis: false,
         canOpenFinancials: false,
       };
@@ -1241,9 +1248,9 @@ function companyConnectionState(company: Company): {
 
     return {
       level: 'planned',
-      label: '해설 준비 중',
+      label: '기업 해설 준비 중',
       detail: '후순위 연결 후보입니다. 현재는 관계도에서 흐름 참고용으로만 표시합니다.',
-      badges: ['해설 준비 중'],
+      badges: ['기업 해설 준비 중'],
       canOpenAnalysis: false,
       canOpenFinancials: false,
     };
@@ -1636,7 +1643,7 @@ function companyRoleProfile(company: Company) {
   const connection = companyConnectionState(company);
   if (connection.level === 'planned') {
     return {
-      primary: '해설 준비 중',
+      primary: '기업 해설 준비 중',
       secondary: '후순위 연결 후보',
       className: 'planned',
       filterGroup: 'reference' as RoleFilter,
@@ -1654,7 +1661,7 @@ function companyRoleProfile(company: Company) {
   }
   if (company.id === 'us-semiconductors-nvidia') {
     return {
-      primary: '대장주',
+      primary: '핵심 기업',
       secondary: 'AI 칩',
       className: 'leader',
       filterGroup: 'leader' as RoleFilter,
@@ -1672,7 +1679,7 @@ function companyRoleProfile(company: Company) {
   }
   if (company.id === 'ai-datacenter-broadcom') {
     return {
-      primary: '대장주',
+      primary: '핵심 기업',
       secondary: '맞춤형 반도체',
       className: 'leader',
       filterGroup: 'leader' as RoleFilter,
@@ -6664,7 +6671,7 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenDisclosures, onOpenCa
   };
 
   return (
-    <div className="pick-shell story-dark-shell story-market-map-shell">
+    <div className="pick-shell story-market-map-shell">
       <PrimaryNavigation
         active="market-map"
         onHome={onHome}
@@ -6726,13 +6733,13 @@ type InfrastructureStoryMapCompany = InfrastructureStoryMap['companies'][number]
 type InfrastructureStoryMapPageProps = {
   map: InfrastructureStoryMap;
   kicker: string;
-  compactFlowLabel: string;
   graphAriaLabel: string;
   shellClassName?: string;
   requestedCompanyId?: string | null;
   onHome: () => void;
   onOpenMarketMap: () => void;
   onOpenPicks: () => void;
+  onOpenDisclosures: () => void;
   onOpenPick: (pick: StockAutopsyPick) => void;
   onOpenReports: (reportId?: string) => void;
   onSelectCompany: (companyId: string) => void;
@@ -6742,34 +6749,31 @@ type InfrastructureStoryMapPageProps = {
 function InfrastructureStoryMapPage({
   map,
   kicker,
-  compactFlowLabel,
   graphAriaLabel,
   shellClassName = '',
   requestedCompanyId,
   onHome,
   onOpenMarketMap,
   onOpenPicks,
+  onOpenDisclosures,
   onOpenPick,
   onOpenReports,
   onSelectCompany,
   marketPrices,
 }: InfrastructureStoryMapPageProps) {
   const [showConnections, setShowConnections] = useState(false);
-  const aliasCompanyId = requestedCompanyId && Object.prototype.hasOwnProperty.call(map.companyAliases, requestedCompanyId)
-    ? (map.companyAliases as Record<string, string>)[requestedCompanyId]
-    : requestedCompanyId;
-  const selectedCompany = map.companies.find((company) => company.id === aliasCompanyId)
+  const queryResolution = resolveMarketMapCompanyQuery(
+    map.companies.map((company) => company.id),
+    map.companyAliases as Record<string, string>,
+    requestedCompanyId,
+    map.companyId,
+  );
+  const selectedCompany = map.companies.find((company) => company.id === queryResolution.companyId)
     ?? map.companies.find((company) => company.id === map.companyId)
     ?? map.companies[0];
-  const isKnownCompanyQuery = !requestedCompanyId || map.companies.some((company) => company.id === aliasCompanyId);
+  const isKnownCompanyQuery = !queryResolution.didFallback;
   const selectedCompanyId = selectedCompany.id;
   const relatedCompanies = map.companies.filter((company) => company.id !== selectedCompany.id);
-  const relatedPick = selectedCompany.pickId
-    ? stockAutopsyPicks.find((pick) => pick.id === selectedCompany.pickId)
-    : undefined;
-  const selectedPrice = relatedPick
-    ? getPriceForPick(relatedPick, marketPrices)
-    : getPriceForTicker(selectedCompany.ticker, selectedCompany.id, marketPrices);
   const graphNodes = useMemo<Node[]>(
     () => map.graphNodes.map((node) => ({
       id: node.id,
@@ -6793,192 +6797,112 @@ function InfrastructureStoryMapPage({
     [map.graphEdges],
   );
 
+  const infrastructurePickForCompany = (companyId: string) => {
+    const company = map.companies.find((item) => item.id === companyId);
+    return company?.pickId ? stockAutopsyPicks.find((pick) => pick.id === company.pickId) : undefined;
+  };
+  const infrastructurePriceForCompany = (companyId: string) => {
+    const company = map.companies.find((item) => item.id === companyId);
+    if (!company) return null;
+    const companyPick = infrastructurePickForCompany(companyId);
+    return companyPick
+      ? getPriceForPick(companyPick, marketPrices)
+      : getPriceForTicker(company.ticker, company.id, marketPrices);
+  };
+  const toDetailCompany = (company: InfrastructureStoryMapCompany, isSelected: boolean): MarketMapDetailCompany => {
+    const companyPrice = infrastructurePriceForCompany(company.id);
+    const hasActualPrice = Boolean(companyPrice && priceDirection(companyPrice) !== 'pending');
+    const companyPick = infrastructurePickForCompany(company.id);
+    return {
+      id: company.id,
+      name: company.name,
+      ticker: company.ticker,
+      countryLabel: countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker),
+      mark: company.mark,
+      role: company.role,
+      statusLabel: company.status,
+      connectionLevel: companyPick ? 'pick' : 'reference',
+      description: company.description,
+      reason: company.reason,
+      note: 'importantNote' in company ? company.importantNote : undefined,
+      actions: isSelected
+        ? companyPick ? [{ id: `pick-${company.id}`, kind: 'pick', label: '관련 Pick 보기' }] : []
+        : [{ id: `flow-${company.id}`, kind: 'flow', label: '시장 흐름에서 보기' }],
+      hasPrice: hasActualPrice,
+    };
+  };
+  const flowRoleTags = map.sectorId === reconstructionInfrastructureMap.sectorId
+    ? ['시장 기대', '수요 배경', '공식 발주', '수주 확인', '실적 확인']
+    : ['정책 배경', '사업 기반', '공식 발주', '시공·설비', '계약 확인', '실적 확인'];
+  const infrastructureViewModel = createMarketMapDetailViewModel({
+    id: map.sectorId,
+    eyebrow: kicker,
+    title: map.hero.title,
+    summary: map.hero.description,
+    heroNote: map.hero.note,
+    selectedCompany: toDetailCompany(selectedCompany, true),
+    relatedCompanies: relatedCompanies.map((company) => toDetailCompany(company, false)),
+    flowTitle: map.sectorId === reconstructionInfrastructureMap.sectorId
+      ? '재건 기대가 실제 발주·수주·매출로 확인되는 순서를 봅니다.'
+      : '정책 발표가 부지·발주·계약·실적으로 확인되는 순서를 봅니다.',
+    flowSteps: map.flowSteps.map((step, index) => ({
+      id: `${map.sectorId}-step-${index + 1}`,
+      title: step.title,
+      description: step.description,
+      roleTag: flowRoleTags[index] ?? '확인 단계',
+      representativeCompanies: [...step.representatives],
+      isCurrent: step.representatives.some((representative) => representative.includes(selectedCompany.name)),
+    })),
+    advancedDescription: map.graphIntro.description,
+    caution: '이 지도는 산업 흐름을 이해하기 위한 참고 구조입니다. 직접 계약, 실제 공급 관계와 수주 여부는 기업 공시와 공식 발표를 별도로 확인해야 합니다.',
+    policyCaution: '정책 기대와 시장 관심은 실제 예산·발주·착공·계약 확정을 뜻하지 않습니다.',
+  });
+  const handleInfrastructureCompanyAction = (companyId: string, action: MarketMapDetailAction) => {
+    if (action.kind === 'pick') {
+      const companyPick = infrastructurePickForCompany(companyId);
+      if (companyPick) onOpenPick(companyPick);
+      return;
+    }
+    if (action.kind === 'flow') onSelectCompany(companyId);
+  };
+
   return (
     <div
-      className={`pick-shell story-dark-shell reconstruction-map-shell ${shellClassName}${showConnections ? ' connections-open' : ''}`}
+      className={`pick-shell reconstruction-map-shell market-map-unified-shell ${shellClassName}${showConnections ? ' connections-open' : ''}`}
       data-selected-company-id={selectedCompanyId}
       data-query-fallback={isKnownCompanyQuery ? 'false' : 'true'}
     >
-      <header className="pick-nav">
-        <a href="/ko/" onClick={(event) => { event.preventDefault(); onHome(); }} className="home-brand">
-          <span className="home-logo"><Network size={20} /></span>
-          <strong>주가해부실</strong>
-        </a>
-        <nav>
-          <button type="button" onClick={onHome}>홈</button>
-          <button type="button" onClick={onOpenPicks}>이번 주 Pick</button>
-          <button type="button" onClick={onOpenMarketMap}>시장지도</button>
-        </nav>
-      </header>
+      <PrimaryNavigation
+        active="market-map"
+        onHome={onHome}
+        onOpenPicks={onOpenPicks}
+        onOpenMarketMap={onOpenMarketMap}
+        onOpenDisclosures={onOpenDisclosures}
+        onOpenReports={onOpenReports}
+      />
 
       <main>
-        <section className="reconstruction-hero">
-          <p className="home-kicker">{kicker}</p>
-          <h1>{map.hero.title}</h1>
-          <p>{map.hero.description}</p>
-          <strong>{map.hero.note}</strong>
-          {'caution' in map.hero && map.hero.caution ? <small>{map.hero.caution}</small> : null}
-        </section>
-
-        <div className="reconstruction-selected-pill" aria-label="현재 선택 기업">
-          <span>선택 기업</span>
-          <CompanyIdentity
-            companyName={selectedCompany.name}
-            ticker={selectedCompany.ticker}
-            countryLabel={countryLabelFromMarket(selectedCompany.exchange) || countryLabelFromTicker(selectedCompany.ticker)}
-            statusLabel={selectedCompany.status}
-            size="compact"
-          />
-          <em>{selectedCompany.status}</em>
-        </div>
-
-        <section className="reconstruction-focus-grid" aria-label="선택 기업과 같이 볼 회사">
-          <article className="reconstruction-company-card" aria-label={`선택 기업 ${selectedCompany.name}`}>
-            <div className="reconstruction-company-head">
-              <div className="reconstruction-company-mark" aria-hidden="true">{selectedCompany.mark}</div>
-              <div>
-                <span>선택한 기업</span>
-                <CompanyIdentity
-                  companyName={selectedCompany.name}
-                  ticker={selectedCompany.ticker}
-                  countryLabel={countryLabelFromMarket(selectedCompany.exchange) || countryLabelFromTicker(selectedCompany.ticker)}
-                  statusLabel={selectedCompany.status}
-                  size="hero"
-                />
-              </div>
-            </div>
-            <div className="reconstruction-company-badges">
-              <em>{selectedCompany.status}</em>
-              <span>{selectedCompany.role}</span>
-            </div>
-            <div className="reconstruction-company-body">
-              <div>
-                <span>이 회사는 뭐 해요?</span>
-                <p>{selectedCompany.description}</p>
-              </div>
-              <div>
-                <span>왜 이 흐름에 있나요?</span>
-                <p>{selectedCompany.reason}</p>
-              </div>
-            </div>
-            {'importantNote' in selectedCompany && selectedCompany.importantNote ? (
-              <div className="reconstruction-company-warning" role="note">
-                <AlertTriangle size={15} />
-                <span>{selectedCompany.importantNote}</span>
-              </div>
-            ) : null}
-            {selectedCompany.checks.length ? (
-              <div className="reconstruction-checkpoints">
-                <span>체크포인트</span>
-                <ul>
-                  {selectedCompany.checks.map((check) => <li key={check}>{check}</li>)}
-                </ul>
-              </div>
-            ) : null}
-            <div className="reconstruction-company-actions">
-              <PriceBadge price={selectedPrice} compact />
-              {relatedPick ? (
-                <button type="button" className="primary" onClick={() => onOpenPick(relatedPick)}>
-                  관련 Pick 보기
-                  <ArrowRight size={15} />
-                </button>
-              ) : (
-                <span className="reconstruction-reference-action">시장 흐름 참고</span>
-              )}
-            </div>
-          </article>
-
-          <section className="reconstruction-related" aria-labelledby="reconstruction-related-title">
-            <div className="reconstruction-section-head">
-              <span>같이 볼 회사</span>
-              <h2 id="reconstruction-related-title">{selectedCompany.name}과 같이 볼 회사</h2>
-              <p>{map.relatedNote}</p>
-            </div>
-            <div className="reconstruction-related-grid">
-              {relatedCompanies.map((company) => {
-                const companyPick = company.pickId
-                  ? stockAutopsyPicks.find((pick) => pick.id === company.pickId)
-                  : undefined;
-                const companyPrice = companyPick
-                  ? getPriceForPick(companyPick, marketPrices)
-                  : getPriceForTicker(company.ticker, company.id, marketPrices);
-                return (
-                  <article key={company.id}>
-                    <div className="reconstruction-related-head">
-                      <div className="reconstruction-related-mark" aria-hidden="true">{company.mark}</div>
-                      <div>
-                        <CompanyIdentity
-                          companyName={company.name}
-                          ticker={company.ticker}
-                          countryLabel={countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker)}
-                          statusLabel={company.status}
-                          size="compact"
-                        />
-                      </div>
-                    </div>
-                    <div className="reconstruction-related-meta">
-                      <span>{company.role}</span>
-                      <em>{company.status}</em>
-                    </div>
-                    <p>{company.description}</p>
-                    {'importantNote' in company && company.importantNote ? <small className="reconstruction-related-note">{company.importantNote}</small> : null}
-                    <div className="reconstruction-related-actions">
-                      <PriceBadge price={companyPrice} compact />
-                      <button type="button" onClick={() => onSelectCompany(company.id)}>
-                        시장 흐름에서 보기
-                        <ArrowRight size={14} />
-                      </button>
-                      {companyPick ? (
-                        <button type="button" className="secondary" onClick={() => onOpenPick(companyPick)}>
-                          관련 Pick 보기
-                        </button>
-                      ) : null}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        </section>
-
-        <section className="reconstruction-compact-flow" aria-labelledby="reconstruction-flow-title">
-          <div className="reconstruction-section-head">
-            <span>{compactFlowLabel}</span>
-            <h2 id="reconstruction-flow-title">기대가 숫자로 확인되기까지</h2>
-          </div>
-          <div className="reconstruction-flow-steps">
-            {map.flowSteps.map((step, index) => (
-              <article key={step.title}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <strong>{step.title}</strong>
-                <p>{step.description}</p>
-                <div className="reconstruction-step-representatives">
-                  <b>대표 예시</b>
-                  {step.representatives.map((representative) => <small key={representative}>{representative}</small>)}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="reconstruction-connections" aria-labelledby="reconstruction-connections-title">
-          <div className="reconstruction-connection-entry">
-            <div>
-              <span>{map.graphIntro.eyebrow}</span>
-              <h2 id="reconstruction-connections-title">{map.graphIntro.description}</h2>
-            </div>
-            <button
-              type="button"
-              className="primary"
-              aria-expanded={showConnections}
-              aria-controls={`${map.sectorId}-connection-canvas`}
-              onClick={() => setShowConnections((current) => !current)}
-            >
-              {showConnections ? '5단계 흐름으로 돌아가기' : '전체 연결 보기'}
-            </button>
-          </div>
-          {showConnections && (
-            <div className="reconstruction-flow-canvas" id={`${map.sectorId}-connection-canvas`} aria-label={graphAriaLabel}>
+        <MarketMapDetailTemplate
+          viewModel={infrastructureViewModel}
+          advancedExpanded={showConnections}
+          onToggleAdvanced={() => setShowConnections((current) => !current)}
+          onCompanyAction={handleInfrastructureCompanyAction}
+          renderIdentity={(company, size) => (
+            <CompanyIdentity
+              companyName={company.name}
+              ticker={company.ticker}
+              countryLabel={company.countryLabel}
+              statusLabel={company.statusLabel}
+              size={size}
+            />
+          )}
+          renderLogo={(company) => <div className="market-map-template-monogram" aria-hidden="true">{company.mark ?? company.name.slice(0, 2)}</div>}
+          renderPrice={(companyId) => {
+            const companyPrice = infrastructurePriceForCompany(companyId);
+            return companyPrice && priceDirection(companyPrice) !== 'pending' ? <PriceBadge price={companyPrice} compact /> : null;
+          }}
+          advancedContent={
+            <div className="reconstruction-flow-canvas" aria-label={graphAriaLabel}>
               <ReactFlow
                 nodes={graphNodes}
                 edges={graphEdges}
@@ -6994,19 +6918,22 @@ function InfrastructureStoryMapPage({
                 <Controls showInteractive={false} />
               </ReactFlow>
             </div>
-          )}
-        </section>
-
-        <RelatedIndustryReports
-          title="산업 보고서로 더 넓게 보기"
-          description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
-          reports={reportsForMap(map.sectorId)}
-          onOpenReports={onOpenReports}
-        />
-        <EvidenceDetails
-          description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
-          groups={evidenceGroupsForMap(map.sectorId)}
-          onOpenReports={onOpenReports}
+          }
+          resources={
+            <>
+              <RelatedIndustryReports
+                title="산업 보고서로 더 넓게 보기"
+                description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
+                reports={reportsForMap(map.sectorId)}
+                onOpenReports={onOpenReports}
+              />
+              <EvidenceDetails
+                description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
+                groups={evidenceGroupsForMap(map.sectorId)}
+                onOpenReports={onOpenReports}
+              />
+            </>
+          }
         />
       </main>
     </div>
@@ -8478,6 +8405,7 @@ function App() {
   const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
   const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
   const graphWrapRef = useRef<HTMLElement | null>(null);
+  const storyAdvancedTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
   const countrySectors = sectors.filter((sector) => sector.country === selectedCountry);
@@ -8730,7 +8658,7 @@ function App() {
   const aiKoreaListedPreview = showAllKoreaRelated ? aiKoreaListedCompanies : aiKoreaListedCompanies.slice(0, 5);
   const roleFilterOptions: Array<{ value: RoleFilter; label: string; note: string }> = [
     { value: 'all', label: mapViewMode === 'core' ? '핵심 관계' : '전체', note: '기본 흐름' },
-    { value: 'leader', label: '대장주', note: '먼저 볼 기업' },
+    { value: 'leader', label: '핵심 기업', note: '먼저 볼 기업' },
     { value: 'bottleneck', label: '핵심 병목', note: '흐름의 관문' },
     { value: 'beneficiary', label: '수요 수혜', note: '함께 볼 기업' },
     { value: 'listed', label: '상장기업', note: '분석 대상' },
@@ -8747,6 +8675,83 @@ function App() {
     !isStoryMarketMap || flowViewMode === 'all' || flowViewMode === 'sources' || flowViewMode === 'reference';
   const isAdvancedRelationshipView = isStoryMarketMap && shouldShowRelationshipCanvas;
   const shouldShowReadingTemplate = isStoryMarketMap && !shouldShowRelationshipCanvas;
+  const storyMapCompanyDetail = (company: Company, isSelected: boolean): MarketMapDetailCompany => {
+    const connection = companyConnectionState(company);
+    const companyPrice = hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null;
+    const relatedPick = relatedPickForMarketMapCompany(company);
+    const actions: MarketMapDetailAction[] = isSelected
+      ? [
+          ...(connection.canOpenAnalysis ? [{ id: `analysis-${company.id}`, kind: 'analysis' as const, label: '기업 해설 보기' }] : []),
+          ...(connection.canOpenFinancials ? [{ id: `financials-${company.id}`, kind: 'financials' as const, label: '숫자 3개 보기' }] : []),
+          ...(!connection.canOpenAnalysis && relatedPick ? [{ id: `pick-${company.id}`, kind: 'pick' as const, label: '관련 Pick 보기' }] : []),
+        ]
+      : [connection.canOpenAnalysis
+          ? { id: `analysis-${company.id}`, kind: 'analysis', label: '기업 해설 보기' }
+          : { id: `flow-${company.id}`, kind: 'flow', label: '시장 흐름에서 보기' }];
+    return {
+      id: company.id,
+      name: company.name,
+      ticker: company.ticker,
+      countryLabel: countryLabelFromCompany(company),
+      mark: resolveCompanyLogoMonogramText(company),
+      role: companyRoleProfile(company).primary,
+      statusLabel: connection.label,
+      connectionLevel: connection.level,
+      description: companyQuestionProductCopy(company),
+      reason: companyQuestionDemandCopy(company),
+      actions,
+      hasPrice: Boolean(companyPrice && priceDirection(companyPrice) !== 'pending'),
+    };
+  };
+  const datacenterSelectedStepIndex = selectedFlowStage
+    ? datacenterPowerCoolingFlowSteps.findIndex((step) => step.companyId === selectedFlowStage)
+    : selectedCompany
+      ? datacenterPowerCoolingFlowSteps.findIndex((step) => step.representativeCompanies.some((name) => name === selectedCompany.name || selectedCompany.name.includes(name)))
+      : -1;
+  const storyMapFlowSteps = isDatacenterPowerCoolingMap
+    ? datacenterPowerCoolingFlowSteps.map((step, index) => ({
+        id: step.companyId,
+        title: step.label,
+        description: step.detail,
+        roleTag: ['수요 배경', '전력 수요', '전력 관리', '냉각 관리', '운영 확인'][index] ?? '확인 단계',
+        representativeCompanies: step.representativeCompanies,
+        isCurrent: index === datacenterSelectedStepIndex,
+      }))
+    : flowStageCards.map((stage) => ({
+        id: stage.stage,
+        title: stage.easyTitle,
+        description: stage.summary,
+        roleTag: stage.term,
+        representativeCompanies: stage.companies.map((company) => company.name),
+        isCurrent: activeFlowStageName === stage.stage,
+      }));
+  const storyMapViewModel = selectedCompany
+    ? createMarketMapDetailViewModel({
+        id: selectedSector.id,
+        eyebrow: isDatacenterPowerCoolingMap ? '데이터센터 전력·냉각 시장지도' : 'AI 반도체·데이터센터 시장지도',
+        title: isDatacenterPowerCoolingMap
+          ? '데이터센터 전력과 냉각이 이어지는 흐름'
+          : 'AI 반도체와 데이터센터가 이어지는 흐름',
+        summary: isDatacenterPowerCoolingMap
+          ? 'AI 서버가 늘면 전력 공급, UPS, 배전, 냉각과 운영 안정성을 함께 확인해야 합니다.'
+          : 'AI 서비스 수요가 계산용 칩, HBM, 파운드리, 전력·냉각 인프라로 이어지는 순서를 봅니다.',
+        heroNote: '기업 간 직접 공급 관계와 실제 계약 여부는 공시·IR과 공식 발표를 별도로 확인합니다.',
+        selectedCompany: storyMapCompanyDetail(selectedCompany, true),
+        relatedCompanies: selectedMarketRelatedCards.map((item) => ({
+          ...storyMapCompanyDetail(item.company, false),
+          role: item.label,
+          reason: item.description,
+        })),
+        flowTitle: isDatacenterPowerCoolingMap
+          ? '서버 수요가 전력·냉각 설비와 운영 안정성으로 연결되는 순서를 봅니다.'
+          : 'AI 수요가 반도체 생산과 데이터센터 인프라로 연결되는 순서를 봅니다.',
+        flowSteps: storyMapFlowSteps,
+        advancedDescription: isDatacenterPowerCoolingMap
+          ? 'Vertiv, Eaton, Schneider Electric, LG전자와 인프라 단계의 전체 연결을 확인합니다.'
+          : 'AI 수요, GPU, HBM, 파운드리, 전력·냉각 기업의 전체 연결을 확인합니다.',
+        caution: '이 지도는 산업 흐름을 이해하기 위한 참고 구조입니다. 직접 계약, 실제 공급 관계와 수주 여부는 기업 공시와 공식 발표를 별도로 확인해야 합니다.',
+      })
+    : null;
   const routeHashIndex = route.indexOf('#');
   const routeWithoutHash = routeHashIndex >= 0 ? route.slice(0, routeHashIndex) : route;
   const routeHash = routeHashIndex >= 0 ? decodeURIComponent(route.slice(routeHashIndex + 1)) : '';
@@ -8861,12 +8866,12 @@ function App() {
     const routeFocusCompany = routeCategoryCompanyId ? companies.find((company) => company.id === routeCategoryCompanyId) : undefined;
     if (!routeSector && !routeFocusCompany) return;
     const nextSectorId = routeFocusCompany?.sectorId ?? routeSector?.id ?? selectedSectorId;
-    if (
-      nextSectorId === selectedSectorId &&
-      (!routeFocusCompany || routeFocusCompany.id === selectedCompanyId)
-    ) {
-      return;
-    }
+    const routeAnchor = anchors.find((anchor) => anchor.sectorId === nextSectorId);
+    const defaultRouteCompany =
+      companies.find((company) => company.id === routeAnchor?.id) ??
+      companies.find((company) => company.anchorId === routeAnchor?.id && company.tier !== 'anchor');
+    const targetCompanyId = routeFocusCompany?.id ?? defaultRouteCompany?.id;
+    if (nextSectorId === selectedSectorId && targetCompanyId === selectedCompanyId) return;
     selectSectorScope(nextSectorId, routeFocusCompany?.id);
   }, [routeCategoryCompanyId, routeCategoryId, selectedCompanyId, selectedSectorId]);
 
@@ -8924,6 +8929,10 @@ function App() {
 
   function focusCompany(companyId: string) {
     setSelectedCompanyId(companyId);
+    if (routeCategoryId && isStoryMarketMap) {
+      window.history.pushState({}, '', categoryPath(selectedSector.id, companyId));
+      setRoute(`${window.location.pathname}${window.location.search}`);
+    }
     if (isAiRelationshipMap) {
       setExpandedCompanyIds((current) => new Set([...current, companyId]));
       const nextCompany = groupCompanies.find((company) => company.id === companyId);
@@ -8947,7 +8956,26 @@ function App() {
         ?.companyIds.map((id) => groupCompanies.find((company) => company.id === id))
         .find((company): company is Company => Boolean(company)) ??
       visibleCompanies.find((company) => matchesAiFlowStage(stageName, company));
-    if (focusCandidate) setSelectedCompanyId(focusCandidate.id);
+    if (focusCandidate) focusCompany(focusCandidate.id);
+  }
+
+  function handleStoryMapCompanyAction(companyId: string, action: MarketMapDetailAction) {
+    const company = companies.find((item) => item.id === companyId);
+    if (!company) return;
+    if (action.kind === 'analysis') {
+      openAnalysis(company);
+      return;
+    }
+    if (action.kind === 'financials') {
+      openAnalysis(company, 'financial-easy-view');
+      return;
+    }
+    if (action.kind === 'pick') {
+      const companyPick = relatedPickForMarketMapCompany(company);
+      if (companyPick) openPick(companyPick);
+      return;
+    }
+    focusCompany(company.id);
   }
 
   function toggleCompanyExpansion(companyId: string) {
@@ -9554,12 +9582,12 @@ function App() {
         <InfrastructureStoryMapPage
           map={reconstructionInfrastructureMap}
           kicker="재건 / 인프라 시장지도"
-          compactFlowLabel="compact 5단계 흐름"
           graphAriaLabel="재건 인프라 전체 관계도"
           requestedCompanyId={routeParams.get('company')}
           onHome={openHome}
           onOpenMarketMap={openMarketMapLibrary}
           onOpenPicks={openPicks}
+          onOpenDisclosures={openDisclosures}
           onOpenPick={openPick}
           onOpenReports={openReports}
           onSelectCompany={openReconstructionCompany}
@@ -9575,13 +9603,13 @@ function App() {
         <InfrastructureStoryMapPage
           map={semiconductorClusterInfrastructureMap}
           kicker="반도체 클러스터 / 산업단지 인프라 시장지도"
-          compactFlowLabel="compact 6단계 흐름"
           graphAriaLabel="반도체 클러스터 산업단지 인프라 전체 관계도"
           shellClassName="semiconductor-cluster-map-shell"
           requestedCompanyId={routeParams.get('company')}
           onHome={openHome}
           onOpenMarketMap={openMarketMapLibrary}
           onOpenPicks={openPicks}
+          onOpenDisclosures={openDisclosures}
           onOpenPick={openPick}
           onOpenReports={openReports}
           onSelectCompany={openSemiconductorClusterCompany}
@@ -9660,7 +9688,17 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={`app-shell ${isStoryMarketMap ? 'ai-mvp-map story-dark-shell' : ''} ${shouldShowReadingTemplate ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+      <div className={`app-shell ${isStoryMarketMap ? 'ai-mvp-map market-map-unified-shell' : ''} ${shouldShowReadingTemplate ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
+        {isStoryMarketMap ? (
+          <PrimaryNavigation
+            active="market-map"
+            onHome={openHome}
+            onOpenPicks={openPicks}
+            onOpenMarketMap={openMarketMapLibrary}
+            onOpenDisclosures={openDisclosures}
+            onOpenReports={openReports}
+          />
+        ) : null}
         <aside className="left-panel">
           <div className="brand-block">
             <div className="brand-mark">
@@ -9971,6 +10009,19 @@ function App() {
               )}
             </div>
             <div className="topbar-actions">
+              {isAdvancedRelationshipView ? (
+                <button
+                  type="button"
+                  className="icon-action text-action advanced-close-action"
+                  onClick={() => {
+                    applyFlowViewMode('core');
+                    window.setTimeout(() => storyAdvancedTriggerRef.current?.focus(), 0);
+                  }}
+                >
+                  <Network size={18} aria-hidden="true" />
+                  전체 연결 접기
+                </button>
+              ) : null}
               <button type="button" className="icon-action text-action" onClick={openHome}>
                 <Network size={18} />
                 홈
@@ -10021,437 +10072,59 @@ function App() {
             </div>
           </header>
 
-          {shouldShowReadingTemplate && selectedCompany && (
-            <section className="market-detail-focus-grid" aria-label="선택 기업 중심 시장 흐름">
-              <article className="market-detail-selected-card">
-                <div className="market-detail-selected-head">
-                  <CompanyLogo company={selectedCompany} size="large" />
-                  <div>
-                    <span>선택한 기업</span>
-                    <CompanyIdentityForCompany company={selectedCompany} size="hero" />
-                    <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
-                  </div>
-                </div>
-                <div className="connection-badge-row">
-                  <span className={`connection-status-badge ${selectedConnectionState?.level ?? 'reference'}`}>{selectedCompanyStatusLabel}</span>
-                  {activeFlowStageCard && <span className="connection-status-badge reference">{activeFlowStageCard.term}</span>}
-                </div>
-                <p>{companyQuestionProductCopy(selectedCompany)}</p>
-                <strong>{companyQuestionDemandCopy(selectedCompany)}</strong>
-                <div className="market-detail-related-inline" aria-label="같이 볼 회사 요약">
-                  <span>같이 볼 회사</span>
-                  <div>
-                    {selectedMarketRelatedCards.length ? (
-                      selectedMarketRelatedCards.slice(0, 4).map((item) => <b key={item.company.id}>{item.company.name}</b>)
-                    ) : (
-                      <b>직접 연결 기업 정리 중</b>
-                    )}
-                  </div>
-                </div>
-                <div className="market-detail-selected-actions">
-                  {selectedCanOpenAnalysis ? (
-                    <>
-                      <button type="button" onClick={() => openAnalysis(selectedCompany)}>
-                        기업 해설 보기
-                      </button>
-                      {selectedCanOpenFinancials ? (
-                        <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                          숫자 3개 보기
-                        </button>
-                      ) : (
-                        <span>재무 연결 준비 중</span>
-                      )}
-                      {isDatacenterPowerCoolingMap && (
-                        <button type="button" onClick={() => applyFlowViewMode('all')}>
-                          시장 흐름 보기
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <span>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
-                      {selectedRelatedPick && (
-                        <button type="button" onClick={() => openPick(selectedRelatedPick)}>
-                          관련 Pick 보기
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </article>
 
-              <section className="market-detail-related-card" aria-label="같이 볼 회사">
-                <div className="market-detail-section-head">
-                  <span>같이 볼 회사</span>
-                  <strong>{selectedCompany.name}과 {isDatacenterPowerCoolingMap ? '시장 흐름상 같이 보는 기업' : '바로 이어지는 기업'}</strong>
-                  <p>
-                    {isDatacenterPowerCoolingMap
-                      ? '아래 관계는 직접 계약 관계가 아니라, AI 데이터센터 투자 흐름에서 함께 확인하는 기업들입니다.'
-                      : '관계는 시장 흐름 이해용입니다. 직접 거래 여부는 공시·IR로 따로 확인합니다.'}
-                  </p>
-                </div>
-                <div className="market-detail-related-list">
-                  {selectedMarketRelatedCards.length ? (
-                    selectedMarketRelatedCards.map((item) => {
-                      const connection = item.connection;
-                      return (
-                        <article key={item.key} className={`connection-${connection.level}`}>
-                          <div>
-                            <CompanyIdentityForCompany company={item.company} size="compact" />
-                            <span>{item.label}</span>
-                          </div>
-                          <p>{item.description}</p>
-                          <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>
-                          {connection.canOpenAnalysis ? (
-                            <button type="button" onClick={() => openAnalysis(item.company)}>
-                              기업 해설 보기
-                            </button>
-                          ) : item.company.id === 'datacenter-power-lg-electronics' && relatedPickForMarketMapCompany(item.company) ? (
-                            <button type="button" onClick={() => openPick(relatedPickForMarketMapCompany(item.company)!)}>
-                              관련 Pick 보기
-                            </button>
-                          ) : (
-                            <em>{connection.label}</em>
-                          )}
-                        </article>
-                      );
-                    })
-                  ) : (
-                    <p className="market-detail-empty">직접 연결 기업은 아직 정리 중입니다.</p>
-                  )}
-                </div>
-              </section>
-            </section>
+          {shouldShowReadingTemplate && selectedCompany && storyMapViewModel && (
+            <MarketMapDetailTemplate
+              viewModel={storyMapViewModel}
+              advancedExpanded={false}
+              advancedTriggerRef={storyAdvancedTriggerRef}
+              onToggleAdvanced={() => applyFlowViewMode('all')}
+              onCompanyAction={handleStoryMapCompanyAction}
+              onSelectFlowStep={(stepId) => {
+                if (isDatacenterPowerCoolingMap) {
+                  setSelectedFlowStage(stepId);
+                  focusCompany(stepId);
+                } else selectFlowStage(stepId);
+              }}
+              renderIdentity={(company, size) => {
+                const sourceCompany = companies.find((item) => item.id === company.id);
+                return sourceCompany
+                  ? <CompanyIdentityForCompany company={sourceCompany} size={size} statusLabel={company.statusLabel} />
+                  : <CompanyIdentity companyName={company.name} ticker={company.ticker} countryLabel={company.countryLabel} statusLabel={company.statusLabel} size={size} />;
+              }}
+              renderLogo={(company, size) => {
+                const sourceCompany = companies.find((item) => item.id === company.id);
+                return sourceCompany
+                  ? <CompanyLogo company={sourceCompany} size={size} />
+                  : <div className="market-map-template-monogram" aria-hidden="true">{company.mark ?? company.name.slice(0, 2)}</div>;
+              }}
+              renderPrice={(companyId) => {
+                const sourceCompany = companies.find((item) => item.id === companyId);
+                if (!sourceCompany || !hasTradableTicker(sourceCompany)) return null;
+                const companyPrice = getPriceForCompany(sourceCompany, marketPrices);
+                return companyPrice && priceDirection(companyPrice) !== 'pending' ? <PriceBadge price={companyPrice} compact /> : null;
+              }}
+              resources={
+                <>
+                  <RelatedIndustryReports
+                    title="산업 보고서로 더 넓게 보기"
+                    description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
+                    reports={reportsForMap(selectedSector.id)}
+                    onOpenReports={openReports}
+                  />
+                  <EvidenceDetails
+                    description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
+                    groups={evidenceGroupsForMap(selectedSector.id)}
+                    onOpenReports={openReports}
+                  />
+                </>
+              }
+            />
           )}
 
-          {isAiRelationshipMap && (
-            <section className="sector-flow-card" aria-label="AI 반도체와 데이터센터 핵심 흐름">
-              <div className="sector-flow-copy">
-                <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>{shouldShowRelationshipCanvas ? '전체 연결 보기' : 'compact 5단계 흐름'}</strong>
-                <p>
-                  {shouldShowRelationshipCanvas
-                    ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
-                    : 'AI 수요 → GPU/AI 칩 → HBM → 파운드리 → 전력/냉각 순서로 봅니다.'}
-                </p>
-              </div>
-              {shouldShowRelationshipCanvas && (
-                <div className="relationship-view-intro" aria-label="전체 연결 보기 안내">
-                  <div className="relationship-view-copy">
-                    <span>고급 참고</span>
-                    <p>처음에는 5장 흐름만 봐도 충분합니다. 관계선은 필요할 때 눌러 근거를 확인하세요.</p>
-                  </div>
-                  {selectedCompany && (
-                    <div className="relationship-selected-company-card" aria-label="전체 연결 보기 선택 기업">
-                      <span>선택 기업</span>
-                      <CompanyIdentityForCompany company={selectedCompany} size="compact" />
-                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
-                      {selectedConnectionState && (
-                        <div className="connection-badge-row">
-                          {selectedConnectionState.badges.map((badge) => (
-                            <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
-                          ))}
-                        </div>
-                      )}
-                      {selectedCanOpenAnalysis ? (
-                        <button type="button" onClick={() => openAnalysis(selectedCompany)}>
-                          기업 해설 보기
-                        </button>
-                      ) : (
-                        <em>{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</em>
-                      )}
-                    </div>
-                  )}
-                  <div className="relationship-legend" aria-label="관계도 범례">
-                    <span>선택 기업</span>
-                    <span>직접 연결</span>
-                    <span>보조 연결</span>
-                  </div>
-                  <div className="relationship-view-actions">
-                    <button type="button" onClick={() => applyFlowViewMode('core')}>5장 흐름으로 돌아가기</button>
-                    <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>선택 기업 중심</button>
-                  </div>
-                </div>
-              )}
-              <div className="map-mode-strip" aria-label="지도 표시 모드">
-                <div>
-                  {flowModeOptions
-                    .filter((option) => option.tone !== 'secondary')
-                    .map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={flowViewMode === option.value ? 'active' : ''}
-                        onClick={() => applyFlowViewMode(option.value)}
-                        title={option.note}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                </div>
-                <div className="map-mode-secondary">
-                  {flowModeOptions
-                    .filter((option) => option.tone === 'secondary')
-                    .map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={flowViewMode === option.value ? 'active' : ''}
-                        onClick={() => applyFlowViewMode(option.value)}
-                        title={option.note}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                </div>
-              </div>
-              <div className="flow-help-pills" aria-label="지도 사용 팁">
-                <span>5장만 순서대로</span>
-                <span>대표 기업은 2~3개만</span>
-                <span>전체 관계는 필요할 때만</span>
-              </div>
-              <nav className="flow-stage-nav" aria-label="AI 반도체와 데이터센터 5단계">
-                {flowStageCards.map((stage, index) => (
-                  <article
-                    key={stage.stage}
-                    className={`flow-stage-card ${activeFlowStageName === stage.stage ? 'active' : ''} flow-stage-tone-${index + 1}`}
-                    aria-current={activeFlowStageName === stage.stage ? 'step' : undefined}
-                  >
-                    <button
-                      type="button"
-                      className="flow-stage-select"
-                      onClick={() => selectFlowStage(stage.stage)}
-                      aria-label={`${stage.easyTitle} 단계 보기`}
-                    >
-                      <span>{stage.symbol}</span>
-                      <strong>{stage.term}</strong>
-                      <small>{stage.summary}</small>
-                      <em>{stage.easyTitle}</em>
-                    </button>
-                    <span className="flow-stage-company-row" aria-label={`${stage.easyTitle} 대표 기업`}>
-                      <b>대표 기업</b>
-                      <span className="flow-stage-company-chip-row">
-                        {stage.companies.slice(0, 2).map((company) =>
-                          canOpenCompanyAnalysis(company) ? (
-                            <button
-                              key={company.id}
-                              type="button"
-                              className="flow-stage-company-chip"
-                              onClick={() => openFlowCompanyAnalysis(company)}
-                              aria-label={`${flowRepresentativeCompanyName(company)} 기업 해설 보기`}
-                            >
-                              {flowRepresentativeCompanyName(company)}
-                            </button>
-                          ) : (
-                            <span key={company.id} className="flow-stage-company-chip disabled" aria-disabled="true">
-                              {flowRepresentativeCompanyName(company)}
-                              <small>준비 중</small>
-                            </span>
-                          ),
-                        )}
-                      </span>
-                    </span>
-                  </article>
-                ))}
-              </nav>
 
-              {selectedCompany && (
-                <section className="flow-focus-explorer" aria-label="선택 기업 중심 관계 탐색">
-                  <div className="flow-connection-column previous">
-                    <span>이전 단계 / 수요 연결</span>
-                    {focusPreviousCards.length ? (
-                      <div className="flow-connection-list">
-                        {focusPreviousCards.map((item) => (
-                          <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
-                            <CompanyLogo company={item.company} size="small" />
-                            <span>
-                              <CompanyIdentityForCompany company={item.company} size="compact" />
-                              <small>{shortRelationshipLabel(item.relationship.type)}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>앞 단계 연결은 아직 정리 중입니다.</p>
-                    )}
-                  </div>
 
-                  <article className="flow-focus-company-card" aria-label="현재 선택한 기업">
-                    <CompanyLogo company={selectedCompany} size="large" />
-                    <div>
-                      <span>선택한 기업</span>
-                      {activeFlowStageCard && <em className="flow-active-stage-label">{activeFlowStageCard.stage}</em>}
-                      <CompanyIdentityForCompany company={selectedCompany} size="hero" />
-                      <small>{selectedRole?.primary ?? companyValueChainStage(selectedCompany)}</small>
-                      {selectedConnectionState && (
-                        <div className="connection-badge-row">
-                          {selectedConnectionState.badges.map((badge) => (
-                            <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
-                          ))}
-                        </div>
-                      )}
-                      <dl className="flow-focus-qa" aria-label="선택 기업 핵심 질문">
-                        <div>
-                          <dt>이 회사는 뭐 해요?</dt>
-                          <dd>{companyQuestionProductCopy(selectedCompany)}</dd>
-                        </div>
-                        <div>
-                          <dt>왜 이 흐름에 있나요?</dt>
-                          <dd>{companyQuestionDemandCopy(selectedCompany)}</dd>
-                        </div>
-                        <div>
-                          <dt>같이 볼 회사는?</dt>
-                          <dd>{selectedRelatedCompanyNames}</dd>
-                        </div>
-                      </dl>
-                      <div className="flow-focus-actions">
-                        {selectedCanOpenAnalysis ? (
-                          <>
-                            <button type="button" onClick={() => openAnalysis(selectedCompany)}>
-                              기업 해설 보기
-                            </button>
-                            {selectedCanOpenFinancials ? (
-                              <button type="button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                                숫자 3개 보기
-                              </button>
-                            ) : (
-                              <span className="flow-focus-disabled">재무 연결 준비 중</span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="flow-focus-disabled">{selectedConnectionState?.label ?? '시장 흐름 참고'}</span>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-
-                  <div className="flow-connection-column next">
-                    <span>다음에 같이 볼 기업</span>
-                    {focusNextCards.length ? (
-                      <div className="flow-connection-list">
-                        {focusNextCards.map((item) => (
-                          <button key={item.link.id} type="button" onClick={() => focusCompany(item.company.id)}>
-                            <CompanyLogo company={item.company} size="small" />
-                            <span>
-                              <CompanyIdentityForCompany company={item.company} size="compact" />
-                              <small>{item.relationship.demandConnection}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>직접 연결 기업은 아직 정리 중입니다.</p>
-                    )}
-                    {hiddenFocusConnectionCount > 0 && (
-                      <button type="button" className="focus-more-button" onClick={() => applyFlowViewMode('all')}>
-                        전체 연결 보기
-                      </button>
-                    )}
-                  </div>
-                </section>
-              )}
-
-              <div className="advanced-map-entry">
-                <span>전체 관계를 보고 싶다면</span>
-                <strong>NVIDIA, HBM, 파운드리, 전력/냉각 기업 관계를 한 번에 펼쳐봅니다.</strong>
-                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
-              </div>
-
-              <div className="advanced-map-entry datacenter-semiconductor-entry">
-                <span>전력과 냉각까지 이어서 보고 싶다면</span>
-                <strong>AI 서버가 늘 때 전력 관리, UPS, 냉각/HVAC 기업이 왜 같이 보이는지 확인합니다.</strong>
-                <button type="button" onClick={() => openCategory(datacenterPowerCoolingSectorId)}>전력·냉각 지도 보기</button>
-              </div>
-
-              {flowViewMode === 'kr' && (
-              <div className="ai-sector-support-grid">
-                <section className="ai-korea-listed-card" aria-label="AI 반도체 흐름과 연결된 한국 상장기업">
-                  <div className="support-card-head">
-                    <span>한국 관련 상장기업</span>
-                    <strong>이 흐름과 연결된 한국 기업</strong>
-                    <p>상장기업만 추려서 시장, 원문 보고서 상태, 기업 해설 이동 경로를 먼저 보여줍니다.</p>
-                  </div>
-                  <div className="korea-listed-grid">
-                    {aiKoreaListedPreview.map((company) => {
-                      const reportLink = getPrimaryReportLink(company);
-                      const connection = companyConnectionState(company);
-                      return (
-                        <article key={company.id} className={`korea-listed-item connection-${connection.level}`}>
-                          <div>
-                            <CompanyIdentityForCompany company={company} size="compact" />
-                          </div>
-                          <div className="connection-badge-row">
-                            {connection.badges.map((badge) => (
-                              <span key={badge} className={`connection-status-badge ${connection.level}`}>{badge}</span>
-                            ))}
-                          </div>
-                          <p>{companyBusinessSummary(company)}</p>
-                          <span>{company.relationshipSummary ?? companyCustomerSummary(company)}</span>
-                          <div className="korea-listed-actions">
-                            {connection.canOpenAnalysis ? (
-                              <button type="button" onClick={() => openAnalysis(company)}>기업 해설 보기</button>
-                            ) : (
-                              <span className="company-row-disabled">{connection.label}</span>
-                            )}
-                            <button type="button" onClick={() => openCompanyMap(company)}>시장 흐름 보기</button>
-                            {connection.canOpenAnalysis && <ReportAction reportLink={reportLink} className="mini-report-action" iconSize={13} />}
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                  {aiKoreaListedCompanies.length > aiKoreaListedPreview.length && (
-                    <button type="button" className="support-more-button" onClick={() => setShowAllKoreaRelated(true)}>
-                      한국 관련주 더 보기
-                    </button>
-                  )}
-                </section>
-              </div>
-              )}
-            </section>
-          )}
-
-          {isDatacenterPowerCoolingMap && (
-            <section className="sector-flow-card datacenter-power-flow-card" aria-label="데이터센터 냉각과 전력 인프라 핵심 흐름">
-              <div className="sector-flow-copy">
-                <span>주가해부실 · 시장 흐름 지도</span>
-                <strong>AI 서버는 전기를 많이 쓰고 열도 많이 냅니다</strong>
-                <p>전력과 냉각은 직접 계약 관계를 뜻하기보다, AI 데이터센터 투자 흐름에서 함께 확인하는 인프라 축입니다.</p>
-              </div>
-              <div className="datacenter-power-steps" aria-label="데이터센터 전력 냉각 5단계">
-                {datacenterPowerCoolingFlowSteps.map((step, index) => (
-                  <button
-                    key={step.companyId}
-                    type="button"
-                    className={`datacenter-power-step ${selectedCompany?.id === step.companyId ? 'active' : ''}`}
-                    onClick={() => focusCompany(step.companyId)}
-                  >
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    <strong>{step.label}</strong>
-                    <small>{step.detail}</small>
-                    <em>대표 기업 예: {step.representativeCompanies.join(', ')}</em>
-                  </button>
-                ))}
-              </div>
-              <div className="flow-help-pills" aria-label="데이터센터 전력 냉각 지도 사용 팁">
-                <span>칩 다음 전력</span>
-                <span>전력 다음 냉각</span>
-                <span>마지막은 수주와 숫자 확인</span>
-              </div>
-              <div className="advanced-map-entry datacenter-power-entry">
-                <span>전체 관계를 보고 싶다면</span>
-                <strong>Vertiv, Eaton, Schneider Electric, LG전자를 전력·냉각 흐름 안에서 함께 봅니다.</strong>
-                <button type="button" onClick={() => applyFlowViewMode('all')}>전체 연결 보기</button>
-              </div>
-              <div className="advanced-map-entry datacenter-semiconductor-entry">
-                <span>칩 쪽 흐름도 같이 보고 싶다면</span>
-                <strong>GPU, HBM, 파운드리 흐름은 AI 반도체 / 데이터센터 지도에서 확인할 수 있습니다.</strong>
-                <button type="button" onClick={() => openCategory(aiRelationshipSectorId)}>AI 반도체 지도 보기</button>
-              </div>
-            </section>
-          )}
-
-          {isStoryMarketMap && (
+          {isStoryMarketMap && !shouldShowReadingTemplate && (
             <>
               <RelatedIndustryReports
                 title="산업 보고서로 더 넓게 보기"
