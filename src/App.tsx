@@ -748,8 +748,18 @@ function aiStageColumn(company: Company) {
   return 4;
 }
 
-function getAiNodePosition(company: Company, layoutCompanies: Company[] = companies) {
+function getAiNodePosition(company: Company, layoutCompanies: Company[] = companies, compactLayout = false) {
   if (company.sectorId !== aiRelationshipSectorId || company.anchorId !== aiRelationshipAnchorId) return undefined;
+  if (compactLayout) {
+    const orderedCompanies = layoutCompanies
+      .filter((item) => item.anchorId === aiRelationshipAnchorId)
+      .sort((left, right) => aiStageColumn(left) - aiStageColumn(right) || left.name.localeCompare(right.name));
+    const index = Math.max(0, orderedCompanies.findIndex((item) => item.id === company.id));
+    return {
+      x: 24 + (index % 3) * 195,
+      y: 44 + Math.floor(index / 3) * 122,
+    };
+  }
   const stageColumn = aiStageColumn(company);
   const sameStageCompanies = layoutCompanies
     .filter((item) => item.anchorId === aiRelationshipAnchorId)
@@ -765,8 +775,8 @@ function matchesAiFlowStage(stage: string, company: Company) {
   return aiStageColumn(company) === aiStageColumns.indexOf(stage);
 }
 
-function getNodePosition(company: Company, layoutCompanies?: Company[]) {
-  const aiPosition = getAiNodePosition(company, layoutCompanies);
+function getNodePosition(company: Company, layoutCompanies?: Company[], compactLayout = false) {
+  const aiPosition = getAiNodePosition(company, layoutCompanies, compactLayout);
   if (aiPosition) return aiPosition;
   const xByColumn = [34, 382, 742];
   if (company.layout.column === 0) {
@@ -8640,8 +8650,17 @@ function App() {
   const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
   const [storyGraphRegion, setStoryGraphRegion] = useState<MarketMapGraphRegion>('all');
   const [storyGraphViewMode, setStoryGraphViewMode] = useState<MarketMapGraphViewMode>('selected');
+  const [isCompactGraphLayout, setIsCompactGraphLayout] = useState(() => window.matchMedia('(max-width: 760px)').matches);
   const graphWrapRef = useRef<HTMLElement | null>(null);
   const storyAdvancedTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 760px)');
+    const syncCompactGraphLayout = () => setIsCompactGraphLayout(mediaQuery.matches);
+    syncCompactGraphLayout();
+    mediaQuery.addEventListener('change', syncCompactGraphLayout);
+    return () => mediaQuery.removeEventListener('change', syncCompactGraphLayout);
+  }, []);
 
   const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
   const countrySectors = sectors.filter((sector) => sector.country === selectedCountry);
@@ -9179,7 +9198,11 @@ function App() {
     if (!flowInstance) return;
     const company = groupCompanies.find((item) => item.id === companyId);
     if (!company) return;
-    const position = getNodePosition(company, isAiRelationshipMap ? visibleCompanies : undefined);
+    const position = getNodePosition(
+      company,
+      isAiRelationshipMap ? visibleCompanies : undefined,
+      isAiRelationshipMap && isCompactGraphLayout,
+    );
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
         zoom: isAiRelationshipMap ? (isAdvancedRelationshipView ? 0.72 : 0.9) : Math.max(flowInstance.getZoom(), 0.58),
@@ -9304,7 +9327,11 @@ function App() {
         return {
           id: company.id,
           type: 'supplyNode',
-          position: getNodePosition(company, isAiRelationshipMap ? visibleCompanies : undefined),
+          position: getNodePosition(
+            company,
+            isAiRelationshipMap ? visibleCompanies : undefined,
+            isAiRelationshipMap && isCompactGraphLayout,
+          ),
           sourcePosition: Position.Right,
           targetPosition: Position.Left,
           data: {
@@ -9319,7 +9346,7 @@ function App() {
           },
         };
       }),
-    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, marketPrices, selectedCompany, storyGraphRegion, visibleCompanies, visibleIds],
+    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, isCompactGraphLayout, marketPrices, selectedCompany, storyGraphRegion, visibleCompanies, visibleIds],
   );
 
   const flowEdges: Edge[] = useMemo(
