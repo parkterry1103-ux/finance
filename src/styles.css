@@ -105,6 +105,7 @@
 
 .company-profiles-hero h1 {
   margin: 0;
+  color: #f8fafc;
   font-size: clamp(2.15rem, 5vw, 4rem);
   letter-spacing: -0.05em;
 }
@@ -270,6 +271,7 @@
 
 .company-profile-identity-copy h1 {
   margin: 0 0 8px;
+  color: #f8fafc;
   font-size: clamp(2rem, 5vw, 3.7rem);
   letter-spacing: -0.055em;
   overflow-wrap: anywhere;
