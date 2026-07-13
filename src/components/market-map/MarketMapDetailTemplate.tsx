@@ -4,6 +4,14 @@ import {
   marketMapCategoryLabels,
   marketMapRegionLabels,
 } from '../../content/market-map-details';
+import {
+  marketMapEvidenceLevelLabels,
+  marketMapRelationTypeLabels,
+  marketMapRelationTypeOrder,
+  type MarketMapRelationDensity,
+  type MarketMapRelationType,
+  type MarketMapRelationTypeFilter,
+} from '../../content/market-map-relations';
 import type {
   MarketMapDetailAction,
   MarketMapDetailCompany,
@@ -30,6 +38,11 @@ type MarketMapGraphToolbarProps = {
   availableRegions: MarketMapGraphRegion[];
   activeRegion: MarketMapGraphRegion;
   onRegionChange: (region: MarketMapGraphRegion) => void;
+  activeDensity?: MarketMapRelationDensity;
+  onDensityChange?: (density: MarketMapRelationDensity) => void;
+  availableRelationTypes?: MarketMapRelationType[];
+  activeRelationType?: MarketMapRelationTypeFilter;
+  onRelationTypeChange?: (relationType: MarketMapRelationTypeFilter) => void;
   activeViewMode: MarketMapGraphViewMode;
   onFocusSelected: () => void;
   onFitAll: () => void;
@@ -44,6 +57,7 @@ type MarketMapGraphShellProps = {
   children?: ReactNode;
   triggerRef?: RefObject<HTMLButtonElement>;
   collapsible?: boolean;
+  contentClassName?: string;
 };
 
 const graphRegionLabels: Record<MarketMapGraphRegion, string> = {
@@ -57,6 +71,11 @@ export function MarketMapGraphToolbar({
   availableRegions,
   activeRegion,
   onRegionChange,
+  activeDensity,
+  onDensityChange,
+  availableRelationTypes,
+  activeRelationType,
+  onRelationTypeChange,
   activeViewMode,
   onFocusSelected,
   onFitAll,
@@ -78,6 +97,29 @@ export function MarketMapGraphToolbar({
           ))}
         </div>
       </div>
+      {activeDensity && onDensityChange ? <div role="group" aria-label="관계 밀도 필터">
+        <span>관계 밀도</span>
+        <div>
+          <button type="button" aria-pressed={activeDensity === 'core'} onClick={() => onDensityChange('core')}>핵심 관계</button>
+          <button type="button" aria-pressed={activeDensity === 'all'} onClick={() => onDensityChange('all')}>전체 관계</button>
+        </div>
+      </div> : null}
+      {activeRelationType && onRelationTypeChange && availableRelationTypes ? <div role="group" aria-label="관계 유형 필터">
+        <span>관계 유형</span>
+        <div>
+          <button type="button" aria-pressed={activeRelationType === 'all'} onClick={() => onRelationTypeChange('all')}>전체</button>
+          {availableRelationTypes.map((relationType) => (
+            <button
+              key={relationType}
+              type="button"
+              aria-pressed={activeRelationType === relationType}
+              onClick={() => onRelationTypeChange(relationType)}
+            >
+              {marketMapRelationTypeLabels[relationType]}
+            </button>
+          ))}
+        </div>
+      </div> : null}
       <div role="group" aria-label="관계도 보기 방식">
         <span>보기 방식</span>
         <div>
@@ -97,11 +139,19 @@ export function MarketMapGraphToolbar({
 
 export function MarketMapGraphLegend() {
   return (
-    <div className="market-map-graph-legend" aria-label="관계선 범례">
-      <span><i className="demand" aria-hidden="true" />수요</span>
-      <span><i className="supply" aria-hidden="true" />공급</span>
-      <span><i className="infrastructure" aria-hidden="true" />생산·설비</span>
-      <span><i className="reference" aria-hidden="true" />시장 흐름 참고</span>
+    <div className="market-map-graph-legend" aria-label="관계선과 근거 수준 범례">
+      <div>
+        <strong>관계 유형</strong>
+        {marketMapRelationTypeOrder.map((relationType) => (
+          <span key={relationType}><i className={relationType} aria-hidden="true" />{marketMapRelationTypeLabels[relationType]}</span>
+        ))}
+      </div>
+      <div>
+        <strong>근거 수준</strong>
+        {(['confirmed', 'contextual', 'review-needed'] as const).map((level) => (
+          <span key={level}><i className={`evidence-${level}`} aria-hidden="true" />{marketMapEvidenceLevelLabels[level]}</span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -115,6 +165,7 @@ export function MarketMapGraphShell({
   children,
   triggerRef,
   collapsible = true,
+  contentClassName = '',
 }: MarketMapGraphShellProps) {
   return (
     <section className="market-map-template-advanced market-map-graph-shell" aria-labelledby={`${id}-advanced-title`}>
@@ -137,7 +188,7 @@ export function MarketMapGraphShell({
       ) : null}
       {expanded && controls ? <div className="market-map-graph-controls">{controls}</div> : null}
       {expanded ? (
-        <div id={`${id}-advanced-graph`} className="market-map-template-advanced-content" aria-label="기업 전용 연결 관계도">
+        <div id={`${id}-advanced-graph`} className={`market-map-template-advanced-content ${contentClassName}`.trim()} aria-label="기업 전용 연결 관계도">
           {children}
         </div>
       ) : null}
@@ -306,6 +357,7 @@ export function MarketMapDetailTemplate({
         description={viewModel.advancedDescription}
         controls={graphControls}
         collapsible={false}
+        contentClassName="market-map-evidence-network-content"
       >
         {advancedContent}
       </MarketMapGraphShell> : null}

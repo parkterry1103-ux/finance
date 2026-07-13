@@ -1,6 +1,5 @@
 import type {
   MarketMapCategory,
-  MarketMapCompanyRelation,
   MarketMapDefinition,
   MarketMapIndustryNodeKind,
   MarketMapRegion,
@@ -30,23 +29,6 @@ export const marketMapIndustryQuestions: Record<MarketMapIndustryNodeKind, strin
   use: '어디에 사용되나요?',
   verification: '무엇을 확인해야 하나요?',
 };
-
-const relation = (
-  id: string,
-  sourceCompanyId: string,
-  targetCompanyId: string,
-  label: string,
-  kind: MarketMapCompanyRelation['kind'],
-  description: string,
-): MarketMapCompanyRelation => ({
-  id,
-  sourceCompanyId,
-  targetCompanyId,
-  label,
-  kind,
-  description,
-  confidence: 'industry',
-});
 
 export const marketMapRegionLabels: Record<MarketMapRegion, string> = {
   'us-focused': '미국 중심',
@@ -130,8 +112,6 @@ export const marketMapDefinitions: MarketMapDefinition[] = [
         'ai-datacenter-dell', 'ai-datacenter-supermicro', 'ai-datacenter-arista',
         'ai-datacenter-vertiv', 'ai-datacenter-eaton', 'ai-datacenter-schneider',
       ],
-      relationSource: 'existing',
-      relations: [],
     },
   },
   {
@@ -194,14 +174,6 @@ export const marketMapDefinitions: MarketMapDefinition[] = [
     ],
     companyNetwork: {
       companyIds: ['datacenter-power-vertiv', 'datacenter-power-eaton', 'datacenter-power-schneider', 'datacenter-power-lg-electronics'],
-      relationSource: 'definition',
-      relations: [
-        relation('power-vertiv-eaton', 'datacenter-power-vertiv', 'datacenter-power-eaton', '전력 관리 비교', 'reference', '같은 데이터센터 전력 관리 수요에 노출된 기업을 비교합니다. 직접 거래 관계를 뜻하지 않습니다.'),
-        relation('power-vertiv-schneider', 'datacenter-power-vertiv', 'datacenter-power-schneider', '에너지 관리 비교', 'reference', '데이터센터 전력 안정성과 에너지 효율 흐름에서 함께 확인합니다. 직접 거래 관계를 뜻하지 않습니다.'),
-        relation('power-vertiv-lg', 'datacenter-power-vertiv', 'datacenter-power-lg-electronics', '냉각 수요 연결', 'infrastructure', 'AI 서버 발열이 커질 때 데이터센터 냉각 인프라와 HVAC 수요를 함께 확인합니다.'),
-        relation('power-eaton-schneider', 'datacenter-power-eaton', 'datacenter-power-schneider', '배전·자동화 비교', 'reference', '배전 장비와 에너지 관리·자동화가 같은 전력 인프라 흐름에 속합니다.'),
-        relation('power-schneider-lg', 'datacenter-power-schneider', 'datacenter-power-lg-electronics', '운영 효율 흐름', 'infrastructure', '전력 효율과 냉각 효율이 데이터센터 운영 안정성에서 함께 요구됩니다.'),
-      ],
     },
   },
   {
@@ -250,16 +222,6 @@ export const marketMapDefinitions: MarketMapDefinition[] = [
     ],
     companyNetwork: {
       companyIds: ['reconstruction-hyundai-ec', 'reconstruction-samsung-ct', 'reconstruction-daewoo-ec', 'reconstruction-hd-infracore', 'reconstruction-caterpillar', 'reconstruction-posco-holdings'],
-      relationSource: 'definition',
-      relations: [
-        relation('reconstruction-hyundai-samsung', 'reconstruction-hyundai-ec', 'reconstruction-samsung-ct', '대형 EPC 비교', 'reference', '대형 인프라 발주에서 함께 비교하는 건설사입니다. 특정 프로젝트의 공동 수주를 뜻하지 않습니다.'),
-        relation('reconstruction-hyundai-daewoo', 'reconstruction-hyundai-ec', 'reconstruction-daewoo-ec', '해외 수주 비교', 'reference', '해외 건설·플랜트 발주와 수주 경쟁 흐름에서 비교합니다.'),
-        relation('reconstruction-hyundai-hd', 'reconstruction-hyundai-ec', 'reconstruction-hd-infracore', '착공 뒤 장비 수요', 'infrastructure', '프로젝트 착공 뒤 건설장비 수요가 생기는 산업 흐름입니다. 직접 계약을 뜻하지 않습니다.'),
-        relation('reconstruction-samsung-posco', 'reconstruction-samsung-ct', 'reconstruction-posco-holdings', '시공·소재 흐름', 'supply', '인프라 시공과 철강·소재 수요가 같은 가치사슬에 속합니다. 직접 납품을 뜻하지 않습니다.'),
-        relation('reconstruction-daewoo-posco', 'reconstruction-daewoo-ec', 'reconstruction-posco-holdings', '플랜트·소재 흐름', 'supply', '플랜트 발주가 철강·인프라 소재 수요로 이어질 수 있는 산업 흐름입니다.'),
-        relation('reconstruction-hd-cat', 'reconstruction-hd-infracore', 'reconstruction-caterpillar', '중장비 업황 비교', 'reference', '글로벌 인프라 투자에 노출된 중장비 기업을 비교합니다.'),
-        relation('reconstruction-hyundai-cat', 'reconstruction-hyundai-ec', 'reconstruction-caterpillar', '착공 뒤 장비 수요', 'infrastructure', '대형 공사 착공과 글로벌 중장비 수요를 함께 확인하는 산업 관계입니다.'),
-      ],
     },
   },
   {
@@ -309,17 +271,6 @@ export const marketMapDefinitions: MarketMapDefinition[] = [
     ],
     companyNetwork: {
       companyIds: ['cluster-dongyang-pile', 'cluster-hyundai-ec', 'cluster-samsung-ct', 'cluster-ls-electric', 'cluster-hyosung-heavy', 'cluster-kcc'],
-      relationSource: 'definition',
-      relations: [
-        relation('cluster-hyundai-samsung', 'cluster-hyundai-ec', 'cluster-samsung-ct', '산업시설 EPC 비교', 'reference', '대형 산업시설 발주에서 함께 비교하는 건설사입니다. 공동 수주를 뜻하지 않습니다.'),
-        relation('cluster-hyundai-dongyang', 'cluster-hyundai-ec', 'cluster-dongyang-pile', '기초 공사 흐름', 'infrastructure', '공장 착공 때 EPC와 PHC 파일 수요가 이어지는 산업 흐름입니다. 직접 계약을 뜻하지 않습니다.'),
-        relation('cluster-samsung-dongyang', 'cluster-samsung-ct', 'cluster-dongyang-pile', '기초 공사 흐름', 'infrastructure', '산업시설 시공과 기초 파일 수요가 같은 건설 단계에 속합니다.'),
-        relation('cluster-hyundai-ls', 'cluster-hyundai-ec', 'cluster-ls-electric', '배전 설비 흐름', 'supply', '공장 건설과 배전·자동화 설비 수요를 함께 확인합니다. 직접 공급 관계를 뜻하지 않습니다.'),
-        relation('cluster-samsung-hyosung', 'cluster-samsung-ct', 'cluster-hyosung-heavy', '전력망 설비 흐름', 'supply', '산업시설 건설과 변압기·전력망 수요가 같은 가치사슬에 속합니다.'),
-        relation('cluster-ls-hyosung', 'cluster-ls-electric', 'cluster-hyosung-heavy', '전력설비 비교', 'reference', '배전·자동화와 변압기·전력망 역할을 비교합니다.'),
-        relation('cluster-hyundai-kcc', 'cluster-hyundai-ec', 'cluster-kcc', '건축 소재 흐름', 'supply', '공장 건설과 도료·실란트 등 건축 소재 수요를 함께 봅니다.'),
-        relation('cluster-samsung-kcc', 'cluster-samsung-ct', 'cluster-kcc', '산업시설 소재 흐름', 'supply', '산업시설 EPC와 건축·산업용 소재 수요가 같은 흐름에 속합니다.'),
-      ],
     },
   },
   {

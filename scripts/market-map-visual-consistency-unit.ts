@@ -14,6 +14,10 @@ import {
   selectMarketMapGraphCompanyIds,
 } from '../src/content/market-map-details/index.js';
 import { companies } from '../src/data.js';
+import {
+  marketMapCompanyRelations,
+  marketMapRelationsForMap,
+} from '../src/content/market-map-relations/index.js';
 
 let checks = 0;
 const check = (condition: unknown, message: string) => {
@@ -73,8 +77,15 @@ available.forEach((definition) => {
   check(definition.industryStages?.map((stage) => stage.kind).join('|') === marketMapIndustryNodeOrder.join('|'), `${definition.id} taxonomy order`);
   check(definition.industryStages?.every((stage) => stage.question === marketMapIndustryQuestions[stage.kind]), `${definition.id} shared questions`);
   check(Boolean(definition.companyNetwork?.companyIds.length), `${definition.id} company network`);
-  check(definition.companyNetwork?.relations.every((relation) => definition.companyNetwork?.companyIds.includes(relation.sourceCompanyId) && definition.companyNetwork.companyIds.includes(relation.targetCompanyId)), `${definition.id} company-only relations`);
+  const mapRelations = marketMapRelationsForMap(marketMapCompanyRelations, definition.id);
+  check(Boolean(mapRelations.length), `${definition.id} relation registry`);
+  check(mapRelations.every((relation) => definition.companyNetwork?.companyIds.includes(relation.fromCompanyId) && definition.companyNetwork.companyIds.includes(relation.toCompanyId)), `${definition.id} company-only relations`);
 });
+check(marketMapCompanyRelations.length === 42, 'normalized relation total');
+check(marketMapRelationsForMap(marketMapCompanyRelations, 'us-semiconductors').length === 22, 'AI relation total');
+check(marketMapRelationsForMap(marketMapCompanyRelations, 'datacenter-power-cooling').length === 5, 'datacenter relation total');
+check(marketMapRelationsForMap(marketMapCompanyRelations, 'reconstruction-infrastructure').length === 7, 'reconstruction relation total');
+check(marketMapRelationsForMap(marketMapCompanyRelations, 'semiconductor-cluster-infrastructure').length === 8, 'cluster relation total');
 const datacenterCompanyIds = companies.filter((company) => company.sectorId === 'datacenter-power-cooling').map((company) => company.id);
 check(datacenterCompanyIds.length === 4, 'datacenter registry excludes six industry concept nodes');
 
@@ -86,8 +97,17 @@ check(templateSource.includes('산업 구조') && templateSource.includes('기�
 check(templateSource.includes('기업 노드만 보는 관계망'), 'company-only view copy');
 check(templateSource.includes('MarketMapGraphToolbar'), 'shared graph toolbar');
 check(templateSource.includes('MarketMapGraphLegend'), 'shared graph legend');
+check(templateSource.includes('관계 밀도') && templateSource.includes('관계 유형'), 'shared relation toolbar filters');
 check(appSource.includes('data-node-taxonomy="company-only"'), 'company-only graph marker');
+check(appSource.includes('표로 관계 보기'), 'accessible relation list');
+check(appSource.includes('data-relation-density'), 'relation density state marker');
+check(appSource.includes('compactLayout') && appSource.includes('aspectRatio'), 'mobile compact relation layout');
 check(styleSource.includes('.market-map-library-card .market-map-library-cta'), 'shared hub CTA CSS');
+check(styleSource.includes('.market-map-relation-panel'), 'shared relation panel CSS');
+check(styleSource.includes('.market-map-graph-legend i.official-supply'), 'evidence-aware legend CSS');
+check(templateSource.includes('market-map-evidence-network-content'), 'evidence network auto-height marker');
+check(styleSource.includes('.market-map-template-advanced-content.market-map-evidence-network-content'), 'mobile evidence network auto-height CSS');
+check(styleSource.includes('.sr-only'), 'screen-reader-only text CSS');
 check(styleSource.includes('background: var(--home-blue, #2563eb) !important'), 'CTA fallback background');
 check(!/market-map-template-flow[^}]*writing-mode\s*:/s.test(styleSource), 'no vertical flow writing mode');
 check(styleSource.includes("[data-flow-count='5']"), 'five-step desktop layout');

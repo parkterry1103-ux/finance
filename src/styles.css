@@ -21802,6 +21802,18 @@ body,
   word-break: keep-all;
 }
 
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+}
+
 .market-map-company-network {
   display: grid;
   gap: 10px;
@@ -21839,6 +21851,18 @@ body,
 .market-map-company-svg-edges > g.is-active .market-map-company-svg-edge {
   opacity: 1;
   filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.22));
+}
+
+.market-map-company-svg-edges > g.is-muted {
+  opacity: 0.18;
+}
+
+.market-map-company-svg-edges > g.evidence-contextual:not(.is-active) .market-map-company-svg-edge {
+  opacity: 0.68;
+}
+
+.market-map-company-svg-edges > g.evidence-review-needed:not(.is-active) .market-map-company-svg-edge {
+  opacity: 0.48;
 }
 
 .market-map-company-svg-edge-label {
@@ -21880,6 +21904,40 @@ body,
   border-color: #2563eb;
   outline: 3px solid rgba(37, 99, 235, 0.14);
   background: #eff6ff;
+}
+
+.market-map-company-svg-node.relation-endpoint {
+  border-color: #0f766e;
+  outline: 3px solid rgba(13, 148, 136, 0.2);
+  background: #f0fdfa;
+}
+
+.market-map-company-svg-node.relation-muted {
+  opacity: 0.34;
+}
+
+.market-map-company-svg-node.region-dimmed:not(.selected):not(.relation-endpoint) {
+  filter: grayscale(0.75);
+  opacity: 0.38;
+}
+
+.market-map-company-network-empty {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  left: 50%;
+  width: min(420px, calc(100% - 32px));
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #475467;
+  background: rgba(255, 255, 255, 0.94);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: center;
+  transform: translateX(-50%);
 }
 
 .market-map-company-svg-node strong {
@@ -21968,16 +22026,13 @@ body,
   }
 
   .market-map-company-network-canvas {
-    overflow: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
   }
 
   .market-map-company-network-svg {
-    width: var(--market-map-network-width, 960px);
-    height: var(--market-map-network-height, 520px);
+    width: 100%;
+    height: auto;
     min-height: 480px;
-    max-width: none;
   }
 }
 
@@ -33386,6 +33441,22 @@ button.flow-stage-company-chip:focus-visible {
   grid-column: 1 / -1;
 }
 
+.market-map-graph-legend > div {
+  display: flex;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.market-map-graph-legend strong {
+  flex: 0 0 72px;
+  color: #101828;
+  font-size: 11px;
+  font-weight: 950;
+}
+
 .market-map-graph-toolbar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -33432,9 +33503,258 @@ button.flow-stage-company-chip:focus-visible {
   border-top: 3px solid #2563eb;
 }
 
-.market-map-graph-legend i.supply { border-color: #16a34a; }
-.market-map-graph-legend i.infrastructure { border-color: #7c3aed; }
-.market-map-graph-legend i.reference { border-color: #98a2b3; border-top-style: dashed; }
+.market-map-graph-legend i.direct-contract { border-color: #dc2626; border-top-width: 5px; }
+.market-map-graph-legend i.official-supply { border-color: #15803d; border-top-width: 4px; }
+.market-map-graph-legend i.demand-link { border-color: #2563eb; }
+.market-map-graph-legend i.production-link { border-color: #7c3aed; }
+.market-map-graph-legend i.infrastructure-link { border-color: #0f766e; }
+.market-map-graph-legend i.market-context { border-color: #64748b; border-top-style: dashed; }
+.market-map-graph-legend i.evidence-confirmed { border-color: #0f172a; }
+.market-map-graph-legend i.evidence-contextual { border-color: #64748b; opacity: 0.68; }
+.market-map-graph-legend i.evidence-review-needed { border-color: #94a3b8; border-top-style: dashed; opacity: 0.52; }
+
+.market-map-relation-panel {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #99f6e4;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffffff, #f0fdfa);
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.1);
+}
+
+.market-map-relation-panel-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  color: #475467;
+  background: #ffffff;
+}
+
+.market-map-relation-panel-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 44px;
+}
+
+.market-map-relation-panel-heading span {
+  color: #0f766e;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.market-map-relation-panel-heading h3,
+.market-map-relation-panel-copy h4,
+.market-map-relation-panel-copy p,
+.market-map-relation-panel-caution p,
+.market-map-relation-panel-sources h4,
+.market-map-relation-panel-sources p,
+.market-map-relation-panel-reviewed {
+  margin: 0;
+}
+
+.market-map-relation-panel-heading h3 {
+  overflow-wrap: anywhere;
+  color: #101828;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.market-map-relation-panel-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.market-map-relation-panel-facts > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.market-map-relation-panel-facts dt {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.market-map-relation-panel-facts dd {
+  margin: 0;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.market-map-relation-panel-copy,
+.market-map-relation-panel-caution,
+.market-map-relation-panel-sources {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.market-map-relation-panel-copy h4,
+.market-map-relation-panel-sources h4,
+.market-map-relation-panel-caution strong {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.market-map-relation-panel-copy p,
+.market-map-relation-panel-caution p,
+.market-map-relation-panel-sources p {
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.market-map-relation-panel-caution {
+  padding: 11px 12px;
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.market-map-relation-panel-sources ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.market-map-relation-panel-sources a {
+  display: flex;
+  min-width: 0;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  color: #1d4ed8;
+  background: #ffffff;
+  text-decoration: none;
+}
+
+.market-map-relation-panel-sources a span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.market-map-relation-panel-sources a strong,
+.market-map-relation-panel-sources a small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-map-relation-panel-sources a strong { font-size: 11px; }
+.market-map-relation-panel-sources a small { color: #475467; font-size: 10px; }
+
+.market-map-relation-panel-reviewed {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.market-map-relation-list {
+  min-width: 0;
+  border: 1px solid #d0d5dd;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.market-map-relation-list > summary {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 13px;
+  color: #344054;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.market-map-relation-list > summary span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 10px;
+}
+
+.market-map-relation-table-wrap {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px 12px;
+}
+
+.market-map-relation-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.market-map-relation-table-wrap th,
+.market-map-relation-table-wrap td {
+  padding: 9px 8px;
+  border-top: 1px solid #e4e7ec;
+  color: #475467;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.market-map-relation-table-wrap th {
+  color: #344054;
+  font-weight: 950;
+}
+
+.market-map-relation-table-wrap button {
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.market-map-relation-panel button:focus-visible,
+.market-map-relation-panel a:focus-visible,
+.market-map-relation-list summary:focus-visible,
+.market-map-relation-list button:focus-visible,
+.market-map-company-svg-edge-hit:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
 
 .market-map-template-advanced-content {
   min-height: 680px;
@@ -33629,7 +33949,64 @@ button.flow-stage-company-chip:focus-visible {
   }
 
   .market-map-graph-toolbar button {
-    flex: 1 1 132px;
+    flex: 1 1 116px;
+  }
+
+  .market-map-graph-legend > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex-basis: 100%;
+    gap: 8px;
+  }
+
+  .market-map-graph-legend strong {
+    grid-column: 1 / -1;
+  }
+
+  .market-map-relation-panel {
+    padding: 15px;
+  }
+
+  .market-map-relation-panel-facts,
+  .market-map-relation-panel-sources ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .market-map-relation-table-wrap table,
+  .market-map-relation-table-wrap tbody,
+  .market-map-relation-table-wrap tr,
+  .market-map-relation-table-wrap td {
+    display: block;
+    width: 100%;
+  }
+
+  .market-map-relation-table-wrap thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .market-map-relation-table-wrap tr {
+    padding: 9px 0;
+    border-top: 1px solid #e4e7ec;
+  }
+
+  .market-map-relation-table-wrap td {
+    padding: 4px 2px;
+    border: 0;
+  }
+
+  .market-map-relation-table-wrap td:nth-child(1)::before { content: '기업 A · '; font-weight: 900; }
+  .market-map-relation-table-wrap td:nth-child(2)::before { content: '기업 B · '; font-weight: 900; }
+  .market-map-relation-table-wrap td:nth-child(3)::before { content: '관계 유형 · '; font-weight: 900; }
+  .market-map-relation-table-wrap td:nth-child(4)::before { content: '근거 수준 · '; font-weight: 900; }
+
+  .market-map-relation-table-wrap button {
+    width: 100%;
+    margin-top: 3px;
   }
 
   .market-map-template-advanced-content,
@@ -33639,6 +34016,16 @@ button.flow-stage-company-chip:focus-visible {
   .app-shell.advanced-relationship-view .market-map-template-advanced-content .graph-wrap {
     height: 560px;
     min-height: 560px;
+  }
+
+  .market-map-template-advanced-content.market-map-evidence-network-content {
+    height: auto;
+    min-height: 0;
+  }
+
+  .market-map-evidence-network-content .market-map-company-network-canvas {
+    height: auto;
+    min-height: 0;
   }
 
   .market-map-template-flow-meta {

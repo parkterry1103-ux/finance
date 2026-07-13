@@ -35,22 +35,8 @@ export type MarketMapIndustryStage = {
   representativeCompanyIds: string[];
 };
 
-export type MarketMapCompanyRelationKind = 'demand' | 'supply' | 'infrastructure' | 'reference';
-
-export type MarketMapCompanyRelation = {
-  id: string;
-  sourceCompanyId: string;
-  targetCompanyId: string;
-  label: string;
-  kind: MarketMapCompanyRelationKind;
-  description: string;
-  confidence: 'official' | 'industry';
-};
-
 export type MarketMapCompanyNetwork = {
   companyIds: string[];
-  relationSource: 'existing' | 'definition';
-  relations: MarketMapCompanyRelation[];
 };
 
 export type MarketMapDefinition = {

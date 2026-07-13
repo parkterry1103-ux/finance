@@ -4738,3 +4738,23 @@ Compact flow는 `[번호, 가로 역할 badge] → 제목 → 설명 → 대표 
 접근성은 필터와 보기 방식의 `aria-pressed`, 전체 연결의 `aria-expanded`, CTA·필터의 focus-visible, 현재 단계의 `aria-current`, 그래프 설명과 텍스트 legend로 보완합니다. 핵심 정보는 Compact flow와 관련 기업 카드에도 남아 그래프만으로 전달하지 않습니다. `scripts/market-map-visual-consistency-unit.ts`와 콘텐츠 validator가 definition 수·route·분류·정렬·query fallback·CTA fallback 색·4~6단계·대표 기업 상한·국가 분류·선택 기업 이웃 계산·공통 graph shell을 네트워크 없이 검사합니다.
 
 신규 API, Serverless Function, DB, migration, cron, sync endpoint, dependency, icon/chart library는 추가하지 않았습니다. 허브 필터, 기업 선택, 전체 연결 열기와 지역·보기 방식 변경은 추가 요청을 만들지 않으며 기존 총 Function 12개와 가격·거시·시장 관계·OpenDART·SEC·수요공급 4개·기업 이벤트 12개·리포트 15개·병목 6개 계약을 유지합니다.
+
+## 시장지도 관계 유형·근거·밀도 제어 MVP
+
+네 available 시장지도의 기업 연결선 42개를 먼저 `docs/market-map-relation-inventory.md`에 기록한 뒤, `src/content/market-map-relations`의 정적 registry로 정규화했습니다. 기존 42개는 산업 맥락을 설명할 수 있어 유지했지만 전부 공통 type과 source 참조로 다시 분류했습니다. 관계 entry는 URL을 저장하지 않고 기존 `src/content/sources`의 `sourceRefs`만 사용합니다. 신규 source는 0개이며 source 없는 관계와 media-only 관계도 0개입니다.
+
+관계 유형은 직접 계약 확인(`direct-contract`), 공식 공급 관계(`official-supply`), 수요 연관(`demand-link`), 생산 연관(`production-link`), 인프라 연관(`infrastructure-link`), 시장 흐름 참고(`market-context`) 정확히 6개입니다. 근거 수준은 공식 확인(`confirmed`), 산업 맥락(`contextual`), 추가 확인 필요(`review-needed`) 정확히 3개입니다. 공식 문서가 두 기업을 직접 뒷받침하는 경우에만 직접 계약 또는 공식 공급과 `confirmed`를 허용합니다. 그 외 선에는 산업 구조 참고 연결이며 특정 직접 계약을 의미하지 않는다는 문구를 표시합니다.
+
+기본 `핵심 관계`는 선택 기업의 1-hop 관계와 상대 노드만 표시하고 `review-needed`를 제외합니다. `전체 관계`는 사용자가 명시적으로 선택할 때만 지도 전체 관계를 펼칩니다. AI 반도체 지도도 기본 화면에서 24개 전체 기업을 렌더하지 않습니다. 관계 유형 필터는 현재 지도에 존재하는 유형만 노출하며 지역 필터와 함께 적용됩니다. 지역은 기업 본사·실질 국적을 기준으로 정상 강조 또는 dim 처리하고, 선택 기업은 다른 지역이어도 유지합니다.
+
+공통 toolbar 순서는 지역 → 관계 밀도 → 관계 유형 → 보기 방식입니다. edge는 6개 공통 token과 유형 label을 사용하고, 근거 수준은 별도 legend 그룹에서 실선·opacity·점선과 텍스트로 설명합니다. edge를 선택하면 해당 선과 두 기업을 강조하고 다른 선을 흐리게 하며, `MarketMapRelationPanel`에서 두 기업, 유형, 근거 수준, 의미, 직접 계약 여부, 주의사항, 최대 3개 공식 source CTA, 검토일을 보여줍니다. 빈 canvas나 닫기 버튼, 다른 기업 선택은 relation 선택을 해제합니다.
+
+ReactFlow/SVG edge 조작 외에 `표로 관계 보기` native table을 제공합니다. 현재 필터 결과만 정렬해 표시하고 각 행의 native button으로 같은 relation panel을 선택할 수 있어 키보드와 screen reader의 완전한 대체 경로가 됩니다. toolbar는 `aria-pressed`, 관계 목록은 native `details`, panel은 연결된 heading, 전체 연결은 `aria-expanded`, 선택 관계는 `aria-live` 텍스트 상태를 사용합니다. 색상만으로 관계를 구분하지 않으며 `prefers-reduced-motion` 기존 정책을 유지합니다.
+
+URL은 기존 `company`, `view`, `region`과 신규 `density`, `relationType`, 선택적 `relation`을 함께 보존합니다. 잘못된 density는 `core`, 잘못된 relationType은 `all`, 존재하지 않는 relation은 미선택으로 안전하게 fallback합니다. 기업을 바꾸면 relation만 해제하고 나머지 필터를 유지하며 브라우저 뒤로·앞으로는 URL에서 상태를 복원합니다. 필터·관계 선택은 정적 selector만 사용하므로 페이지 전용 요청과 추가 네트워크 요청이 없습니다.
+
+`scripts/validate-content.ts`는 relation/map/company/source/date/type/evidence/direction/중복/self 관계, 공식 source, review-needed 핵심 제외, 금지 문구와 직접 URL 저장을 검증합니다. `scripts/market-map-relations-unit.ts`는 fixture로 taxonomy label, 직접 계약·공식 공급 제약, confirmed source, 1-hop·전체·빈 관계, 지역 dim, 유형 결합, query fallback·복원, 관계 목록 정렬, source 최대 3개, 중복·self 관계를 확인합니다. `scripts/market-map-visual-consistency-unit.ts`는 네 지도별 22·5·7·8 관계와 공통 toolbar·legend·panel·접근 가능한 목록을 검증합니다.
+
+모바일은 390×844, 360×800, 320×700, 200% 상당 640px CSS viewport를 기준으로 toolbar wrap, graph 맞춤, panel/source CTA 1열, 관계 목록 card형 표시를 확인합니다. 가로 스크롤을 만들지 않으며 산업 구조 보기는 기존 5단계 taxonomy를 그대로 유지합니다. 가격·market brief·거시·시장 관계·OpenDART·SEC API, 수요공급 4개, 기업 event 12개, 리포트 15개, 병목 6개, available 4개·planned 2개를 회귀 검증합니다.
+
+신규 API, Serverless Function, DB, migration, cron, sync endpoint, dependency, graph/icon library는 모두 0개입니다. 기존 sync를 실행하지 않고 총 Serverless Function 12개를 유지합니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.

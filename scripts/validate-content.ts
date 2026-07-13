@@ -102,6 +102,13 @@ import {
   normalizeMarketMapStatusLabel,
   selectMarketMapActions,
 } from '../src/content/market-map-details/index.js';
+import {
+  filterMarketMapRelations,
+  marketMapCompanyRelations,
+  marketMapRelationTypeOrder,
+  resolveMarketMapRelationDensity,
+  resolveMarketMapRelationTypeFilter,
+} from '../src/content/market-map-relations/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -199,6 +206,15 @@ const marketMapDetailValidation = {
   invalidRepresentativeCount: 0,
   invalidCompanyNetworkCount: 0,
   forbiddenVisibleLabelCount: 0,
+};
+const marketMapRelationValidation = {
+  relationCount: 0,
+  confirmedCount: 0,
+  contextualCount: 0,
+  reviewNeededCount: 0,
+  officialSourceCount: 0,
+  mediaOnlyCount: 0,
+  invalidRefCount: 0,
 };
 const dailyMarketValidation = {
   briefCount: 0,
@@ -2432,13 +2448,6 @@ function validateMarketMapDetailTemplate() {
       network?.companyIds.forEach((companyId) => {
         if (!canonicalCompanyIds.has(companyId)) addError(`market map company network member missing: ${definition.id} / ${companyId}`);
       });
-      network?.relations.forEach((relation) => {
-        if (!network.companyIds.includes(relation.sourceCompanyId) || !network.companyIds.includes(relation.targetCompanyId)) {
-          marketMapDetailValidation.invalidCompanyNetworkCount += 1;
-          addError(`market map relation has non-company endpoint: ${definition.id} / ${relation.id}`);
-        }
-      });
-      if (network?.relationSource === 'definition' && !network.relations.length) addError(`market map defined company relations missing: ${definition.id}`);
     }
   });
   requiredMapIds.forEach((mapId) => {
@@ -2491,8 +2500,127 @@ function validateMarketMapDetailTemplate() {
   }
 }
 
+function validateMarketMapCompanyRelations() {
+  const validRelationTypes = new Set(marketMapRelationTypeOrder);
+  const validEvidenceLevels = new Set(['confirmed', 'contextual', 'review-needed']);
+  const validDirections = new Set(['directed', 'contextual']);
+  const officialSourceKinds = new Set([
+    'company-release',
+    'company-ir',
+    'company-filing',
+    'sec-filing',
+    'dart-filing',
+    'kind-filing',
+    'government',
+  ]);
+  const nonMediaSourceKinds = new Set([
+    ...officialSourceKinds,
+    'industry-data',
+  ]);
+  const forbiddenPhrases = ['수혜주', '대장주', '확정 수혜', '매수', '매도', '주가 상승', '최대 수혜', '계약 확정', '공급사 확정'];
+  const availableDefinitions = marketMapDefinitions.filter((definition) => definition.status === 'available');
+  const availableMapIds = new Set(availableDefinitions.map((definition) => definition.id));
+  const canonicalCompanyIds = new Set([
+    ...companies.map((company) => company.id),
+    ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+    ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+  ]);
+  const networkCompanyIdsByMap = new Map(availableDefinitions.map((definition) => [
+    definition.id,
+    new Set(definition.companyNetwork?.companyIds ?? []),
+  ]));
+  const relationIds = new Set<string>();
+  const relationKeys = new Set<string>();
+  const officialSourceIds = new Set<string>();
+
+  marketMapRelationValidation.relationCount = marketMapCompanyRelations.length;
+  if (marketMapCompanyRelations.length !== 42) addError(`market map relation count changed without inventory update: ${marketMapCompanyRelations.length}`);
+
+  marketMapCompanyRelations.forEach((relation) => {
+    if (relationIds.has(relation.id)) addError(`market map relation id duplicated: ${relation.id}`);
+    relationIds.add(relation.id);
+    if (!availableMapIds.has(relation.mapId)) addError(`market map relation map invalid: ${relation.id} / ${relation.mapId}`);
+    if (!canonicalCompanyIds.has(relation.fromCompanyId)) addError(`market map relation from company invalid: ${relation.id} / ${relation.fromCompanyId}`);
+    if (!canonicalCompanyIds.has(relation.toCompanyId)) addError(`market map relation to company invalid: ${relation.id} / ${relation.toCompanyId}`);
+    if (relation.fromCompanyId === relation.toCompanyId) addError(`market map self relation forbidden: ${relation.id}`);
+    const mapCompanyIds = networkCompanyIdsByMap.get(relation.mapId);
+    if (!mapCompanyIds?.has(relation.fromCompanyId) || !mapCompanyIds?.has(relation.toCompanyId)) {
+      addError(`market map relation endpoint outside map company network: ${relation.id}`);
+    }
+    if (!validRelationTypes.has(relation.relationType)) addError(`market map relation type invalid: ${relation.id}`);
+    if (!validEvidenceLevels.has(relation.evidenceLevel)) addError(`market map relation evidence invalid: ${relation.id}`);
+    if (!validDirections.has(relation.direction)) addError(`market map relation direction invalid: ${relation.id}`);
+    if (!relation.sourceRefs.length) addError(`market map relation source missing: ${relation.id}`);
+    if (!relation.shortLabel.trim() || !relation.explanation.trim() || !relation.caution.trim()) addError(`market map relation copy missing: ${relation.id}`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(relation.reviewedAt) || Number.isNaN(Date.parse(`${relation.reviewedAt}T00:00:00Z`))) {
+      addError(`market map relation reviewedAt invalid: ${relation.id}`);
+    } else if (Date.parse(`${relation.reviewedAt}T00:00:00Z`) > Date.now() + 86_400_000) {
+      addError(`market map relation reviewedAt is in the future: ${relation.id}`);
+    }
+    if ((relation.relationType === 'direct-contract' || relation.relationType === 'official-supply') && relation.evidenceLevel !== 'confirmed') {
+      addError(`market map confirmed relation type has invalid evidence: ${relation.id}`);
+    }
+    if (relation.relationType === 'market-context' && relation.evidenceLevel === 'confirmed') {
+      addError(`market map context relation cannot be confirmed: ${relation.id}`);
+    }
+    if (relation.evidenceLevel === 'review-needed' && relation.relationType !== 'market-context') {
+      addError(`market map review-needed relation must use market-context: ${relation.id}`);
+    }
+    if (relation.relationType === 'market-context' && relation.direction !== 'contextual') {
+      addError(`market map context relation direction invalid: ${relation.id}`);
+    }
+    const sourceItems = relation.sourceRefs.map((sourceId) => {
+      const source = sourceRegistry[sourceId];
+      if (!source) {
+        marketMapRelationValidation.invalidRefCount += 1;
+        addError(`market map relation source ref invalid: ${relation.id} / ${sourceId}`);
+      }
+      if (source && officialSourceKinds.has(source.kind)) officialSourceIds.add(source.id);
+      return source;
+    }).filter(Boolean);
+    if (relation.evidenceLevel === 'confirmed' && !sourceItems.some((source) => officialSourceKinds.has(source.kind))) {
+      addError(`market map confirmed relation lacks official source: ${relation.id}`);
+    }
+    if (!sourceItems.some((source) => nonMediaSourceKinds.has(source.kind))) {
+      marketMapRelationValidation.mediaOnlyCount += 1;
+      addError(`market map relation cannot rely on media only: ${relation.id}`);
+    }
+    if (/https?:\/\//i.test(JSON.stringify(relation))) addError(`market map relation stores URL directly: ${relation.id}`);
+    const visibleCopy = `${relation.shortLabel} ${relation.explanation} ${relation.caution}`;
+    forbiddenPhrases.forEach((phrase) => {
+      if (visibleCopy.includes(phrase)) addError(`market map relation forbidden phrase: ${relation.id} / ${phrase}`);
+    });
+    const endpoints = relation.direction === 'contextual'
+      ? [relation.fromCompanyId, relation.toCompanyId].sort().join('|')
+      : `${relation.fromCompanyId}|${relation.toCompanyId}`;
+    const relationKey = `${relation.mapId}|${endpoints}|${relation.relationType}`;
+    if (relationKeys.has(relationKey)) addError(`market map relation from/to/type duplicated: ${relation.id}`);
+    relationKeys.add(relationKey);
+    if (relation.evidenceLevel === 'confirmed') marketMapRelationValidation.confirmedCount += 1;
+    if (relation.evidenceLevel === 'contextual') marketMapRelationValidation.contextualCount += 1;
+    if (relation.evidenceLevel === 'review-needed') marketMapRelationValidation.reviewNeededCount += 1;
+  });
+
+  marketMapRelationValidation.officialSourceCount = officialSourceIds.size;
+  const reviewNeededIds = new Set(marketMapCompanyRelations.filter((relation) => relation.evidenceLevel === 'review-needed').map((relation) => relation.id));
+  marketMapCompanyRelations.forEach((relation) => {
+    const coreRelations = filterMarketMapRelations(marketMapCompanyRelations.filter((item) => item.mapId === relation.mapId), {
+      selectedCompanyId: relation.fromCompanyId,
+      density: 'core',
+      relationType: 'all',
+    });
+    if (coreRelations.some((item) => reviewNeededIds.has(item.id))) addError(`market map review-needed relation leaked into core: ${relation.id}`);
+  });
+  if (resolveMarketMapRelationDensity('invalid') !== 'core') addError('market map density query fallback invalid');
+  if (resolveMarketMapRelationTypeFilter('invalid') !== 'all') addError('market map relation type query fallback invalid');
+  if (!existsSync(join(process.cwd(), 'docs', 'market-map-relation-inventory.md'))) addError('market map relation pre-normalization inventory missing');
+  const relationEntrySource = readFileSync(join(process.cwd(), 'src', 'content', 'market-map-relations', 'entries.ts'), 'utf8');
+  if (/\burl\s*:/.test(relationEntrySource)) addError('market map relation registry contains direct URL field');
+}
+
 validateCompanyLogoFallbacks();
 validateMarketMapDetailTemplate();
+validateMarketMapCompanyRelations();
 validateSourceRegistry();
 validatePickSources();
 validatePicks();
@@ -2550,6 +2678,7 @@ console.log(`✓ 기업 변화 레이더 검증 (event ${companyEventValidation.
 console.log(`✓ 기업 변화 공식 source ${companyEventValidation.officialSourceCount}개 (SEC ${companyEventValidation.secSourceCount}, OpenDART·KIND ${companyEventValidation.dartSourceCount}, 기업 IR·발표 ${companyEventValidation.companySourceCount})`);
 console.log(`✓ 기업 변화 연결 검증 (병목 ${companyEventValidation.bottleneckLinkedCount}, 수요공급 ${companyEventValidation.demandSupplyLinkedCount}, 시장지도 ${companyEventValidation.marketMapLinkedCount}, 보고서 ${companyEventValidation.reportLinkedCount}, Pick ${companyEventValidation.pickLinkedCount}, 잘못된 ref ${companyEventValidation.invalidRefCount})`);
 console.log(`✓ 시장지도 상세 공통 템플릿 검증 (정의 ${marketMapDetailValidation.mapCount}개, available ${marketMapDetailValidation.availableCount}개, planned ${marketMapDetailValidation.plannedCount}개, route ${marketMapDetailValidation.routeCount}개, 공통 render path ${marketMapDetailValidation.sharedTemplateRenderCount}개, 잘못된 flow ${marketMapDetailValidation.invalidFlowCount}개, 금지 label ${marketMapDetailValidation.forbiddenVisibleLabelCount}개)`);
+console.log(`✓ 시장지도 기업 관계 검증 (relation ${marketMapRelationValidation.relationCount}개, confirmed ${marketMapRelationValidation.confirmedCount}개, contextual ${marketMapRelationValidation.contextualCount}개, review-needed ${marketMapRelationValidation.reviewNeededCount}개, 공식 source ${marketMapRelationValidation.officialSourceCount}개, media-only ${marketMapRelationValidation.mediaOnlyCount}개, 잘못된 ref ${marketMapRelationValidation.invalidRefCount}개)`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');
