@@ -748,10 +748,10 @@ function aiStageColumn(company: Company) {
   return 4;
 }
 
-function getAiNodePosition(company: Company) {
+function getAiNodePosition(company: Company, layoutCompanies: Company[] = companies) {
   if (company.sectorId !== aiRelationshipSectorId || company.anchorId !== aiRelationshipAnchorId) return undefined;
   const stageColumn = aiStageColumn(company);
-  const sameStageCompanies = companies
+  const sameStageCompanies = layoutCompanies
     .filter((item) => item.anchorId === aiRelationshipAnchorId)
     .filter((item) => aiStageColumn(item) === stageColumn)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -765,8 +765,8 @@ function matchesAiFlowStage(stage: string, company: Company) {
   return aiStageColumn(company) === aiStageColumns.indexOf(stage);
 }
 
-function getNodePosition(company: Company) {
-  const aiPosition = getAiNodePosition(company);
+function getNodePosition(company: Company, layoutCompanies?: Company[]) {
+  const aiPosition = getAiNodePosition(company, layoutCompanies);
   if (aiPosition) return aiPosition;
   const xByColumn = [34, 382, 742];
   if (company.layout.column === 0) {
@@ -9179,7 +9179,7 @@ function App() {
     if (!flowInstance) return;
     const company = groupCompanies.find((item) => item.id === companyId);
     if (!company) return;
-    const position = getNodePosition(company);
+    const position = getNodePosition(company, isAiRelationshipMap ? visibleCompanies : undefined);
     window.requestAnimationFrame(() => {
       flowInstance.setCenter(position.x + 112, position.y + 58, {
         zoom: isAiRelationshipMap ? (isAdvancedRelationshipView ? 0.72 : 0.9) : Math.max(flowInstance.getZoom(), 0.58),
@@ -9304,7 +9304,7 @@ function App() {
         return {
           id: company.id,
           type: 'supplyNode',
-          position: getNodePosition(company),
+          position: getNodePosition(company, isAiRelationshipMap ? visibleCompanies : undefined),
           sourcePosition: Position.Right,
           targetPosition: Position.Left,
           data: {
