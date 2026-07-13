@@ -21712,6 +21712,275 @@ body,
   }
 }
 
+/* Market map taxonomy v3: explicit industry/company views and company-only graph nodes. */
+.market-map-template-view-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.market-map-template-view-switch button {
+  display: flex;
+  min-width: 0;
+  min-height: 62px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #475467;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.market-map-template-view-switch button[aria-pressed='true'] {
+  border-color: var(--map-category-accent, #2563eb);
+  color: var(--map-category-accent, #2563eb);
+  background: color-mix(in srgb, var(--map-category-accent, #2563eb) 8%, #ffffff);
+  box-shadow: inset 0 0 0 1px var(--map-category-accent, #2563eb);
+}
+
+.market-map-template-view-switch button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.market-map-template-view-switch strong {
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.market-map-template-view-switch small {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.market-map-template-flow-steps article {
+  grid-template-rows: auto;
+  align-content: start;
+}
+
+.market-map-template-flow-question {
+  color: #344054;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.market-map-template-flow-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 9px 0 0;
+  border-top: 1px solid var(--map-detail-border, #e4e7ec);
+  list-style: none;
+}
+
+.market-map-template-flow-items li {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 4px 7px;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  color: #475467;
+  background: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.market-map-company-network {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.market-map-company-network-canvas {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e4e7ec !important;
+  border-radius: 12px !important;
+}
+
+.market-map-company-network-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: #f8fafc;
+}
+
+.market-map-company-svg-edge {
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.market-map-company-svg-edge-hit {
+  stroke: transparent;
+  stroke-width: 18;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+
+.market-map-company-svg-edges > g.is-active .market-map-company-svg-edge {
+  opacity: 1;
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.22));
+}
+
+.market-map-company-svg-edge-label {
+  paint-order: stroke;
+  stroke: rgba(248, 250, 252, 0.96);
+  stroke-width: 6px;
+  stroke-linejoin: round;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.market-map-company-svg-node {
+  display: grid;
+  width: 100%;
+  height: 94px;
+  align-content: start;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  color: #101828;
+  background: #ffffff;
+  box-shadow: 0 7px 18px rgba(15, 23, 42, 0.07);
+  text-align: left;
+}
+
+.market-map-company-svg-node:hover {
+  border-color: #98a2b3;
+  transform: translateY(-1px);
+}
+
+.market-map-company-svg-node:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.3);
+  outline-offset: -3px;
+}
+
+.market-map-company-svg-node.selected {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+  background: #eff6ff;
+}
+
+.market-map-company-svg-node strong {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-map-company-svg-node span,
+.market-map-company-svg-node small {
+  overflow: hidden;
+  color: #475467;
+  font-size: 9.5px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-map-company-svg-node span {
+  justify-self: start;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.market-map-company-relation-card {
+  position: absolute;
+  z-index: 8;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: min(340px, calc(100% - 28px));
+  gap: 6px;
+  padding: 13px 42px 13px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  color: #344054;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+}
+
+.market-map-company-relation-card > button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: #475467;
+  background: #f1f5f9;
+}
+
+.market-map-company-relation-card span {
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.market-map-company-relation-card p,
+.market-map-company-relation-card small {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.market-map-company-relation-card a {
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .market-map-template-view-switch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .market-map-company-network {
+    padding: 8px;
+  }
+
+  .market-map-company-network-canvas {
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .market-map-company-network-svg {
+    width: var(--market-map-network-width, 960px);
+    height: var(--market-map-network-height, 520px);
+    min-height: 480px;
+    max-width: none;
+  }
+}
+
 /* Financial easy view: picture-book three-number cards. */
 .story-analysis-shell .financial-learning-head h2 {
   max-width: 760px;

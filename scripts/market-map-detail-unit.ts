@@ -1,7 +1,10 @@
 import {
   createMarketMapDetailViewModel,
   normalizeMarketMapStatusLabel,
+  marketMapDefinitionById,
+  marketMapIndustryNodeOrder,
   resolveMarketMapCompanyQuery,
+  resolveMarketMapDetailViewMode,
   selectMarketMapActions,
   type MarketMapDetailCompany,
 } from '../src/content/market-map-details/index.js';
@@ -46,9 +49,12 @@ const viewModel = createMarketMapDetailViewModel({
   flowTitle: '단계형 흐름',
   flowSteps: Array.from({ length: 5 }, (_, index) => ({
     id: `step-${index + 1}`,
+    kind: marketMapIndustryNodeOrder[index]!,
+    question: `${index + 1}번째 질문`,
     title: `${index + 1}단계`,
     description: '쉬운 설명',
     roleTag: '역할',
+    items: ['핵심 항목'],
     representativeCompanies: ['회사 A', '회사 B', '회사 C'],
   })),
   advancedDescription: '전체 관계 설명',
@@ -78,8 +84,11 @@ check(reconstructionDefault.companyId === reconstructionInfrastructureMap.compan
 check(resolveMarketMapCompanyQuery(reconstructionIds, reconstructionInfrastructureMap.companyAliases, 'reconstruction-caterpillar', reconstructionInfrastructureMap.companyId).companyId === 'reconstruction-caterpillar', 'valid query');
 check(resolveMarketMapCompanyQuery(reconstructionIds, reconstructionInfrastructureMap.companyAliases, 'hyundai-engineering-construction', reconstructionInfrastructureMap.companyId).companyId === reconstructionInfrastructureMap.companyId, 'legacy alias');
 check(resolveMarketMapCompanyQuery(reconstructionIds, reconstructionInfrastructureMap.companyAliases, 'invalid', reconstructionInfrastructureMap.companyId).didFallback, 'invalid query fallback');
-check(reconstructionInfrastructureMap.flowSteps.length === 5, 'reconstruction flow steps');
-check(semiconductorClusterInfrastructureMap.flowSteps.length === 6, 'cluster flow steps');
+check(marketMapDefinitionById.get(reconstructionInfrastructureMap.sectorId)?.industryStages?.length === 5, 'reconstruction five taxonomy stages');
+check(marketMapDefinitionById.get(semiconductorClusterInfrastructureMap.sectorId)?.industryStages?.length === 5, 'cluster five taxonomy stages');
+check(resolveMarketMapDetailViewMode(null, false) === 'industry', 'industry default view');
+check(resolveMarketMapDetailViewMode(null, true) === 'companies', 'company query opens company view');
+check(resolveMarketMapDetailViewMode('industry', true) === 'industry', 'explicit industry view preserves selected company query');
 check(reconstructionInfrastructureMap.companies.every((company) => company.role && company.description && company.reason), 'reconstruction company copy');
 check(semiconductorClusterInfrastructureMap.companies.every((company) => company.role && company.description && company.reason), 'cluster company copy');
 check(viewModel.selectedCompany.hasPrice === false, 'missing price remains omitted');

@@ -96,6 +96,8 @@ import {
 } from '../src/content/company-events/index.js';
 import {
   marketMapDefinitions,
+  marketMapIndustryNodeOrder,
+  marketMapIndustryQuestions,
   marketMapGraphRegionForCountryLabel,
   normalizeMarketMapStatusLabel,
   selectMarketMapActions,
@@ -195,6 +197,7 @@ const marketMapDetailValidation = {
   sharedTemplateRenderCount: 0,
   invalidFlowCount: 0,
   invalidRepresentativeCount: 0,
+  invalidCompanyNetworkCount: 0,
   forbiddenVisibleLabelCount: 0,
 };
 const dailyMarketValidation = {
@@ -2399,6 +2402,44 @@ function validateMarketMapDetailTemplate() {
     if (!['semiconductor-ai', 'power-datacenter', 'construction-infrastructure', 'industrial-facilities'].includes(definition.category)) addError(`market map definition category invalid: ${definition.id}`);
     if (definition.status === 'available' && !definition.route) addError(`market map available route missing: ${definition.id}`);
     if (definition.status === 'planned' && definition.route) addError(`market map planned route should be omitted: ${definition.id}`);
+    if (definition.status === 'available') {
+      if (definition.industryStages?.length !== 5) {
+        marketMapDetailValidation.invalidFlowCount += 1;
+        addError(`market map taxonomy must have exactly five stages: ${definition.id}`);
+      }
+      if (definition.industryStages?.map((stage) => stage.kind).join('|') !== marketMapIndustryNodeOrder.join('|')) {
+        marketMapDetailValidation.invalidFlowCount += 1;
+        addError(`market map taxonomy order invalid: ${definition.id}`);
+      }
+      definition.industryStages?.forEach((stage) => {
+        if (stage.question !== marketMapIndustryQuestions[stage.kind]) addError(`market map taxonomy question invalid: ${definition.id} / ${stage.kind}`);
+        if (!stage.items.length) addError(`market map taxonomy items missing: ${definition.id} / ${stage.kind}`);
+        if (stage.representativeCompanyIds.length > 6) {
+          marketMapDetailValidation.invalidRepresentativeCount += 1;
+          addError(`market map representative count invalid: ${definition.id} / ${stage.kind}`);
+        }
+      });
+      const network = definition.companyNetwork;
+      if (!network?.companyIds.length || new Set(network.companyIds).size !== network.companyIds.length) {
+        marketMapDetailValidation.invalidCompanyNetworkCount += 1;
+        addError(`market map company network invalid: ${definition.id}`);
+      }
+      const canonicalCompanyIds = new Set([
+        ...companies.map((company) => company.id),
+        ...reconstructionInfrastructureMap.companies.map((company) => company.id),
+        ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
+      ]);
+      network?.companyIds.forEach((companyId) => {
+        if (!canonicalCompanyIds.has(companyId)) addError(`market map company network member missing: ${definition.id} / ${companyId}`);
+      });
+      network?.relations.forEach((relation) => {
+        if (!network.companyIds.includes(relation.sourceCompanyId) || !network.companyIds.includes(relation.targetCompanyId)) {
+          marketMapDetailValidation.invalidCompanyNetworkCount += 1;
+          addError(`market map relation has non-company endpoint: ${definition.id} / ${relation.id}`);
+        }
+      });
+      if (network?.relationSource === 'definition' && !network.relations.length) addError(`market map defined company relations missing: ${definition.id}`);
+    }
   });
   requiredMapIds.forEach((mapId) => {
     if (!activeMapIds.has(mapId)) addError(`market map detail route missing: ${mapId}`);
@@ -2406,16 +2447,6 @@ function validateMarketMapDetailTemplate() {
   });
 
   [reconstructionInfrastructureMap, semiconductorClusterInfrastructureMap].forEach((map) => {
-    if (map.flowSteps.length < 4 || map.flowSteps.length > 6) {
-      marketMapDetailValidation.invalidFlowCount += 1;
-      addError(`market map detail flow step count invalid: ${map.sectorId} / ${map.flowSteps.length}`);
-    }
-    map.flowSteps.forEach((step) => {
-      if (step.representatives.slice(0, 2).length > 2) {
-        marketMapDetailValidation.invalidRepresentativeCount += 1;
-        addError(`market map detail representative count invalid: ${map.sectorId} / ${step.title}`);
-      }
-    });
     map.companies.forEach((company) => {
       if (!company.role || !company.description || !company.reason) addError(`market map detail company copy missing: ${map.sectorId} / ${company.id}`);
     });
@@ -2429,8 +2460,10 @@ function validateMarketMapDetailTemplate() {
     addError(`market map shared template render paths invalid: ${marketMapDetailValidation.sharedTemplateRenderCount}`);
   }
   if (!templateSource.includes('data-ui-template="market-map-detail-v2"')) addError('market map shared template marker missing');
-  if (!templateSource.includes("expanded ? '전체 연결 접기' : '전체 연결 보기'")) addError('market map shared advanced graph toggle missing');
+  if (!templateSource.includes('산업 구조') || !templateSource.includes('기업 연결')) addError('market map dual view labels missing');
+  if (!templateSource.includes('기업 노드만 보는 관계망')) addError('market map company-only view copy missing');
   if (!templateSource.includes('MarketMapGraphToolbar') || !templateSource.includes('MarketMapGraphLegend')) addError('market map shared graph shell controls missing');
+  if (!appSource.includes('data-node-taxonomy="company-only"')) addError('market map company-only graph marker missing');
   if (!appSource.includes('상세 지도 보기')) addError('market map detail CTA label missing');
   if (!styleSource.includes('background: var(--home-blue, #2563eb) !important')) addError('market map CTA fallback background missing');
   if (/market-map-template-flow[^}]*writing-mode\s*:/s.test(styleSource)) addError('market map flow vertical writing mode forbidden');
@@ -2444,6 +2477,9 @@ function validateMarketMapDetailTemplate() {
   if (marketMapGraphRegionForCountryLabel('대만') !== 'other') addError('TSMC country graph classification invalid');
   if (marketMapGraphRegionForCountryLabel('네덜란드') !== 'other') addError('ASML country graph classification invalid');
   if (marketMapGraphRegionForCountryLabel('프랑스') !== 'other') addError('Schneider country graph classification invalid');
+  const datacenterGraphCompanies = companies.filter((company) => company.sectorId === 'datacenter-power-cooling');
+  if (datacenterGraphCompanies.length !== 4) addError(`datacenter company registry must exclude industry nodes: ${datacenterGraphCompanies.length}`);
+  if (!existsSync(join(process.cwd(), 'docs', 'market-map-node-inventory.md'))) addError('market map pre-normalization inventory missing');
   const actionFixture = [
     { id: 'flow', kind: 'flow' as const, label: '시장 흐름에서 보기' },
     { id: 'pick', kind: 'pick' as const, label: '관련 Pick 보기' },

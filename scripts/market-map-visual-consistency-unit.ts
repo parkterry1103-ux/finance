@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   filterMarketMapDefinitions,
+  marketMapIndustryNodeOrder,
+  marketMapIndustryQuestions,
   marketMapDefinitions,
   marketMapGraphRegionForCountryLabel,
   resolveMarketMapCategory,
@@ -11,10 +13,7 @@ import {
   selectConnectedMarketMapNodeIds,
   selectMarketMapGraphCompanyIds,
 } from '../src/content/market-map-details/index.js';
-import {
-  reconstructionInfrastructureMap,
-  semiconductorClusterInfrastructureMap,
-} from '../src/data.js';
+import { companies } from '../src/data.js';
 
 let checks = 0;
 const check = (condition: unknown, message: string) => {
@@ -69,22 +68,29 @@ const selectedIds = selectConnectedMarketMapNodeIds('selected', [
 check(selectedIds.includes('selected') && selectedIds.includes('left') && selectedIds.includes('right'), 'selected company neighborhood');
 check(!selectedIds.includes('far'), 'unconnected node excluded from selected view');
 
-check(reconstructionInfrastructureMap.flowSteps.length === 5, 'reconstruction five steps');
-check(semiconductorClusterInfrastructureMap.flowSteps.length === 6, 'cluster six steps');
-check(reconstructionInfrastructureMap.flowSteps.every((step) => step.representatives.slice(0, 2).length <= 2), 'reconstruction representative maximum');
-check(semiconductorClusterInfrastructureMap.flowSteps.every((step) => step.representatives.slice(0, 2).length <= 2), 'cluster representative maximum');
+available.forEach((definition) => {
+  check(definition.industryStages?.length === 5, `${definition.id} five taxonomy stages`);
+  check(definition.industryStages?.map((stage) => stage.kind).join('|') === marketMapIndustryNodeOrder.join('|'), `${definition.id} taxonomy order`);
+  check(definition.industryStages?.every((stage) => stage.question === marketMapIndustryQuestions[stage.kind]), `${definition.id} shared questions`);
+  check(Boolean(definition.companyNetwork?.companyIds.length), `${definition.id} company network`);
+  check(definition.companyNetwork?.relations.every((relation) => definition.companyNetwork?.companyIds.includes(relation.sourceCompanyId) && definition.companyNetwork.companyIds.includes(relation.targetCompanyId)), `${definition.id} company-only relations`);
+});
+const datacenterCompanyIds = companies.filter((company) => company.sectorId === 'datacenter-power-cooling').map((company) => company.id);
+check(datacenterCompanyIds.length === 4, 'datacenter registry excludes six industry concept nodes');
 
 const templateSource = readFileSync(join(process.cwd(), 'src', 'components', 'market-map', 'MarketMapDetailTemplate.tsx'), 'utf8');
 const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
 const styleSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
 check(appSource.includes('상세 지도 보기'), 'shared hub CTA label');
-check(templateSource.includes("{expanded ? '전체 연결 접기' : '전체 연결 보기'}"), 'shared graph toggle labels');
+check(templateSource.includes('산업 구조') && templateSource.includes('기업 연결'), 'explicit dual view labels');
+check(templateSource.includes('기업 노드만 보는 관계망'), 'company-only view copy');
 check(templateSource.includes('MarketMapGraphToolbar'), 'shared graph toolbar');
 check(templateSource.includes('MarketMapGraphLegend'), 'shared graph legend');
+check(appSource.includes('data-node-taxonomy="company-only"'), 'company-only graph marker');
 check(styleSource.includes('.market-map-library-card .market-map-library-cta'), 'shared hub CTA CSS');
 check(styleSource.includes('background: var(--home-blue, #2563eb) !important'), 'CTA fallback background');
 check(!/market-map-template-flow[^}]*writing-mode\s*:/s.test(styleSource), 'no vertical flow writing mode');
-check(styleSource.includes("[data-flow-count='6']"), 'six-step desktop layout');
+check(styleSource.includes("[data-flow-count='5']"), 'five-step desktop layout');
 check(styleSource.includes('height: 680px') && styleSource.includes('height: 560px'), 'shared canvas heights');
 
 console.log(`✓ market map visual consistency unit ${checks}개 통과`);

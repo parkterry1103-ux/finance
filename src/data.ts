@@ -6556,6 +6556,13 @@ const datacenterPowerCoolingCompanies: Company[] = [
   }),
 ];
 
+const datacenterPowerCoolingCompanyIds = new Set([
+  'datacenter-power-vertiv',
+  'datacenter-power-eaton',
+  'datacenter-power-schneider',
+  'datacenter-power-lg-electronics',
+]);
+
 function makeDatacenterPowerCoolingLink(input: {
   source: string;
   target: string;
@@ -7139,12 +7146,16 @@ export const companies = [
     .filter((company) => company.sectorId !== datacenterPowerCoolingSectorId)
     .map(applyCompanyFilingAndOverrides),
   ...aiRelationshipCompanies.map(applyCompanyFilingAndOverrides),
-  ...datacenterPowerCoolingCompanies.map(applyCompanyFilingAndOverrides),
+  ...datacenterPowerCoolingCompanies
+    .filter((company) => datacenterPowerCoolingCompanyIds.has(company.id))
+    .map(applyCompanyFilingAndOverrides),
 ];
 export const links = [
   ...built.generatedLinks.filter((link) => link.anchorId !== datacenterPowerCoolingAnchorId),
   ...aiRelationshipLinks,
-  ...datacenterPowerCoolingLinks,
+  ...datacenterPowerCoolingLinks.filter(
+    (link) => datacenterPowerCoolingCompanyIds.has(link.source) && datacenterPowerCoolingCompanyIds.has(link.target),
+  ),
 ];
 export const analystOpinions = built.generatedOpinions;
 

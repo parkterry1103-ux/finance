@@ -16,6 +16,43 @@ export type MarketMapCategory =
 
 export type MarketMapStatus = 'available' | 'planned';
 
+export type MarketMapIndustryNodeKind =
+  | 'demand'
+  | 'requirement'
+  | 'supplier'
+  | 'use'
+  | 'verification';
+
+export type MarketMapNodeKind = MarketMapIndustryNodeKind | 'company';
+
+export type MarketMapIndustryStage = {
+  id: string;
+  kind: MarketMapIndustryNodeKind;
+  question: string;
+  title: string;
+  description: string;
+  items: string[];
+  representativeCompanyIds: string[];
+};
+
+export type MarketMapCompanyRelationKind = 'demand' | 'supply' | 'infrastructure' | 'reference';
+
+export type MarketMapCompanyRelation = {
+  id: string;
+  sourceCompanyId: string;
+  targetCompanyId: string;
+  label: string;
+  kind: MarketMapCompanyRelationKind;
+  description: string;
+  confidence: 'official' | 'industry';
+};
+
+export type MarketMapCompanyNetwork = {
+  companyIds: string[];
+  relationSource: 'existing' | 'definition';
+  relations: MarketMapCompanyRelation[];
+};
+
 export type MarketMapDefinition = {
   id: string;
   route?: string;
@@ -28,10 +65,13 @@ export type MarketMapDefinition = {
   description: string;
   supportingNote?: string;
   scopeLabel: string;
+  industryStages?: MarketMapIndustryStage[];
+  companyNetwork?: MarketMapCompanyNetwork;
 };
 
 export type MarketMapGraphRegion = 'all' | 'us' | 'kr' | 'other';
 export type MarketMapGraphViewMode = 'selected' | 'fit';
+export type MarketMapDetailViewMode = 'industry' | 'companies';
 
 export type MarketMapDetailActionKind = 'analysis' | 'financials' | 'pick' | 'flow';
 
@@ -59,9 +99,12 @@ export type MarketMapDetailCompany = {
 
 export type MarketMapFlowStep = {
   id: string;
+  kind: MarketMapIndustryNodeKind;
+  question: string;
   title: string;
   description: string;
   roleTag: string;
+  items: string[];
   representativeCompanies: string[];
   isCurrent?: boolean;
 };

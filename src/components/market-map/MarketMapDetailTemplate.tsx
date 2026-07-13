@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { ArrowRight, Focus, Maximize2, Network, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Factory, Focus, Maximize2, Network, ShieldAlert } from 'lucide-react';
 import {
   marketMapCategoryLabels,
   marketMapRegionLabels,
@@ -7,6 +7,7 @@ import {
 import type {
   MarketMapDetailAction,
   MarketMapDetailCompany,
+  MarketMapDetailViewMode,
   MarketMapDetailViewModel,
   MarketMapGraphRegion,
   MarketMapGraphViewMode,
@@ -14,17 +15,15 @@ import type {
 
 type MarketMapDetailTemplateProps = {
   viewModel: MarketMapDetailViewModel;
-  advancedExpanded: boolean;
-  onToggleAdvanced: () => void;
+  activeView: MarketMapDetailViewMode;
+  onViewChange: (view: MarketMapDetailViewMode) => void;
   onCompanyAction: (companyId: string, action: MarketMapDetailAction) => void;
-  onSelectFlowStep?: (stepId: string) => void;
   renderIdentity: (company: MarketMapDetailCompany, size: 'compact' | 'hero') => ReactNode;
   renderLogo: (company: MarketMapDetailCompany, size: 'small' | 'large') => ReactNode;
   renderPrice?: (companyId: string) => ReactNode;
   advancedContent?: ReactNode;
   graphControls?: ReactNode;
   resources?: ReactNode;
-  advancedTriggerRef?: RefObject<HTMLButtonElement>;
 };
 
 type MarketMapGraphToolbarProps = {
@@ -40,10 +39,11 @@ type MarketMapGraphShellProps = {
   id: string;
   expanded: boolean;
   description: string;
-  onToggle: () => void;
+  onToggle?: () => void;
   controls?: ReactNode;
   children?: ReactNode;
   triggerRef?: RefObject<HTMLButtonElement>;
+  collapsible?: boolean;
 };
 
 const graphRegionLabels: Record<MarketMapGraphRegion, string> = {
@@ -114,27 +114,30 @@ export function MarketMapGraphShell({
   controls,
   children,
   triggerRef,
+  collapsible = true,
 }: MarketMapGraphShellProps) {
   return (
     <section className="market-map-template-advanced market-map-graph-shell" aria-labelledby={`${id}-advanced-title`}>
       <div className="market-map-graph-heading">
-        <span>전체 관계를 보고 싶다면</span>
-        <h2 id={`${id}-advanced-title`}>핵심 단계와 관련 기업의 연결을 한 번에 펼쳐봅니다.</h2>
+        <span>기업 전용 관계망</span>
+        <h2 id={`${id}-advanced-title`}>같은 산업 흐름에 속한 기업만 연결해 봅니다.</h2>
         <p>{description}</p>
       </div>
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={`${id}-advanced-graph`}
-        onClick={onToggle}
-      >
-        <Network size={15} aria-hidden="true" />
-        {expanded ? '전체 연결 접기' : '전체 연결 보기'}
-      </button>
+      {collapsible ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`${id}-advanced-graph`}
+          onClick={onToggle}
+        >
+          <Network size={15} aria-hidden="true" />
+          {expanded ? '기업 연결 접기' : '기업 연결 보기'}
+        </button>
+      ) : null}
       {expanded && controls ? <div className="market-map-graph-controls">{controls}</div> : null}
       {expanded ? (
-        <div id={`${id}-advanced-graph`} className="market-map-template-advanced-content" aria-label="산업 단계와 기업의 전체 연결 관계도">
+        <div id={`${id}-advanced-graph`} className="market-map-template-advanced-content" aria-label="기업 전용 연결 관계도">
           {children}
         </div>
       ) : null}
@@ -154,17 +157,15 @@ function CompanyStatusBadges({ company }: { company: MarketMapDetailCompany }) {
 
 export function MarketMapDetailTemplate({
   viewModel,
-  advancedExpanded,
-  onToggleAdvanced,
+  activeView,
+  onViewChange,
   onCompanyAction,
-  onSelectFlowStep,
   renderIdentity,
   renderLogo,
   renderPrice,
   advancedContent,
   graphControls,
   resources,
-  advancedTriggerRef,
 }: MarketMapDetailTemplateProps) {
   const selectedCompany = viewModel.selectedCompany;
   const relatedCompanyGroups = [
@@ -190,7 +191,18 @@ export function MarketMapDetailTemplate({
         <strong>{viewModel.heroNote}</strong>
       </section>
 
-      <section className="market-map-template-focus" aria-label="선택 기업과 같이 볼 기업">
+      <nav className="market-map-template-view-switch" aria-label="시장지도 보기 선택">
+        <button type="button" aria-pressed={activeView === 'industry'} onClick={() => onViewChange('industry')}>
+          <Factory size={17} aria-hidden="true" />
+          <span><strong>산업 구조</strong><small>수요 → 필요 요소 → 공급 기업 → 사용처 → 확인</small></span>
+        </button>
+        <button type="button" aria-pressed={activeView === 'companies'} onClick={() => onViewChange('companies')}>
+          <Network size={17} aria-hidden="true" />
+          <span><strong>기업 연결</strong><small>기업 노드만 보는 관계망</small></span>
+        </button>
+      </nav>
+
+      {activeView === 'companies' ? <section className="market-map-template-focus" aria-label="선택 기업과 같이 볼 기업">
         <article className="market-map-template-selected" aria-labelledby={`${viewModel.id}-selected-company`}>
           <div className="market-map-template-company-head">
             {renderLogo(selectedCompany, 'large')}
@@ -256,55 +268,47 @@ export function MarketMapDetailTemplate({
             </section>
           ))}
         </section>
-      </section>
+      </section> : null}
 
-      <section className="market-map-template-flow" aria-labelledby={`${viewModel.id}-flow-title`}>
+      {activeView === 'industry' ? <section className="market-map-template-flow" aria-labelledby={`${viewModel.id}-flow-title`}>
         <div className="market-map-template-section-head">
-          <span>주가해부실 · 시장 흐름 지도</span>
-          <h2 id={`${viewModel.id}-flow-title`}>Compact {viewModel.flowSteps.length}단계 흐름</h2>
+          <span>공통 산업 구조 taxonomy</span>
+          <h2 id={`${viewModel.id}-flow-title`}>다섯 질문으로 읽는 산업 구조</h2>
           <p>{viewModel.flowTitle}</p>
         </div>
         <div className="market-map-template-flow-steps" data-flow-count={viewModel.flowSteps.length}>
           {viewModel.flowSteps.map((step, index) => (
             <article key={step.id} className={step.isCurrent ? 'current' : ''} aria-current={step.isCurrent ? 'step' : undefined}>
-              {onSelectFlowStep ? (
-                <button type="button" onClick={() => onSelectFlowStep(step.id)} aria-label={`${step.title} 단계 보기`}>
-                  <span className="market-map-template-flow-meta">
-                    <b aria-label={`${index + 1}단계`}>{String(index + 1).padStart(2, '0')}</b>
-                    <em>{step.roleTag}</em>
-                  </span>
-                  <strong>{step.title}</strong>
-                  <p>{step.description}</p>
-                </button>
-              ) : (
-                <div className="market-map-template-flow-copy">
-                  <span className="market-map-template-flow-meta">
-                    <b aria-label={`${index + 1}단계`}>{String(index + 1).padStart(2, '0')}</b>
-                    <em>{step.roleTag}</em>
-                  </span>
-                  <strong>{step.title}</strong>
-                  <p>{step.description}</p>
-                </div>
-              )}
-              <div aria-label={`${step.title} 대표 기업`}>
+              <div className="market-map-template-flow-copy">
+                <span className="market-map-template-flow-meta">
+                  <b aria-label={`${index + 1}단계`}>{String(index + 1).padStart(2, '0')}</b>
+                  <em>{step.roleTag}</em>
+                </span>
+                <small className="market-map-template-flow-question">{step.question}</small>
+                <strong>{step.title}</strong>
+                <p>{step.description}</p>
+              </div>
+              <ul className="market-map-template-flow-items" aria-label={`${step.title} 핵심 항목`}>
+                {step.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+              {step.representativeCompanies.length ? <div aria-label={`${step.title} 대표 기업`}>
                 <b>대표 기업</b>
                 {step.representativeCompanies.map((companyName) => <small key={companyName}>{companyName}</small>)}
-              </div>
+              </div> : null}
             </article>
           ))}
         </div>
-      </section>
+      </section> : null}
 
-      <MarketMapGraphShell
+      {activeView === 'companies' ? <MarketMapGraphShell
         id={viewModel.id}
-        expanded={advancedExpanded}
+        expanded
         description={viewModel.advancedDescription}
-        onToggle={onToggleAdvanced}
         controls={graphControls}
-        triggerRef={advancedTriggerRef}
+        collapsible={false}
       >
         {advancedContent}
-      </MarketMapGraphShell>
+      </MarketMapGraphShell> : null}
 
       <section className="market-map-template-caution" aria-labelledby={`${viewModel.id}-caution-title`}>
         <ShieldAlert size={18} aria-hidden="true" />

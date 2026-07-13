@@ -4,6 +4,7 @@ import type {
   MarketMapDetailCompany,
   MarketMapGraphRegion,
   MarketMapGraphViewMode,
+  MarketMapDetailViewMode,
   MarketMapDetailViewModel,
   MarketMapDetailViewModelInput,
 } from './types.js';
@@ -50,6 +51,7 @@ export function createMarketMapDetailViewModel(input: MarketMapDetailViewModelIn
     relatedCompanies: input.relatedCompanies.map((company) => normalizeMarketMapCompany(company, 1)),
     flowSteps: input.flowSteps.map((step) => ({
       ...step,
+      items: step.items.slice(0, 5),
       representativeCompanies: step.representativeCompanies.slice(0, 2),
     })),
   };
@@ -69,8 +71,9 @@ export function resolveMarketMapCompanyQuery(
 }
 
 export function marketMapGraphRegionForCountryLabel(countryLabel?: string | null): Exclude<MarketMapGraphRegion, 'all'> {
-  if (countryLabel === '미국') return 'us';
-  if (countryLabel === '한국') return 'kr';
+  const normalized = String(countryLabel ?? '').trim().toLowerCase();
+  if (['미국', 'us', 'usa', 'united states'].includes(normalized)) return 'us';
+  if (['한국', '대한민국', 'kr', 'korea', 'south korea'].includes(normalized)) return 'kr';
   return 'other';
 }
 
@@ -80,6 +83,15 @@ export function resolveMarketMapGraphRegion(value?: string | null): MarketMapGra
 
 export function resolveMarketMapGraphViewMode(value?: string | null): MarketMapGraphViewMode {
   return value === 'fit' ? 'fit' : 'selected';
+}
+
+export function resolveMarketMapDetailViewMode(
+  value?: string | null,
+  hasCompanyQuery = false,
+): MarketMapDetailViewMode {
+  if (value === 'industry') return 'industry';
+  if (value === 'companies' || hasCompanyQuery) return 'companies';
+  return 'industry';
 }
 
 export function selectMarketMapGraphCompanyIds(
