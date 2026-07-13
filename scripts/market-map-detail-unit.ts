@@ -35,6 +35,8 @@ const baseCompany: MarketMapDetailCompany = {
 
 const viewModel = createMarketMapDetailViewModel({
   id: 'fixture-map',
+  region: 'global',
+  category: 'semiconductor-ai',
   eyebrow: '시장지도',
   title: '공통 지도',
   summary: '공통 설명',

@@ -32734,3 +32734,650 @@ button.flow-stage-company-chip:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* Market map visual consistency v2: shared classification, compact flow, and graph shell. */
+.story-market-map-shell {
+  --home-paper: #f7f6f3;
+  --home-paper-soft: #fbfaf8;
+  --home-surface: #ffffff;
+  --home-surface-soft: #f8fafc;
+  --home-line: #e4e7ec;
+  --home-line-strong: #c9d8f2;
+  --home-ink: #101828;
+  --home-body: #475467;
+  --home-muted: #667085;
+  --home-blue: #2563eb;
+  --home-blue-strong: #1d4ed8;
+  --home-blue-soft: #eff6ff;
+  --home-shadow: 0 10px 28px rgba(15, 23, 42, 0.045);
+  color: var(--home-ink);
+  background: linear-gradient(180deg, var(--home-paper-soft) 0%, var(--home-paper) 48%, #f8fafc 100%) !important;
+}
+
+.story-market-map-shell main {
+  display: grid;
+  gap: 16px;
+}
+
+.market-map-library-filters,
+.market-map-library-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--home-line);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--home-shadow);
+}
+
+.market-map-library-filters {
+  display: grid;
+  gap: 14px;
+}
+
+.market-map-library-filters > div,
+.market-map-graph-toolbar > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.market-map-library-filters > div > span,
+.market-map-graph-toolbar > div > span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.market-map-library-filters > div > div,
+.market-map-graph-toolbar > div > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.market-map-library-filters button,
+.market-map-graph-toolbar button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  color: #344054;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.market-map-library-filters button[aria-pressed='true'],
+.market-map-graph-toolbar button[aria-pressed='true'] {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.market-map-library-filters button:focus-visible,
+.market-map-library-cta:focus-visible,
+.market-map-graph-toolbar button:focus-visible,
+.market-map-graph-shell > button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 3px;
+}
+
+.market-map-library-section {
+  display: grid;
+  gap: 14px;
+}
+
+.market-map-library-section.planned {
+  background: #f8fafc;
+}
+
+.market-map-library-section-head {
+  display: grid;
+  gap: 4px;
+}
+
+.market-map-library-section-head > span {
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.market-map-library-section-head h2,
+.market-map-library-section-head p,
+.market-map-library-empty {
+  margin: 0;
+}
+
+.market-map-library-section-head h2 {
+  color: #101828;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.market-map-library-section-head p,
+.market-map-library-empty {
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.market-map-library-card {
+  position: relative;
+  min-height: 286px;
+  overflow: hidden;
+  border-radius: 14px !important;
+}
+
+.market-map-library-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #2563eb;
+  content: '';
+}
+
+.market-map-library-card.category-power-datacenter::before { background: #0891b2; }
+.market-map-library-card.category-construction-infrastructure::before { background: #d97706; }
+.market-map-library-card.category-industrial-facilities::before { background: #7c3aed; }
+
+.market-map-library-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.market-map-library-card-badges span,
+.market-map-library-scope {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 26px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  color: #475467;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.market-map-library-card h3 {
+  max-width: 520px;
+  margin: 0;
+  color: #101828 !important;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.market-map-library-scope {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.market-map-library-card .market-map-library-cta {
+  display: inline-flex !important;
+  width: fit-content;
+  min-width: 164px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: auto;
+  padding: 10px 18px;
+  border: 1px solid var(--home-blue, #2563eb) !important;
+  border-radius: 10px;
+  color: #ffffff !important;
+  background: var(--home-blue, #2563eb) !important;
+  opacity: 1 !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18) !important;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  visibility: visible !important;
+  word-break: keep-all;
+}
+
+.market-map-library-card .market-map-library-cta:hover {
+  border-color: #1d4ed8 !important;
+  background: #1d4ed8 !important;
+}
+
+.market-map-library-card.disabled::before { background: #98a2b3; }
+.market-map-library-card.disabled { min-height: 250px; opacity: 0.82; }
+.market-map-coming-soon { gap: 5px; }
+
+.market-map-detail-template {
+  --map-category-accent: #2563eb;
+}
+
+.market-map-detail-template.category-power-datacenter { --map-category-accent: #0891b2; }
+.market-map-detail-template.category-construction-infrastructure { --map-category-accent: #d97706; }
+.market-map-detail-template.category-industrial-facilities { --map-category-accent: #7c3aed; }
+
+.market-map-template-hero {
+  border-top: 4px solid var(--map-category-accent);
+}
+
+.market-map-template-classification {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.market-map-template-classification strong {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 29px;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--map-category-accent) 28%, #ffffff);
+  border-radius: 999px;
+  color: var(--map-category-accent);
+  background: color-mix(in srgb, var(--map-category-accent) 8%, #ffffff);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.market-map-template-related-group {
+  display: grid;
+  gap: 8px;
+}
+
+.market-map-template-related-group h3 {
+  margin: 0;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.market-map-template-flow-steps {
+  grid-auto-flow: row;
+}
+
+.market-map-template-flow-steps article {
+  min-height: 220px;
+  padding: 15px;
+}
+
+.market-map-template-flow-steps button,
+.market-map-template-flow-copy {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  align-content: start;
+  align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.market-map-template-flow-meta {
+  display: flex !important;
+  grid-row: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.market-map-template-flow-meta > b {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 10px;
+  color: #1d4ed8;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.market-map-template-flow-meta > em {
+  display: inline-flex;
+  width: fit-content;
+  max-width: calc(100% - 42px);
+  min-height: 27px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #ffffff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.market-map-template-flow-steps strong {
+  display: -webkit-box;
+  min-height: 34px;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.market-map-template-flow-steps p {
+  grid-column: auto;
+  min-height: 50px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.market-map-template-flow-steps article > div:last-child small {
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.market-map-graph-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 18px;
+  align-items: center;
+}
+
+.market-map-graph-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.market-map-graph-controls,
+.market-map-graph-legend {
+  grid-column: 1 / -1;
+}
+
+.market-map-graph-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.market-map-graph-toolbar > div {
+  grid-template-columns: 74px minmax(0, 1fr);
+}
+
+.market-map-graph-toolbar button {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.market-map-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 16px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.market-map-graph-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #475467;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.market-map-graph-legend i {
+  display: block;
+  width: 28px;
+  border-top: 3px solid #2563eb;
+}
+
+.market-map-graph-legend i.supply { border-color: #16a34a; }
+.market-map-graph-legend i.infrastructure { border-color: #7c3aed; }
+.market-map-graph-legend i.reference { border-color: #98a2b3; border-top-style: dashed; }
+
+.market-map-template-advanced-content {
+  min-height: 680px;
+  background: #f8fafc;
+}
+
+.market-map-template-advanced-content > .advanced-map-note {
+  margin: 12px 12px 0;
+}
+
+.market-map-template-advanced-content .graph-wrap,
+.reconstruction-flow-canvas {
+  width: 100%;
+  height: 680px;
+  min-height: 680px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+.reconstruction-flow-canvas .react-flow__node,
+.market-map-graph-node-wrapper {
+  width: 180px !important;
+}
+
+.market-map-graph-node {
+  display: grid;
+  gap: 8px;
+  width: 180px;
+  min-height: 94px;
+  padding: 13px;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  color: #101828;
+  background: #ffffff;
+  box-shadow: 0 7px 18px rgba(15, 23, 42, 0.07);
+  text-align: left;
+}
+
+.market-map-graph-node > strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.3;
+  word-break: keep-all;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.market-map-graph-node > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.market-map-graph-node span,
+.market-map-graph-node small,
+.node-country-badge {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #475467;
+  background: #f1f5f9;
+  font-size: 9.5px;
+  font-weight: 850;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.market-map-graph-node-wrapper.selected .market-map-graph-node,
+.reconstruction-flow-canvas .market-map-graph-node-wrapper.selected .market-map-graph-node {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+  background: #eff6ff;
+}
+
+.market-map-graph-node-wrapper.dimmed,
+.reconstruction-flow-canvas .market-map-graph-node-wrapper.dimmed {
+  opacity: 0.24;
+}
+
+.react-flow__edge.market-map-edge-demand .react-flow__edge-path { stroke: #2563eb !important; }
+.react-flow__edge.market-map-edge-supply .react-flow__edge-path { stroke: #16a34a !important; }
+.react-flow__edge.market-map-edge-infrastructure .react-flow__edge-path { stroke: #7c3aed !important; }
+.react-flow__edge.market-map-edge-reference .react-flow__edge-path {
+  stroke: #98a2b3 !important;
+  stroke-dasharray: 7 5;
+}
+
+.app-shell.advanced-relationship-view .map-panel > .topbar {
+  display: none !important;
+}
+
+.app-shell.advanced-relationship-view .market-map-graph-shell {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  color: #101828;
+  background: #ffffff;
+}
+
+.app-shell.advanced-relationship-view .market-map-template-advanced-content {
+  min-height: 680px;
+}
+
+.app-shell.advanced-relationship-view .market-map-template-advanced-content .graph-wrap {
+  width: 100%;
+  min-height: 680px;
+  margin: 0;
+}
+
+.app-shell.advanced-relationship-view .supply-node {
+  width: 180px !important;
+  min-height: 104px !important;
+}
+
+.app-shell.advanced-relationship-view .supply-node .node-name {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: keep-all;
+  text-overflow: initial;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (min-width: 1100px) {
+  .market-map-template-flow-steps[data-flow-count='4'] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .market-map-template-flow-steps[data-flow-count='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .market-map-template-flow-steps[data-flow-count='6'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1099px) {
+  .market-map-template-flow-steps {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row;
+  }
+
+  .market-map-template-flow-steps article {
+    min-height: 0;
+  }
+
+  .market-map-template-flow-steps article:not(:last-child)::after {
+    top: auto;
+    right: auto;
+    bottom: -11px;
+    left: 31px;
+    width: 2px;
+    height: 11px;
+  }
+}
+
+@media (max-width: 760px) {
+  .market-map-library-filters,
+  .market-map-library-section {
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  .market-map-library-filters > div,
+  .market-map-graph-toolbar > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .market-map-library-filters button {
+    flex: 1 1 118px;
+  }
+
+  .market-map-library-card {
+    min-height: 0;
+  }
+
+  .market-map-library-card .market-map-library-cta {
+    width: 100%;
+  }
+
+  .market-map-graph-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .market-map-graph-shell > button {
+    width: 100%;
+  }
+
+  .market-map-graph-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .market-map-graph-toolbar button {
+    flex: 1 1 132px;
+  }
+
+  .market-map-template-advanced-content,
+  .market-map-template-advanced-content .graph-wrap,
+  .reconstruction-flow-canvas,
+  .app-shell.advanced-relationship-view .market-map-template-advanced-content,
+  .app-shell.advanced-relationship-view .market-map-template-advanced-content .graph-wrap {
+    height: 560px;
+    min-height: 560px;
+  }
+
+  .market-map-template-flow-meta {
+    justify-content: flex-start;
+  }
+
+  .market-map-template-flow-steps p,
+  .market-map-template-flow-steps strong {
+    min-height: 0;
+  }
+}

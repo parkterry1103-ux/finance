@@ -4724,3 +4724,17 @@ Hero는 desktop `clamp(2rem, 4vw, 3.25rem)`과 32~44px padding, mobile 28~36px�
 상단 navigation은 오늘·산업·기업·자료 4그룹을 유지하고 공통 close 동작을 그대로 사용합니다. 상세 지도와 보관함에서 `story-dark-shell`을 제거해 라이트 surface를 사용하며 desktop backdrop, mobile overlay, body scroll lock 잔류를 만들지 않습니다. `scripts/market-map-detail-unit.ts`와 콘텐츠 validator가 공통 view model, 기본·유효·legacy·invalid query, CTA 상한, status label, 가격 없음 생략, 4~6단계와 대표 기업 상한을 네트워크 없이 검사합니다.
 
 이번 정비는 신규 시장지도, API, Serverless Function, DB, migration, cron, sync, dependency, 자동 관계 생성, AI 해설, 추천 점수를 추가하지 않습니다. 기존 시장지도 콘텐츠 의미와 가격·거시·관계·공시·수요공급·기업 이벤트·리포트·병목 계약을 유지하며 Production은 Vercel `finance1`과 `https://finance1-flax.vercel.app`에서 검증합니다.
+
+## 시장지도 2차 시각 일관성·지역·카테고리 분류 정비
+
+허브 CTA가 흰 배경에서 사라진 원인은 버튼의 DOM, 문구, opacity가 아니라 CSS custom property 범위였습니다. `--home-blue` 등 홈 전용 변수가 `.story-home-shell` 안에서만 정의됐는데 시장지도 허브의 버튼이 같은 변수를 fallback 없이 사용해 background와 border 선언이 무효가 되고 흰 글자만 남았습니다. `.story-market-map-shell`에 라이트 토큰을 명시하고 `.market-map-library-cta`에는 `var(--home-blue, #2563eb)` fallback, 흰 글자, 44px 최소 높이, focus-visible outline을 공통 적용했습니다.
+
+`src/content/market-map-details/definitions.ts`가 허브와 상세 화면의 분류 기준입니다. 네 available 지도와 두 planned 항목은 `region`, `category`, `status`, `order`를 가지며 available만 유효한 상세 route를 가집니다. 지역은 미국 중심·한국 중심·글로벌, 산업은 반도체·AI·전력·데이터센터·건설·재건·인프라·산업단지·설비로 분류합니다. 허브는 지역·산업 필터를 정적 registry에서 처리하며 `region=us|kr|global`과 category query를 선택적으로 유지하고 잘못된 query는 전체로 fallback합니다. available과 planned는 별도 section이며 planned 카드에는 CTA가 없습니다.
+
+Compact flow는 `[번호, 가로 역할 badge] → 제목 → 설명 → 대표 기업 pill`의 한 열 구조를 카드 내부에서 공유합니다. 1100px 이상에서는 4단계 4열, 5단계 5열, 6단계 3열×2행이고 그 미만에서는 왼쪽 연결선을 가진 세로 stepper입니다. 제목·설명·badge는 `word-break: keep-all`을 사용하며 역할 badge의 세로 writing-mode는 허용하지 않습니다. 기업 영역은 미국 기업·한국 기업·글로벌 공급망 기업으로 실제 항목이 있는 그룹만 표시하고 회사명 아래에는 국가·ticker를 유지합니다.
+
+전체 관계도는 `MarketMapGraphShell`, `MarketMapGraphToolbar`, `MarketMapGraphLegend`를 네 지도에서 공유합니다. 닫힘/열림 CTA, 지역 필터, 선택 기업 중심·전체 맞춤, 680px desktop·560px mobile canvas, `padding 0.22`, `minZoom 0.42`, `maxZoom 1.28`, 고정 node, 텍스트 legend를 같은 위치와 크기로 사용합니다. 국가 필터는 산업 단계 노드는 유지하고 다른 국가 기업을 흐리게 표시합니다. TSMC는 대만, ASML은 네덜란드, Schneider Electric은 프랑스로 해석해 기타·글로벌로 분류하며 미국 상장 시장과 기업 소재 국가를 혼동하지 않습니다. node는 회사명 최대 2줄과 국가·역할 badge를 표시하고, edge는 수요 blue·공급 green·생산/설비 violet·시장 흐름 gray dashed 규칙을 사용합니다.
+
+접근성은 필터와 보기 방식의 `aria-pressed`, 전체 연결의 `aria-expanded`, CTA·필터의 focus-visible, 현재 단계의 `aria-current`, 그래프 설명과 텍스트 legend로 보완합니다. 핵심 정보는 Compact flow와 관련 기업 카드에도 남아 그래프만으로 전달하지 않습니다. `scripts/market-map-visual-consistency-unit.ts`와 콘텐츠 validator가 definition 수·route·분류·정렬·query fallback·CTA fallback 색·4~6단계·대표 기업 상한·국가 분류·선택 기업 이웃 계산·공통 graph shell을 네트워크 없이 검사합니다.
+
+신규 API, Serverless Function, DB, migration, cron, sync endpoint, dependency, icon/chart library는 추가하지 않았습니다. 허브 필터, 기업 선택, 전체 연결 열기와 지역·보기 방식 변경은 추가 요청을 만들지 않으며 기존 총 Function 12개와 가격·거시·시장 관계·OpenDART·SEC·수요공급 4개·기업 이벤트 12개·리포트 15개·병목 6개 계약을 유지합니다.

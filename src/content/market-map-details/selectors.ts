@@ -2,6 +2,8 @@ import type {
   MarketMapDetailAction,
   MarketMapDetailActionKind,
   MarketMapDetailCompany,
+  MarketMapGraphRegion,
+  MarketMapGraphViewMode,
   MarketMapDetailViewModel,
   MarketMapDetailViewModelInput,
 } from './types.js';
@@ -64,4 +66,39 @@ export function resolveMarketMapCompanyQuery(
   return companyIds.includes(resolvedCompanyId)
     ? { companyId: resolvedCompanyId, didFallback: false }
     : { companyId: fallbackCompanyId, didFallback: true };
+}
+
+export function marketMapGraphRegionForCountryLabel(countryLabel?: string | null): Exclude<MarketMapGraphRegion, 'all'> {
+  if (countryLabel === '미국') return 'us';
+  if (countryLabel === '한국') return 'kr';
+  return 'other';
+}
+
+export function resolveMarketMapGraphRegion(value?: string | null): MarketMapGraphRegion {
+  return value === 'us' || value === 'kr' || value === 'other' ? value : 'all';
+}
+
+export function resolveMarketMapGraphViewMode(value?: string | null): MarketMapGraphViewMode {
+  return value === 'fit' ? 'fit' : 'selected';
+}
+
+export function selectMarketMapGraphCompanyIds(
+  companies: Array<{ id: string; countryLabel?: string | null }>,
+  region: MarketMapGraphRegion,
+) {
+  return companies
+    .filter((company) => region === 'all' || marketMapGraphRegionForCountryLabel(company.countryLabel) === region)
+    .map((company) => company.id);
+}
+
+export function selectConnectedMarketMapNodeIds(
+  selectedNodeId: string,
+  edges: Array<{ source: string; target: string }>,
+) {
+  const ids = new Set([selectedNodeId]);
+  edges.forEach((edge) => {
+    if (edge.source === selectedNodeId) ids.add(edge.target);
+    if (edge.target === selectedNodeId) ids.add(edge.source);
+  });
+  return [...ids];
 }

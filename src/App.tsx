@@ -165,12 +165,28 @@ import { TermHelp } from './components/common/TermHelp';
 import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
 import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
 import { CompanyEventsRadar } from './components/company-events/CompanyEventsRadar';
-import { MarketMapDetailTemplate } from './components/market-map/MarketMapDetailTemplate';
+import {
+  MarketMapDetailTemplate,
+  MarketMapGraphShell,
+  MarketMapGraphToolbar,
+} from './components/market-map/MarketMapDetailTemplate';
 import {
   createMarketMapDetailViewModel,
+  filterMarketMapDefinitions,
+  marketMapCategoryLabels,
+  marketMapDefinitionById,
+  marketMapDefinitions,
+  marketMapGraphRegionForCountryLabel,
+  marketMapRegionLabels,
   resolveMarketMapCompanyQuery,
+  resolveMarketMapCategory,
+  resolveMarketMapRegion,
   type MarketMapDetailAction,
   type MarketMapDetailCompany,
+  type MarketMapCategory,
+  type MarketMapGraphRegion,
+  type MarketMapGraphViewMode,
+  type MarketMapRegion,
 } from './content/market-map-details';
 import {
   companyEventCompany,
@@ -193,6 +209,18 @@ type NodeData = {
   onSelect?: (companyId: string) => void;
   onToggleExpand?: (companyId: string) => void;
 };
+
+type InfrastructureNodeData = {
+  label: string;
+  countryLabel?: string;
+  roleLabel: string;
+};
+
+const marketMapGraphConfig = {
+  fitViewPadding: 0.22,
+  minZoom: 0.42,
+  maxZoom: 1.28,
+} as const;
 
 type NewsItem = {
   title: string;
@@ -621,7 +649,7 @@ function CompanyLogo({
 }
 
 function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
-  const { company, isSelected, isDimmed, isExpanded, onSelect, onToggleExpand } = data;
+  const { company, isSelected, isDimmed, isExpanded, marketLabel, onSelect, onToggleExpand } = data;
   const role = companyRoleProfile(company);
   const connection = companyConnectionState(company);
   const compactStage =
@@ -677,6 +705,7 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
         <span className="node-name">{company.name}</span>
       </div>
       <div className="node-meta">
+        <span className="node-country-badge">{marketLabel}</span>
         <span>{compactStage}</span>
         {!connection.canOpenAnalysis && <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>}
       </div>
@@ -685,8 +714,26 @@ function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
+function InfrastructureNode({ data }: NodeProps<Node<InfrastructureNodeData>>) {
+  return (
+    <div className="market-map-graph-node">
+      <Handle type="target" position={Position.Left} className="node-handle" />
+      <strong>{data.label}</strong>
+      <div>
+        {data.countryLabel ? <span>{data.countryLabel}</span> : null}
+        <small>{data.roleLabel}</small>
+      </div>
+      <Handle type="source" position={Position.Right} className="node-handle" />
+    </div>
+  );
+}
+
 const nodeTypes = {
   supplyNode: SupplyNode,
+};
+
+const infrastructureNodeTypes = {
+  marketMapNode: InfrastructureNode,
 };
 
 function aiStageColumn(company: Company) {
@@ -1074,6 +1121,12 @@ function countryLabelFromRegion(region?: string | null) {
   if (['united states', 'usa', 'us', '미국'].includes(normalized)) return '미국';
   if (['taiwan', '대만'].includes(normalized)) return '대만';
   if (['netherlands', 'the netherlands', '네덜란드'].includes(normalized)) return '네덜란드';
+  if (['france', '프랑스'].includes(normalized)) return '프랑스';
+  if (['germany', '독일'].includes(normalized)) return '독일';
+  if (['switzerland', '스위스'].includes(normalized)) return '스위스';
+  if (['japan', '일본'].includes(normalized)) return '일본';
+  if (['united kingdom', 'uk', '영국'].includes(normalized)) return '영국';
+  if (['canada', '캐나다'].includes(normalized)) return '캐나다';
   return '';
 }
 
@@ -1100,6 +1153,10 @@ function countryLabelFromCompany(company?: Company | null) {
     countryLabelFromMarket(company.exchange) ||
     countryLabelFromTicker(company.ticker)
   );
+}
+
+function marketMapGraphRegionForCompany(company: Company) {
+  return marketMapGraphRegionForCountryLabel(countryLabelFromCompany(company));
 }
 
 function resolveCompanyIdentity(input: {
@@ -1763,14 +1820,19 @@ function relationshipKindClass(value: string) {
   return 'demand';
 }
 
-function relationshipEdgeColor(value: string) {
+function marketMapEdgeKind(value: string): 'demand' | 'supply' | 'infrastructure' | 'reference' {
   const kind = relationshipKindClass(value);
-  if (kind === 'foundry') return '#7c3aed';
-  if (kind === 'equipment') return '#f59e0b';
-  if (kind === 'material') return '#64748b';
-  if (kind === 'memory') return '#16a34a';
-  if (kind === 'server') return '#0ea5e9';
-  if (kind === 'power') return '#dc2626';
+  if (kind === 'needs') return 'reference';
+  if (kind === 'memory' || kind === 'material') return 'supply';
+  if (kind === 'foundry' || kind === 'equipment' || kind === 'power') return 'infrastructure';
+  return 'demand';
+}
+
+function marketMapEdgeColor(value: string) {
+  const kind = marketMapEdgeKind(value);
+  if (kind === 'supply') return '#16a34a';
+  if (kind === 'infrastructure') return '#7c3aed';
+  if (kind === 'reference') return '#98a2b3';
   return '#2563eb';
 }
 
@@ -5294,6 +5356,9 @@ type MarketMapLibraryPageProps = {
   onOpenDisclosures: () => void;
   onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
   onOpenReports: (reportId?: string) => void;
+  regionQuery: string | null;
+  categoryQuery: string | null;
+  onFilterChange: (region: MarketMapRegion | 'all', category: MarketMapCategory | 'all') => void;
 };
 
 const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
@@ -6662,12 +6727,67 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
   );
 }
 
-function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenDisclosures, onOpenCategory, onOpenReports }: MarketMapLibraryPageProps) {
-  const marketMapItems = currentWeeklyDigest.marketMapItems;
-  const openMarketMapItem = (item: (typeof marketMapItems)[number]) => {
-    if (item.status !== 'active') return;
-    const sectorId = marketMapItemSectorId(item);
-    if (sectorId) onOpenCategory(sectorId);
+function MarketMapLibraryPage({
+  onHome,
+  onOpenPicks,
+  onOpenDisclosures,
+  onOpenCategory,
+  onOpenReports,
+  regionQuery,
+  categoryQuery,
+  onFilterChange,
+}: MarketMapLibraryPageProps) {
+  const selectedRegion = resolveMarketMapRegion(regionQuery);
+  const selectedCategory = resolveMarketMapCategory(categoryQuery);
+  const filteredDefinitions = filterMarketMapDefinitions(marketMapDefinitions, selectedRegion, selectedCategory);
+  const availableMaps = filteredDefinitions.filter((definition) => definition.status === 'available');
+  const plannedMaps = filteredDefinitions.filter((definition) => definition.status === 'planned');
+  const regionFilters: Array<{ value: MarketMapRegion | 'all'; label: string }> = [
+    { value: 'all', label: '전체' },
+    { value: 'us-focused', label: '미국 중심' },
+    { value: 'kr-focused', label: '한국 중심' },
+    { value: 'global', label: '글로벌' },
+  ];
+  const categoryFilters: Array<{ value: MarketMapCategory | 'all'; label: string }> = [
+    { value: 'all', label: '전체 산업' },
+    { value: 'semiconductor-ai', label: '반도체·AI' },
+    { value: 'power-datacenter', label: '전력·데이터센터' },
+    { value: 'construction-infrastructure', label: '건설·인프라' },
+    { value: 'industrial-facilities', label: '산업단지·설비' },
+  ];
+
+  const renderMapCard = (definition: (typeof marketMapDefinitions)[number]) => {
+    const isAvailable = definition.status === 'available';
+    return (
+      <article
+        className={`market-map-library-card category-${definition.category}${isAvailable ? '' : ' disabled'}`}
+        key={definition.id}
+        aria-disabled={!isAvailable}
+        data-market-map-id={definition.id}
+      >
+        <div className="market-map-library-card-badges" aria-label="시장지도 분류">
+          <span>{marketMapRegionLabels[definition.region]}</span>
+          <span>{marketMapCategoryLabels[definition.category]}</span>
+        </div>
+        <div className="market-map-library-topline">
+          <span>{isAvailable ? '상세 지도' : '준비 중'}</span>
+          {isAvailable ? <Network size={18} aria-hidden="true" /> : <Lock size={18} aria-hidden="true" />}
+        </div>
+        <h3>{definition.title}</h3>
+        <small>{definition.subtitle}</small>
+        <p>{definition.description}</p>
+        {definition.supportingNote ? <small>{definition.supportingNote}</small> : null}
+        <strong className="market-map-library-scope">{definition.scopeLabel}</strong>
+        {isAvailable ? (
+          <button type="button" className="market-map-library-cta" onClick={() => onOpenCategory(definition.id)}>
+            상세 지도 보기
+            <ArrowRight size={15} aria-hidden="true" />
+          </button>
+        ) : (
+          <span className="market-map-coming-soon"><Lock size={12} aria-hidden="true" />준비 중</span>
+        )}
+      </article>
+    );
   };
 
   return (
@@ -6692,35 +6812,59 @@ function MarketMapLibraryPage({ onHome, onOpenPicks, onOpenDisclosures, onOpenCa
 
         <section className="beginner-page-overview market-map-library-overview" aria-labelledby="market-map-overview-title">
           <span>한눈에 보기</span>
-          <h2 id="market-map-overview-title">지금 열어볼 수 있는 구조 {marketMapItems.filter((item) => item.status === 'active').length}개</h2>
+          <h2 id="market-map-overview-title">지금 열어볼 수 있는 구조 {marketMapDefinitions.filter((definition) => definition.status === 'available').length}개</h2>
           <p><strong>왜 중요한가요?</strong> 한 기업의 변화가 원재료·장비·고객사 가운데 어디에서 시작됐는지 연결해서 볼 수 있습니다.</p>
         </section>
 
-        <section className="market-map-library-grid" aria-label="시장지도 카테고리">
-          {marketMapItems.map((item) => {
-            const isActive = item.status === 'active';
-            const display = marketMapDisplayCopy(item);
-            return (
-              <article className={`market-map-library-card${isActive ? '' : ' disabled'}`} key={item.title} aria-disabled={!isActive}>
-                <div className="market-map-library-topline">
-                  <span>{isActive ? '상세 지도' : '준비 중'}</span>
-                  {isActive ? <Network size={18} /> : <Lock size={18} />}
-                </div>
-                <h2>{display.title}</h2>
-                <small>{display.subtitle}</small>
-                <p>{item.note}</p>
-                {item.supportingNote ? <small>{item.supportingNote}</small> : null}
-                {isActive ? (
-                  <button type="button" onClick={() => openMarketMapItem(item)}>
-                    {item.ctaLabel ?? '지도 보기'}
-                    <ArrowRight size={15} />
-                  </button>
-                ) : (
-                  <span className="market-map-coming-soon">준비 중</span>
-                )}
-              </article>
-            );
-          })}
+        <section className="market-map-library-filters" aria-label="시장지도 필터">
+          <div role="group" aria-label="지역 중심 필터">
+            <span>지역</span>
+            <div>
+              {regionFilters.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  aria-pressed={selectedRegion === filter.value}
+                  onClick={() => onFilterChange(filter.value, selectedCategory)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div role="group" aria-label="산업 필터">
+            <span>산업</span>
+            <div>
+              {categoryFilters.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  aria-pressed={selectedCategory === filter.value}
+                  onClick={() => onFilterChange(selectedRegion, filter.value)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="market-map-library-section" aria-labelledby="market-map-available-title">
+          <div className="market-map-library-section-head">
+            <span>AVAILABLE</span>
+            <h2 id="market-map-available-title">지금 열어볼 수 있는 지도</h2>
+            <p>상세 페이지와 산업 흐름이 준비된 지도입니다.</p>
+          </div>
+          {availableMaps.length ? <div className="market-map-library-grid">{availableMaps.map(renderMapCard)}</div> : <p className="market-map-library-empty">선택한 조건에 맞는 사용 가능한 지도가 없습니다.</p>}
+        </section>
+
+        <section className="market-map-library-section planned" aria-labelledby="market-map-planned-title">
+          <div className="market-map-library-section-head">
+            <span>PLANNED</span>
+            <h2 id="market-map-planned-title">준비 중인 지도</h2>
+            <p>상세 경로가 완성되기 전에는 버튼이나 빈 화면을 제공하지 않습니다.</p>
+          </div>
+          {plannedMaps.length ? <div className="market-map-library-grid planned">{plannedMaps.map(renderMapCard)}</div> : <p className="market-map-library-empty">선택한 조건에는 준비 중인 지도가 없습니다.</p>}
         </section>
       </main>
     </div>
@@ -6762,6 +6906,10 @@ function InfrastructureStoryMapPage({
   marketPrices,
 }: InfrastructureStoryMapPageProps) {
   const [showConnections, setShowConnections] = useState(false);
+  const [graphRegion, setGraphRegion] = useState<MarketMapGraphRegion>('all');
+  const [graphViewMode, setGraphViewMode] = useState<MarketMapGraphViewMode>('fit');
+  const [infrastructureFlowInstance, setInfrastructureFlowInstance] = useState<ReactFlowInstance<Node<InfrastructureNodeData>, Edge> | null>(null);
+  const mapDefinition = marketMapDefinitionById.get(map.sectorId);
   const queryResolution = resolveMarketMapCompanyQuery(
     map.companies.map((company) => company.id),
     map.companyAliases as Record<string, string>,
@@ -6774,28 +6922,72 @@ function InfrastructureStoryMapPage({
   const isKnownCompanyQuery = !queryResolution.didFallback;
   const selectedCompanyId = selectedCompany.id;
   const relatedCompanies = map.companies.filter((company) => company.id !== selectedCompany.id);
-  const graphNodes = useMemo<Node[]>(
-    () => map.graphNodes.map((node) => ({
-      id: node.id,
-      position: { x: node.x, y: node.y },
-      data: { label: node.label },
-      className: `reconstruction-flow-node tone-${node.tone}`,
-      draggable: false,
-      selectable: false,
-    })),
-    [map.graphNodes],
+  const graphNodes = useMemo<Node<InfrastructureNodeData>[]>(
+    () => map.graphNodes.map((node) => {
+      const company = map.companies.find((item) => item.name === node.label);
+      const countryLabel = company ? countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker) : undefined;
+      const nodeRegion = marketMapGraphRegionForCountryLabel(countryLabel);
+      const isDimmed = Boolean(company && graphRegion !== 'all' && graphRegion !== nodeRegion);
+      return {
+        id: node.id,
+        type: 'marketMapNode',
+        position: { x: Math.round(node.x * 0.68), y: Math.round(node.y * 1.08) },
+        data: {
+          label: node.label,
+          countryLabel,
+          roleLabel: company?.role ?? (node.tone === 'result' ? '실적 검증' : '산업 단계'),
+        },
+        className: [
+          'market-map-graph-node-wrapper',
+          `tone-${node.tone}`,
+          company?.id === selectedCompanyId ? 'selected' : '',
+          isDimmed ? 'dimmed' : '',
+        ].filter(Boolean).join(' '),
+        draggable: false,
+        selectable: false,
+      };
+    }),
+    [graphRegion, map.companies, map.graphNodes, selectedCompanyId],
   );
   const graphEdges = useMemo<Edge[]>(
-    () => map.graphEdges.map(([source, target], index) => ({
-      id: `reconstruction-edge-${index + 1}`,
-      source,
-      target,
-      type: 'smoothstep',
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: { stroke: '#7c93b4', strokeWidth: 2 },
-    })),
-    [map.graphEdges],
+    () => map.graphEdges.map(([source, target], index) => {
+      const sourceTone = map.graphNodes.find((node) => node.id === source)?.tone;
+      const targetTone = map.graphNodes.find((node) => node.id === target)?.tone;
+      const tones = new Set([sourceTone, targetTone]);
+      const edgeKind = tones.has('expectation')
+        ? 'reference'
+        : tones.has('company') || tones.has('reference')
+          ? 'supply'
+          : tones.has('asset') || tones.has('order') || tones.has('contract')
+            ? 'infrastructure'
+            : 'demand';
+      const edgeColor = edgeKind === 'supply'
+        ? '#16a34a'
+        : edgeKind === 'infrastructure'
+          ? '#7c3aed'
+          : edgeKind === 'reference'
+            ? '#98a2b3'
+            : '#2563eb';
+      return {
+        id: `reconstruction-edge-${index + 1}`,
+        source,
+        target,
+        type: 'smoothstep',
+        markerEnd: { type: MarkerType.ArrowClosed, color: edgeColor },
+        className: `market-map-edge-${edgeKind}`,
+        style: { stroke: edgeColor, strokeWidth: 2 },
+      };
+    }),
+    [map.graphEdges, map.graphNodes],
   );
+  const graphRegions = useMemo<MarketMapGraphRegion[]>(() => {
+    const regions = new Set<MarketMapGraphRegion>(['all']);
+    map.companies.forEach((company) => {
+      const countryLabel = countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker);
+      regions.add(marketMapGraphRegionForCountryLabel(countryLabel));
+    });
+    return (['all', 'us', 'kr', 'other'] as MarketMapGraphRegion[]).filter((region) => regions.has(region));
+  }, [map.companies]);
 
   const infrastructurePickForCompany = (companyId: string) => {
     const company = map.companies.find((item) => item.id === companyId);
@@ -6836,6 +7028,8 @@ function InfrastructureStoryMapPage({
     : ['정책 배경', '사업 기반', '공식 발주', '시공·설비', '계약 확인', '실적 확인'];
   const infrastructureViewModel = createMarketMapDetailViewModel({
     id: map.sectorId,
+    region: mapDefinition?.region ?? 'global',
+    category: mapDefinition?.category ?? 'construction-infrastructure',
     eyebrow: kicker,
     title: map.hero.title,
     summary: map.hero.description,
@@ -6857,6 +7051,32 @@ function InfrastructureStoryMapPage({
     caution: '이 지도는 산업 흐름을 이해하기 위한 참고 구조입니다. 직접 계약, 실제 공급 관계와 수주 여부는 기업 공시와 공식 발표를 별도로 확인해야 합니다.',
     policyCaution: '정책 기대와 시장 관심은 실제 예산·발주·착공·계약 확정을 뜻하지 않습니다.',
   });
+  const focusSelectedInfrastructureCompany = () => {
+    setGraphViewMode('selected');
+    if (!infrastructureFlowInstance) return;
+    const selectedNode = infrastructureFlowInstance.getNodes().find((node) => node.data.label === selectedCompany.name);
+    if (!selectedNode) {
+      infrastructureFlowInstance.fitView({ padding: marketMapGraphConfig.fitViewPadding, duration: prefersReducedMotion() ? 0 : 420 });
+      return;
+    }
+    const connectedIds = new Set<string>([selectedNode.id]);
+    graphEdges.forEach((edge) => {
+      if (edge.source === selectedNode.id) connectedIds.add(edge.target);
+      if (edge.target === selectedNode.id) connectedIds.add(edge.source);
+    });
+    infrastructureFlowInstance.fitView({
+      nodes: infrastructureFlowInstance.getNodes().filter((node) => connectedIds.has(node.id)),
+      padding: 0.36,
+      duration: prefersReducedMotion() ? 0 : 420,
+    });
+  };
+  const fitEntireInfrastructureMap = () => {
+    setGraphViewMode('fit');
+    infrastructureFlowInstance?.fitView({
+      padding: marketMapGraphConfig.fitViewPadding,
+      duration: prefersReducedMotion() ? 0 : 420,
+    });
+  };
   const handleInfrastructureCompanyAction = (companyId: string, action: MarketMapDetailAction) => {
     if (action.kind === 'pick') {
       const companyPick = infrastructurePickForCompany(companyId);
@@ -6901,21 +7121,35 @@ function InfrastructureStoryMapPage({
             const companyPrice = infrastructurePriceForCompany(companyId);
             return companyPrice && priceDirection(companyPrice) !== 'pending' ? <PriceBadge price={companyPrice} compact /> : null;
           }}
+          graphControls={
+            <MarketMapGraphToolbar
+              availableRegions={graphRegions}
+              activeRegion={graphRegion}
+              onRegionChange={setGraphRegion}
+              activeViewMode={graphViewMode}
+              onFocusSelected={focusSelectedInfrastructureCompany}
+              onFitAll={fitEntireInfrastructureMap}
+            />
+          }
           advancedContent={
             <div className="reconstruction-flow-canvas" aria-label={graphAriaLabel}>
               <ReactFlow
                 nodes={graphNodes}
                 edges={graphEdges}
+                nodeTypes={infrastructureNodeTypes}
+                onInit={setInfrastructureFlowInstance}
                 fitView
-                fitViewOptions={{ padding: 0.18 }}
-                minZoom={0.45}
-                maxZoom={1.35}
+                fitViewOptions={{ padding: marketMapGraphConfig.fitViewPadding }}
+                minZoom={marketMapGraphConfig.minZoom}
+                maxZoom={marketMapGraphConfig.maxZoom}
+                nodesDraggable={false}
                 nodesConnectable={false}
                 elementsSelectable={false}
+                panOnScroll
                 proOptions={{ hideAttribution: true }}
               >
-                <Background color="#dbe3ef" gap={20} size={1} />
-                <Controls showInteractive={false} />
+                <Background color="#e2e8f0" gap={32} size={1} />
+                <Controls position="bottom-left" showInteractive={false} />
               </ReactFlow>
             </div>
           }
@@ -8404,6 +8638,8 @@ function App() {
   const [marketSecFilings, setMarketSecFilings] = useState<MarketSecFilingsApiResponse>(initialSecFilingsResponse);
   const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
   const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
+  const [storyGraphRegion, setStoryGraphRegion] = useState<MarketMapGraphRegion>('all');
+  const [storyGraphViewMode, setStoryGraphViewMode] = useState<MarketMapGraphViewMode>('selected');
   const graphWrapRef = useRef<HTMLElement | null>(null);
   const storyAdvancedTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -8417,6 +8653,11 @@ function App() {
   const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
   const isDatacenterPowerCoolingMap = selectedSector.id === datacenterPowerCoolingSectorId && selectedAnchor.id === datacenterPowerCoolingAnchorId;
   const isStoryMarketMap = isAiRelationshipMap || isDatacenterPowerCoolingMap;
+  const storyGraphRegions = useMemo<MarketMapGraphRegion[]>(() => {
+    const regions = new Set<MarketMapGraphRegion>(['all']);
+    groupCompanies.forEach((company) => regions.add(marketMapGraphRegionForCompany(company)));
+    return (['all', 'us', 'kr', 'other'] as MarketMapGraphRegion[]).filter((region) => regions.has(region));
+  }, [groupCompanies]);
   const hasSearchQuery = Boolean(query.trim());
   const expandedConnectedIds = new Set<string>();
   expandedCompanyIds.forEach((companyId) => {
@@ -8728,6 +8969,8 @@ function App() {
   const storyMapViewModel = selectedCompany
     ? createMarketMapDetailViewModel({
         id: selectedSector.id,
+        region: marketMapDefinitionById.get(selectedSector.id)?.region ?? 'global',
+        category: marketMapDefinitionById.get(selectedSector.id)?.category ?? 'semiconductor-ai',
         eyebrow: isDatacenterPowerCoolingMap ? '데이터센터 전력·냉각 시장지도' : 'AI 반도체·데이터센터 시장지도',
         title: isDatacenterPowerCoolingMap
           ? '데이터센터 전력과 냉각이 이어지는 흐름'
@@ -8902,8 +9145,26 @@ function App() {
 
   function fitEntireRelationshipMap() {
     if (!flowInstance) return;
+    setStoryGraphViewMode('fit');
     flowInstance.fitView({
-      padding: isAiRelationshipMap ? 0.28 : 0.24,
+      padding: marketMapGraphConfig.fitViewPadding,
+      duration: prefersReducedMotion() ? 0 : 420,
+      includeHiddenNodes: false,
+    });
+  }
+
+  function focusSelectedRelationshipMap() {
+    setStoryGraphViewMode('selected');
+    if (!flowInstance || !selectedCompany) return;
+    const focusIds = new Set<string>([selectedCompany.id, ...connectedIds]);
+    const focusNodes = flowInstance.getNodes().filter((node) => focusIds.has(node.id));
+    if (!focusNodes.length) {
+      centerCompanyInMap(selectedCompany.id);
+      return;
+    }
+    flowInstance.fitView({
+      nodes: focusNodes,
+      padding: 0.36,
       duration: prefersReducedMotion() ? 0 : 420,
       includeHiddenNodes: false,
     });
@@ -9038,6 +9299,8 @@ function App() {
     () =>
       (isAiRelationshipMap ? visibleCompanies : groupCompanies).map((company) => {
         const isVisible = visibleIds.has(company.id);
+        const companyGraphRegion = marketMapGraphRegionForCompany(company);
+        const isRegionDimmed = storyGraphRegion !== 'all' && storyGraphRegion !== companyGraphRegion;
         return {
           id: company.id,
           type: 'supplyNode',
@@ -9047,16 +9310,16 @@ function App() {
           data: {
             company,
             isSelected: selectedCompany?.id === company.id,
-            isDimmed: !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
+            isDimmed: isRegionDimmed || !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
             isExpanded: expandedCompanyIds.has(company.id),
-            marketLabel: marketDisplayLabel(company),
+            marketLabel: countryLabelFromCompany(company) || '기타·글로벌',
             price: hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null,
             onSelect: focusCompany,
             onToggleExpand: isAiRelationshipMap ? toggleCompanyExpansion : undefined,
           },
         };
       }),
-    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, marketPrices, selectedCompany, visibleCompanies, visibleIds],
+    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, marketPrices, selectedCompany, storyGraphRegion, visibleCompanies, visibleIds],
   );
 
   const flowEdges: Edge[] = useMemo(
@@ -9067,7 +9330,7 @@ function App() {
         const isActiveRelationship = activeRelationshipId === link.id;
         const relationship = linkRelationshipSummary(link);
         const confidenceClass = confidenceClassName(relationship.confidence);
-        const edgeColor = relationshipEdgeColor(relationship.type);
+        const edgeColor = marketMapEdgeColor(relationship.type);
         return {
           id: link.id,
           source: link.source,
@@ -9086,6 +9349,7 @@ function App() {
             selectedCompany && !isConnected && !isActiveRelationship ? 'edge-muted' : '',
             `edge-confidence-${confidenceClass}`,
             `edge-kind-${relationshipKindClass(relationship.type)}`,
+            `market-map-edge-${marketMapEdgeKind(relationship.type)}`,
           ].join(' '),
           style: {
             strokeWidth: isConnected || isActiveRelationship ? 3.2 : 2,
@@ -9300,6 +9564,8 @@ function App() {
     setHoveredLinkId(null);
     setSelectedLinkId(null);
     setSourcePanelLinkId(null);
+    setStoryGraphRegion('all');
+    setStoryGraphViewMode('selected');
   }
 
   function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
@@ -9327,6 +9593,15 @@ function App() {
 
   function openMarketMapLibrary() {
     window.history.pushState({}, '', marketMapPath());
+    setRoute(`${window.location.pathname}${window.location.search}`);
+  }
+
+  function updateMarketMapFilters(region: MarketMapRegion | 'all', category: MarketMapCategory | 'all') {
+    const params = new URLSearchParams();
+    if (region !== 'all') params.set('region', region === 'us-focused' ? 'us' : region === 'kr-focused' ? 'kr' : 'global');
+    if (category !== 'all') params.set('category', category);
+    const queryString = params.toString();
+    window.history.pushState({}, '', `${marketMapPath()}${queryString ? `?${queryString}` : ''}`);
     setRoute(`${window.location.pathname}${window.location.search}`);
   }
 
@@ -9478,7 +9753,18 @@ function App() {
   }
 
   if (isMarketMapRoute) {
-    return <MarketMapLibraryPage onHome={openHome} onOpenPicks={openPicks} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenReports={openReports} />;
+    return (
+      <MarketMapLibraryPage
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenDisclosures={openDisclosures}
+        onOpenCategory={openCategory}
+        onOpenReports={openReports}
+        regionQuery={routeParams.get('region')}
+        categoryQuery={routeParams.get('category')}
+        onFilterChange={updateMarketMapFilters}
+      />
+    );
   }
 
   if (isMacroDashboardRoute) {
@@ -10142,11 +10428,30 @@ function App() {
 
           {shouldShowRelationshipCanvas && (
           <>
-          {isAiRelationshipMap && (
+          <MarketMapGraphShell
+            id={selectedSector.id}
+            expanded
+            description={storyMapViewModel?.advancedDescription ?? '산업 단계와 관련 기업의 전체 연결을 확인합니다.'}
+            onToggle={() => {
+              applyFlowViewMode('core');
+              window.setTimeout(() => storyAdvancedTriggerRef.current?.focus(), 0);
+            }}
+            controls={
+              <MarketMapGraphToolbar
+                availableRegions={storyGraphRegions}
+                activeRegion={storyGraphRegion}
+                onRegionChange={setStoryGraphRegion}
+                activeViewMode={storyGraphViewMode}
+                onFocusSelected={focusSelectedRelationshipMap}
+                onFitAll={fitEntireRelationshipMap}
+              />
+            }
+          >
+          {isAiRelationshipMap ? (
             <div className="advanced-map-note">
               전체 연결은 고급 참고입니다. 선을 누르면 관계 요약과 출처를 확인할 수 있습니다.
             </div>
-          )}
+          ) : null}
           <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
             {isAiRelationshipMap && (
               <div className="map-stage-ribbon" aria-hidden="true">
@@ -10155,10 +10460,6 @@ function App() {
                 ))}
               </div>
             )}
-            <div className="canvas-toolbar" aria-label="지도 보기 조정">
-              <button type="button" onClick={() => selectedCompany && centerCompanyInMap(selectedCompany.id)}>선택 기업 중심</button>
-              <button type="button" onClick={isAiRelationshipMap ? fitEntireRelationshipMap : fitVisibleMap}>전체 맞춤</button>
-            </div>
             {activeRelationship && activeRelationshipSummary && (
               <div className="relationship-popover" role="status" aria-live="polite">
                 <button type="button" className="relationship-popover-close" onClick={() => { setHoveredLinkId(null); setSelectedLinkId(null); }} aria-label="관계 카드 닫기">
@@ -10208,23 +10509,25 @@ function App() {
               onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
               onInit={(instance) => setFlowInstance(instance)}
               fitView={!isAiRelationshipMap}
-              fitViewOptions={{ padding: isAdvancedRelationshipView ? 0.32 : isAiRelationshipMap ? 0.18 : 0.2, duration: prefersReducedMotion() ? 0 : 420 }}
-              minZoom={isAdvancedRelationshipView ? 0.36 : isAiRelationshipMap ? 0.52 : 0.32}
-              maxZoom={isAdvancedRelationshipView ? 1.18 : isAiRelationshipMap ? 1.4 : 1.45}
-              nodesDraggable={!isMapLocked}
+              fitViewOptions={{ padding: marketMapGraphConfig.fitViewPadding, duration: prefersReducedMotion() ? 0 : 420 }}
+              minZoom={marketMapGraphConfig.minZoom}
+              maxZoom={marketMapGraphConfig.maxZoom}
+              nodesDraggable={false}
               nodesConnectable={false}
-              elementsSelectable={!isMapLocked}
-              panOnDrag={!isMapLocked}
-              zoomOnScroll={!isMapLocked}
-              zoomOnPinch={!isMapLocked}
-              zoomOnDoubleClick={!isMapLocked}
-              preventScrolling={!isMapLocked}
+              elementsSelectable={false}
+              panOnDrag
+              panOnScroll
+              zoomOnScroll
+              zoomOnPinch
+              zoomOnDoubleClick={false}
+              preventScrolling
               proOptions={{ hideAttribution: true }}
             >
               <Background color={isAdvancedRelationshipView ? '#edf2f7' : isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAdvancedRelationshipView ? 42 : isAiRelationshipMap ? 36 : 22} />
               <Controls position="bottom-left" showInteractive={false} />
             </ReactFlow>
           </section>
+          </MarketMapGraphShell>
 
           {sourcePanelLink && sourcePanelSummary && (
             <div className="relationship-source-backdrop" role="presentation" onClick={() => setSourcePanelLinkId(null)}>

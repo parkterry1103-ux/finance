@@ -94,7 +94,12 @@ import {
   companyEventGroupOrder,
   companyEvents,
 } from '../src/content/company-events/index.js';
-import { normalizeMarketMapStatusLabel, selectMarketMapActions } from '../src/content/market-map-details/index.js';
+import {
+  marketMapDefinitions,
+  marketMapGraphRegionForCountryLabel,
+  normalizeMarketMapStatusLabel,
+  selectMarketMapActions,
+} from '../src/content/market-map-details/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -184,6 +189,8 @@ const companyLogoValidation = {
 };
 const marketMapDetailValidation = {
   mapCount: 0,
+  availableCount: 0,
+  plannedCount: 0,
   routeCount: 0,
   sharedTemplateRenderCount: 0,
   invalidFlowCount: 0,
@@ -2382,7 +2389,17 @@ function validateMarketMapDetailTemplate() {
       .map((item) => item.sectorId ?? item.href?.match(/\/category\/([^/?#]+)/)?.[1])
       .filter((id): id is string => Boolean(id)),
   );
-  marketMapDetailValidation.mapCount = requiredMapIds.length;
+  marketMapDetailValidation.mapCount = marketMapDefinitions.length;
+  marketMapDetailValidation.availableCount = marketMapDefinitions.filter((definition) => definition.status === 'available').length;
+  marketMapDetailValidation.plannedCount = marketMapDefinitions.filter((definition) => definition.status === 'planned').length;
+  if (marketMapDetailValidation.availableCount !== 4) addError(`market map available definition count invalid: ${marketMapDetailValidation.availableCount}`);
+  if (new Set(marketMapDefinitions.map((definition) => definition.order)).size !== marketMapDefinitions.length) addError('market map definition order duplicated');
+  marketMapDefinitions.forEach((definition) => {
+    if (!['us-focused', 'kr-focused', 'global'].includes(definition.region)) addError(`market map definition region invalid: ${definition.id}`);
+    if (!['semiconductor-ai', 'power-datacenter', 'construction-infrastructure', 'industrial-facilities'].includes(definition.category)) addError(`market map definition category invalid: ${definition.id}`);
+    if (definition.status === 'available' && !definition.route) addError(`market map available route missing: ${definition.id}`);
+    if (definition.status === 'planned' && definition.route) addError(`market map planned route should be omitted: ${definition.id}`);
+  });
   requiredMapIds.forEach((mapId) => {
     if (!activeMapIds.has(mapId)) addError(`market map detail route missing: ${mapId}`);
     else marketMapDetailValidation.routeCount += 1;
@@ -2406,12 +2423,17 @@ function validateMarketMapDetailTemplate() {
 
   const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
   const templateSource = readFileSync(join(process.cwd(), 'src', 'components', 'market-map', 'MarketMapDetailTemplate.tsx'), 'utf8');
+  const styleSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
   marketMapDetailValidation.sharedTemplateRenderCount = (appSource.match(/<MarketMapDetailTemplate/g) ?? []).length;
   if (marketMapDetailValidation.sharedTemplateRenderCount !== 2) {
     addError(`market map shared template render paths invalid: ${marketMapDetailValidation.sharedTemplateRenderCount}`);
   }
-  if (!templateSource.includes('data-ui-template="market-map-detail-v1"')) addError('market map shared template marker missing');
-  if (!templateSource.includes("advancedExpanded ? '전체 연결 접기' : '전체 연결 보기'")) addError('market map shared advanced graph toggle missing');
+  if (!templateSource.includes('data-ui-template="market-map-detail-v2"')) addError('market map shared template marker missing');
+  if (!templateSource.includes("expanded ? '전체 연결 접기' : '전체 연결 보기'")) addError('market map shared advanced graph toggle missing');
+  if (!templateSource.includes('MarketMapGraphToolbar') || !templateSource.includes('MarketMapGraphLegend')) addError('market map shared graph shell controls missing');
+  if (!appSource.includes('상세 지도 보기')) addError('market map detail CTA label missing');
+  if (!styleSource.includes('background: var(--home-blue, #2563eb) !important')) addError('market map CTA fallback background missing');
+  if (/market-map-template-flow[^}]*writing-mode\s*:/s.test(styleSource)) addError('market map flow vertical writing mode forbidden');
   if (!templateSource.includes('selectedCompany.actions.map') || !templateSource.includes('company.actions.map')) addError('market map shared CTA rendering missing');
   if (/(가격 준비 중|Pick only|대장주)/.test(templateSource)) {
     marketMapDetailValidation.forbiddenVisibleLabelCount += 1;
@@ -2419,6 +2441,9 @@ function validateMarketMapDetailTemplate() {
   }
   if (normalizeMarketMapStatusLabel('Pick only') !== '관련 Pick 있음') addError('market map Pick only normalization missing');
   if (normalizeMarketMapStatusLabel('대장주') !== '핵심 기업') addError('market map leader normalization missing');
+  if (marketMapGraphRegionForCountryLabel('대만') !== 'other') addError('TSMC country graph classification invalid');
+  if (marketMapGraphRegionForCountryLabel('네덜란드') !== 'other') addError('ASML country graph classification invalid');
+  if (marketMapGraphRegionForCountryLabel('프랑스') !== 'other') addError('Schneider country graph classification invalid');
   const actionFixture = [
     { id: 'flow', kind: 'flow' as const, label: '시장 흐름에서 보기' },
     { id: 'pick', kind: 'pick' as const, label: '관련 Pick 보기' },
@@ -2488,7 +2513,7 @@ console.log(`✓ 거시 수요 배경 × 공급망 병목 매트릭스 검증 (e
 console.log(`✓ 기업 변화 레이더 검증 (event ${companyEventValidation.eventCount}개, company ${companyEventValidation.companyCount}개, KR ${companyEventValidation.koreanCompanyCount}개, US ${companyEventValidation.usCompanyCount}개)`);
 console.log(`✓ 기업 변화 공식 source ${companyEventValidation.officialSourceCount}개 (SEC ${companyEventValidation.secSourceCount}, OpenDART·KIND ${companyEventValidation.dartSourceCount}, 기업 IR·발표 ${companyEventValidation.companySourceCount})`);
 console.log(`✓ 기업 변화 연결 검증 (병목 ${companyEventValidation.bottleneckLinkedCount}, 수요공급 ${companyEventValidation.demandSupplyLinkedCount}, 시장지도 ${companyEventValidation.marketMapLinkedCount}, 보고서 ${companyEventValidation.reportLinkedCount}, Pick ${companyEventValidation.pickLinkedCount}, 잘못된 ref ${companyEventValidation.invalidRefCount})`);
-console.log(`✓ 시장지도 상세 공통 템플릿 검증 (지도 ${marketMapDetailValidation.mapCount}개, route ${marketMapDetailValidation.routeCount}개, 공통 render path ${marketMapDetailValidation.sharedTemplateRenderCount}개, 잘못된 flow ${marketMapDetailValidation.invalidFlowCount}개, 금지 label ${marketMapDetailValidation.forbiddenVisibleLabelCount}개)`);
+console.log(`✓ 시장지도 상세 공통 템플릿 검증 (정의 ${marketMapDetailValidation.mapCount}개, available ${marketMapDetailValidation.availableCount}개, planned ${marketMapDetailValidation.plannedCount}개, route ${marketMapDetailValidation.routeCount}개, 공통 render path ${marketMapDetailValidation.sharedTemplateRenderCount}개, 잘못된 flow ${marketMapDetailValidation.invalidFlowCount}개, 금지 label ${marketMapDetailValidation.forbiddenVisibleLabelCount}개)`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');
