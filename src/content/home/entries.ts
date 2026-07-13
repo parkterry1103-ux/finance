@@ -77,9 +77,9 @@ export const homeNavigationGroups: HomeNavigationGroup[] = [
     id: 'company',
     label: '기업',
     items: [
+      { id: 'company-profiles', label: '기업 한눈에 보기', href: '/ko/companies', activeKey: 'companies' },
       { id: 'company-events', label: '기업이 실제로 밝힌 변화', href: '/ko/company-events', activeKey: 'company-events' },
       { id: 'weekly-picks', label: '이번 주 기업', href: '/ko/picks', activeKey: 'picks' },
-      { id: 'company-analysis', label: '기업 분석', href: '/analysis', activeKey: 'analysis' },
     ],
   },
   {

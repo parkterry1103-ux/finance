@@ -18,7 +18,7 @@ export type HomeNavigationItem = {
   id: string;
   label: string;
   href: string;
-  activeKey: 'today' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'market-map' | 'picks' | 'analysis' | 'company-events' | 'disclosures' | 'reports';
+  activeKey: 'today' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'market-map' | 'companies' | 'picks' | 'analysis' | 'company-events' | 'disclosures' | 'reports';
 };
 
 export type HomeNavigationGroup = {

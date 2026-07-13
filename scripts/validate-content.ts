@@ -109,6 +109,10 @@ import {
   resolveMarketMapRelationDensity,
   resolveMarketMapRelationTypeFilter,
 } from '../src/content/market-map-relations/index.js';
+import {
+  companyProfiles,
+  validateCompanyProfileRegistry,
+} from '../src/content/company-profiles/index.js';
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -280,6 +284,10 @@ const companyEventValidation = {
   reportLinkedCount: 0,
   pickLinkedCount: 0,
   invalidRefCount: 0,
+};
+const companyProfileValidation = {
+  profileCount: 0,
+  invalidCount: 0,
 };
 
 const REQUIRED_REPORT_CATEGORIES = [
@@ -942,6 +950,7 @@ function validateHomeExperience() {
     '/ko/market-relations',
     '/ko/demand-supply',
     '/ko/company-events',
+    '/ko/companies',
     '/ko/bottlenecks',
     '/ko/market-map',
     '/ko/picks',
@@ -2618,9 +2627,27 @@ function validateMarketMapCompanyRelations() {
   if (/\burl\s*:/.test(relationEntrySource)) addError('market map relation registry contains direct URL field');
 }
 
+function validateCompanyProfiles() {
+  companyProfileValidation.profileCount = companyProfiles.length;
+  const profileErrors = validateCompanyProfileRegistry();
+  companyProfileValidation.invalidCount = profileErrors.length;
+  profileErrors.forEach((message) => addError(`company profile: ${message}`));
+  if (!existsSync(join(process.cwd(), 'docs', 'company-profile-inventory.md'))) addError('company profile pre-implementation inventory missing');
+  if (homeNavigationGroups.length !== 4) addError(`company profile navigation must keep 4 top groups: ${homeNavigationGroups.length}`);
+  const companyNavigationItems = homeNavigationGroups.find((group) => group.id === 'company')?.items ?? [];
+  if (companyNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
+  const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
+  if (/\bfetch\s*\(|\/api\//.test(componentSource)) addError('company profile component must not issue page-specific requests');
+  const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
+  if (!/routeCompanyProfileMatch/.test(appSource) || !/CompanyProfileNotFoundPage/.test(appSource)) addError('company profile canonical and invalid routes missing');
+  const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as { rewrites?: Array<{ source?: string; destination?: string }> };
+  if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/companies/:path*' && rewrite.destination === '/')) addError('company profile alias SPA rewrite missing');
+}
+
 validateCompanyLogoFallbacks();
 validateMarketMapDetailTemplate();
 validateMarketMapCompanyRelations();
+validateCompanyProfiles();
 validateSourceRegistry();
 validatePickSources();
 validatePicks();
@@ -2679,6 +2706,7 @@ console.log(`✓ 기업 변화 공식 source ${companyEventValidation.officialSo
 console.log(`✓ 기업 변화 연결 검증 (병목 ${companyEventValidation.bottleneckLinkedCount}, 수요공급 ${companyEventValidation.demandSupplyLinkedCount}, 시장지도 ${companyEventValidation.marketMapLinkedCount}, 보고서 ${companyEventValidation.reportLinkedCount}, Pick ${companyEventValidation.pickLinkedCount}, 잘못된 ref ${companyEventValidation.invalidRefCount})`);
 console.log(`✓ 시장지도 상세 공통 템플릿 검증 (정의 ${marketMapDetailValidation.mapCount}개, available ${marketMapDetailValidation.availableCount}개, planned ${marketMapDetailValidation.plannedCount}개, route ${marketMapDetailValidation.routeCount}개, 공통 render path ${marketMapDetailValidation.sharedTemplateRenderCount}개, 잘못된 flow ${marketMapDetailValidation.invalidFlowCount}개, 금지 label ${marketMapDetailValidation.forbiddenVisibleLabelCount}개)`);
 console.log(`✓ 시장지도 기업 관계 검증 (relation ${marketMapRelationValidation.relationCount}개, confirmed ${marketMapRelationValidation.confirmedCount}개, contextual ${marketMapRelationValidation.contextualCount}개, review-needed ${marketMapRelationValidation.reviewNeededCount}개, 공식 source ${marketMapRelationValidation.officialSourceCount}개, media-only ${marketMapRelationValidation.mediaOnlyCount}개, 잘못된 ref ${marketMapRelationValidation.invalidRefCount}개)`);
+console.log(`✓ 기업 한눈에 보기 검증 (profile ${companyProfileValidation.profileCount}개, 잘못된 ref·규칙 ${companyProfileValidation.invalidCount}개)`);
 console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');

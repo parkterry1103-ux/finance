@@ -59,7 +59,7 @@ export type MarketMapGraphRegion = 'all' | 'us' | 'kr' | 'other';
 export type MarketMapGraphViewMode = 'selected' | 'fit';
 export type MarketMapDetailViewMode = 'industry' | 'companies';
 
-export type MarketMapDetailActionKind = 'analysis' | 'financials' | 'pick' | 'flow';
+export type MarketMapDetailActionKind = 'profile' | 'analysis' | 'financials' | 'pick' | 'flow';
 
 export type MarketMapDetailAction = {
   id: string;

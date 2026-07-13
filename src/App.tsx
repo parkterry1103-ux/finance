@@ -219,6 +219,17 @@ import {
   companyEventsForPick,
   latestCompanyEvents,
 } from './content/company-events';
+import {
+  buildCompanyResearchProfile,
+  companyProfilePathForCompanyId,
+  companyProfilePathForTicker,
+  companyResearchProfileList,
+} from './content/company-profiles';
+import {
+  CompanyProfileNotFoundPage,
+  CompanyProfilesListPage,
+  CompanyResearchProfilePage,
+} from './components/company-profiles/CompanyProfiles';
 
 type NodeData = {
   company: Company;
@@ -1210,6 +1221,10 @@ function companyEventsPath(eventId?: string) {
   return eventId ? `/ko/company-events?event=${encodeURIComponent(eventId)}` : '/ko/company-events';
 }
 
+function companiesPath(slug?: string) {
+  return slug ? `/ko/companies/${encodeURIComponent(slug)}` : '/ko/companies';
+}
+
 function picksPath(pick?: StockAutopsyPick) {
   return pick ? `/ko/picks/${encodeURIComponent(pick.id)}` : '/ko/picks';
 }
@@ -1223,7 +1238,7 @@ function navigateWithinApp(href: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -1292,7 +1307,7 @@ function PrimaryNavigation({
     else if (key === 'market-map') onOpenMarketMap();
     else if (key === 'disclosures') onOpenDisclosures();
     else if (key === 'reports') onOpenReports();
-    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'company-events' || key === 'analysis') navigateWithinApp(href);
+    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'companies' || key === 'company-events' || key === 'analysis') navigateWithinApp(href);
     else return false;
     return true;
   };
@@ -6666,14 +6681,19 @@ function SupplyChainBottleneckDetailPage({
             <h2 id="bottleneck-company-title">공급자·증설·수요·조달을 나눠 보기</h2>
           </div>
           <div className="bottleneck-company-grid">
-            {companyLinks.map((item) => item.company ? (
-              <article key={item.company.id}>
-                <span>{bottleneckCompanyRoleLabels[item.role]}</span>
-                <strong>{item.company.name}</strong>
-                <small>{item.company.ticker}</small>
-                <p>{item.reason}</p>
-              </article>
-            ) : null)}
+            {companyLinks.map((item) => {
+              if (!item.company) return null;
+              const profilePath = companyProfilePathForCompanyId(item.company.id) ?? companyProfilePathForTicker(item.company.ticker);
+              return (
+                <article key={item.company.id}>
+                  <span>{bottleneckCompanyRoleLabels[item.role]}</span>
+                  <strong>{item.company.name}</strong>
+                  <small>{item.company.ticker}</small>
+                  <p>{item.reason}</p>
+                  {profilePath ? <a href={profilePath} onClick={(event) => { event.preventDefault(); navigateWithinApp(profilePath); }}>기업 자세히 보기 <ArrowRight size={13} aria-hidden="true" /></a> : null}
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -7494,6 +7514,8 @@ function StockAutopsyPicksPage({
 
   if (detailPick) {
     const relatedCompany = pickMainCompany(detailPick);
+    const relatedCompanyProfilePath = companyProfilePathForCompanyId(detailPick.relatedCompanyId ?? detailPick.companyId ?? '')
+      ?? companyProfilePathForTicker(detailPick.ticker);
     const relatedCompanyConnection = relatedCompany ? companyConnectionState(relatedCompany) : null;
     const relatedCompanyCanOpenAnalysis = canOpenCompanyAnalysis(relatedCompany);
     const relatedCompanyCanOpenFinancials = canOpenCompanyFinancials(relatedCompany);
@@ -7756,6 +7778,12 @@ function StockAutopsyPicksPage({
               <strong>{storyAnswer}</strong>
               <p>{storyHeroNote}</p>
               <div className="pick-story-actions" aria-label="Pick 주요 이동">
+                {relatedCompanyProfilePath ? (
+                  <button type="button" className="pick-primary-action" onClick={() => navigateWithinApp(relatedCompanyProfilePath)}>
+                    <FileSearch size={16} />
+                    기업 한눈에 보기
+                  </button>
+                ) : null}
                 {relatedCompany && relatedCompanyCanOpenFinancials ? (
                   <button type="button" className="pick-primary-action" onClick={() => onOpenAnalysis(relatedCompany, 'financial-easy-view')}>
                     <BarChart3 size={16} />
@@ -9202,15 +9230,20 @@ function App() {
     const connection = companyConnectionState(company);
     const companyPrice = hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null;
     const relatedPick = relatedPickForMarketMapCompany(company);
+    const profilePath = companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker);
+    const profileAction: MarketMapDetailAction[] = profilePath
+      ? [{ id: `profile-${company.id}`, kind: 'profile', label: '기업 자세히 보기' }]
+      : [];
     const actions: MarketMapDetailAction[] = isSelected
       ? [
+          ...profileAction,
           ...(connection.canOpenAnalysis ? [{ id: `analysis-${company.id}`, kind: 'analysis' as const, label: '기업 해설 보기' }] : []),
           ...(connection.canOpenFinancials ? [{ id: `financials-${company.id}`, kind: 'financials' as const, label: '숫자 3개 보기' }] : []),
           ...(!connection.canOpenAnalysis && relatedPick ? [{ id: `pick-${company.id}`, kind: 'pick' as const, label: '관련 Pick 보기' }] : []),
         ]
-      : [connection.canOpenAnalysis
-          ? { id: `analysis-${company.id}`, kind: 'analysis', label: '기업 해설 보기' }
-          : { id: `flow-${company.id}`, kind: 'flow', label: '시장 흐름에서 보기' }];
+      : [...profileAction, connection.canOpenAnalysis
+          ? { id: `analysis-${company.id}`, kind: 'analysis' as const, label: '기업 해설 보기' }
+          : { id: `flow-${company.id}`, kind: 'flow' as const, label: '시장 흐름에서 보기' }];
     return {
       id: company.id,
       name: company.name,
@@ -9293,6 +9326,8 @@ function App() {
   const routeMarketRelationsMatch = routePath.match(/^\/ko\/market-relations\/?$/) ?? routePath.match(/^\/market-relations\/?$/);
   const routeDemandSupplyMatch = routePath.match(/^\/ko\/demand-supply\/?$/) ?? routePath.match(/^\/demand-supply\/?$/);
   const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
+  const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
+  const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
   const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -9313,6 +9348,8 @@ function App() {
   const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
   const isSemiconductorClusterInfrastructureRoute = routeCategoryId === semiconductorClusterInfrastructureMap.sectorId;
   const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
+  const routeCompanyProfileSlug = routeCompanyProfileMatch?.[1] ? decodeURIComponent(routeCompanyProfileMatch[1]) : undefined;
+  const routeCompanyResearchProfile = routeCompanyProfileSlug ? buildCompanyResearchProfile(routeCompanyProfileSlug, marketPrices) : undefined;
   const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
   const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
@@ -9326,6 +9363,8 @@ function App() {
   const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
   const isMarketRelationsRoute = Boolean(routeMarketRelationsMatch);
   const isDemandSupplyRoute = Boolean(routeDemandSupplyMatch);
+  const isCompanyListRoute = Boolean(routeCompaniesMatch);
+  const isCompaniesRoute = isCompanyListRoute || Boolean(routeCompanyProfileMatch);
   const isCompanyEventsRoute = Boolean(routeCompanyEventsMatch);
   const isOwnershipRoute = Boolean(routeOwnershipMatch);
   const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
@@ -9342,6 +9381,24 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (routeCompanyProfileMatch) {
+      document.title = routeCompanyResearchProfile
+        ? `${routeCompanyResearchProfile.company.name} 기업 한눈에 보기 | 주가해부실`
+        : '기업을 찾을 수 없습니다 | 주가해부실';
+    } else if (routeCompaniesMatch) {
+      document.title = '기업 한눈에 보기 | 주가해부실';
+    } else {
+      document.title = '주가해부실';
+    }
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (description) {
+      description.content = routeCompanyResearchProfile
+        ? `${routeCompanyResearchProfile.company.name}의 사업 역할, 시장지도 연결, 최근 공식 발표와 관련 공급망 배경을 확인합니다.`
+        : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 기업으로 이어지는지 한눈에 봅니다.';
+    }
+  }, [routeCompanyResearchProfile?.company.name, isCompanyListRoute, Boolean(routeCompanyProfileMatch)]);
+
+  useEffect(() => {
     const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || isMarketRelationsRoute || isDemandSupplyRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
     if (!supportsHash || !routeHash) return;
     const timer = window.setTimeout(() => {
@@ -9351,7 +9408,7 @@ function App() {
   }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isDemandSupplyRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute || isCompanyListRoute) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => {
       if (!cancelled) setMarketPrices(items);
@@ -9359,10 +9416,10 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
+  }, [isCompanyEventsRoute, isCompanyListRoute, isDemandSupplyRoute]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
     let cancelled = false;
 
     async function loadDisclosures() {
@@ -9382,7 +9439,7 @@ function App() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
+  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute]);
 
   useEffect(() => {
     if (!routeCategoryId) return;
@@ -9507,6 +9564,11 @@ function App() {
   function handleStoryMapCompanyAction(companyId: string, action: MarketMapDetailAction) {
     const company = companies.find((item) => item.id === companyId);
     if (!company) return;
+    if (action.kind === 'profile') {
+      const profilePath = companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker);
+      if (profilePath) navigateWithinApp(profilePath);
+      return;
+    }
     if (action.kind === 'analysis') {
       openAnalysis(company);
       return;
@@ -10039,6 +10101,43 @@ function App() {
     setHoveredLinkId(null);
     setSelectedLinkId(null);
     setSourcePanelLinkId(null);
+  }
+
+  if (routeCompanyProfileMatch) {
+    const navigation = (
+      <PrimaryNavigation
+        active="companies"
+        onHome={openHome}
+        onOpenPicks={openPicks}
+        onOpenMarketMap={openMarketMapLibrary}
+        onOpenDisclosures={openDisclosures}
+        onOpenReports={openReports}
+      />
+    );
+    return routeCompanyResearchProfile ? (
+      <CompanyResearchProfilePage viewModel={routeCompanyResearchProfile} navigation={navigation} onNavigate={navigateWithinApp} />
+    ) : (
+      <CompanyProfileNotFoundPage navigation={navigation} onNavigate={navigateWithinApp} />
+    );
+  }
+
+  if (routeCompaniesMatch) {
+    return (
+      <CompanyProfilesListPage
+        profiles={companyResearchProfileList()}
+        navigation={(
+          <PrimaryNavigation
+            active="companies"
+            onHome={openHome}
+            onOpenPicks={openPicks}
+            onOpenMarketMap={openMarketMapLibrary}
+            onOpenDisclosures={openDisclosures}
+            onOpenReports={openReports}
+          />
+        )}
+        onNavigate={navigateWithinApp}
+      />
+    );
   }
 
   if (isPicksRoute) {

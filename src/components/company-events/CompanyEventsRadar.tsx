@@ -11,6 +11,7 @@ import {
 } from '../../content/company-events/index.js';
 import type { CompanyEvent, CompanyEventGroup, CompanyEventType } from '../../content/company-events/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
+import { companyProfilePathForCompanyId } from '../../content/company-profiles/index.js';
 
 type GroupFilter = CompanyEventGroup | 'all';
 
@@ -173,6 +174,7 @@ export function CompanyEventsRadar() {
               <section>
                 <h3>5. 관련 산업 배경</h3>
                 <div className="company-event-related-links">
+                  {companyProfilePathForCompanyId(selectedEvent.companyId) ? <a href={companyProfilePathForCompanyId(selectedEvent.companyId)}>기업 자세히 보기 <ArrowRight size={13} aria-hidden="true" /></a> : null}
                   {selectedEvent.bottleneckIds.map((id) => <a key={`b-${id}`} href={`/ko/bottlenecks/${encodeURIComponent(id)}`}>관련 공급 병목 <ArrowRight size={13} aria-hidden="true" /></a>)}
                   {selectedEvent.demandSupplyIds.map((id) => <a key={`d-${id}`} href={`/ko/demand-supply?industry=${encodeURIComponent(id)}`}>수요·공급 배경 <ArrowRight size={13} aria-hidden="true" /></a>)}
                   {selectedEvent.marketMapIds.map((id) => <a key={`m-${id}`} href="/ko/market-map">같이 확인할 시장 구조 <ArrowRight size={13} aria-hidden="true" /></a>)}

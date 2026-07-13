@@ -22,6 +22,7 @@ import { reportById } from '../../content/reports/index.js';
 import { companies, reconstructionInfrastructureMap, semiconductorClusterInfrastructureMap } from '../../data.js';
 import { fetchMacroIndicators } from '../../services/macro.js';
 import { companyEventCompany, companyEventsForDemandSupply, companyEventStageLabels } from '../../content/company-events/index.js';
+import { companyProfilePathForCompanyId, companyProfilePathForTicker } from '../../content/company-profiles/index.js';
 
 const matrixDemandOrder: DemandBackgroundState[] = ['improving', 'mixed', 'weakening', 'limited'];
 const matrixMapLabels: Record<string, string> = {
@@ -216,7 +217,12 @@ export function DemandSupplyMatrix() {
           })}
           {reports.map((report) => <a key={report.id} href={`/ko/reports/${encodeURIComponent(report.slug)}`}><span>{report.publisher}</span><strong>{report.titleKo}</strong><small>보고서 보기 <ArrowRight size={13} /></small></a>)}
           {entry.marketMapIds.slice(0, 1).map((mapId) => <a key={mapId} href={`/ko/category/${encodeURIComponent(mapId)}`}><span>관련 산업 구조</span><strong>{matrixMapLabels[mapId] ?? mapId}</strong><small>시장지도 보기 <ArrowRight size={13} /></small></a>)}
-          {companyLinks.map((link) => <article key={link.companyId}><span>{bottleneckCompanyRoleLabels[link.role]}</span><strong>{link.company?.name}</strong><small>{link.reason}</small></article>)}
+          {companyLinks.map((link) => {
+            const profilePath = companyProfilePathForCompanyId(link.companyId) ?? companyProfilePathForTicker(link.company?.ticker);
+            return profilePath
+              ? <a key={link.companyId} href={profilePath}><span>{bottleneckCompanyRoleLabels[link.role]}</span><strong>{link.company?.name}</strong><small>{link.reason} · 기업 자세히 보기 <ArrowRight size={13} aria-hidden="true" /></small></a>
+              : <article key={link.companyId}><span>{bottleneckCompanyRoleLabels[link.role]}</span><strong>{link.company?.name}</strong><small>{link.reason}</small></article>;
+          })}
           {entry.relationIds?.slice(0, 1).map((relationId) => <a key={relationId} href={`/ko/market-relations?relation=${relationId}&period=1y`}><span>기존 관계판</span><strong>산업생산과 구리가 함께 움직였는지 보기</strong><small>관계판 열기 <ArrowRight size={13} /></small></a>)}
         </div>
       </section>

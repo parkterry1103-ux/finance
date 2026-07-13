@@ -10,10 +10,11 @@ import type {
 } from './types.js';
 
 const actionPriority: Record<MarketMapDetailActionKind, number> = {
-  analysis: 0,
-  financials: 1,
-  pick: 2,
-  flow: 3,
+  profile: 0,
+  analysis: 1,
+  financials: 2,
+  pick: 3,
+  flow: 4,
 };
 
 const statusAliases: Record<string, string> = {

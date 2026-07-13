@@ -4758,3 +4758,18 @@ URL은 기존 `company`, `view`, `region`과 신규 `density`, `relationType`, �
 모바일은 390×844, 360×800, 320×700, 200% 상당 640px CSS viewport를 기준으로 toolbar wrap, graph 맞춤, panel/source CTA 1열, 관계 목록 card형 표시를 확인합니다. 가로 스크롤을 만들지 않으며 산업 구조 보기는 기존 5단계 taxonomy를 그대로 유지합니다. 가격·market brief·거시·시장 관계·OpenDART·SEC API, 수요공급 4개, 기업 event 12개, 리포트 15개, 병목 6개, available 4개·planned 2개를 회귀 검증합니다.
 
 신규 API, Serverless Function, DB, migration, cron, sync endpoint, dependency, graph/icon library는 모두 0개입니다. 기존 sync를 실행하지 않고 총 Serverless Function 12개를 유지합니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.
+# 기업 한눈에 보기 — 통합 리서치 프로필 MVP
+
+`/ko/companies`와 `/ko/companies/:slug`에서 SK하이닉스, LG전자, NVIDIA, Micron, Dell, Eaton, Meta, Supermicro 8개 기업의 분산된 공식 정보와 산업 연결을 한 화면에 모읍니다. 기존 일반 기업 상세 route는 없었고 Pick 상세는 `/ko/picks/:id`에 존재하므로, 기업 프로필과 Pick의 역할을 분리했습니다. `/companies` alias와 잘못된 slug 전용 not-found도 함께 지원합니다.
+
+- canonical identity는 기업 변화 레이더의 실제 companyId·ticker·국가를 재사용하며 SK하이닉스·Eaton의 산업별 ID는 selector alias로만 정규화합니다.
+- profile registry는 초보자 설명, 사업 설명, primary role, 확인 질문, 주의사항, sourceRefs와 검토일만 저장합니다. 이름·ticker·국가·가격·이벤트·관계·병목·수요공급·Pick·보고서·URL은 기존 registry에서 읽습니다.
+- 통합 view model은 시장지도 최대 2개, reviewed 이벤트 최신 2개, 관련 기업 최대 4개, 병목·수요공급·보고서 각 최대 2개, Pick 최대 1개, 공식 source·검증 숫자 각 최대 3개를 조합합니다.
+- 관련 기업은 기존 시장지도 관계 42개를 재사용하고 `confirmed → contextual → 관계 유형 → registry 순서`로 정렬합니다. `review-needed`는 기본 화면에서 제외하며 관계 유형과 근거 수준을 함께 표시합니다.
+- 가격은 기업 판단의 중심이 아닌 보조 정보입니다. 기존 shared price state를 상세 route에서 최대 한 번 사용하고 가격이 없거나 확인 제한이면 영역을 생략합니다.
+- 시장지도, 기업 변화 레이더, 수요·공급, 병목, Pick에서 지원되는 기업은 canonical profile로 이동할 수 있습니다. 홈 section과 카드 수는 늘리지 않았고 상위 navigation 4그룹을 유지했습니다.
+- 단일 H1, heading 순서, text 관계 label, native link, focus-visible, 외부 링크 표시, 상승·하락 기호, mobile 1열과 reduced motion을 적용했습니다.
+- 기업 목록 전용 요청은 0이며 상세는 기존 가격 요청 외 추가 요청이 없습니다. 기업 route에서 불필요한 공시 preload를 차단합니다.
+- 기존 가격·거시·시장 관계·공시·수요공급·기업 이벤트·시장지도 관계·리포트·병목 registry를 변경하지 않습니다.
+
+신규 API, Serverless Function, DB, cron, sync, dependency, AI 기업 평가, 투자 추천, 기업 점수는 없습니다. 관계 수는 경쟁력이나 순위로 사용하지 않습니다. 사전 route·identity·연결 데이터 감사는 `docs/company-profile-inventory.md`에 기록했습니다.
