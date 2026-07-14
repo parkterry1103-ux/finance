@@ -1,17 +1,15 @@
 import { useState, type ReactNode } from 'react';
-import { ArrowRight, ExternalLink, Factory, FileSearch, Network, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ExternalLink, FileSearch, Network, ShieldAlert } from 'lucide-react';
 import {
   companyEventStageLabels,
   companyEventTypeLabels,
 } from '../../content/company-events/index.js';
-import {
-  marketMapEvidenceLevelLabels,
-  marketMapRelationTypeLabels,
-} from '../../content/market-map-relations/index.js';
+import { companyProfileRelationTypeLabels } from '../../content/company-profile-relations/index.js';
 import type { CompanyResearchProfileViewModel } from '../../content/company-profiles/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { priceDirection, priceDisplay } from '../../services/prices.js';
+import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
 
 type Navigate = (path: string) => void;
 
@@ -65,7 +63,7 @@ export function CompanyProfilesListPage({
         <section className="company-profile-list-grid" aria-label={`기업 프로필 ${visible.length}개`}>
           {visible.map((profile) => {
             const recentEvent = profile.companyEvents[0];
-            const firstMap = profile.marketMaps[0];
+            const firstFlow = profile.industryFlows[0];
             const path = `/ko/companies/${encodeURIComponent(profile.profile.slug)}`;
             return (
               <a className="company-profile-list-card" key={profile.profile.id} href={path} onClick={internalLink(path, onNavigate)}>
@@ -76,7 +74,7 @@ export function CompanyProfilesListPage({
                 <p>{profile.profile.beginnerSummary}</p>
                 <dl>
                   <div><dt>주요 산업 역할</dt><dd>{profile.profile.primaryRole}</dd></div>
-                  <div><dt>관련 시장지도</dt><dd>{firstMap?.title ?? '산업 역할 설명으로 확인'}</dd></div>
+                  <div><dt>관련 산업 흐름</dt><dd>{firstFlow?.flow.title ?? '산업 역할 설명으로 확인'}</dd></div>
                 </dl>
                 {recentEvent ? <div className="company-profile-list-event"><span>최근 공식 변화</span><strong>{recentEvent.title}</strong><small>{formatDate(recentEvent.eventDate)}</small></div> : null}
                 <strong className="company-profile-list-cta">기업 자세히 보기 <ArrowRight size={15} aria-hidden="true" /></strong>
@@ -98,7 +96,7 @@ export function CompanyProfileNotFoundPage({ navigation, onNavigate }: SharedPro
         <p>기업 목록에서 다시 선택해 주세요.</p>
         <div>
           <a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 목록으로 이동</a>
-          <a href="/ko/market-map" onClick={internalLink('/ko/market-map', onNavigate)}>시장지도에서 찾기</a>
+          <a href="/ko/demand-supply" onClick={internalLink('/ko/demand-supply', onNavigate)}>수요와 공급 보기</a>
         </div>
       </main>
     </div>
@@ -113,7 +111,7 @@ export function CompanyResearchProfilePage({
   const { company, profile } = viewModel;
   const direction = priceDirection(viewModel.price);
   const price = direction === 'pending' ? undefined : priceDisplay(viewModel.price);
-  const primaryMap = viewModel.marketMaps[0];
+  const primaryFlow = viewModel.industryFlows[0];
   const primarySource = viewModel.sources[0];
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
@@ -132,7 +130,7 @@ export function CompanyResearchProfilePage({
             <p>{profile.beginnerSummary}</p>
             <small>최근 검토 {formatDate(profile.reviewedAt)}</small>
             <div className="company-profile-hero-actions">
-              {primaryMap ? <a href={primaryMap.route} onClick={internalLink(primaryMap.route, onNavigate)}>시장지도에서 보기 <ArrowRight size={14} aria-hidden="true" /></a> : null}
+              {primaryFlow ? <a href={`/ko/demand-supply?industry=${encodeURIComponent(primaryFlow.flow.demandSupplyIds[0] ?? '')}`} onClick={internalLink(`/ko/demand-supply?industry=${encodeURIComponent(primaryFlow.flow.demandSupplyIds[0] ?? '')}`, onNavigate)}>수요와 공급 배경 보기 <ArrowRight size={14} aria-hidden="true" /></a> : null}
               {primarySource ? <a href={primarySource.url} target="_blank" rel="noopener noreferrer">공식 자료 보기 <ExternalLink size={14} aria-hidden="true" /></a> : null}
             </div>
           </div>
@@ -154,14 +152,17 @@ export function CompanyResearchProfilePage({
           </div>
         </section>
 
-        <section className="company-profile-section" aria-labelledby="company-map-title">
-          <div className="company-profile-section-heading"><span>산업 연결</span><h2 id="company-map-title">산업 흐름에서 어디에 있나요?</h2><p>시장지도 연결은 산업 역할을 설명하며 특정 직접 계약을 뜻하지 않을 수 있습니다.</p></div>
-          {viewModel.marketMaps.length ? <div className="company-profile-map-grid">{viewModel.marketMaps.map((map) => (
-            <article key={map.id}>
-              <Factory size={20} aria-hidden="true" /><span>{map.subtitle}</span><h3>{map.title}</h3><strong>{map.role}</strong><p>{map.connectionNote}</p>
-              <a href={map.route} onClick={internalLink(map.route, onNavigate)}>시장지도에서 전체 흐름 보기 <ArrowRight size={14} aria-hidden="true" /></a>
-            </article>
-          ))}</div> : <p className="company-profile-empty-copy">등록된 시장지도 노드는 없으며 현재는 공식 자료에 근거한 산업 역할 설명만 표시합니다.</p>}
+        <section className="company-profile-section" aria-labelledby="company-flow-title">
+          <div className="company-profile-section-heading"><span>산업 연결</span><h2 id="company-flow-title">산업 흐름에서 어디에 있나요?</h2><p>정적 산업 흐름은 기업의 역할과 앞뒤 단계를 설명하며 특정 직접 계약을 뜻하지 않습니다.</p></div>
+          {viewModel.industryFlows.length ? <div className="company-profile-flow-list">{viewModel.industryFlows.map(({ flow }) => (
+            <div key={flow.id}>
+              <IndustryFlowCard flow={flow} compact currentCompanyId={profile.companyId} />
+              <div className="company-profile-flow-actions">
+                <a href={`/ko/demand-supply?industry=${encodeURIComponent(flow.demandSupplyIds[0] ?? '')}`} onClick={internalLink(`/ko/demand-supply?industry=${encodeURIComponent(flow.demandSupplyIds[0] ?? '')}`, onNavigate)}>수요와 공급 배경 보기 <ArrowRight size={14} aria-hidden="true" /></a>
+                {flow.reportIds[0] ? <a href={`/ko/reports/${encodeURIComponent(flow.reportIds[0])}`} onClick={internalLink(`/ko/reports/${encodeURIComponent(flow.reportIds[0])}`, onNavigate)}>관련 산업 리포트 보기 <ArrowRight size={14} aria-hidden="true" /></a> : null}
+              </div>
+            </div>
+          ))}</div> : <p className="company-profile-empty-copy">현재 연결된 정적 산업 흐름이 없습니다. 공식 자료에 근거한 기업 역할 설명은 계속 제공합니다.</p>}
         </section>
 
         <section className="company-profile-section" aria-labelledby="company-events-title">
@@ -193,15 +194,17 @@ export function CompanyResearchProfilePage({
         </section>
 
         <section className="company-profile-section" aria-labelledby="company-relations-title">
-          <div className="company-profile-section-heading"><span>산업 관계</span><h2 id="company-relations-title">같이 볼 기업</h2><p>관계 수는 기업 점수나 경쟁력 순위가 아닙니다. 관계 유형과 근거 수준을 먼저 확인하세요.</p></div>
-          {viewModel.companyRelations.length ? <div className="company-profile-relation-grid">{viewModel.companyRelations.map(({ relation, company: related, profileSlug, companyPath, evidencePath }) => (
-            <article key={relation.id}>
+          <div className="company-profile-section-heading"><span>산업 맥락</span><h2 id="company-relations-title">같이 볼 기업</h2><p>같은 수요나 생산·인프라 단계를 이해하기 위한 참고입니다. 직접 계약이나 기업 순위를 뜻하지 않습니다.</p></div>
+          {viewModel.companyRelations.length ? <div className="company-profile-relation-grid">{viewModel.companyRelations.map(({ relation, company: related, companyPath }) => {
+            const evidence = sourceRegistry[relation.sourceRefs[0]];
+            return (
+            <article key={`${relation.companyId}-${relation.relatedCompanyId}`}>
               <div><Network size={18} aria-hidden="true" /><span>{related.countryLabel} · {related.ticker || 'ticker 확인 제한'}</span></div><h3>{related.name}</h3>
-              <div className="company-profile-relation-badges"><span>{marketMapRelationTypeLabels[relation.relationType]}</span><em>{marketMapEvidenceLevelLabels[relation.evidenceLevel]}</em></div>
-              <p>{relation.explanation}</p><small>{relation.caution}</small>
-              <div className="company-profile-relation-actions"><a href={companyPath} onClick={internalLink(companyPath, onNavigate)}>{profileSlug ? '기업 보기' : '시장지도에서 보기'}</a><a href={evidencePath} onClick={internalLink(evidencePath, onNavigate)}>관계 근거 보기</a></div>
+              <div className="company-profile-relation-badges"><span>{companyProfileRelationTypeLabels[relation.relationType]}</span></div>
+              <p>{relation.explanation}</p><small>산업 맥락 참고이며 직접 계약을 의미하지 않습니다.</small>
+              <div className="company-profile-relation-actions"><a href={companyPath} onClick={internalLink(companyPath, onNavigate)}>기업 보기</a>{evidence ? <a href={evidence.url} target="_blank" rel="noopener noreferrer">공식 근거 보기</a> : null}</div>
             </article>
-          ))}</div> : <p className="company-profile-empty-copy">현재 기본 화면에 표시할 검토 완료 기업 관계가 없습니다. 직접 관계를 임의로 만들지 않습니다.</p>}
+          );})}</div> : <p className="company-profile-empty-copy">현재 함께 볼 기업 reference가 없습니다. 직접 관계를 임의로 만들지 않습니다.</p>}
         </section>
 
         {viewModel.picks.length ? <section className="company-profile-section" aria-labelledby="company-pick-title">
@@ -224,7 +227,7 @@ export function CompanyResearchProfilePage({
 
         <section className="company-profile-caution" aria-labelledby="company-caution-title">
           <ShieldAlert size={21} aria-hidden="true" />
-          <div><span>주의사항</span><h2 id="company-caution-title">사실과 산업 맥락을 나눠 봅니다</h2><p>이 페이지는 기업의 산업 역할과 공식 발표를 연결해 이해하기 위한 자료입니다.</p><p>시장지도 관계는 산업 맥락을 포함하며 특정 직접 계약을 의미하지 않을 수 있습니다.</p><p>기업의 공식 발표는 향후 실적이나 시장 가격을 보장하지 않습니다.</p><p>가격은 정보 제공용이며 투자 판단이나 추천이 아닙니다.</p><strong>{profile.caution}</strong></div>
+          <div><span>주의사항</span><h2 id="company-caution-title">사실과 산업 맥락을 나눠 봅니다</h2><p>이 페이지는 기업의 산업 역할과 공식 발표를 연결해 이해하기 위한 자료입니다.</p><p>관련 기업 reference는 같은 수요·생산·인프라 맥락을 설명하며 특정 직접 계약을 의미하지 않습니다.</p><p>기업의 공식 발표는 향후 실적이나 시장 가격을 보장하지 않습니다.</p><p>가격은 정보 제공용이며 투자 판단이나 추천이 아닙니다.</p><strong>{profile.caution}</strong></div>
         </section>
       </main>
     </div>

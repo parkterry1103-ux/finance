@@ -1,8 +1,9 @@
 import type { MarketPrice, StockAutopsyPick } from '../../data.js';
 import type { SupplyChainBottleneck } from '../bottlenecks/types.js';
 import type { CompanyEvent } from '../company-events/types.js';
+import type { CompanyProfileRelatedCompany } from '../company-profile-relations/types.js';
 import type { DemandSupplyEntry } from '../demand-supply/types.js';
-import type { MarketMapCompanyRelation } from '../market-map-relations/types.js';
+import type { IndustryFlowEntry, IndustryFlowStep } from '../industry-flows/types.js';
 import type { IndustryReport, ReportMetric } from '../reports/types.js';
 import type { ContentSource } from '../sources/types.js';
 
@@ -28,21 +29,15 @@ export type CanonicalCompanyProfileIdentity = {
   countryLabel: '한국' | '미국';
 };
 
-export type CompanyMarketMapConnection = {
-  id: string;
-  title: string;
-  subtitle: string;
-  route: string;
-  role: string;
-  connectionNote: string;
+export type CompanyIndustryFlowConnection = {
+  flow: IndustryFlowEntry;
+  currentStep: IndustryFlowStep;
 };
 
 export type CompanyRelationSummary = {
-  relation: MarketMapCompanyRelation;
+  relation: CompanyProfileRelatedCompany;
   company: CanonicalCompanyProfileIdentity;
-  profileSlug?: string;
   companyPath: string;
-  evidencePath: string;
 };
 
 export type VerifiedCompanyMetric = ReportMetric & {
@@ -56,7 +51,7 @@ export type CompanyResearchProfileViewModel = {
   profile: CompanyProfileEntry;
   products: string[];
   price?: MarketPrice;
-  marketMaps: CompanyMarketMapConnection[];
+  industryFlows: CompanyIndustryFlowConnection[];
   companyRelations: CompanyRelationSummary[];
   companyEvents: CompanyEvent[];
   bottlenecks: SupplyChainBottleneck[];

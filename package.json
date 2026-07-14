@@ -11,6 +11,10 @@
     "validate:content": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/validate-content.js",
     "check:types": "tsc --noEmit",
     "check:ci": "npm run validate:content && npm run check:types",
+    "test:industry-flows": "npm run sync:compile && node .sync-build/scripts/industry-flow-unit.js",
+    "test:market-map-retirement": "npm run sync:compile && node .sync-build/scripts/market-map-retirement-unit.js",
+    "test:company-profiles": "npm run sync:compile && node .sync-build/scripts/company-profile-unit.js",
+    "test:company-events": "npm run sync:compile && node .sync-build/scripts/company-events-unit.js",
     "dev:vercel": "npx vercel dev",
     "sync:compile": "tsc -p tsconfig.scripts.json",
     "sync:opendart": "npm run sync:compile && node .sync-build/scripts/sync-opendart-financials.js",
@@ -33,7 +37,6 @@
     "node": "20.x"
   },
   "dependencies": {
-    "@xyflow/react": "^12.6.4",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

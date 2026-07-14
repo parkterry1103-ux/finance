@@ -1,9 +1,6 @@
 import {
   companies,
-  reconstructionInfrastructureMap,
-  semiconductorClusterInfrastructureMap,
   stockAutopsyPicks,
-  type Company,
   type MarketPrice,
 } from '../../data.js';
 import { getPriceForTicker } from '../../services/prices.js';
@@ -11,9 +8,8 @@ import { supplyChainBottlenecks } from '../bottlenecks/entries.js';
 import { companyEventCompanies, companyEvents } from '../company-events/entries.js';
 import { sortCompanyEvents } from '../company-events/selectors.js';
 import { demandSupplyEntries } from '../demand-supply/entries.js';
-import { marketMapDefinitions } from '../market-map-details/definitions.js';
-import { marketMapCompanyRelations } from '../market-map-relations/entries.js';
-import { marketMapRelationTypeOrder } from '../market-map-relations/selectors.js';
+import { relatedCompaniesForProfile } from '../company-profile-relations/selectors.js';
+import { industryFlowsForCompany } from '../industry-flows/selectors.js';
 import { industryReports } from '../reports/entries.js';
 import { sourceRegistry } from '../sources/registry.js';
 import { companyProfileCanonicalAliases, companyProfiles } from './entries.js';
@@ -28,8 +24,6 @@ import type {
 const profileByCompanyId = new Map(companyProfiles.map((profile) => [profile.companyId, profile]));
 const profileBySlug = new Map(companyProfiles.map((profile) => [profile.slug, profile]));
 const eventCompanyById = new Map(companyEventCompanies.map((company) => [company.id, company]));
-const relationTypePriority = new Map(marketMapRelationTypeOrder.map((type, index) => [type, index]));
-const relationRegistryPriority = new Map(marketMapCompanyRelations.map((relation, index) => [relation.id, index]));
 
 function uniqueById<T extends { id: string }>(items: T[]) {
   return items.filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
@@ -88,89 +82,23 @@ function dataCompanyForProfile(profile: CompanyProfileEntry) {
     ?? companies.find((company) => aliases.has(company.id));
 }
 
-type AnyCompanyRecord = Pick<Company, 'id' | 'name' | 'ticker' | 'country'> & { exchange?: string };
-
-function anyCompanyRecord(companyId: string): AnyCompanyRecord | undefined {
-  const canonicalIdentity = canonicalCompanyProfileIdentity(companyId);
-  if (canonicalIdentity) return canonicalIdentity;
-  const records: AnyCompanyRecord[] = [
-    ...companies,
-    ...reconstructionInfrastructureMap.companies.map((company) => ({ ...company, country: 'KR' as const })),
-    ...semiconductorClusterInfrastructureMap.companies.map((company) => ({ ...company, country: 'KR' as const })),
-  ];
-  return records.find((company) => company.id === companyId);
-}
-
-function relationCompanyIdentity(companyId: string): CanonicalCompanyProfileIdentity | undefined {
-  const canonicalId = canonicalCompanyProfileId(companyId);
-  const canonical = canonicalCompanyProfileIdentity(canonicalId);
-  if (canonical) return canonical;
-  const company = anyCompanyRecord(companyId);
-  if (!company) return undefined;
-  const country = company.country === 'KR' ? 'KR' : 'US';
-  return {
-    id: company.id,
-    name: company.name,
-    ticker: company.ticker ?? '',
-    country,
-    countryLabel: country === 'KR' ? '한국' : '미국',
-  };
-}
-
-function buildMarketMapConnections(profile: CompanyProfileEntry, events: ReturnType<typeof sortCompanyEvents>) {
-  const aliases = aliasesForCompany(profile.companyId);
-  const eventMapIds = new Set(events.flatMap((event) => event.marketMapIds));
-  const dataCompany = dataCompanyForProfile(profile);
-  return marketMapDefinitions
-    .filter((definition) => definition.status === 'available')
-    .filter((definition) => eventMapIds.has(definition.id) || definition.companyNetwork?.companyIds.some((companyId) => aliases.has(companyId)))
-    .sort((left, right) => left.order - right.order)
-    .slice(0, 2)
-    .map((definition) => ({
-      id: definition.id,
-      title: definition.title,
-      subtitle: definition.subtitle,
-      route: `${definition.route ?? `/ko/category/${definition.id}`}?company=${encodeURIComponent([...aliases].find((id) => definition.companyNetwork?.companyIds.includes(id)) ?? profile.companyId)}&view=companies`,
-      role: dataCompany?.valueChainStage ?? profile.primaryRole,
-      connectionNote: definition.companyNetwork?.companyIds.some((companyId) => aliases.has(companyId))
-        ? '시장지도 기업 노드에 직접 등록된 산업 역할입니다.'
-        : '기업 공식 이벤트가 이 산업 배경과 연결돼 있습니다.',
-    }));
+function buildIndustryFlowConnections(profile: CompanyProfileEntry) {
+  return industryFlowsForCompany(profile.companyId)
+    .map((flow) => ({
+      flow,
+      currentStep: flow.steps.find((step) => step.companyIds?.includes(profile.companyId)),
+    }))
+    .filter((connection): connection is { flow: typeof connection.flow; currentStep: NonNullable<typeof connection.currentStep> } => Boolean(connection.currentStep));
 }
 
 function buildCompanyRelations(profile: CompanyProfileEntry): CompanyRelationSummary[] {
-  const aliases = aliasesForCompany(profile.companyId);
-  const evidencePriority = { confirmed: 0, contextual: 1, 'review-needed': 2 } as const;
-  const relations = marketMapCompanyRelations
-    .filter((relation) => aliases.has(relation.fromCompanyId) || aliases.has(relation.toCompanyId))
-    .filter((relation) => relation.evidenceLevel !== 'review-needed')
-    .sort((left, right) => (
-      evidencePriority[left.evidenceLevel] - evidencePriority[right.evidenceLevel]
-      || (relationTypePriority.get(left.relationType) ?? 99) - (relationTypePriority.get(right.relationType) ?? 99)
-      || (relationRegistryPriority.get(left.id) ?? 999) - (relationRegistryPriority.get(right.id) ?? 999)
-    ));
-  const seenCompanyIds = new Set<string>();
-  const summaries: CompanyRelationSummary[] = [];
-  relations.forEach((relation) => {
-    const ownEndpoint = aliases.has(relation.fromCompanyId) ? relation.fromCompanyId : relation.toCompanyId;
-    const counterpartId = ownEndpoint === relation.fromCompanyId ? relation.toCompanyId : relation.fromCompanyId;
-    const canonicalCounterpartId = canonicalCompanyProfileId(counterpartId);
-    if (canonicalCounterpartId === profile.companyId || seenCompanyIds.has(canonicalCounterpartId)) return;
-    const company = relationCompanyIdentity(counterpartId);
-    if (!company) return;
-    const counterpartProfile = companyProfileByIdOrSlug(canonicalCounterpartId);
-    seenCompanyIds.add(canonicalCounterpartId);
-    summaries.push({
-      relation,
-      company,
-      profileSlug: counterpartProfile?.slug,
-      companyPath: counterpartProfile
-        ? companyProfilePath(counterpartProfile)
-        : `/ko/category/${encodeURIComponent(relation.mapId)}?company=${encodeURIComponent(counterpartId)}&view=companies`,
-      evidencePath: `/ko/category/${encodeURIComponent(relation.mapId)}?company=${encodeURIComponent(ownEndpoint)}&view=companies&density=all&relation=${encodeURIComponent(relation.id)}`,
-    });
+  return relatedCompaniesForProfile(profile.companyId).flatMap((relation) => {
+    const company = canonicalCompanyProfileIdentity(relation.relatedCompanyId);
+    const counterpartProfile = companyProfileByIdOrSlug(relation.relatedCompanyId);
+    return company && counterpartProfile
+      ? [{ relation, company, companyPath: companyProfilePath(counterpartProfile) }]
+      : [];
   });
-  return summaries.slice(0, 4);
 }
 
 function buildVerifiedMetrics(events: ReturnType<typeof sortCompanyEvents>, reports: typeof industryReports): VerifiedCompanyMetric[] {
@@ -243,7 +171,7 @@ export function buildCompanyResearchProfile(
     profile,
     products: dataCompany?.mainProducts?.slice(0, 3) ?? [],
     price,
-    marketMaps: buildMarketMapConnections(profile, allEvents),
+    industryFlows: buildIndustryFlowConnections(profile),
     companyRelations: buildCompanyRelations(profile),
     companyEvents: companyEventsForView,
     bottlenecks,

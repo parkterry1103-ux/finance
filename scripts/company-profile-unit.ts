@@ -29,12 +29,11 @@ const profiles = companyResearchProfileList();
 check(profiles.length === 8, 'profile list count');
 const dell = buildCompanyResearchProfile('dell')!;
 check(dell.companyEvents.length === 2 && dell.companyEvents[0].eventDate >= dell.companyEvents[1].eventDate, 'latest two company events');
-check(profiles.every((profile) => profile.marketMaps.length <= 2), 'market map maximum');
-check(profiles.every((profile) => profile.companyRelations.length <= 4), 'related company maximum');
-check(profiles.every((profile) => profile.companyRelations.every(({ relation }) => relation.evidenceLevel !== 'review-needed')), 'review-needed excluded');
+check(profiles.every((profile) => profile.industryFlows.length <= 2), 'industry flow maximum');
+check(profiles.every((profile) => profile.companyRelations.length <= 3), 'related company maximum');
+check(profiles.every((profile) => profile.companyRelations.every(({ relation }) => relation.sourceRefs.length >= 1)), 'related company source present');
 const nvidia = buildCompanyResearchProfile('nvidia')!;
-check(nvidia.companyRelations[0].relation.evidenceLevel === 'confirmed', 'confirmed relation first');
-check(nvidia.companyRelations.slice(1).every(({ relation }) => relation.evidenceLevel === 'contextual'), 'contextual relations follow');
+check(nvidia.companyRelations.map(({ relation }) => relation.relationType).join('|') === 'production-stage|production-stage|same-demand', 'simple relation taxonomy');
 check(profiles.every((profile) => profile.companyRelations.every(({ company }) => company.id !== profile.company.id)), 'self relation excluded');
 check(profiles.every((profile) => new Set(profile.companyRelations.map(({ company }) => company.id)).size === profile.companyRelations.length), 'related companies deduplicated');
 check(profiles.every((profile) => profile.bottlenecks.length <= 2), 'bottleneck maximum');
@@ -43,6 +42,8 @@ check(profiles.every((profile) => profile.picks.length <= 1), 'pick maximum');
 check(profiles.every((profile) => profile.reports.length <= 2), 'report maximum');
 check(profiles.every((profile) => profile.sources.length <= 3), 'source maximum');
 check(profiles.every((profile) => profile.verifiedMetrics.length <= 3), 'verified metric maximum');
+check(buildCompanyResearchProfile('meta')!.companyRelations.length === 0, 'Meta related company empty state');
+check(buildCompanyResearchProfile('eaton')!.picks.length === 0, 'Eaton pick omitted');
 
 const priceFixture: MarketPrice = {
   companyId: 'us-semiconductors-nvidia',

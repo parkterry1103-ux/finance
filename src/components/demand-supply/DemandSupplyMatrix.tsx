@@ -23,14 +23,10 @@ import { companies, reconstructionInfrastructureMap, semiconductorClusterInfrast
 import { fetchMacroIndicators } from '../../services/macro.js';
 import { companyEventCompany, companyEventsForDemandSupply, companyEventStageLabels } from '../../content/company-events/index.js';
 import { companyProfilePathForCompanyId, companyProfilePathForTicker } from '../../content/company-profiles/index.js';
+import { industryFlowForDemandSupply } from '../../content/industry-flows/index.js';
+import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
 
 const matrixDemandOrder: DemandBackgroundState[] = ['improving', 'mixed', 'weakening', 'limited'];
-const matrixMapLabels: Record<string, string> = {
-  'datacenter-power-cooling': '데이터센터 전력·냉각',
-  'semiconductor-cluster-infrastructure': '반도체 클러스터 인프라',
-  'us-semiconductors': '미국 반도체',
-};
-
 function initialIndustry() {
   return safeDemandSupplyEntryId(new URLSearchParams(window.location.search).get('industry'));
 }
@@ -98,6 +94,7 @@ export function DemandSupplyMatrix() {
   const reports = entry.reportIds.map(reportById).filter((report): report is NonNullable<typeof report> => Boolean(report)).slice(0, 2);
   const relatedCompanyEvents = companyEventsForDemandSupply(entry.id, 2);
   const companyLinks = (bottleneck?.companyLinks ?? []).slice(0, 3).map((link) => ({ ...link, company: companyRecord(link.companyId) })).filter((link) => Boolean(link.company));
+  const industryFlow = industryFlowForDemandSupply(entry.id);
   const loading = macroResponse === null;
   const failed = macroResponse !== null && !macroResponse.ok;
 
@@ -198,6 +195,8 @@ export function DemandSupplyMatrix() {
         </div>
       </section>
 
+      {industryFlow ? <IndustryFlowCard flow={industryFlow} /> : null}
+
       {bottleneck ? (
         <section className="demand-supply-signals" aria-labelledby="demand-supply-signals-title">
           <div className="demand-supply-section-head"><span>다음 확인</span><h2 id="demand-supply-signals-title">무엇이 바뀌는지 지켜보세요</h2></div>
@@ -216,7 +215,6 @@ export function DemandSupplyMatrix() {
             return <a key={event.id} href={`/ko/company-events?event=${encodeURIComponent(event.id)}`}><span>관련 기업이 밝힌 변화 · {companyEventStageLabels[event.stage]}</span><strong>{company?.name} · {event.title}</strong><small>공식 발표 해설 보기 <ArrowRight size={13} /></small></a>;
           })}
           {reports.map((report) => <a key={report.id} href={`/ko/reports/${encodeURIComponent(report.slug)}`}><span>{report.publisher}</span><strong>{report.titleKo}</strong><small>보고서 보기 <ArrowRight size={13} /></small></a>)}
-          {entry.marketMapIds.slice(0, 1).map((mapId) => <a key={mapId} href={`/ko/category/${encodeURIComponent(mapId)}`}><span>관련 산업 구조</span><strong>{matrixMapLabels[mapId] ?? mapId}</strong><small>시장지도 보기 <ArrowRight size={13} /></small></a>)}
           {companyLinks.map((link) => {
             const profilePath = companyProfilePathForCompanyId(link.companyId) ?? companyProfilePathForTicker(link.company?.ticker);
             return profilePath

@@ -1,6 +1,6 @@
 import type { CompanyProfileEntry } from './types.js';
 
-const commonCaution = '공식 발표와 산업 연결은 향후 실적이나 시장 가격을 보장하지 않습니다. 시장지도 관계는 직접 계약이 아닌 산업 맥락을 포함할 수 있습니다.';
+const commonCaution = '공식 발표와 산업 흐름 설명은 향후 실적이나 시장 가격을 보장하지 않습니다. 관련 기업은 산업 맥락을 설명하며 직접 계약을 뜻하지 않습니다.';
 
 export const companyProfiles: CompanyProfileEntry[] = [
   {

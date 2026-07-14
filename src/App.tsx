@@ -1,17 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import {
-  Background,
-  Controls,
-  Edge,
-  Handle,
-  MarkerType,
-  Node,
-  NodeProps,
-  Position,
-  ReactFlow,
-  ReactFlowProvider,
-  ReactFlowInstance,
-} from '@xyflow/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -28,7 +15,6 @@ import {
   Filter,
   Globe2,
   LineChart,
-  Lock,
   Network,
   Newspaper,
   PanelRightOpen,
@@ -37,7 +23,6 @@ import {
   Search,
   ShieldAlert,
   Target,
-  Unlock,
   Zap,
   CheckCircle,
 } from 'lucide-react';
@@ -166,50 +151,6 @@ import { MarketRelationsBoard } from './components/relations/MarketRelationsBoar
 import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
 import { CompanyEventsRadar } from './components/company-events/CompanyEventsRadar';
 import {
-  MarketMapDetailTemplate,
-  MarketMapGraphShell,
-  MarketMapGraphToolbar,
-} from './components/market-map/MarketMapDetailTemplate';
-import { MarketMapRelationPanel } from './components/market-map/MarketMapRelationPanel';
-import {
-  availableMarketMapRelationTypes,
-  marketMapCompanyRelations,
-  marketMapEvidenceLevelLabels,
-  marketMapRelationTypeLabels,
-  marketMapRelationsForMap,
-  resolveMarketMapRelationDensity,
-  resolveMarketMapRelationQuery,
-  resolveMarketMapRelationTypeFilter,
-  selectMarketMapRelationGraph,
-  sortAccessibleMarketMapRelations,
-  type MarketMapCompanyRelation,
-  type MarketMapRelationDensity,
-  type MarketMapRelationType,
-  type MarketMapRelationTypeFilter,
-} from './content/market-map-relations';
-import {
-  createMarketMapDetailViewModel,
-  filterMarketMapDefinitions,
-  marketMapCategoryLabels,
-  marketMapDefinitionById,
-  marketMapDefinitions,
-  marketMapGraphRegionForCountryLabel,
-  marketMapNodeKindLabels,
-  marketMapRegionLabels,
-  resolveMarketMapCompanyQuery,
-  resolveMarketMapCategory,
-  resolveMarketMapDetailViewMode,
-  resolveMarketMapGraphRegion,
-  resolveMarketMapRegion,
-  type MarketMapDetailAction,
-  type MarketMapDetailCompany,
-  type MarketMapDetailViewMode,
-  type MarketMapCategory,
-  type MarketMapGraphRegion,
-  type MarketMapGraphViewMode,
-  type MarketMapRegion,
-} from './content/market-map-details';
-import {
   companyEventCompany,
   companyEventGroupLabels,
   companyEventStageLabels,
@@ -230,31 +171,8 @@ import {
   CompanyProfilesListPage,
   CompanyResearchProfilePage,
 } from './components/company-profiles/CompanyProfiles';
-
-type NodeData = {
-  company: Company;
-  isSelected: boolean;
-  isDimmed: boolean;
-  isExpanded: boolean;
-  marketLabel: string;
-  price?: MarketPrice | null;
-  onSelect?: (companyId: string) => void;
-  onToggleExpand?: (companyId: string) => void;
-};
-
-type NormalizedMarketMapCompanyNode = {
-  id: string;
-  name: string;
-  countryLabel: string;
-  role: string;
-  column: number;
-};
-
-const marketMapGraphConfig = {
-  fitViewPadding: 0.22,
-  minZoom: 0.42,
-  maxZoom: 1.28,
-} as const;
+import { industryFlows } from './content/industry-flows';
+import { replaceLegacyMarketMapLocation, resolveLegacyMarketMapRoute } from './lib/legacyMarketMapRoutes';
 
 type NewsItem = {
   title: string;
@@ -682,397 +600,6 @@ function CompanyLogo({
   );
 }
 
-function SupplyNode({ data }: NodeProps<Node<NodeData>>) {
-  const { company, isSelected, isDimmed, isExpanded, marketLabel, onSelect, onToggleExpand } = data;
-  const role = companyRoleProfile(company);
-  const connection = companyConnectionState(company);
-  const compactStage =
-    company.sectorId === aiRelationshipSectorId && company.anchorId === aiRelationshipAnchorId
-      ? aiStageColumns[aiStageColumn(company)] ?? companyValueChainStage(company)
-      : companyValueChainStage(company);
-
-  return (
-    <div
-      className={[
-        'supply-node',
-        `tier-${company.tier}`,
-        `role-${role.className}`,
-        connection.canOpenAnalysis ? 'listed-node' : 'reference-node',
-        `connection-${connection.level}`,
-        isSelected ? 'selected' : '',
-        isDimmed ? 'dimmed' : '',
-    ].join(' ')}
-    role="button"
-    tabIndex={0}
-    aria-label={`${company.name} 선택. ${role.primary}, ${companyValueChainStage(company)}`}
-    aria-pressed={isSelected}
-    onClick={() => onSelect?.(company.id)}
-    onKeyDown={(event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onSelect?.(company.id);
-      }
-    }}
-  >
-      <Handle type="target" position={Position.Left} className="node-handle" />
-      <div className="node-topline">
-        <CompanyLogo company={company} size="sm" className="node-company-logo" />
-        <span className="node-badge-row">
-          {isSelected && <span className="selected-company-badge">선택한 기업</span>}
-          <span className={`role-badge role-${role.className}`}>{role.primary}</span>
-        </span>
-        {onToggleExpand && (
-          <button
-            type="button"
-            className={`node-expand-action ${isExpanded ? 'active' : ''}`}
-            aria-label={`${company.name} 관련 기업 ${isExpanded ? '접기' : '보기'}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleExpand(company.id);
-            }}
-          >
-            {isExpanded ? '접기' : '관련 기업'}
-          </button>
-        )}
-      </div>
-      <div className="node-main">
-        <span className="node-name">{company.name}</span>
-      </div>
-      <div className="node-meta">
-        <span className="node-country-badge">{marketLabel}</span>
-        <span>{compactStage}</span>
-        {!connection.canOpenAnalysis && <span className={`connection-mini-badge ${connection.level}`}>{connection.label}</span>}
-      </div>
-      <Handle type="source" position={Position.Right} className="node-handle" />
-    </div>
-  );
-}
-
-const nodeTypes = {
-  supplyNode: SupplyNode,
-};
-
-type MarketMapCompanyNetworkGraphProps = {
-  id: string;
-  ariaLabel: string;
-  companies: NormalizedMarketMapCompanyNode[];
-  relations: MarketMapCompanyRelation[];
-  selectedCompanyId: string;
-  region: MarketMapGraphRegion;
-  density: MarketMapRelationDensity;
-  relationType: MarketMapRelationTypeFilter;
-  requestedRelationId: string | null;
-  onSelectCompany: (companyId: string) => void;
-  onRegionChange: (region: MarketMapGraphRegion) => void;
-  onDensityChange: (density: MarketMapRelationDensity) => void;
-  onRelationTypeChange: (relationType: MarketMapRelationTypeFilter) => void;
-  onRelationChange: (relationId: string | null) => void;
-};
-
-function MarketMapCompanyNetworkGraph({
-  id,
-  ariaLabel,
-  companies: graphCompanies,
-  relations,
-  selectedCompanyId,
-  region,
-  density,
-  relationType,
-  requestedRelationId,
-  onSelectCompany,
-  onRegionChange,
-  onDensityChange,
-  onRelationTypeChange,
-  onRelationChange,
-}: MarketMapCompanyNetworkGraphProps) {
-  const [viewMode, setViewMode] = useState<MarketMapGraphViewMode>('fit');
-  const [compactLayout, setCompactLayout] = useState(() => window.matchMedia('(max-width: 760px)').matches);
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 760px)');
-    const syncLayout = () => setCompactLayout(mediaQuery.matches);
-    mediaQuery.addEventListener('change', syncLayout);
-    return () => mediaQuery.removeEventListener('change', syncLayout);
-  }, []);
-  const availableRegions = useMemo<MarketMapGraphRegion[]>(() => {
-    const regions = new Set<MarketMapGraphRegion>(['all']);
-    graphCompanies.forEach((company) => regions.add(marketMapGraphRegionForCountryLabel(company.countryLabel)));
-    return (['all', 'us', 'kr', 'other'] as MarketMapGraphRegion[]).filter((item) => regions.has(item));
-  }, [graphCompanies]);
-  const availableRelationTypes = useMemo(() => availableMarketMapRelationTypes(relations), [relations]);
-  const companyRegionById = useMemo(
-    () => new Map(graphCompanies.map((company) => [company.id, marketMapGraphRegionForCountryLabel(company.countryLabel)])),
-    [graphCompanies],
-  );
-  const graphSelection = useMemo(() => selectMarketMapRelationGraph({
-    relations,
-    companyIds: graphCompanies.map((company) => company.id),
-    companyCountryById: companyRegionById,
-    selectedCompanyId,
-    density,
-    relationType,
-    region,
-  }), [companyRegionById, density, graphCompanies, region, relationType, relations, selectedCompanyId]);
-  const visibleIdSet = useMemo(() => new Set(graphSelection.companyIds), [graphSelection.companyIds]);
-  const visibleCompanies = useMemo(
-    () => graphCompanies.filter((company) => visibleIdSet.has(company.id)),
-    [graphCompanies, visibleIdSet],
-  );
-  const dimmedCompanyIdSet = useMemo(() => new Set(graphSelection.dimmedCompanyIds), [graphSelection.dimmedCompanyIds]);
-  const visibleRelations = graphSelection.relations;
-  const positions = useMemo(() => {
-    if (compactLayout) {
-      const columnCount = visibleCompanies.length <= 6 ? 1 : 2;
-      return new Map(visibleCompanies.map((company, index) => [
-        company.id,
-        { x: 30 + (index % columnCount) * 210, y: 28 + Math.floor(index / columnCount) * 122 },
-      ]));
-    }
-    const rowByColumn = new Map<number, number>();
-    return new Map(visibleCompanies.map((company) => {
-      const row = rowByColumn.get(company.column) ?? 0;
-      rowByColumn.set(company.column, row + 1);
-      return [company.id, { x: 48 + company.column * 310, y: 48 + row * 142 }];
-    }));
-  }, [compactLayout, visibleCompanies]);
-  const canvasSize = useMemo(() => {
-    if (compactLayout) {
-      const columnCount = visibleCompanies.length <= 6 ? 1 : 2;
-      const rowCount = Math.max(1, Math.ceil(visibleCompanies.length / columnCount));
-      return {
-        width: columnCount === 1 ? 240 : 450,
-        height: Math.max(430, 28 + (rowCount - 1) * 122 + 116),
-      };
-    }
-    const maxColumn = visibleCompanies.reduce((largest, company) => Math.max(largest, company.column), 0);
-    const rowsByColumn = new Map<number, number>();
-    visibleCompanies.forEach((company) => rowsByColumn.set(company.column, (rowsByColumn.get(company.column) ?? 0) + 1));
-    const maxRows = Math.max(1, ...rowsByColumn.values());
-    return {
-      width: Math.max(960, 48 + maxColumn * 310 + 228),
-      height: Math.max(520, 48 + (maxRows - 1) * 142 + 142),
-    };
-  }, [compactLayout, visibleCompanies]);
-  const focusCompanyIds = useMemo(() => {
-    const connected = new Set([selectedCompanyId]);
-    visibleRelations.forEach((item) => {
-      if (item.fromCompanyId === selectedCompanyId) connected.add(item.toCompanyId);
-      if (item.toCompanyId === selectedCompanyId) connected.add(item.fromCompanyId);
-    });
-    return connected;
-  }, [selectedCompanyId, visibleRelations]);
-  const viewBox = useMemo(() => {
-    if (viewMode !== 'selected') return `0 0 ${canvasSize.width} ${canvasSize.height}`;
-    const focusPositions = visibleCompanies
-      .filter((company) => focusCompanyIds.has(company.id))
-      .map((company) => positions.get(company.id))
-      .filter((position): position is { x: number; y: number } => Boolean(position));
-    if (!focusPositions.length) return `0 0 ${canvasSize.width} ${canvasSize.height}`;
-    const minX = Math.max(0, Math.min(...focusPositions.map((position) => position.x)) - 110);
-    const minY = Math.max(0, Math.min(...focusPositions.map((position) => position.y)) - 90);
-    const maxX = Math.min(canvasSize.width, Math.max(...focusPositions.map((position) => position.x)) + 290);
-    const maxY = Math.min(canvasSize.height, Math.max(...focusPositions.map((position) => position.y)) + 184);
-    return `${minX} ${minY} ${Math.max(compactLayout ? 240 : 520, maxX - minX)} ${Math.max(compactLayout ? 320 : 360, maxY - minY)}`;
-  }, [canvasSize, compactLayout, focusCompanyIds, positions, viewMode, visibleCompanies]);
-  const activeRelationId = resolveMarketMapRelationQuery(requestedRelationId, visibleRelations);
-  const activeRelation = visibleRelations.find((item) => item.id === activeRelationId);
-  const activeEndpointIds = new Set(activeRelation ? [activeRelation.fromCompanyId, activeRelation.toCompanyId] : []);
-  const companyById = new Map(graphCompanies.map((company) => [company.id, company]));
-  const relationColor = (type: MarketMapRelationType) => type === 'direct-contract'
-    ? '#dc2626'
-    : type === 'official-supply'
-      ? '#15803d'
-      : type === 'demand-link'
-        ? '#2563eb'
-        : type === 'production-link'
-          ? '#7c3aed'
-          : type === 'infrastructure-link'
-            ? '#0f766e'
-            : '#64748b';
-  const relationWidth = (type: MarketMapRelationType) => type === 'direct-contract' ? 4 : type === 'official-supply' ? 3 : 2.2;
-  const relationPath = (relation: MarketMapCompanyRelation) => {
-    const source = positions.get(relation.fromCompanyId) ?? { x: 0, y: 0 };
-    const target = positions.get(relation.toCompanyId) ?? { x: 0, y: 0 };
-    const sourceX = source.x + 180;
-    const sourceY = source.y + 47;
-    const targetX = target.x;
-    const targetY = target.y + 47;
-    const bend = Math.max(70, Math.abs(targetX - sourceX) * 0.42);
-    const direction = targetX >= sourceX ? 1 : -1;
-    return `M ${sourceX} ${sourceY} C ${sourceX + bend * direction} ${sourceY}, ${targetX - bend * direction} ${targetY}, ${targetX} ${targetY}`;
-  };
-  const selectRelation = (relationId: string) => onRelationChange(activeRelationId === relationId ? null : relationId);
-  const accessibleRelations = sortAccessibleMarketMapRelations(visibleRelations);
-
-  return (
-    <div
-      className="market-map-company-network"
-      data-node-taxonomy="company-only"
-      data-market-map-id={id}
-      data-relation-count={relations.length}
-      data-visible-edge-count={visibleRelations.length}
-      data-relation-density={density}
-      data-relation-type={relationType}
-    >
-      <MarketMapGraphToolbar
-        availableRegions={availableRegions}
-        activeRegion={region}
-        onRegionChange={onRegionChange}
-        activeDensity={density}
-        onDensityChange={onDensityChange}
-        availableRelationTypes={availableRelationTypes}
-        activeRelationType={relationType}
-        onRelationTypeChange={onRelationTypeChange}
-        activeViewMode={viewMode}
-        onFocusSelected={() => setViewMode('selected')}
-        onFitAll={() => setViewMode('fit')}
-      />
-      <div className="reconstruction-flow-canvas market-map-company-network-canvas" aria-label={ariaLabel}>
-        {!visibleRelations.length ? <p className="market-map-company-network-empty">선택한 조건에 표시할 관계가 없습니다. 선택 기업은 계속 표시합니다.</p> : null}
-        <svg
-          className="market-map-company-network-svg"
-          viewBox={viewBox}
-          style={{
-            '--market-map-network-width': `${canvasSize.width}px`,
-            '--market-map-network-height': `${canvasSize.height}px`,
-            aspectRatio: `${canvasSize.width} / ${canvasSize.height}`,
-          } as CSSProperties}
-          preserveAspectRatio="xMidYMid meet"
-          role="group"
-          aria-label={ariaLabel}
-        >
-          <defs>
-            <pattern id={`${id}-grid`} width="32" height="32" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1" fill="#e2e8f0" />
-            </pattern>
-            {availableRelationTypes.map((type) => (
-              <marker key={type} id={`${id}-${type}-arrow`} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                <path d="M 0 0 L 8 4 L 0 8 z" fill={relationColor(type)} />
-              </marker>
-            ))}
-          </defs>
-          <rect width={canvasSize.width} height={canvasSize.height} fill={`url(#${id}-grid)`} onClick={() => onRelationChange(null)} />
-          <g className="market-map-company-svg-edges">
-            {visibleRelations.map((relation) => {
-              const path = relationPath(relation);
-              const color = relationColor(relation.relationType);
-              const selected = relation.fromCompanyId === selectedCompanyId || relation.toCompanyId === selectedCompanyId;
-              const active = relation.id === activeRelationId;
-              const source = positions.get(relation.fromCompanyId) ?? { x: 0, y: 0 };
-              const target = positions.get(relation.toCompanyId) ?? { x: 0, y: 0 };
-              const muted = Boolean(activeRelationId && !active);
-              const dashed = relation.relationType === 'market-context' || relation.evidenceLevel === 'review-needed';
-              const sourceName = companyById.get(relation.fromCompanyId)?.name ?? relation.fromCompanyId;
-              const targetName = companyById.get(relation.toCompanyId)?.name ?? relation.toCompanyId;
-              return (
-                <g key={relation.id} className={[active ? 'is-active' : '', muted ? 'is-muted' : '', `evidence-${relation.evidenceLevel}`].filter(Boolean).join(' ')}>
-                  <path
-                    className={`market-map-company-svg-edge relation-${relation.relationType}`}
-                    d={path}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={active || selected ? relationWidth(relation.relationType) + 1 : relationWidth(relation.relationType)}
-                    strokeDasharray={dashed ? '7 6' : undefined}
-                    markerEnd={relation.direction === 'directed' ? `url(#${id}-${relation.relationType}-arrow)` : undefined}
-                  />
-                  <path
-                    className="market-map-company-svg-edge-hit"
-                    d={path}
-                    fill="none"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${sourceName} ↔ ${targetName}: ${marketMapRelationTypeLabels[relation.relationType]} 관계 자세히 보기`}
-                    aria-pressed={active}
-                    onClick={() => selectRelation(relation.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        selectRelation(relation.id);
-                      }
-                    }}
-                  />
-                  <text
-                    className="market-map-company-svg-edge-label"
-                    x={(source.x + 180 + target.x) / 2}
-                    y={(source.y + target.y) / 2 + 38}
-                    fill={color}
-                    textAnchor="middle"
-                  >
-                    {relation.shortLabel}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-          <g className="market-map-company-svg-nodes">
-            {visibleCompanies.map((company) => {
-              const position = positions.get(company.id) ?? { x: 0, y: 0 };
-              const selected = company.id === selectedCompanyId;
-              const relationEndpoint = activeEndpointIds.has(company.id);
-              const relationMuted = Boolean(activeRelation && !relationEndpoint);
-              const regionDimmed = dimmedCompanyIdSet.has(company.id);
-              return (
-                <foreignObject key={company.id} x={position.x} y={position.y} width="180" height="96">
-                  <button
-                    type="button"
-                    className={[
-                      'market-map-company-svg-node',
-                      selected ? 'selected' : '',
-                      relationEndpoint ? 'relation-endpoint' : '',
-                      relationMuted ? 'relation-muted' : '',
-                      regionDimmed ? 'region-dimmed' : '',
-                    ].filter(Boolean).join(' ')}
-                    aria-pressed={selected}
-                    onClick={() => {
-                      onRelationChange(null);
-                      onSelectCompany(company.id);
-                    }}
-                  >
-                    <strong>{company.name}</strong>
-                    <span>{company.countryLabel}</span>
-                    <small>{company.role}</small>
-                  </button>
-                </foreignObject>
-              );
-            })}
-          </g>
-        </svg>
-      </div>
-      <p className="sr-only" aria-live="polite">
-        {activeRelation ? `선택 관계: ${companyById.get(activeRelation.fromCompanyId)?.name}와 ${companyById.get(activeRelation.toCompanyId)?.name}, ${marketMapRelationTypeLabels[activeRelation.relationType]}` : '선택한 관계 없음'}
-      </p>
-      {activeRelation ? (
-        <MarketMapRelationPanel
-          relation={activeRelation}
-          fromCompanyName={companyById.get(activeRelation.fromCompanyId)?.name ?? activeRelation.fromCompanyId}
-          toCompanyName={companyById.get(activeRelation.toCompanyId)?.name ?? activeRelation.toCompanyId}
-          onClose={() => onRelationChange(null)}
-        />
-      ) : null}
-      <details className="market-map-relation-list">
-        <summary>표로 관계 보기 <span>{accessibleRelations.length}개</span></summary>
-        <div className="market-map-relation-table-wrap">
-          <table>
-            <caption className="sr-only">현재 필터에 표시된 기업 관계</caption>
-            <thead><tr><th>기업 A</th><th>기업 B</th><th>관계 유형</th><th>근거 수준</th><th>상세</th></tr></thead>
-            <tbody>
-              {accessibleRelations.map((relation) => (
-                <tr key={relation.id} data-relation-row-id={relation.id}>
-                  <td>{companyById.get(relation.fromCompanyId)?.name ?? relation.fromCompanyId}</td>
-                  <td>{companyById.get(relation.toCompanyId)?.name ?? relation.toCompanyId}</td>
-                  <td>{marketMapRelationTypeLabels[relation.relationType]}</td>
-                  <td>{marketMapEvidenceLevelLabels[relation.evidenceLevel]}</td>
-                  <td><button type="button" aria-pressed={activeRelationId === relation.id} onClick={() => selectRelation(relation.id)}>관계 자세히 보기</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!accessibleRelations.length ? <p>현재 필터 결과에 관계가 없습니다.</p> : null}
-        </div>
-      </details>
-    </div>
-  );
-}
-
 function aiStageColumn(company: Company) {
   const stage = companyValueChainStage(company);
   if (stage.includes('최종 수요') || stage.includes('플랫폼') || stage.includes('클라우드')) return 0;
@@ -1174,19 +701,6 @@ function formatNewsDate(value: string) {
 function analysisPath(company: Company, anchor?: string) {
   const basePath = `/ko/analysis/${encodeURIComponent(company.id)}`;
   return anchor ? `${basePath}#${encodeURIComponent(anchor)}` : basePath;
-}
-
-function categoryPath(sectorId: string, selectedCompanyId?: string, view?: MarketMapDetailViewMode) {
-  const basePath = `/ko/category/${encodeURIComponent(sectorId)}`;
-  const params = new URLSearchParams();
-  if (selectedCompanyId) params.set('company', selectedCompanyId);
-  if (view) params.set('view', view);
-  const query = params.toString();
-  return query ? `${basePath}?${query}` : basePath;
-}
-
-function marketMapPath() {
-  return '/ko/market-map';
 }
 
 function disclosuresPath() {
@@ -1511,10 +1025,6 @@ function countryLabelFromCompany(company?: Company | null) {
   );
 }
 
-function marketMapGraphRegionForCompany(company: Company) {
-  return marketMapGraphRegionForCountryLabel(countryLabelFromCompany(company));
-}
-
 function resolveCompanyIdentity(input: {
   companyId?: string | null;
   companyName?: string | null;
@@ -1713,9 +1223,9 @@ function companyScopeLabel(company: Company) {
 function companyScopeDetail(company: Company) {
   const connection = companyConnectionState(company);
   if (isDatacenterPowerCoolingMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.detail;
-  if (isDatacenterPowerCoolingMarketMapCompany(company) && connection.level === 'complete') return '시장지도, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
+  if (isDatacenterPowerCoolingMarketMapCompany(company) && connection.level === 'complete') return '산업 흐름, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
   if (isAuditedAiMarketMapCompany(company) && !connection.canOpenAnalysis) return connection.detail;
-  if (isAuditedAiMarketMapCompany(company) && connection.level === 'complete') return '시장지도, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
+  if (isAuditedAiMarketMapCompany(company) && connection.level === 'complete') return '산업 흐름, 기업해설, 공식 재무 숫자까지 연결된 우선 확인 기업입니다.';
   const listing = inferCompanyListing(company);
   if (listing.listed) return '주가, 공시, 재무제표, 기관 보유 보고를 연결해 보는 메인 분석 대상입니다.';
   if (listing.listingStatus === 'unknown') return '상장 여부와 공시 연결을 먼저 확인해야 합니다. 확인 전에는 관계 이해용으로 봅니다.';
@@ -2174,22 +1684,6 @@ function relationshipKindClass(value: string) {
   if (value.includes('전력') || value.includes('냉각')) return 'power';
   if (value.includes('검증')) return 'needs';
   return 'demand';
-}
-
-function marketMapEdgeKind(value: string): 'demand' | 'supply' | 'infrastructure' | 'reference' {
-  const kind = relationshipKindClass(value);
-  if (kind === 'needs') return 'reference';
-  if (kind === 'memory' || kind === 'material') return 'supply';
-  if (kind === 'foundry' || kind === 'equipment' || kind === 'power') return 'infrastructure';
-  return 'demand';
-}
-
-function marketMapEdgeColor(value: string) {
-  const kind = marketMapEdgeKind(value);
-  if (kind === 'supply') return '#16a34a';
-  if (kind === 'infrastructure') return '#7c3aed';
-  if (kind === 'reference') return '#98a2b3';
-  return '#2563eb';
 }
 
 function shortRelationshipLabel(value: string) {
@@ -4472,7 +3966,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
           <h1>기업이 직접 밝힌 변화</h1>
           <span className="beginner-professional-name">OpenDART·SEC EDGAR 공시 레이더</span>
           <p>
-            현재 Pick과 시장지도 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
+            현재 Pick과 추적 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
             공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
           </p>
           <a className="disclosure-company-events-cta" href={companyEventsPath()} onClick={(event) => {
@@ -4647,7 +4141,7 @@ function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, o
               </button>
               {sourceFilter !== 'sec-edgar' ? (
                 <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} aria-pressed={companyFilter === 'market-map'} onClick={() => setCompanyFilter('market-map')}>
-                  시장지도 기업
+                  추적 기업
                 </button>
               ) : null}
               {sourceFilter !== 'opendart' ? (
@@ -5243,8 +4737,8 @@ function homeFeatureCurrentState(featureId: string) {
     const entry = featuredBottleneck();
     return entry ? `${entry.shortTitle} · ${bottleneckStatusLabels[entry.status]}` : '공급 제약 근거를 확인합니다.';
   }
-  if (featureId === 'market-map') {
-    return `상세 지도 ${currentWeeklyDigest.marketMapItems.filter((item) => item.status === 'active').length}개`;
+  if (featureId === 'demand-supply') {
+    return `산업 흐름 ${industryFlows.length}개 · 각 5단계`;
   }
   return `공식 자료 ${industryReports.length}개 · 검증 수치 ${industryReports.reduce((sum, report) => sum + report.keyMetrics.length, 0)}개`;
 }
@@ -5438,257 +4932,6 @@ function LandingPage(props: LandingPageProps) {
   return <BeginnerLandingPage {...props} />;
 }
 
-function LegacyLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOpenDisclosures, onOpenReports, onOpenCategory, onOpenPick, marketPrices, disclosures, secFilings }: LandingPageProps) {
-  const featuredPick = stockAutopsyPicks.find((pick) => pick.id === currentWeeklyDigest.featuredPickId);
-  const featuredCompany = featuredPick ? pickMainCompany(featuredPick) : undefined;
-  const featuredConnection = featuredCompany ? companyConnectionState(featuredCompany) : undefined;
-  const featuredMovementLabel = featuredPick?.movementDirection === 'down' ? '급락' : '급등';
-  const featuredRelatedCompanies = (featuredPick?.connectedLeaders ?? []).slice(0, 3);
-  const featuredPickPrice = featuredPick ? getPriceForPick(featuredPick, marketPrices) : null;
-  const weeklyCompactPicks = weeklyStockAutopsyPicks().slice(0, 4);
-  const recentOfficialItems = officialDisclosureFeedItems(disclosures.items, secFilings.items).slice(0, 6);
-  const homeMarketMaps = currentWeeklyDigest.marketMapItems.filter((item) => item.status === 'active').slice(0, 3);
-  const latestReports = sortedReports().slice(0, 3);
-
-  const openWeeklyPick = () => {
-    if (featuredPick) {
-      onOpenPick(featuredPick);
-      return;
-    }
-    onOpenPicks();
-  };
-
-  return (
-    <div className="home-shell story-dark-shell story-home-shell" id="top">
-      <PrimaryNavigation
-        active="today"
-        variant="home"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMapLibrary}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-
-      <main>
-        <DailyMarketBrief marketPrices={marketPrices} onOpenCategory={onOpenCategory} onOpenReports={onOpenReports} />
-
-        <HomeMacroDashboard />
-
-        <TodayOverview
-          marketPrices={marketPrices}
-          disclosures={disclosures}
-          secFilings={secFilings}
-          onOpenPicks={onOpenPicks}
-          onOpenDisclosures={onOpenDisclosures}
-        />
-
-        <HomeBottleneckRadar />
-
-        <section className="home-hero mvp-hero editorial-feed-hero">
-          <div className="home-hero-copy editorial-hero-copy">
-            <p className="home-kicker">{currentWeeklyDigest.kicker}</p>
-            <h1>{currentWeeklyDigest.headline}</h1>
-            <p>{currentWeeklyDigest.subheadline}</p>
-            <p className="home-mvp-note">
-              <span>원문 기준</span>
-              {currentWeeklyDigest.sourceNote}
-            </p>
-          </div>
-          <article className="weekly-autopsy-card" aria-label="이번 주 대표 해부">
-            <div className="weekly-autopsy-topline">
-              <span>대표 해부</span>
-              <span>{currentWeeklyDigest.featured.marketLabel}</span>
-              <span>{currentWeeklyDigest.featured.theme}</span>
-              <span>{featuredMovementLabel}</span>
-              {featuredConnection ? <span>{featuredConnection.label}</span> : null}
-            </div>
-            {featuredPick ? (
-              <div className="weekly-price-row">
-                <PriceBadge price={featuredPickPrice} compact />
-              </div>
-            ) : null}
-            <div className="weekly-autopsy-story-head">
-              <span className="weekly-autopsy-marker" aria-hidden="true">
-                <FileSearch size={18} />
-              </span>
-              <div>
-                <p className="weekly-autopsy-meta-line">{currentWeeklyDigest.featured.meta}</p>
-                <h2>{currentWeeklyDigest.featured.question}</h2>
-              </div>
-            </div>
-            <p className="weekly-autopsy-lead">{currentWeeklyDigest.featured.headline}</p>
-            <p className="weekly-autopsy-body">{currentWeeklyDigest.featured.summary}</p>
-            <div className="weekly-autopsy-reading-list" aria-label="대표 해부 요약">
-              <section>
-                <span>같이 볼 회사</span>
-                <div className="weekly-pill-row">
-                  {featuredRelatedCompanies.map((companyName) => (
-                    <em key={companyName}>{companyName}</em>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <span>숫자 3개</span>
-                <ol>
-                  {currentWeeklyDigest.featured.metricLabels.map((metric) => (
-                    <li key={metric}>{metric}</li>
-                  ))}
-                </ol>
-              </section>
-            </div>
-            <button type="button" className="weekly-primary-action" onClick={openWeeklyPick}>
-              {currentWeeklyDigest.featured.primaryCtaLabel}
-              <ArrowRight size={16} />
-            </button>
-          </article>
-        </section>
-
-        <section className="home-dashboard-section" aria-labelledby="home-weekly-picks-title">
-          <div className="home-dashboard-head">
-            <div>
-              <span>이번 주 Pick</span>
-              <h2 id="home-weekly-picks-title">짧게 보고, 필요하면 해부로 들어갑니다</h2>
-            </div>
-            <button type="button" onClick={onOpenPicks}>
-              전체 보기
-              <ArrowRight size={15} />
-            </button>
-          </div>
-          <div className="home-compact-pick-grid">
-            {weeklyCompactPicks.map((pick) => (
-              <article className="home-compact-pick-card" key={pick.id}>
-                <div className="card-company-row">
-                  <div className="card-company-copy">
-                    <CompanyIdentityForPick pick={pick} size="compact" />
-                  </div>
-                  <div className="card-status">
-                    <span className={`home-status-pill ${pick.movementDirection}`}>{pick.movementDirection === 'up' ? '상승' : '하락'}</span>
-                  </div>
-                </div>
-                <h3>{pick.title}</h3>
-                <PriceBadge price={getPriceForPick(pick, marketPrices)} compact />
-                <strong className="home-card-one-line">{pick.movementLabel}</strong>
-                <p>{pick.reasonSummary}</p>
-                <button type="button" onClick={() => onOpenPick(pick)}>
-                  해부 보기
-                  <ArrowRight size={15} />
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="home-dashboard-section" aria-labelledby="home-disclosures-title">
-          <div className="home-dashboard-head">
-            <div>
-              <span>최근 공식 공시</span>
-              <h2 id="home-disclosures-title">공식 원문에서 새로 확인할 것</h2>
-            </div>
-            <button type="button" onClick={onOpenDisclosures}>
-              전체 보기
-              <ArrowRight size={15} />
-            </button>
-          </div>
-          <div className="home-official-feed">
-            {recentOfficialItems.length ? recentOfficialItems.map((item) => {
-              const isDart = item.source === 'opendart';
-              const companyName = isDart ? item.disclosure.companyName : item.filing.companyName;
-              const ticker = isDart ? item.disclosure.ticker : item.filing.ticker;
-              const kind = isDart
-                ? disclosureCategoryLabels[item.disclosure.category]
-                : `${item.filing.formType} · ${secFilingCategoryLabels[item.filing.category]}`;
-              const checkpoint = isDart
-                ? disclosureCheckpoints[item.disclosure.category]
-                : secFilingCheckpoints[item.filing.category];
-              const filedAt = isDart ? item.disclosure.receivedAt : item.filing.filedAt;
-              return (
-                <article className="home-official-card" key={`${item.source}-${item.id}`}>
-                  <span className="home-source-pill">{isDart ? '한국 공시 · OpenDART' : '미국 공시 · SEC EDGAR'}</span>
-                  <div className="card-company-row">
-                    <div className="card-company-copy">
-                      <CompanyIdentity companyName={companyName} ticker={ticker} countryLabel={isDart ? '한국' : '미국'} size="compact" />
-                    </div>
-                  </div>
-                  <strong>{kind}</strong>
-                  <p>{checkpoint}</p>
-                  <time dateTime={filedAt}>{formatKstDate(filedAt)}</time>
-                </article>
-              );
-            }) : (
-              <article className="home-official-card">
-                <span className="home-source-pill">공식 공시</span>
-                <strong>새 공시 없음</strong>
-                <p>현재 선택 범위에서 새 공식 공시가 없습니다.</p>
-              </article>
-            )}
-          </div>
-        </section>
-
-        <section className="home-dashboard-section" aria-labelledby="home-market-map-title">
-          <div className="home-dashboard-head">
-            <div>
-              <span>시장을 연결해서 보기</span>
-              <h2 id="home-market-map-title">대표 시장지도만 먼저 봅니다</h2>
-            </div>
-            <button type="button" onClick={onOpenMarketMapLibrary}>
-              전체 보기
-              <ArrowRight size={15} />
-            </button>
-          </div>
-          <div className="home-market-map-grid">
-            {homeMarketMaps.map((item) => {
-              const display = marketMapDisplayCopy(item);
-              return (
-                <article className="home-market-map-card" key={item.title}>
-                  <span>{display.subtitle}</span>
-                  <h3>{display.title}</h3>
-                  <p>{item.note}</p>
-                  <button type="button" onClick={() => {
-                    const sectorId = marketMapItemSectorId(item);
-                    if (sectorId) onOpenCategory(sectorId);
-                    else onOpenMarketMapLibrary();
-                  }}>
-                    시장지도 보기
-                    <ArrowRight size={15} />
-                  </button>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="home-dashboard-section" aria-labelledby="home-reports-title">
-          <div className="home-dashboard-head">
-            <div>
-              <span>최신 보고서</span>
-              <h2 id="home-reports-title">산업 배경은 보고서에서 짧게 확인합니다</h2>
-            </div>
-            <button type="button" onClick={() => onOpenReports()}>
-              전체 보기
-              <ArrowRight size={15} />
-            </button>
-          </div>
-          <div className="home-report-grid">
-            {latestReports.map((report) => (
-              <article className="home-report-card" key={report.id}>
-                <span>{report.publisher} · {reportPublishedLabel(report)}</span>
-                <h3>{report.titleKo}</h3>
-                <p>{report.summary[0]}</p>
-                <button type="button" onClick={() => onOpenReports(report.id)}>
-                  보고서 보기
-                  <ArrowRight size={15} />
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-      </main>
-    </div>
-  );
-}
-
 type StockAutopsyPicksPageProps = {
   selectedPickId?: string;
   isArchive?: boolean;
@@ -5706,19 +4949,6 @@ type StockAutopsyPicksPageProps = {
   secFilings: MarketSecFilingsApiResponse;
 };
 
-type MarketMapLibraryPageProps = {
-  onHome: () => void;
-  onOpenPicks: () => void;
-  onOpenDisclosures: () => void;
-  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
-  onOpenReports: (reportId?: string) => void;
-  regionQuery: string | null;
-  categoryQuery: string | null;
-  onFilterChange: (region: MarketMapRegion | 'all', category: MarketMapCategory | 'all') => void;
-};
-
-const valueChainSteps = ['원재료', '부품', '장비', '제조', '대장주/최종수요'];
-
 const valueChainPositionLabel: Record<StockAutopsyPick['valueChainPosition'], string> = {
   leader: '대장주',
   supplier: '부품',
@@ -5727,16 +4957,6 @@ const valueChainPositionLabel: Record<StockAutopsyPick['valueChainPosition'], st
   customer: '고객사',
   competitor: '경쟁사',
   other: '관심 구간',
-};
-
-const valueChainStepByPosition: Record<StockAutopsyPick['valueChainPosition'], string> = {
-  leader: '대장주/최종수요',
-  supplier: '부품',
-  materials: '원재료',
-  equipment: '장비',
-  customer: '대장주/최종수요',
-  competitor: '제조',
-  other: '제조',
 };
 
 function pickMarketLabel(pick: StockAutopsyPick) {
@@ -5815,40 +5035,6 @@ function archivedStockAutopsyPicks() {
 
 function archivedStockAutopsyPickGroups() {
   return contentArchivedStockAutopsyPickGroups;
-}
-
-function marketMapItemSectorId(item: { href?: string; sectorId?: string }) {
-  if (item.sectorId) return item.sectorId;
-  const categoryMatch = item.href?.match(/\/category\/([^/?#]+)/);
-  return categoryMatch?.[1] ? decodeURIComponent(categoryMatch[1]) : undefined;
-}
-
-const marketMapDisplayLabels: Record<string, { title: string; subtitle: string }> = {
-  'us-semiconductors': {
-    title: 'AI 서버는 누가 만드는가',
-    subtitle: '반도체 · 서버 · 메모리',
-  },
-  'datacenter-power-cooling': {
-    title: '데이터센터 전력은 어디서 오는가',
-    subtitle: '전력 · 냉각 · 인프라',
-  },
-  'semiconductor-cluster-infrastructure': {
-    title: '반도체 공장에는 무엇이 필요한가',
-    subtitle: '건설 · 전력 · 용수 · 소재',
-  },
-  'reconstruction-infrastructure': {
-    title: '재건 수요는 어떤 기업으로 이어지는가',
-    subtitle: '건설 · 중장비 · 기반시설',
-  },
-};
-
-function marketMapDisplayCopy(item: { title: string; href?: string; sectorId?: string }) {
-  const sectorId = marketMapItemSectorId(item);
-  const display = sectorId ? marketMapDisplayLabels[sectorId] : undefined;
-  return {
-    title: display?.title ?? item.title,
-    subtitle: display?.subtitle ?? item.title,
-  };
 }
 
 const reportMapLabels: Record<string, string> = {
@@ -6388,7 +5574,7 @@ function SupplyChainBottlenecksPage({
           <p className="home-kicker">공개 자료로 지속 관찰하는 편집형 모니터링</p>
           <h1>공급이 부족한 곳</h1>
           <span className="beginner-professional-name">공급망 병목 레이더</span>
-          <p>공급 제약의 근거와 변화 방향을 확인하고, 산업·시장지도·보고서·기업으로 이어지는 구조를 봅니다.</p>
+          <p>공급 제약의 근거와 변화 방향을 확인하고, 산업 흐름·보고서·기업으로 이어지는 구조를 봅니다.</p>
           <small>기준일 {latestAsOf ? bottleneckDateLabel(latestAsOf) : '확인 중'} · 최근 검토 {latestReviewedAt ? bottleneckDateLabel(latestReviewedAt) : '확인 중'} · 투자 추천이나 실시간 점수가 아닙니다.</small>
         </section>
 
@@ -6715,7 +5901,7 @@ function SupplyChainBottleneckDetailPage({
 
         <section className="bottleneck-related-grid" aria-label="연결 콘텐츠">
           <article>
-            <span>시장지도</span>
+            <span>산업 흐름</span>
             <h2>산업 구조 보기</h2>
             <div>{bottleneck.marketMapIds.map((mapId) => <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>)}</div>
           </article>
@@ -6820,7 +6006,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
           <div className="industry-reports-principles">
             <article><strong>공식 원문</strong><p>공공기관·산업단체·회사 IR의 공개 자료만 등록합니다.</p></article>
             <article><strong>전망과 실제</strong><p>예측치, 실적치, 조사 범위를 수치 카드에서 구분합니다.</p></article>
-            <article><strong>연결 뒤 검증</strong><p>시장지도와 Pick에서 수주·공시·현금흐름을 다시 확인합니다.</p></article>
+            <article><strong>연결 뒤 검증</strong><p>산업 흐름과 Pick에서 수주·공시·현금흐름을 다시 확인합니다.</p></article>
           </div>
         </section>
 
@@ -6898,7 +6084,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
                     </div>
                     <div className="industry-report-connections">
                       <div>
-                        <span>연결된 시장지도</span>
+                        <span>연결된 산업 흐름</span>
                         <div>{report.marketMapIds.map((mapId) => <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>)}</div>
                       </div>
                       {linkedCompanies.length ? (
@@ -6935,7 +6121,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
 
         <section className="industry-report-map-connections" aria-labelledby="industry-report-map-title">
           <div className="industry-report-section-head">
-            <span>시장지도와 연결된 보고서</span>
+            <span>산업 흐름과 연결된 보고서</span>
             <h2 id="industry-report-map-title">보고서에서 다시 기업과 공시로</h2>
           </div>
           <div>
@@ -6944,7 +6130,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
                 <span>{connection.reports.length}건 연결</span>
                 <strong>{connection.label}</strong>
                 <p>{connection.reports.slice(0, 4).map((report) => report.publisher).join(' · ')}</p>
-                <button type="button" onClick={() => onOpenCategory(connection.mapId)}>시장지도 보기</button>
+                <button type="button" onClick={() => onOpenCategory(connection.mapId)}>수요와 공급 보기</button>
               </article>
             ))}
           </div>
@@ -7051,7 +6237,7 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
           </article>
           <article className="industry-report-detail-card industry-report-detail-connections">
             <span>현재 무엇을 봐야 하나요?</span>
-            <h2>시장지도·기업·Pick</h2>
+            <h2>산업 흐름·기업·Pick</h2>
             <div>
               {report.marketMapIds.map((mapId) => (
                 <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>
@@ -7083,377 +6269,6 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
             </a>
           ) : null}
         </section>
-      </main>
-    </div>
-  );
-}
-
-function MarketMapLibraryPage({
-  onHome,
-  onOpenPicks,
-  onOpenDisclosures,
-  onOpenCategory,
-  onOpenReports,
-  regionQuery,
-  categoryQuery,
-  onFilterChange,
-}: MarketMapLibraryPageProps) {
-  const selectedRegion = resolveMarketMapRegion(regionQuery);
-  const selectedCategory = resolveMarketMapCategory(categoryQuery);
-  const filteredDefinitions = filterMarketMapDefinitions(marketMapDefinitions, selectedRegion, selectedCategory);
-  const availableMaps = filteredDefinitions.filter((definition) => definition.status === 'available');
-  const plannedMaps = filteredDefinitions.filter((definition) => definition.status === 'planned');
-  const regionFilters: Array<{ value: MarketMapRegion | 'all'; label: string }> = [
-    { value: 'all', label: '전체' },
-    { value: 'us-focused', label: '미국 중심' },
-    { value: 'kr-focused', label: '한국 중심' },
-    { value: 'global', label: '글로벌' },
-  ];
-  const categoryFilters: Array<{ value: MarketMapCategory | 'all'; label: string }> = [
-    { value: 'all', label: '전체 산업' },
-    { value: 'semiconductor-ai', label: '반도체·AI' },
-    { value: 'power-datacenter', label: '전력·데이터센터' },
-    { value: 'construction-infrastructure', label: '건설·인프라' },
-    { value: 'industrial-facilities', label: '산업단지·설비' },
-  ];
-
-  const renderMapCard = (definition: (typeof marketMapDefinitions)[number]) => {
-    const isAvailable = definition.status === 'available';
-    return (
-      <article
-        className={`market-map-library-card category-${definition.category}${isAvailable ? '' : ' disabled'}`}
-        key={definition.id}
-        aria-disabled={!isAvailable}
-        data-market-map-id={definition.id}
-      >
-        <div className="market-map-library-card-badges" aria-label="시장지도 분류">
-          <span>{marketMapRegionLabels[definition.region]}</span>
-          <span>{marketMapCategoryLabels[definition.category]}</span>
-        </div>
-        <div className="market-map-library-topline">
-          <span>{isAvailable ? '상세 지도' : '준비 중'}</span>
-          {isAvailable ? <Network size={18} aria-hidden="true" /> : <Lock size={18} aria-hidden="true" />}
-        </div>
-        <h3>{definition.title}</h3>
-        <small>{definition.subtitle}</small>
-        <p>{definition.description}</p>
-        {definition.supportingNote ? <small>{definition.supportingNote}</small> : null}
-        <strong className="market-map-library-scope">{definition.scopeLabel}</strong>
-        {isAvailable ? (
-          <button type="button" className="market-map-library-cta" onClick={() => onOpenCategory(definition.id)}>
-            상세 지도 보기
-            <ArrowRight size={15} aria-hidden="true" />
-          </button>
-        ) : (
-          <span className="market-map-coming-soon"><Lock size={12} aria-hidden="true" />준비 중</span>
-        )}
-      </article>
-    );
-  };
-
-  return (
-    <div className="pick-shell story-market-map-shell">
-      <PrimaryNavigation
-        active="market-map"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={() => undefined}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-
-      <main>
-        <section className="market-map-library-hero">
-          <p className="home-kicker">시장지도·공급망 구조</p>
-          <h1>산업이 연결되는 구조</h1>
-          <span className="beginner-professional-name">시장지도 보관함</span>
-          <p>원재료와 장비에서 완제품 기업까지 이어지는 구조를 골라 봅니다.</p>
-          <small>준비 중 카테고리는 빈 상세 화면으로 보내지 않습니다.</small>
-        </section>
-
-        <section className="beginner-page-overview market-map-library-overview" aria-labelledby="market-map-overview-title">
-          <span>한눈에 보기</span>
-          <h2 id="market-map-overview-title">지금 열어볼 수 있는 구조 {marketMapDefinitions.filter((definition) => definition.status === 'available').length}개</h2>
-          <p><strong>왜 중요한가요?</strong> 한 기업의 변화가 원재료·장비·고객사 가운데 어디에서 시작됐는지 연결해서 볼 수 있습니다.</p>
-        </section>
-
-        <section className="market-map-library-filters" aria-label="시장지도 필터">
-          <div role="group" aria-label="지역 중심 필터">
-            <span>지역</span>
-            <div>
-              {regionFilters.map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  aria-pressed={selectedRegion === filter.value}
-                  onClick={() => onFilterChange(filter.value, selectedCategory)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div role="group" aria-label="산업 필터">
-            <span>산업</span>
-            <div>
-              {categoryFilters.map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  aria-pressed={selectedCategory === filter.value}
-                  onClick={() => onFilterChange(selectedRegion, filter.value)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="market-map-library-section" aria-labelledby="market-map-available-title">
-          <div className="market-map-library-section-head">
-            <span>AVAILABLE</span>
-            <h2 id="market-map-available-title">지금 열어볼 수 있는 지도</h2>
-            <p>상세 페이지와 산업 흐름이 준비된 지도입니다.</p>
-          </div>
-          {availableMaps.length ? <div className="market-map-library-grid">{availableMaps.map(renderMapCard)}</div> : <p className="market-map-library-empty">선택한 조건에 맞는 사용 가능한 지도가 없습니다.</p>}
-        </section>
-
-        <section className="market-map-library-section planned" aria-labelledby="market-map-planned-title">
-          <div className="market-map-library-section-head">
-            <span>PLANNED</span>
-            <h2 id="market-map-planned-title">준비 중인 지도</h2>
-            <p>상세 경로가 완성되기 전에는 버튼이나 빈 화면을 제공하지 않습니다.</p>
-          </div>
-          {plannedMaps.length ? <div className="market-map-library-grid planned">{plannedMaps.map(renderMapCard)}</div> : <p className="market-map-library-empty">선택한 조건에는 준비 중인 지도가 없습니다.</p>}
-        </section>
-      </main>
-    </div>
-  );
-}
-
-type InfrastructureStoryMap = typeof reconstructionInfrastructureMap | typeof semiconductorClusterInfrastructureMap;
-type InfrastructureStoryMapCompany = InfrastructureStoryMap['companies'][number];
-
-type InfrastructureStoryMapPageProps = {
-  map: InfrastructureStoryMap;
-  kicker: string;
-  graphAriaLabel: string;
-  shellClassName?: string;
-  requestedCompanyId?: string | null;
-  activeView: MarketMapDetailViewMode;
-  onViewChange: (view: MarketMapDetailViewMode) => void;
-  relationRegion: MarketMapGraphRegion;
-  relationDensity: MarketMapRelationDensity;
-  relationType: MarketMapRelationTypeFilter;
-  requestedRelationId: string | null;
-  onRelationRegionChange: (region: MarketMapGraphRegion) => void;
-  onRelationDensityChange: (density: MarketMapRelationDensity) => void;
-  onRelationTypeChange: (relationType: MarketMapRelationTypeFilter) => void;
-  onRelationChange: (relationId: string | null) => void;
-  onHome: () => void;
-  onOpenMarketMap: () => void;
-  onOpenPicks: () => void;
-  onOpenDisclosures: () => void;
-  onOpenPick: (pick: StockAutopsyPick) => void;
-  onOpenReports: (reportId?: string) => void;
-  onSelectCompany: (companyId: string) => void;
-  marketPrices: MarketPrice[];
-};
-
-function InfrastructureStoryMapPage({
-  map,
-  kicker,
-  graphAriaLabel,
-  shellClassName = '',
-  requestedCompanyId,
-  activeView,
-  onViewChange,
-  relationRegion,
-  relationDensity,
-  relationType,
-  requestedRelationId,
-  onRelationRegionChange,
-  onRelationDensityChange,
-  onRelationTypeChange,
-  onRelationChange,
-  onHome,
-  onOpenMarketMap,
-  onOpenPicks,
-  onOpenDisclosures,
-  onOpenPick,
-  onOpenReports,
-  onSelectCompany,
-  marketPrices,
-}: InfrastructureStoryMapPageProps) {
-  const mapDefinition = marketMapDefinitionById.get(map.sectorId);
-  const queryResolution = resolveMarketMapCompanyQuery(
-    map.companies.map((company) => company.id),
-    map.companyAliases as Record<string, string>,
-    requestedCompanyId,
-    map.companyId,
-  );
-  const selectedCompany = map.companies.find((company) => company.id === queryResolution.companyId)
-    ?? map.companies.find((company) => company.id === map.companyId)
-    ?? map.companies[0];
-  const isKnownCompanyQuery = !queryResolution.didFallback;
-  const selectedCompanyId = selectedCompany.id;
-  const relatedCompanies = map.companies.filter((company) => company.id !== selectedCompany.id);
-  const companyNetworkIds = new Set(mapDefinition?.companyNetwork?.companyIds ?? map.companies.map((company) => company.id));
-  const graphCompanies: NormalizedMarketMapCompanyNode[] = map.companies
-    .filter((company) => companyNetworkIds.has(company.id))
-    .map((company, index) => ({
-      id: company.id,
-      name: company.name,
-      countryLabel: countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker) || '기타·글로벌',
-      role: company.role,
-      column: company.role.includes('건설') || company.role.includes('EPC') ? 0 : index % 2 === 0 ? 1 : 2,
-    }));
-  const graphRelations = marketMapRelationsForMap(marketMapCompanyRelations, map.sectorId);
-
-  const infrastructurePickForCompany = (companyId: string) => {
-    const company = map.companies.find((item) => item.id === companyId);
-    return company?.pickId ? stockAutopsyPicks.find((pick) => pick.id === company.pickId) : undefined;
-  };
-  const infrastructurePriceForCompany = (companyId: string) => {
-    const company = map.companies.find((item) => item.id === companyId);
-    if (!company) return null;
-    const companyPick = infrastructurePickForCompany(companyId);
-    return companyPick
-      ? getPriceForPick(companyPick, marketPrices)
-      : getPriceForTicker(company.ticker, company.id, marketPrices);
-  };
-  const toDetailCompany = (company: InfrastructureStoryMapCompany, isSelected: boolean): MarketMapDetailCompany => {
-    const companyPrice = infrastructurePriceForCompany(company.id);
-    const hasActualPrice = Boolean(companyPrice && priceDirection(companyPrice) !== 'pending');
-    const companyPick = infrastructurePickForCompany(company.id);
-    return {
-      id: company.id,
-      name: company.name,
-      ticker: company.ticker,
-      countryLabel: countryLabelFromMarket(company.exchange) || countryLabelFromTicker(company.ticker),
-      mark: company.mark,
-      role: company.role,
-      statusLabel: company.status,
-      connectionLevel: companyPick ? 'pick' : 'reference',
-      description: company.description,
-      reason: company.reason,
-      note: 'importantNote' in company ? company.importantNote : undefined,
-      actions: isSelected
-        ? companyPick ? [{ id: `pick-${company.id}`, kind: 'pick', label: '관련 Pick 보기' }] : []
-        : [{ id: `flow-${company.id}`, kind: 'flow', label: '시장 흐름에서 보기' }],
-      hasPrice: hasActualPrice,
-    };
-  };
-  const infrastructureViewModel = createMarketMapDetailViewModel({
-    id: map.sectorId,
-    region: mapDefinition?.region ?? 'global',
-    category: mapDefinition?.category ?? 'construction-infrastructure',
-    eyebrow: kicker,
-    title: map.hero.title,
-    summary: map.hero.description,
-    heroNote: map.hero.note,
-    selectedCompany: toDetailCompany(selectedCompany, true),
-    relatedCompanies: relatedCompanies.map((company) => toDetailCompany(company, false)),
-    flowTitle: map.sectorId === reconstructionInfrastructureMap.sectorId
-      ? '재건 기대가 실제 발주·수주·매출로 확인되는 순서를 봅니다.'
-      : '정책 발표가 부지·발주·계약·실적으로 확인되는 순서를 봅니다.',
-    flowSteps: (mapDefinition?.industryStages ?? []).map((step) => ({
-      id: step.id,
-      kind: step.kind,
-      question: step.question,
-      title: step.title,
-      description: step.description,
-      roleTag: marketMapNodeKindLabels[step.kind],
-      items: step.items,
-      representativeCompanies: step.representativeCompanyIds.flatMap((companyId) => {
-        const company = map.companies.find((item) => item.id === companyId);
-        return company ? [company.name as string] : [];
-      }),
-      isCurrent: step.representativeCompanyIds.includes(selectedCompany.id),
-    })),
-    advancedDescription: '기업 노드만 표시합니다. 산업 단계와 확인 항목은 산업 구조 보기에 남기고, 기업 간 edge는 직접 계약 여부를 구분해 설명합니다.',
-    caution: '이 지도는 산업 흐름을 이해하기 위한 참고 구조입니다. 직접 계약, 실제 공급 관계와 수주 여부는 기업 공시와 공식 발표를 별도로 확인해야 합니다.',
-    policyCaution: '정책 기대와 시장 관심은 실제 예산·발주·착공·계약 확정을 뜻하지 않습니다.',
-  });
-  const handleInfrastructureCompanyAction = (companyId: string, action: MarketMapDetailAction) => {
-    if (action.kind === 'pick') {
-      const companyPick = infrastructurePickForCompany(companyId);
-      if (companyPick) onOpenPick(companyPick);
-      return;
-    }
-    if (action.kind === 'flow') onSelectCompany(companyId);
-  };
-
-  return (
-    <div
-      className={`pick-shell reconstruction-map-shell market-map-unified-shell ${shellClassName}`}
-      data-selected-company-id={selectedCompanyId}
-      data-query-fallback={isKnownCompanyQuery ? 'false' : 'true'}
-    >
-      <PrimaryNavigation
-        active="market-map"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-
-      <main>
-        <MarketMapDetailTemplate
-          viewModel={infrastructureViewModel}
-          activeView={activeView}
-          onViewChange={onViewChange}
-          onCompanyAction={handleInfrastructureCompanyAction}
-          renderIdentity={(company, size) => (
-            <CompanyIdentity
-              companyName={company.name}
-              ticker={company.ticker}
-              countryLabel={company.countryLabel}
-              statusLabel={company.statusLabel}
-              size={size}
-            />
-          )}
-          renderLogo={(company) => <div className="market-map-template-monogram" aria-hidden="true">{company.mark ?? company.name.slice(0, 2)}</div>}
-          renderPrice={(companyId) => {
-            const companyPrice = infrastructurePriceForCompany(companyId);
-            return companyPrice && priceDirection(companyPrice) !== 'pending' ? <PriceBadge price={companyPrice} compact /> : null;
-          }}
-          advancedContent={
-            <MarketMapCompanyNetworkGraph
-              id={map.sectorId}
-              ariaLabel={graphAriaLabel}
-              companies={graphCompanies}
-              relations={graphRelations}
-              selectedCompanyId={selectedCompanyId}
-              region={relationRegion}
-              density={relationDensity}
-              relationType={relationType}
-              requestedRelationId={requestedRelationId}
-              onSelectCompany={onSelectCompany}
-              onRegionChange={onRelationRegionChange}
-              onDensityChange={onRelationDensityChange}
-              onRelationTypeChange={onRelationTypeChange}
-              onRelationChange={onRelationChange}
-            />
-          }
-          resources={
-            <>
-              <RelatedIndustryReports
-                title="산업 보고서로 더 넓게 보기"
-                description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
-                reports={reportsForMap(map.sectorId)}
-                onOpenReports={onOpenReports}
-              />
-              <EvidenceDetails
-                description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
-                groups={evidenceGroupsForMap(map.sectorId)}
-                onOpenReports={onOpenReports}
-              />
-            </>
-          }
-        />
       </main>
     </div>
   );
@@ -7542,18 +6357,18 @@ function StockAutopsyPicksPage({
     const isKccPick = detailPick.id === 'pick-kcc-silicone-margin-asset-value';
     const isHertzPick = detailPick.id === 'pick-hertz-used-car-depreciation-financing';
     const isJejuSemiconductorPick = detailPick.id === 'pick-jeju-semiconductor-export-fabless-rally';
-    const pendingMarketMapNote = isHuntsmanMergerPick
-      ? '관련 시장지도는 준비 중입니다. 향후 화학 업황·원재료·M&A 흐름을 검토합니다.'
+    const industryContextNote = isHuntsmanMergerPick
+      ? '관련 산업 흐름은 수요·공급과 보고서에서 확인할 수 있습니다.'
       : isUniqureRegulatoryPick
-        ? '관련 시장지도는 준비 중입니다. 향후 바이오 임상·FDA 규제 경로를 검토합니다.'
+        ? '관련 산업 흐름은 기업 자료와 보고서에서 확인할 수 있습니다.'
         : isDongyangPilePick
-          ? '반도체 클러스터 / 산업단지 인프라 지도는 준비 중입니다. 정책 기대 ≠ 직접 수주, 예산·착공·공급계약은 따로 확인합니다.'
+          ? '반도체 클러스터·산업단지 흐름은 수요·공급과 보고서에서 확인합니다. 정책 기대 ≠ 직접 수주이며 예산·착공·공급계약은 따로 봅니다.'
           : isKccPick
-            ? '소재 / 실리콘 / 자산가치 지도는 준비 중입니다. 이번 Pick은 공시와 공개 보도 중심으로 봅니다.'
+            ? '소재·실리콘·자산가치 배경은 이번 Pick의 공시와 공개 자료 중심으로 확인합니다.'
             : isHertzPick
-              ? '렌터카 / 차량 잔존가치 / 부채 지도는 준비 중입니다. 자금조달 조건과 사업 구조를 분리해 봅니다.'
+              ? '렌터카·차량 잔존가치·부채는 자금조달 조건과 사업 구조를 나눠 기업 자료에서 확인합니다.'
               : isJejuSemiconductorPick
-                ? '팹리스 / 저전력 메모리 시장지도는 준비 중입니다. AI GPU 기업군으로 분류하지 않습니다.'
+                ? '팹리스 / 저전력 메모리는 AI GPU 기업군과 구분해 기업 자료에서 확인합니다.'
         : undefined;
     const storyQuestion = isSnowflakeAiDataPick
       ? 'Snowflake는 왜 폭등했을까?'
@@ -7873,10 +6688,10 @@ function StockAutopsyPicksPage({
             </section>
           ) : null}
 
-          {pendingMarketMapNote ? (
-            <aside className="pick-market-map-note" aria-label="관련 시장지도 안내">
+          {industryContextNote ? (
+            <aside className="pick-industry-flow-note" aria-label="관련 산업 흐름 안내">
               <Network size={16} />
-              <span>{pendingMarketMapNote}</span>
+              <span>{industryContextNote}</span>
             </aside>
           ) : null}
 
@@ -8900,482 +7715,65 @@ function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
 }
 
 function App() {
-  const [selectedCountry, setSelectedCountry] = useState<CountryId>('KR');
-  const [selectedSectorId, setSelectedSectorId] = useState('kr-semiconductors');
-  const [selectedAnchorId, setSelectedAnchorId] = useState('kr-semiconductors-samsung');
-  const [selectedCompanyId, setSelectedCompanyId] = useState('kr-semiconductors-samsung-한미반도체');
-  const [query, setQuery] = useState('');
-  const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
-  const [stageFilter, setStageFilter] = useState<string>('all');
-  const [listingFilter, setListingFilter] = useState<ListingFilter>('all');
-  const [relationshipFilter, setRelationshipFilter] = useState<string>('all');
-  const [confidenceFilter, setConfidenceFilter] = useState<string>('all');
-  const [mapViewMode, setMapViewMode] = useState<MapViewMode>('core');
-  const [flowViewMode, setFlowViewMode] = useState<FlowViewMode>('core');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
-  const [showReferenceNodes, setShowReferenceNodes] = useState(false);
-  const [showNeedsVerification, setShowNeedsVerification] = useState(false);
-  const [showDetailedLinks, setShowDetailedLinks] = useState(false);
-  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<Node<NodeData>, Edge> | null>(null);
-  const [isDetailCollapsed, setIsDetailCollapsed] = useState(false);
-  const [expandedCompanyIds, setExpandedCompanyIds] = useState<Set<string>>(() => new Set());
-  const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
-  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
-  const [sourcePanelLinkId, setSourcePanelLinkId] = useState<string | null>(null);
-  const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
-  const [newsRefreshKey, setNewsRefreshKey] = useState(0);
-  const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}${window.location.hash}`);
-  const currentMarketMapQuery = new URLSearchParams((route.split('?')[1] ?? '').split('#')[0]);
-  const marketMapDetailView = resolveMarketMapDetailViewMode(
-    currentMarketMapQuery.get('view'),
-    currentMarketMapQuery.has('company'),
-  );
-  const marketMapRelationRegion = resolveMarketMapGraphRegion(currentMarketMapQuery.get('region'));
-  const marketMapRelationDensity = resolveMarketMapRelationDensity(currentMarketMapQuery.get('density'));
-  const marketMapRelationType = resolveMarketMapRelationTypeFilter(currentMarketMapQuery.get('relationType'));
-  const requestedMarketMapRelationId = currentMarketMapQuery.get('relation');
-  const [isMapLocked, setIsMapLocked] = useState(false);
+  const [route, setRoute] = useState(() => {
+    const replacement = replaceLegacyMarketMapLocation();
+    return replacement ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  });
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
   const [marketDisclosures, setMarketDisclosures] = useState<MarketDisclosureApiResponse>(initialDisclosureResponse);
   const [marketSecFilings, setMarketSecFilings] = useState<MarketSecFilingsApiResponse>(initialSecFilingsResponse);
-  const [selectedFlowStage, setSelectedFlowStage] = useState<string | null>(null);
-  const [showAllKoreaRelated, setShowAllKoreaRelated] = useState(false);
-  const [storyGraphRegion, setStoryGraphRegion] = useState<MarketMapGraphRegion>('all');
-  const [storyGraphViewMode, setStoryGraphViewMode] = useState<MarketMapGraphViewMode>('selected');
-  const [isCompactGraphLayout, setIsCompactGraphLayout] = useState(() => window.matchMedia('(max-width: 760px)').matches);
-  const graphWrapRef = useRef<HTMLElement | null>(null);
-  const storyAdvancedTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [newsState, setNewsState] = useState<NewsState>({ status: 'idle', items: [] });
+  const [newsRefreshKey, setNewsRefreshKey] = useState(0);
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 760px)');
-    const syncCompactGraphLayout = () => setIsCompactGraphLayout(mediaQuery.matches);
-    syncCompactGraphLayout();
-    mediaQuery.addEventListener('change', syncCompactGraphLayout);
-    return () => mediaQuery.removeEventListener('change', syncCompactGraphLayout);
-  }, []);
-
-  const country = countries.find((item) => item.id === selectedCountry) ?? countries[0];
-  const countrySectors = sectors.filter((sector) => sector.country === selectedCountry);
-  const selectedSector = sectors.find((sector) => sector.id === selectedSectorId) ?? countrySectors[0];
-  const topAnchors = anchors.filter((anchor) => anchor.sectorId === selectedSector.id).sort((a, b) => a.rank - b.rank);
-  const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId) ?? topAnchors[0];
-  const groupCompanies = companies.filter((company) => company.anchorId === selectedAnchor.id);
-  const groupLinks = links.filter((link) => link.anchorId === selectedAnchor.id);
-  const isAiRelationshipMap = selectedSector.id === aiRelationshipSectorId && selectedAnchor.id === aiRelationshipAnchorId;
-  const isDatacenterPowerCoolingMap = selectedSector.id === datacenterPowerCoolingSectorId && selectedAnchor.id === datacenterPowerCoolingAnchorId;
-  const isStoryMarketMap = isAiRelationshipMap || isDatacenterPowerCoolingMap;
-  const storyGraphRegions = useMemo<MarketMapGraphRegion[]>(() => {
-    const regions = new Set<MarketMapGraphRegion>(['all']);
-    groupCompanies.forEach((company) => regions.add(marketMapGraphRegionForCompany(company)));
-    return (['all', 'us', 'kr', 'other'] as MarketMapGraphRegion[]).filter((region) => regions.has(region));
-  }, [groupCompanies]);
-  const hasSearchQuery = Boolean(query.trim());
-  const expandedConnectedIds = new Set<string>();
-  expandedCompanyIds.forEach((companyId) => {
-    expandedConnectedIds.add(companyId);
-    groupLinks.forEach((link) => {
-      if (link.source === companyId) expandedConnectedIds.add(link.target);
-      if (link.target === companyId) expandedConnectedIds.add(link.source);
-    });
-  });
-  const baseVisibleCompanies = getVisibleCompanies(selectedAnchor.id, query, riskFilter);
-  const matchesFlowViewMode = (company: Company) => {
-    if (!isAiRelationshipMap) return true;
-    if (flowViewMode === 'kr') return company.country === 'KR' && isMainListedCompany(company);
-    if (flowViewMode === 'us') return company.country === 'US' && isMainListedCompany(company);
-    if (flowViewMode === 'reference') return true;
-    return true;
-  };
-  const visibleCompanies = baseVisibleCompanies.filter((company) => {
-    const matchesStage = stageFilter === 'all' || companyValueChainStage(company) === stageFilter;
-    const matchesListing =
-      listingFilter === 'all' ||
-      (listingFilter === 'listed' ? canOpenCompanyAnalysis(company) : !canOpenCompanyAnalysis(company));
-    const matchesRole = !isAiRelationshipMap || matchesRoleFilter(company, roleFilter);
-    const matchesCoreMode =
-      !isAiRelationshipMap ||
-      mapViewMode === 'all' ||
-      flowViewMode !== 'core' ||
-      roleFilter !== 'all' ||
-      hasSearchQuery ||
-      aiCoreCompanyIds.has(company.id) ||
-      expandedConnectedIds.has(company.id) ||
-      company.id === selectedCompanyId;
-    const matchesReferenceVisibility =
-      !isAiRelationshipMap ||
-      showReferenceNodes ||
-      flowViewMode === 'reference' ||
-      roleFilter === 'reference' ||
-      canOpenCompanyAnalysis(company) ||
-      company.id === selectedCompanyId;
-    const matchesVerificationVisibility =
-      !isAiRelationshipMap ||
-      showNeedsVerification ||
-      flowViewMode === 'sources' ||
-      !relationshipConfidenceLabel(company).includes('검증') ||
-      company.id === selectedCompanyId;
-    const matchesRelationship =
-      relationshipFilter === 'all' ||
-      relationshipTypeLabel(company) === relationshipFilter ||
-      groupLinks.some((link) => (link.source === company.id || link.target === company.id) && linkRelationshipSummary(link).type === relationshipFilter);
-    const matchesConfidence =
-      confidenceFilter === 'all' ||
-      relationshipConfidenceLabel(company) === confidenceFilter ||
-      groupLinks.some((link) => (link.source === company.id || link.target === company.id) && linkConfidenceLabel(link) === confidenceFilter);
-    return (
-      matchesStage &&
-      matchesListing &&
-      matchesRole &&
-      matchesFlowViewMode(company) &&
-      matchesCoreMode &&
-      matchesReferenceVisibility &&
-      matchesVerificationVisibility &&
-      matchesRelationship &&
-      matchesConfidence
-    );
-  });
-  const stageOptions = Array.from(new Set(groupCompanies.map((company) => companyValueChainStage(company))));
-  const relationshipOptions = Array.from(
-    new Set([
-      ...groupCompanies.map((company) => relationshipTypeLabel(company)),
-      ...groupLinks.map((link) => linkRelationshipSummary(link).type),
-    ]),
-  );
-  const confidenceOptions = ['공식 확인', '공시·IR 기준', '공시·IR 기준 확인 필요', '산업상 관련', '검증 필요'];
-  const visibleIds = new Set(visibleCompanies.map((company) => company.id));
-  const visibleLinks = groupLinks
-    .filter((link) => visibleIds.has(link.source) && visibleIds.has(link.target))
-    .filter((link) => {
-      if (!isAiRelationshipMap) return true;
-      const relationship = linkRelationshipSummary(link);
-      if (!showNeedsVerification && flowViewMode !== 'sources' && relationship.confidence.includes('검증')) return false;
-      const isExpandedLink = expandedCompanyIds.has(link.source) || expandedCompanyIds.has(link.target);
-      if (mapViewMode === 'core' && flowViewMode === 'core' && roleFilter === 'all' && !hasSearchQuery && !showDetailedLinks) return aiCoreLinkIds.has(link.id) || isExpandedLink;
-      return true;
-    });
-  const selectedCompany =
-    groupCompanies.find((company) => company.id === selectedCompanyId) ??
-    visibleCompanies.find((company) => company.tier !== 'anchor') ??
-    groupCompanies.find((company) => company.tier !== 'anchor') ??
-    groupCompanies[0];
-  const selectedOpinions = analystOpinions.filter((opinion) => opinion.companyId === selectedCompany?.id);
-  const selectedDisplayMetrics = selectedCompany ? getDisplayMetrics(selectedCompany) : null;
-  const selectedRevenueDisplay =
-    selectedCompany && selectedDisplayMetrics
-      ? revenueDisplayForCompany(selectedCompany, selectedDisplayMetrics)
-      : null;
-  const selectedDependency = selectedCompany ? dependencySummary(selectedCompany, groupLinks) : null;
-  const selectedMoat = selectedCompany ? companyMoatSummary(selectedCompany) : null;
-  const selectedRole = selectedCompany ? companyRoleProfile(selectedCompany) : null;
-  const selectedBeginnerMetrics =
-    selectedCompany && selectedDisplayMetrics ? beginnerIndustryMetrics(selectedCompany, selectedDisplayMetrics).slice(0, 3) : [];
-  const selectedAnalystSummary = classifyAnalystOpinion(selectedOpinions);
-  const selectedReportLink = selectedCompany ? getPrimaryReportLink(selectedCompany) : null;
-  const selectedIsMainListed = selectedCompany ? isMainListedCompany(selectedCompany) : false;
-  const selectedConnectionState = selectedCompany ? companyConnectionState(selectedCompany) : null;
-  const selectedCanOpenAnalysis = canOpenCompanyAnalysis(selectedCompany);
-  const selectedCanOpenFinancials = canOpenCompanyFinancials(selectedCompany);
-  const selectedRelatedPick = relatedPickForMarketMapCompany(selectedCompany);
-  const selectedCompanyPrice = selectedCompany && hasTradableTicker(selectedCompany) ? getPriceForCompany(selectedCompany, marketPrices) : null;
-  const connectedIds = selectedCompany ? getConnectedIds(selectedCompany.id, groupLinks) : new Set<string>();
-  const selectedDirectLinks = selectedCompany
-    ? groupLinks.filter((link) => link.source === selectedCompany.id || link.target === selectedCompany.id)
-    : [];
-  const primaryDirectLinks = selectedDirectLinks.slice(0, isAiRelationshipMap ? 3 : 6);
-  const selectedConnectionCards = selectedCompany
-    ? selectedDirectLinks
-        .map((link) => {
-          const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
-          const counterpart = companies.find((company) => company.id === counterpartId);
-          if (!counterpart) return undefined;
-          return {
-            link,
-            company: counterpart,
-            relationship: linkRelationshipSummary(link),
-            direction: link.target === selectedCompany.id ? 'incoming' : 'outgoing',
-          };
-        })
-        .filter((item): item is { link: (typeof links)[number]; company: Company; relationship: ReturnType<typeof linkRelationshipSummary>; direction: 'incoming' | 'outgoing' } => Boolean(item))
-    : [];
-  const prioritizedSelectedConnectionCards = [...selectedConnectionCards].sort((a, b) => {
-    const firstLookA = aiFirstLookIds.indexOf(a.company.id);
-    const firstLookB = aiFirstLookIds.indexOf(b.company.id);
-    const priorityA =
-      (aiCoreLinkIds.has(a.link.id) ? 0 : 20) +
-      (firstLookA >= 0 ? firstLookA : 10) +
-      (canOpenCompanyAnalysis(a.company) ? 0 : 6);
-    const priorityB =
-      (aiCoreLinkIds.has(b.link.id) ? 0 : 20) +
-      (firstLookB >= 0 ? firstLookB : 10) +
-      (canOpenCompanyAnalysis(b.company) ? 0 : 6);
-    return priorityA - priorityB;
-  });
-  const incomingConnectionCards = prioritizedSelectedConnectionCards.filter((item) => item.direction === 'incoming').slice(0, 2);
-  const outgoingConnectionCards = prioritizedSelectedConnectionCards.filter((item) => item.direction === 'outgoing').slice(0, 3);
-  const focusPreviousCards = incomingConnectionCards.length ? incomingConnectionCards : prioritizedSelectedConnectionCards.slice(0, 1);
-  const focusNextCards = (outgoingConnectionCards.length ? outgoingConnectionCards : prioritizedSelectedConnectionCards.filter((item) => !focusPreviousCards.some((prev) => prev.company.id === item.company.id))).slice(0, 3);
-  const hiddenFocusConnectionCount = Math.max(
-    0,
-    selectedConnectionCards.length -
-      new Set([...focusPreviousCards, ...focusNextCards].map((item) => item.company.id)).size,
-  );
-  const selectedFocusRelatedCards = prioritizedSelectedConnectionCards
-    .filter((item, index, list) => list.findIndex((candidate) => candidate.company.id === item.company.id) === index)
-    .slice(0, 4);
-  const datacenterCompanionCards =
-    selectedCompany && isDatacenterPowerCoolingMap
-      ? (datacenterPowerCoolingCompanionCompanies[selectedCompany.id] ?? [])
-          .map((item) => {
-            const company = companies.find((candidate) => candidate.id === item.companyId);
-            return company ? { ...item, company } : undefined;
-          })
-          .filter((item): item is { companyId: string; role: string; company: Company } => Boolean(item))
-      : [];
-  const selectedMarketRelatedCards =
-    isDatacenterPowerCoolingMap && datacenterCompanionCards.length
-      ? datacenterCompanionCards.map((item) => ({
-          key: item.company.id,
-          company: item.company,
-          label: item.role,
-          description: item.role,
-          connection: companyConnectionState(item.company),
-        }))
-      : selectedFocusRelatedCards.map((item) => ({
-          key: item.link.id,
-          company: item.company,
-          label: shortRelationshipLabel(item.relationship.type),
-          description: item.relationship.demandConnection,
-          connection: companyConnectionState(item.company),
-        }));
-  const selectedRelatedCompanyNames =
-    datacenterCompanionCards.length
-      ? datacenterCompanionCards.map((item) => item.company.name).join(', ')
-      : prioritizedSelectedConnectionCards
-          .slice(0, 3)
-          .map((item) => item.company.name)
-          .join(', ') || '직접 연결 기업 정리 중';
-  const selectedRelatedCompanyCopy =
-    datacenterCompanionCards.length > 0
-      ? `아래 관계는 직접 계약 관계가 아니라, AI 데이터센터 투자 흐름에서 함께 확인하는 기업들입니다. ${datacenterCompanionCards
-          .map((item) => `${item.company.name}: ${item.role}`)
-          .join(' · ')}`
-      : prioritizedSelectedConnectionCards.length > 0
-      ? '같은 수요 흐름에서 함께 확인할 기업입니다. 직접 거래 여부는 공시와 출처로 따로 확인합니다.'
-      : '아직 연결 기업이 충분히 정리되지 않았습니다. 전체 연결 보기에서 후보를 더 확인합니다.';
-  const activeRelationshipId = selectedLinkId ?? hoveredLinkId;
-  const activeRelationship = activeRelationshipId ? groupLinks.find((link) => link.id === activeRelationshipId) : undefined;
-  const activeRelationshipSummary = activeRelationship ? linkRelationshipSummary(activeRelationship) : undefined;
-  const sourcePanelLink = sourcePanelLinkId ? groupLinks.find((link) => link.id === sourcePanelLinkId) : undefined;
-  const sourcePanelSummary = sourcePanelLink ? linkRelationshipSummary(sourcePanelLink) : undefined;
-  const filteredOutCount = groupCompanies.length - visibleCompanies.length;
-  const highRiskCount = groupCompanies.filter((company) => company.riskLevel === 'high').length;
-  const firstLookCompanies = aiFirstLookIds
-    .map((id) => groupCompanies.find((company) => company.id === id))
-    .filter((company): company is Company => Boolean(company));
-  const flowStageCards = aiFlowStages.map((stage) => {
-    const representativeCompanies = stage.companyIds
-      .map((id) => groupCompanies.find((company) => company.id === id))
-      .filter((company): company is Company => Boolean(company))
-      .filter((company) => visibleIds.has(company.id) || flowViewMode === 'core');
-    const stageCompanies = groupCompanies.filter((company) => matchesAiFlowStage(stage.stage, company));
-    const stagePool = [...representativeCompanies, ...stageCompanies].filter(
-      (company, index, list) => list.findIndex((item) => item.id === company.id) === index,
-    );
-    const displayCompanies = (representativeCompanies.length ? representativeCompanies : stageCompanies).slice(0, 3);
-    const extraCompanies = stagePool.filter((company) => !displayCompanies.some((item) => item.id === company.id)).slice(0, 4);
-    const hiddenCount = Math.max(0, stagePool.length - displayCompanies.length);
-    return {
-      ...stage,
-      companies: displayCompanies,
-      extraCompanies,
-      hiddenCount,
-    };
-  });
-  const activeFlowStageName =
-    selectedFlowStage ??
-    (selectedCompany ? flowStageCards.find((stage) => matchesAiFlowStage(stage.stage, selectedCompany))?.stage ?? null : null);
-  const activeFlowStageCard = activeFlowStageName ? flowStageCards.find((stage) => stage.stage === activeFlowStageName) ?? null : null;
-  const selectedFlowStageIndex = activeFlowStageName ? flowStageCards.findIndex((stage) => stage.stage === activeFlowStageName) : -1;
-  const selectedCompanyStatusLabel =
-    selectedCompany && selectedCompany.id === selectedAnchor.id
-      ? '섹터 중심 기업'
-      : selectedConnectionState?.label ?? '시장 흐름 참고';
-  const aiKoreaListedCompanies = aiKoreaListedPriorityNames
-    .map((name) =>
-      groupCompanies.find((company) => company.name === name && isMainListedCompany(company)) ??
-      companies.find((company) => company.name === name && isMainListedCompany(company)),
-    )
-    .filter((company): company is Company => Boolean(company))
-    .filter((company, index, list) => list.findIndex((item) => item.name === company.name) === index);
-  const aiKoreaListedPreview = showAllKoreaRelated ? aiKoreaListedCompanies : aiKoreaListedCompanies.slice(0, 5);
-  const roleFilterOptions: Array<{ value: RoleFilter; label: string; note: string }> = [
-    { value: 'all', label: mapViewMode === 'core' ? '핵심 관계' : '전체', note: '기본 흐름' },
-    { value: 'leader', label: '핵심 기업', note: '먼저 볼 기업' },
-    { value: 'bottleneck', label: '핵심 병목', note: '흐름의 관문' },
-    { value: 'beneficiary', label: '수요 수혜', note: '함께 볼 기업' },
-    { value: 'listed', label: '상장기업', note: '분석 대상' },
-    { value: 'reference', label: '비상장 참고', note: '관계 보조' },
-  ];
-  const flowModeOptions: Array<{ value: FlowViewMode; label: string; note: string; tone?: 'primary' | 'secondary' }> = [
-    { value: 'core', label: '핵심 흐름', note: '대표 기업 8~10개', tone: 'primary' },
-    { value: 'kr', label: '한국 관련주', note: '한국 상장기업', tone: 'primary' },
-    { value: 'all', label: '전체 연결 보기', note: '전체 연결을 한 번에 확인', tone: 'primary' },
-    { value: 'sources', label: '출처 보기', note: '관계 근거 확인', tone: 'secondary' },
-    { value: 'reference', label: '공급망 참고', note: '비상장/보조', tone: 'secondary' },
-  ];
-  const shouldShowRelationshipCanvas = !isStoryMarketMap;
-  const isAdvancedRelationshipView = false;
-  const shouldShowReadingTemplate = isStoryMarketMap;
-  const storyMapCompanyDetail = (company: Company, isSelected: boolean): MarketMapDetailCompany => {
-    const connection = companyConnectionState(company);
-    const companyPrice = hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null;
-    const relatedPick = relatedPickForMarketMapCompany(company);
-    const profilePath = companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker);
-    const profileAction: MarketMapDetailAction[] = profilePath
-      ? [{ id: `profile-${company.id}`, kind: 'profile', label: '기업 자세히 보기' }]
-      : [];
-    const actions: MarketMapDetailAction[] = isSelected
-      ? [
-          ...profileAction,
-          ...(connection.canOpenAnalysis ? [{ id: `analysis-${company.id}`, kind: 'analysis' as const, label: '기업 해설 보기' }] : []),
-          ...(connection.canOpenFinancials ? [{ id: `financials-${company.id}`, kind: 'financials' as const, label: '숫자 3개 보기' }] : []),
-          ...(!connection.canOpenAnalysis && relatedPick ? [{ id: `pick-${company.id}`, kind: 'pick' as const, label: '관련 Pick 보기' }] : []),
-        ]
-      : [...profileAction, connection.canOpenAnalysis
-          ? { id: `analysis-${company.id}`, kind: 'analysis' as const, label: '기업 해설 보기' }
-          : { id: `flow-${company.id}`, kind: 'flow' as const, label: '시장 흐름에서 보기' }];
-    return {
-      id: company.id,
-      name: company.name,
-      ticker: company.ticker,
-      countryLabel: countryLabelFromCompany(company),
-      mark: resolveCompanyLogoMonogramText(company),
-      role: companyRoleProfile(company).primary,
-      statusLabel: connection.label,
-      connectionLevel: connection.level,
-      description: companyQuestionProductCopy(company),
-      reason: companyQuestionDemandCopy(company),
-      actions,
-      hasPrice: Boolean(companyPrice && priceDirection(companyPrice) !== 'pending'),
-    };
-  };
-  const storyDefinition = marketMapDefinitionById.get(selectedSector.id);
-  const storyMapFlowSteps = (storyDefinition?.industryStages ?? []).map((step) => ({
-    id: step.id,
-    kind: step.kind,
-    question: step.question,
-    title: step.title,
-    description: step.description,
-    roleTag: marketMapNodeKindLabels[step.kind],
-    items: step.items,
-    representativeCompanies: step.representativeCompanyIds
-      .map((companyId) => groupCompanies.find((company) => company.id === companyId)?.name)
-      .filter((name): name is string => Boolean(name)),
-    isCurrent: Boolean(selectedCompany && step.representativeCompanyIds.includes(selectedCompany.id)),
-  }));
-  const storyCompanyNetworkIds = new Set(storyDefinition?.companyNetwork?.companyIds ?? []);
-  const storyCompanyGraphCompanies: NormalizedMarketMapCompanyNode[] = groupCompanies
-    .filter((company) => storyCompanyNetworkIds.has(company.id))
-    .map((company, index) => ({
-      id: company.id,
-      name: company.name,
-      countryLabel: countryLabelFromCompany(company) || '기타·글로벌',
-      role: companyValueChainStage(company),
-      column: isAiRelationshipMap ? aiStageColumn(company) : index < 3 ? 0 : 1,
-    }));
-  const storyCompanyGraphRelations = marketMapRelationsForMap(marketMapCompanyRelations, selectedSector.id);
-  const storyMapViewModel = selectedCompany
-    ? createMarketMapDetailViewModel({
-        id: selectedSector.id,
-        region: marketMapDefinitionById.get(selectedSector.id)?.region ?? 'global',
-        category: marketMapDefinitionById.get(selectedSector.id)?.category ?? 'semiconductor-ai',
-        eyebrow: isDatacenterPowerCoolingMap ? '데이터센터 전력·냉각 시장지도' : 'AI 반도체·데이터센터 시장지도',
-        title: isDatacenterPowerCoolingMap
-          ? '데이터센터 전력과 냉각이 이어지는 흐름'
-          : 'AI 반도체와 데이터센터가 이어지는 흐름',
-        summary: isDatacenterPowerCoolingMap
-          ? 'AI 서버가 늘면 전력 공급, UPS, 배전, 냉각과 운영 안정성을 함께 확인해야 합니다.'
-          : 'AI 서비스 수요가 계산용 칩, HBM, 파운드리, 전력·냉각 인프라로 이어지는 순서를 봅니다.',
-        heroNote: '기업 간 직접 공급 관계와 실제 계약 여부는 공시·IR과 공식 발표를 별도로 확인합니다.',
-        selectedCompany: storyMapCompanyDetail(selectedCompany, true),
-        relatedCompanies: selectedMarketRelatedCards.map((item) => ({
-          ...storyMapCompanyDetail(item.company, false),
-          role: item.label,
-          reason: item.description,
-        })),
-        flowTitle: '수요, 필요 요소, 공급 기업, 실제 사용처, 확인 항목을 같은 순서로 봅니다.',
-        flowSteps: storyMapFlowSteps,
-        advancedDescription: '기업 노드만 표시합니다. 지역 필터는 기업의 본사·실질 국적을 기준으로 적용하고 상장 시장과 분리합니다.',
-        caution: '이 지도는 산업 흐름을 이해하기 위한 참고 구조입니다. 직접 계약, 실제 공급 관계와 수주 여부는 기업 공시와 공식 발표를 별도로 확인해야 합니다.',
-      })
-    : null;
-  const routeHashIndex = route.indexOf('#');
-  const routeWithoutHash = routeHashIndex >= 0 ? route.slice(0, routeHashIndex) : route;
-  const routeHash = routeHashIndex >= 0 ? decodeURIComponent(route.slice(routeHashIndex + 1)) : '';
+  const routeWithoutHash = route.split('#')[0];
+  const routeHash = route.includes('#') ? decodeURIComponent(route.split('#')[1] ?? '') : '';
   const routePath = routeWithoutHash.split('?')[0];
-  const routeQuery = routeWithoutHash.includes('?') ? routeWithoutHash.slice(routeWithoutHash.indexOf('?')) : '';
-  const routeParams = new URLSearchParams(routeQuery);
-  const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)$/);
-  const routeCategoryMatch = routePath.match(/^\/ko\/category\/([^/]+)$/);
-  const routeMarketMapMatch = routePath.match(/^\/ko\/market-map\/?$/) ?? routePath.match(/^\/market-map\/?$/);
+  const routeParams = new URLSearchParams(routeWithoutHash.split('?')[1] ?? '');
+  const routeAnalysisMatch = routePath.match(/^\/ko\/analysis\/([^/]+)\/?$/);
   const routeDisclosuresMatch = routePath.match(/^\/ko\/disclosures\/?$/) ?? routePath.match(/^\/disclosures\/?$/);
   const routeReportsMatch = routePath.match(/^\/ko\/reports\/?$/) ?? routePath.match(/^\/reports\/?$/);
   const routeReportDetailMatch = routePath.match(/^\/ko\/reports\/([^/]+)\/?$/) ?? routePath.match(/^\/reports\/([^/]+)\/?$/);
   const routeBottlenecksMatch = routePath.match(/^\/ko\/bottlenecks\/?$/) ?? routePath.match(/^\/bottlenecks\/?$/);
+  const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routeMacroDashboardMatch = routePath.match(/^\/ko\/macro-dashboard\/?$/) ?? routePath.match(/^\/macro-dashboard\/?$/);
   const routeMarketRelationsMatch = routePath.match(/^\/ko\/market-relations\/?$/) ?? routePath.match(/^\/market-relations\/?$/);
   const routeDemandSupplyMatch = routePath.match(/^\/ko\/demand-supply\/?$/) ?? routePath.match(/^\/demand-supply\/?$/);
   const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
   const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
   const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
-  const routeBottleneckDetailMatch = routePath.match(/^\/ko\/bottlenecks\/([^/]+)\/?$/) ?? routePath.match(/^\/bottlenecks\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
-    (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?$/) : null) ??
-    routePath.match(/^\/picks(?:\/([^/]+))?$/) ??
-    routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?$/);
-  const routeOwnershipMatch = routePath.match(/^\/ko\/ownership(?:\/)?$/) ?? routePath.match(/^\/ownership-trades(?:\/)?$/);
+    (!routePickArchiveMatch ? routePath.match(/^\/ko\/picks(?:\/([^/]+))?\/?$/) : null)
+    ?? routePath.match(/^\/picks(?:\/([^/]+))?\/?$/)
+    ?? routePath.match(/^\/stock-autopsy-picks(?:\/([^/]+))?\/?$/);
+  const routeOwnershipMatch = routePath.match(/^\/ko\/ownership\/?$/) ?? routePath.match(/^\/ownership-trades\/?$/);
   const routeFinancialLearnMatch = routePath.match(/^\/ko\/learn\/financials\/?$/);
-  const routeAnalysisCompanyId = resolveAnalysisRouteCompanyId(routeAnalysisMatch ? decodeURIComponent(routeAnalysisMatch[1]) : routeParams.get('company'));
-  const routeCategoryId = routeCategoryMatch ? decodeURIComponent(routeCategoryMatch[1]) : undefined;
-  const routeCategoryCompanyId = routeCategoryId ? resolveCategoryRouteCompanyId(routeParams.get('company')) ?? undefined : undefined;
-  const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
-  const routeIndustryReport = routeReportSlug
-    ? industryReports.find((report) => report.slug === routeReportSlug || report.id === routeReportSlug)
-    : undefined;
-  const routeBottleneckSlug = routeBottleneckDetailMatch?.[1] ? decodeURIComponent(routeBottleneckDetailMatch[1]) : undefined;
-  const routeSupplyChainBottleneck = bottleneckById(routeBottleneckSlug);
-  const isReconstructionInfrastructureRoute = routeCategoryId === reconstructionInfrastructureMap.sectorId;
-  const isSemiconductorClusterInfrastructureRoute = routeCategoryId === semiconductorClusterInfrastructureMap.sectorId;
-  const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
+  const routeCategoryMatch = routePath.match(/^\/(?:ko\/)?category\/([^/]+)\/?$/) ?? (routePath === '/dashboard' || routePath === '/app' ? [routePath, ''] : null);
+
   const routeCompanyProfileSlug = routeCompanyProfileMatch?.[1] ? decodeURIComponent(routeCompanyProfileMatch[1]) : undefined;
   const routeCompanyResearchProfile = routeCompanyProfileSlug ? buildCompanyResearchProfile(routeCompanyProfileSlug, marketPrices) : undefined;
-  const routeCompany = companies.find((company) => company.id === routeAnalysisCompanyId);
-  const analysisCompany = routeAnalysisMatch ? routeCompany : routeCompany ?? selectedCompany;
+  const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
+  const routeIndustryReport = routeReportSlug ? industryReports.find((report) => report.slug === routeReportSlug || report.id === routeReportSlug) : undefined;
+  const routeBottleneckSlug = routeBottleneckDetailMatch?.[1] ? decodeURIComponent(routeBottleneckDetailMatch[1]) : undefined;
+  const routeSupplyChainBottleneck = bottleneckById(routeBottleneckSlug);
+  const routePickId = routePickArchiveMatch ? undefined : routePickMatch?.[1] ? decodeURIComponent(routePickMatch[1]) : undefined;
+  const routeAnalysisCompanyId = routeAnalysisMatch?.[1] ? resolveAnalysisRouteCompanyId(decodeURIComponent(routeAnalysisMatch[1])) : undefined;
+  const analysisCompany = routeAnalysisCompanyId ? companies.find((company) => company.id === routeAnalysisCompanyId) : undefined;
   const analysisAnchor = analysisCompany ? anchors.find((anchor) => anchor.id === analysisCompany.anchorId) : undefined;
-  const isAnalysisRoute = routePath === '/analysis' || Boolean(routeAnalysisMatch);
-  const isPickArchiveRoute = Boolean(routePickArchiveMatch);
-  const isPicksRoute = isPickArchiveRoute || Boolean(routePickMatch);
-  const isMarketMapRoute = Boolean(routeMarketMapMatch);
+
+  const isHomeRoute = routePath === '/' || routePath === '/ko' || routePath === '/ko/';
+  const isPicksRoute = Boolean(routePickArchiveMatch || routePickMatch);
   const isDisclosuresRoute = Boolean(routeDisclosuresMatch);
-  const isReportsRoute = Boolean(routeReportsMatch) || Boolean(routeReportDetailMatch);
-  const isBottlenecksRoute = Boolean(routeBottlenecksMatch) || Boolean(routeBottleneckDetailMatch);
-  const isMacroDashboardRoute = Boolean(routeMacroDashboardMatch);
-  const isMarketRelationsRoute = Boolean(routeMarketRelationsMatch);
   const isDemandSupplyRoute = Boolean(routeDemandSupplyMatch);
-  const isCompanyListRoute = Boolean(routeCompaniesMatch);
-  const isCompaniesRoute = isCompanyListRoute || Boolean(routeCompanyProfileMatch);
   const isCompanyEventsRoute = Boolean(routeCompanyEventsMatch);
-  const isOwnershipRoute = Boolean(routeOwnershipMatch);
-  const isFinancialLearnRoute = Boolean(routeFinancialLearnMatch);
-  const isCategoryRoute = Boolean(routeCategoryMatch) || routePath === '/dashboard' || routePath === '/app';
-  const newsCompany = isAnalysisRoute && analysisCompany ? analysisCompany : selectedCompany;
-  const newsSector = isAnalysisRoute && analysisCompany ? sectors.find((sector) => sector.id === analysisCompany.sectorId) ?? selectedSector : selectedSector;
-  const newsAnchor = isAnalysisRoute && analysisCompany ? analysisCompany.anchorId : selectedAnchor.id;
-  const newsCountry = isAnalysisRoute && analysisCompany ? analysisCompany.country : selectedCountry;
+  const isCompaniesRoute = Boolean(routeCompaniesMatch || routeCompanyProfileMatch);
+  const needsDisclosureFeed = isHomeRoute || isPicksRoute || isDisclosuresRoute;
 
   useEffect(() => {
-    const syncRoute = () => setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+    const syncRoute = () => {
+      const replacement = replaceLegacyMarketMapLocation();
+      setRoute(replacement ?? `${window.location.pathname}${window.location.search}${window.location.hash}`);
+    };
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
   }, []);
@@ -9387,41 +7785,29 @@ function App() {
         : '기업을 찾을 수 없습니다 | 주가해부실';
     } else if (routeCompaniesMatch) {
       document.title = '기업 한눈에 보기 | 주가해부실';
+    } else if (isDemandSupplyRoute) {
+      document.title = '수요와 공급을 함께 보기 | 주가해부실';
     } else {
       document.title = '주가해부실';
     }
     const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (description) {
       description.content = routeCompanyResearchProfile
-        ? `${routeCompanyResearchProfile.company.name}의 사업 역할, 시장지도 연결, 최근 공식 발표와 관련 공급망 배경을 확인합니다.`
-        : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 기업으로 이어지는지 한눈에 봅니다.';
+        ? `${routeCompanyResearchProfile.company.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
+        : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 산업과 기업으로 이어지는지 확인합니다.';
     }
-  }, [routeCompanyResearchProfile?.company.name, isCompanyListRoute, Boolean(routeCompanyProfileMatch)]);
+  }, [isDemandSupplyRoute, routeCompanyResearchProfile?.company.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
 
   useEffect(() => {
-    const supportsHash = isAnalysisRoute || isReportsRoute || isBottlenecksRoute || isMacroDashboardRoute || isMarketRelationsRoute || isDemandSupplyRoute || (!isCategoryRoute && routeHash === 'daily-market-brief');
-    if (!supportsHash || !routeHash) return;
-    const timer = window.setTimeout(() => {
-      document.getElementById(routeHash)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
-    }, 120);
-    return () => window.clearTimeout(timer);
-  }, [analysisCompany?.id, isAnalysisRoute, isBottlenecksRoute, isCategoryRoute, isDemandSupplyRoute, isMacroDashboardRoute, isMarketRelationsRoute, isReportsRoute, routeHash]);
-
-  useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute || isCompanyListRoute) return;
+    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
     let cancelled = false;
-    fetchMarketPrices().then((items) => {
-      if (!cancelled) setMarketPrices(items);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isCompanyEventsRoute, isCompanyListRoute, isDemandSupplyRoute]);
+    fetchMarketPrices().then((items) => { if (!cancelled) setMarketPrices(items); });
+    return () => { cancelled = true; };
+  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
+    if (!needsDisclosureFeed) return;
     let cancelled = false;
-
     async function loadDisclosures() {
       const [disclosureResponse, secFilingResponse] = await Promise.all([
         fetchMarketDisclosures({ limit: 100, days: 7 }),
@@ -9432,406 +7818,36 @@ function App() {
         setMarketSecFilings(secFilingResponse);
       }
     }
-
     loadDisclosures();
     const timer = window.setInterval(loadDisclosures, 5 * 60 * 1000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute]);
+  }, [needsDisclosureFeed]);
 
   useEffect(() => {
-    if (!routeCategoryId) return;
-    const routeSector = sectors.find((sector) => sector.id === routeCategoryId);
-    const routeFocusCompany = routeCategoryCompanyId ? companies.find((company) => company.id === routeCategoryCompanyId) : undefined;
-    if (!routeSector && !routeFocusCompany) return;
-    const nextSectorId = routeFocusCompany?.sectorId ?? routeSector?.id ?? selectedSectorId;
-    const routeAnchor = anchors.find((anchor) => anchor.sectorId === nextSectorId);
-    const defaultRouteCompany =
-      companies.find((company) => company.id === routeAnchor?.id) ??
-      companies.find((company) => company.anchorId === routeAnchor?.id && company.tier !== 'anchor');
-    const targetCompanyId = routeFocusCompany?.id ?? defaultRouteCompany?.id;
-    if (nextSectorId === selectedSectorId && targetCompanyId === selectedCompanyId) return;
-    selectSectorScope(nextSectorId, routeFocusCompany?.id);
-  }, [routeCategoryCompanyId, routeCategoryId, selectedCompanyId, selectedSectorId]);
-
-  function fitVisibleMap() {
-    if (!flowInstance) return;
-    if (isAiRelationshipMap && selectedCompany) {
-      centerCompanyInMap(selectedCompany.id);
-      return;
-    }
-    window.requestAnimationFrame(() => {
-      flowInstance.fitView({
-        padding: isAiRelationshipMap ? 0.14 : 0.22,
-        duration: prefersReducedMotion() ? 0 : 420,
-        includeHiddenNodes: false,
-      });
-      if (isAiRelationshipMap && selectedCompany) {
-        window.setTimeout(() => {
-          if (flowInstance.getZoom() < 0.5) centerCompanyInMap(selectedCompany.id);
-        }, 460);
-      }
-    });
-  }
-
-  function scheduleFitVisibleMap(delay = 120) {
-    window.setTimeout(() => fitVisibleMap(), delay);
-    window.setTimeout(() => fitVisibleMap(), delay + 220);
-  }
-
-  function fitEntireRelationshipMap() {
-    if (!flowInstance) return;
-    setStoryGraphViewMode('fit');
-    flowInstance.fitView({
-      padding: marketMapGraphConfig.fitViewPadding,
-      duration: prefersReducedMotion() ? 0 : 420,
-      includeHiddenNodes: false,
-    });
-  }
-
-  function focusSelectedRelationshipMap() {
-    setStoryGraphViewMode('selected');
-    if (!flowInstance || !selectedCompany) return;
-    const focusIds = new Set<string>([selectedCompany.id, ...connectedIds]);
-    const focusNodes = flowInstance.getNodes().filter((node) => focusIds.has(node.id));
-    if (!focusNodes.length) {
-      centerCompanyInMap(selectedCompany.id);
-      return;
-    }
-    flowInstance.fitView({
-      nodes: focusNodes,
-      padding: 0.36,
-      duration: prefersReducedMotion() ? 0 : 420,
-      includeHiddenNodes: false,
-    });
-  }
-
-  function scheduleCenterCompany(companyId: string, delay = 160) {
-    window.setTimeout(() => centerCompanyInMap(companyId), delay);
-    window.setTimeout(() => centerCompanyInMap(companyId), delay + 380);
-  }
-
-  function centerCompanyInMap(companyId: string) {
-    if (!flowInstance) return;
-    const company = groupCompanies.find((item) => item.id === companyId);
-    if (!company) return;
-    const position = getNodePosition(
-      company,
-      isAiRelationshipMap ? visibleCompanies : undefined,
-      isAiRelationshipMap && isCompactGraphLayout,
-    );
-    window.requestAnimationFrame(() => {
-      flowInstance.setCenter(position.x + 112, position.y + 58, {
-        zoom: isAiRelationshipMap ? (isAdvancedRelationshipView ? 0.72 : 0.9) : Math.max(flowInstance.getZoom(), 0.58),
-        duration: prefersReducedMotion() ? 0 : 420,
-      });
-    });
-  }
-
-  function focusCompany(companyId: string) {
-    setSelectedCompanyId(companyId);
-    if (routeCategoryId && isStoryMarketMap) {
-      selectMarketMapCompany(selectedSector.id, companyId);
-    }
-    if (isAiRelationshipMap) {
-      setExpandedCompanyIds((current) => new Set([...current, companyId]));
-      const nextCompany = groupCompanies.find((company) => company.id === companyId);
-      if (nextCompany) setSelectedFlowStage(aiFlowStages.find((stage) => matchesAiFlowStage(stage.stage, nextCompany))?.stage ?? null);
-    }
-    centerCompanyInMap(companyId);
-  }
-
-  function openFlowCompanyAnalysis(company: Company) {
-    focusCompany(company.id);
-    if (canOpenCompanyAnalysis(company)) openAnalysis(company);
-  }
-
-  function selectFlowStage(stageName: string) {
-    const nextStage = selectedFlowStage === stageName ? null : stageName;
-    setSelectedFlowStage(nextStage);
-    if (!nextStage) return;
-    const focusCandidate =
-      aiFlowStages
-        .find((stage) => stage.stage === stageName)
-        ?.companyIds.map((id) => groupCompanies.find((company) => company.id === id))
-        .find((company): company is Company => Boolean(company)) ??
-      visibleCompanies.find((company) => matchesAiFlowStage(stageName, company));
-    if (focusCandidate) focusCompany(focusCandidate.id);
-  }
-
-  function handleStoryMapCompanyAction(companyId: string, action: MarketMapDetailAction) {
-    const company = companies.find((item) => item.id === companyId);
-    if (!company) return;
-    if (action.kind === 'profile') {
-      const profilePath = companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker);
-      if (profilePath) navigateWithinApp(profilePath);
-      return;
-    }
-    if (action.kind === 'analysis') {
-      openAnalysis(company);
-      return;
-    }
-    if (action.kind === 'financials') {
-      openAnalysis(company, 'financial-easy-view');
-      return;
-    }
-    if (action.kind === 'pick') {
-      const companyPick = relatedPickForMarketMapCompany(company);
-      if (companyPick) openPick(companyPick);
-      return;
-    }
-    focusCompany(company.id);
-  }
-
-  function toggleCompanyExpansion(companyId: string) {
-    setExpandedCompanyIds((current) => {
-      const next = new Set(current);
-      if (next.has(companyId)) next.delete(companyId);
-      else next.add(companyId);
-      return next;
-    });
-    scheduleFitVisibleMap(80);
-  }
-
-  function applyFlowViewMode(mode: FlowViewMode) {
-    setFlowViewMode(mode);
-    if (mode !== 'kr') setShowAllKoreaRelated(false);
-    setRoleFilter('all');
-    setStageFilter('all');
-    setListingFilter('all');
-    setRelationshipFilter('all');
-    setConfidenceFilter('all');
-
-    if (mode === 'core') {
-      setMapViewMode('core');
-      setShowReferenceNodes(false);
-      setShowNeedsVerification(false);
-      setShowDetailedLinks(false);
-    } else if (mode === 'reference') {
-      setMapViewMode('all');
-      setShowReferenceNodes(true);
-      setShowNeedsVerification(false);
-      setShowDetailedLinks(false);
-    } else if (mode === 'sources') {
-      setMapViewMode('all');
-      setShowReferenceNodes(false);
-      setShowNeedsVerification(true);
-      setShowDetailedLinks(true);
-    } else {
-      setMapViewMode('all');
-      setShowReferenceNodes(false);
-      setShowNeedsVerification(false);
-      setShowDetailedLinks(false);
-    }
-
-    const nextFocus = groupCompanies.find((company) => {
-      if (mode === 'all') return company.id === selectedCompanyId;
-      if (mode === 'kr') return company.country === 'KR' && isMainListedCompany(company);
-      if (mode === 'us') return company.country === 'US' && isMainListedCompany(company);
-      if (mode === 'reference') return !isMainListedCompany(company);
-      return aiCoreCompanyIds.has(company.id);
-    });
-    if (nextFocus) setSelectedCompanyId(nextFocus.id);
-    if (mode === 'all' || mode === 'sources' || mode === 'reference') {
-      scheduleCenterCompany(nextFocus?.id ?? selectedCompanyId, 220);
-    } else {
-      scheduleFitVisibleMap(80);
-    }
-  }
-
-  const flowNodes: Node<NodeData>[] = useMemo(
-    () =>
-      (isAiRelationshipMap ? visibleCompanies : groupCompanies).map((company) => {
-        const isVisible = visibleIds.has(company.id);
-        const companyGraphRegion = marketMapGraphRegionForCompany(company);
-        const isRegionDimmed = storyGraphRegion !== 'all' && storyGraphRegion !== companyGraphRegion;
-        return {
-          id: company.id,
-          type: 'supplyNode',
-          position: getNodePosition(
-            company,
-            isAiRelationshipMap ? visibleCompanies : undefined,
-            isAiRelationshipMap && isCompactGraphLayout,
-          ),
-          sourcePosition: Position.Right,
-          targetPosition: Position.Left,
-          data: {
-            company,
-            isSelected: selectedCompany?.id === company.id,
-            isDimmed: isRegionDimmed || !isVisible || (selectedCompany ? !connectedIds.has(company.id) : false),
-            isExpanded: expandedCompanyIds.has(company.id),
-            marketLabel: countryLabelFromCompany(company) || '기타·글로벌',
-            price: hasTradableTicker(company) ? getPriceForCompany(company, marketPrices) : null,
-            onSelect: focusCompany,
-            onToggleExpand: isAiRelationshipMap ? toggleCompanyExpansion : undefined,
-          },
-        };
-      }),
-    [connectedIds, expandedCompanyIds, groupCompanies, isAiRelationshipMap, isCompactGraphLayout, marketPrices, selectedCompany, storyGraphRegion, visibleCompanies, visibleIds],
-  );
-
-  const flowEdges: Edge[] = useMemo(
-    () =>
-      (isAiRelationshipMap ? visibleLinks : groupLinks).map((link) => {
-        const isVisible = visibleLinks.some((visibleLink) => visibleLink.id === link.id);
-        const isConnected = selectedCompany ? link.source === selectedCompany.id || link.target === selectedCompany.id : false;
-        const isActiveRelationship = activeRelationshipId === link.id;
-        const relationship = linkRelationshipSummary(link);
-        const confidenceClass = confidenceClassName(relationship.confidence);
-        const edgeColor = marketMapEdgeColor(relationship.type);
-        return {
-          id: link.id,
-          source: link.source,
-          target: link.target,
-          label:
-            isAdvancedRelationshipView && !isActiveRelationship
-              ? ''
-              : showDetailedLinks || flowViewMode === 'sources'
-                ? relationship.type
-                : shortRelationshipLabel(relationship.type),
-          animated: isConnected || isActiveRelationship,
-          type: isAiRelationshipMap ? 'default' : 'smoothstep',
-          className: [
-            isVisible ? '' : 'edge-hidden',
-            isConnected || isActiveRelationship ? 'edge-active' : '',
-            selectedCompany && !isConnected && !isActiveRelationship ? 'edge-muted' : '',
-            `edge-confidence-${confidenceClass}`,
-            `edge-kind-${relationshipKindClass(relationship.type)}`,
-            `market-map-edge-${marketMapEdgeKind(relationship.type)}`,
-          ].join(' '),
-          style: {
-            strokeWidth: isConnected || isActiveRelationship ? 3.2 : 2,
-            stroke: isConnected ? edgeColor : edgeColor,
-          },
-          markerEnd: isAiRelationshipMap
-            ? {
-                type: MarkerType.ArrowClosed,
-                width: 14,
-                height: 14,
-                color: isConnected || isActiveRelationship ? edgeColor : '#b9c4d4',
-              }
-            : undefined,
-          labelStyle: {
-            fill: isConnected || isActiveRelationship ? edgeColor : '#475569',
-            fontWeight: isConnected || isActiveRelationship ? 800 : 700,
-            fontSize: showDetailedLinks || flowViewMode === 'sources' ? 12 : 11,
-          },
-          labelBgStyle: {
-            fill: '#f8fafc',
-            fillOpacity: 1,
-            stroke: isConnected ? edgeColor : '#d8dee8',
-            strokeWidth: 1,
-          },
-          labelBgPadding: [11, 7],
-          labelBgBorderRadius: 8,
-        };
-      }),
-    [activeRelationshipId, flowViewMode, groupLinks, isAdvancedRelationshipView, isAiRelationshipMap, selectedCompany, showDetailedLinks, visibleLinks],
-  );
-
-  useEffect(() => {
-    if (!flowInstance || !isCategoryRoute || !flowNodes.length) return;
-    const timer = window.setTimeout(() => {
-      if (isAiRelationshipMap && shouldShowRelationshipCanvas && selectedCompany) {
-        centerCompanyInMap(selectedCompany.id);
-        return;
-      }
-      flowInstance.fitView({
-        padding: isAiRelationshipMap ? 0.2 : 0.22,
-        duration: prefersReducedMotion() ? 0 : 420,
-        includeHiddenNodes: false,
-      });
-    }, 80);
-    return () => window.clearTimeout(timer);
-  }, [
-    confidenceFilter,
-    flowEdges.length,
-    flowViewMode,
-    flowInstance,
-    flowNodes.length,
-    isAiRelationshipMap,
-    isCategoryRoute,
-    isDetailCollapsed,
-    selectedCompany?.id,
-    shouldShowRelationshipCanvas,
-    listingFilter,
-    mapViewMode,
-    query,
-    relationshipFilter,
-    roleFilter,
-    selectedAnchorId,
-    showDetailedLinks,
-    showNeedsVerification,
-    showReferenceNodes,
-    stageFilter,
-  ]);
-
-  useEffect(() => {
-    if (!flowInstance || !isCategoryRoute) return;
-    const element = graphWrapRef.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    let resizeTimer: number | undefined;
-
-    const fitAfterResize = () => {
-      if (resizeTimer) window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        if (isAiRelationshipMap && shouldShowRelationshipCanvas && selectedCompany) {
-          centerCompanyInMap(selectedCompany.id);
-          return;
-        }
-        flowInstance.fitView({
-          padding: isAiRelationshipMap ? 0.2 : 0.22,
-          duration: prefersReducedMotion() ? 0 : 320,
-          includeHiddenNodes: false,
-        });
-      }, 120);
-    };
-
-    const observer = new ResizeObserver(fitAfterResize);
-    observer.observe(element);
-    return () => {
-      if (resizeTimer) window.clearTimeout(resizeTimer);
-      observer.disconnect();
-    };
-  }, [flowInstance, isAiRelationshipMap, isCategoryRoute, selectedCompany?.id, shouldShowRelationshipCanvas]);
-
-  useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
+    if (!analysisCompany || !analysisAnchor) return;
+    const company = analysisCompany;
+    const anchor = analysisAnchor;
     let cancelled = false;
-
     async function loadNews() {
       setNewsState((current) => ({ ...current, status: 'loading', error: undefined }));
       const params = new URLSearchParams({
-        country: newsCountry,
-        sector: newsSector.id,
-        anchor: newsAnchor,
+        country: company.country,
+        sector: company.sectorId,
+        anchor: anchor.id,
+        company: company.name,
       });
-      if (newsCompany?.name) {
-        params.set('company', newsCompany.name);
-      }
-
       try {
         const response = await fetch(`/api/news?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error(`news api ${response.status}`);
-        }
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-          throw new Error('news api returned non-JSON. Run `npm run dev:vercel` or deploy to Vercel.');
-        }
+        if (!response.ok) throw new Error(`news api ${response.status}`);
         const payload = await response.json();
         if (cancelled) return;
         const items = Array.isArray(payload.articles) ? payload.articles : [];
-        setNewsState({
-          status: items.length ? 'success' : 'empty',
-          items,
-          updatedAt: payload.updatedAt,
-        });
+        setNewsState({ status: items.length ? 'success' : 'empty', items, updatedAt: payload.updatedAt });
       } catch (error) {
-        if (cancelled) return;
-        setNewsState({
+        if (!cancelled) setNewsState({
           status: 'error',
           items: [],
           updatedAt: new Date().toISOString(),
@@ -9839,314 +7855,81 @@ function App() {
         });
       }
     }
-
     loadNews();
-    const timer = window.setInterval(loadNews, 30 * 60 * 1000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [isCompanyEventsRoute, isDemandSupplyRoute, newsAnchor, newsCompany?.name, newsCountry, newsRefreshKey, newsSector.id]);
+    return () => { cancelled = true; };
+  }, [analysisAnchor?.id, analysisCompany?.id, newsRefreshKey]);
 
   useEffect(() => {
-    if (!shouldShowRelationshipCanvas || !isAiRelationshipMap || !selectedCompany) return;
-    scheduleCenterCompany(selectedCompany.id, 240);
-  }, [flowViewMode, isAiRelationshipMap, selectedCompany?.id, shouldShowRelationshipCanvas]);
+    if (!routeHash) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(routeHash)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [routeHash, routePath]);
 
-  function openAnalysis(company: Company, anchor?: string) {
-    if (!canOpenCompanyAnalysis(company)) {
-      if (groupCompanies.some((item) => item.id === company.id)) focusCompany(company.id);
-      else openCompanyMap(company);
+  const openHome = () => navigateWithinApp('/ko/');
+  const openPicks = () => navigateWithinApp(picksPath());
+  const openPicksArchive = () => navigateWithinApp(picksArchivePath());
+  const openPick = (pick: StockAutopsyPick) => navigateWithinApp(picksPath(pick));
+  const openDisclosures = () => navigateWithinApp(disclosuresPath());
+  const openReports = (reportId?: string) => navigateWithinApp(reportsPath(reportId));
+  const openBottlenecks = (bottleneckId?: string) => navigateWithinApp(bottlenecksPath(bottleneckId));
+  const openDemandSupply = () => navigateWithinApp(demandSupplyPath());
+
+  const openCategory = (sectorId: string, selectedCompanyId?: string) => {
+    const profilePath = selectedCompanyId
+      ? companyProfilePathForCompanyId(selectedCompanyId) ?? companyProfilePathForTicker(companies.find((company) => company.id === selectedCompanyId)?.ticker)
+      : undefined;
+    if (profilePath) {
+      navigateWithinApp(profilePath);
       return;
     }
-    window.history.pushState({}, '', analysisPath(company, anchor));
-    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-    if (anchor) {
-      window.setTimeout(() => {
-        document.getElementById(anchor)?.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
-      }, 140);
-    }
-  }
+    const replacement = resolveLegacyMarketMapRoute(`/ko/category/${encodeURIComponent(sectorId)}`) ?? demandSupplyPath();
+    navigateWithinApp(replacement);
+  };
 
-  function openCompanyMap(company: Company) {
-    if (groupCompanies.some((item) => item.id === company.id)) {
-      focusCompany(company.id);
+  const openAnalysis = (company: Company, anchor?: string) => {
+    if (canOpenCompanyAnalysis(company)) {
+      navigateWithinApp(analysisPath(company, anchor));
       return;
     }
-    window.history.pushState({}, '', categoryPath(company.sectorId, company.id));
-    setRoute(`${window.location.pathname}${window.location.search}`);
-    selectSectorScope(company.sectorId, company.id);
-  }
+    const profilePath = companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker);
+    navigateWithinApp(profilePath ?? companiesPath());
+  };
 
-  function closeAnalysis(company?: Company) {
-    const focusCompany = company ?? analysisCompany;
-    const sectorId = focusCompany?.sectorId ?? selectedSector.id;
-    window.history.pushState({}, '', categoryPath(sectorId, focusCompany?.id));
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
+  const closeAnalysis = (company?: Company) => {
+    const profilePath = company ? companyProfilePathForCompanyId(company.id) ?? companyProfilePathForTicker(company.ticker) : undefined;
+    navigateWithinApp(profilePath ?? companiesPath());
+  };
 
-  function selectSectorScope(sectorId: string, selectedCompanyIdToFocus?: string) {
-    const focusCompany = selectedCompanyIdToFocus ? companies.find((company) => company.id === selectedCompanyIdToFocus) : undefined;
-    const nextSector = (focusCompany ? sectors.find((sector) => sector.id === focusCompany.sectorId) : undefined) ?? sectors.find((sector) => sector.id === sectorId) ?? sectors[0];
-    const nextAnchor =
-      (focusCompany ? anchors.find((anchor) => anchor.id === focusCompany.anchorId) : undefined) ??
-      anchors.find((anchor) => anchor.sectorId === nextSector.id) ??
-      anchors[0];
-    const nextCompany = focusCompany ?? companies.find((company) => company.id === nextAnchor.id) ?? companies.find((company) => company.anchorId === nextAnchor.id && company.tier !== 'anchor') ?? companies[0];
-    setSelectedCountry(nextSector.country);
-    setSelectedSectorId(nextSector.id);
-    setSelectedAnchorId(nextAnchor.id);
-    setSelectedCompanyId(nextCompany.id);
-    setQuery('');
-    setRiskFilter('all');
-    setStageFilter('all');
-    setListingFilter('all');
-    setRelationshipFilter('all');
-    setConfidenceFilter('all');
-    setMapViewMode('core');
-    setFlowViewMode('core');
-    setRoleFilter('all');
-    setShowReferenceNodes(false);
-    setShowNeedsVerification(false);
-    setShowDetailedLinks(false);
-    setExpandedCompanyIds(new Set());
-    setSelectedFlowStage(null);
-    setHoveredLinkId(null);
-    setSelectedLinkId(null);
-    setSourcePanelLinkId(null);
-    setStoryGraphRegion('all');
-    setStoryGraphViewMode('selected');
-  }
-
-  function openCategory(sectorId: string, selectedCompanyIdToFocus?: string) {
-    if (sectorId === reconstructionInfrastructureMap.sectorId || sectorId === semiconductorClusterInfrastructureMap.sectorId) {
-      window.history.pushState({}, '', categoryPath(sectorId, selectedCompanyIdToFocus, selectedCompanyIdToFocus ? 'companies' : 'industry'));
-      setRoute(`${window.location.pathname}${window.location.search}`);
-      return;
-    }
-    const focusCompany = selectedCompanyIdToFocus ? companies.find((company) => company.id === selectedCompanyIdToFocus) : undefined;
-    const nextSectorId = focusCompany?.sectorId ?? sectorId;
-    selectSectorScope(nextSectorId, focusCompany?.id);
-    window.history.pushState({}, '', categoryPath(nextSectorId, focusCompany?.id, focusCompany ? 'companies' : 'industry'));
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openReconstructionCompany(companyId: string) {
-    selectMarketMapCompany(reconstructionInfrastructureMap.sectorId, companyId);
-  }
-
-  function openSemiconductorClusterCompany(companyId: string) {
-    selectMarketMapCompany(semiconductorClusterInfrastructureMap.sectorId, companyId);
-  }
-
-  function selectMarketMapCompany(sectorId: string, companyId: string) {
-    const params = new URLSearchParams(window.location.search);
-    params.set('company', companyId);
-    params.set('view', 'companies');
-    params.delete('relation');
-    const query = params.toString();
-    window.history.pushState({}, '', `/ko/category/${encodeURIComponent(sectorId)}${query ? `?${query}` : ''}`);
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openMarketMapLibrary() {
-    window.history.pushState({}, '', marketMapPath());
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function updateMarketMapDetailView(view: MarketMapDetailViewMode) {
-    const params = new URLSearchParams(window.location.search);
-    params.set('view', view);
-    const query = params.toString();
-    window.history.pushState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function updateMarketMapRelationQuery(
-    key: 'region' | 'density' | 'relationType' | 'relation',
-    value: string | null,
-    defaultValue?: string,
-  ) {
-    const params = new URLSearchParams(window.location.search);
-    if (!value || value === defaultValue) params.delete(key);
-    else params.set(key, value);
-    params.set('view', 'companies');
-    if (key === 'density' || key === 'relationType') params.delete('relation');
-    const query = params.toString();
-    window.history.pushState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function updateMarketMapRelationRegion(region: MarketMapGraphRegion) {
-    updateMarketMapRelationQuery('region', region, 'all');
-  }
-
-  function updateMarketMapRelationDensity(density: MarketMapRelationDensity) {
-    updateMarketMapRelationQuery('density', density, 'core');
-  }
-
-  function updateMarketMapRelationType(relationType: MarketMapRelationTypeFilter) {
-    updateMarketMapRelationQuery('relationType', relationType, 'all');
-  }
-
-  function updateMarketMapRelation(relationId: string | null) {
-    updateMarketMapRelationQuery('relation', relationId);
-  }
-
-  function updateMarketMapFilters(region: MarketMapRegion | 'all', category: MarketMapCategory | 'all') {
-    const params = new URLSearchParams();
-    if (region !== 'all') params.set('region', region === 'us-focused' ? 'us' : region === 'kr-focused' ? 'kr' : 'global');
-    if (category !== 'all') params.set('category', category);
-    const queryString = params.toString();
-    window.history.pushState({}, '', `${marketMapPath()}${queryString ? `?${queryString}` : ''}`);
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openDisclosures() {
-    window.history.pushState({}, '', disclosuresPath());
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openReports(reportId?: string) {
-    window.history.pushState({}, '', reportsPath(reportId));
-    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-  }
-
-  function openBottlenecks(bottleneckId?: string) {
-    window.history.pushState({}, '', bottlenecksPath(bottleneckId));
-    setRoute(`${window.location.pathname}${window.location.search}${window.location.hash}`);
-  }
-
-  function openHome() {
-    window.history.pushState({}, '', '/ko/');
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openPicks() {
-    window.history.pushState({}, '', picksPath());
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openPicksArchive() {
-    window.history.pushState({}, '', picksArchivePath());
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openPick(pick: StockAutopsyPick) {
-    window.history.pushState({}, '', picksPath(pick));
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function openOwnershipReports() {
-    window.history.pushState({}, '', '/ko/ownership');
-    setRoute(`${window.location.pathname}${window.location.search}`);
-  }
-
-  function changeCountry(countryId: CountryId) {
-    const nextSector = sectors.find((sector) => sector.country === countryId) ?? sectors[0];
-    const nextAnchor = anchors.find((anchor) => anchor.sectorId === nextSector.id) ?? anchors[0];
-    setSelectedCountry(countryId);
-    setSelectedSectorId(nextSector.id);
-    setSelectedAnchorId(nextAnchor.id);
-    setSelectedCompanyId(nextAnchor.id);
-    setQuery('');
-    setRiskFilter('all');
-    setStageFilter('all');
-    setListingFilter('all');
-    setRelationshipFilter('all');
-    setConfidenceFilter('all');
-    setMapViewMode('core');
-    setFlowViewMode('core');
-    setRoleFilter('all');
-    setShowReferenceNodes(false);
-    setShowNeedsVerification(false);
-    setShowDetailedLinks(false);
-    setExpandedCompanyIds(new Set());
-    setSelectedFlowStage(null);
-    setHoveredLinkId(null);
-    setSelectedLinkId(null);
-    setSourcePanelLinkId(null);
-    if (isCategoryRoute) {
-      window.history.pushState({}, '', categoryPath(nextSector.id));
-      setRoute(`${window.location.pathname}${window.location.search}`);
-    }
-  }
-
-  function changeSector(sectorId: string) {
-    const nextAnchor = anchors.find((anchor) => anchor.sectorId === sectorId);
-    selectSectorScope(sectorId, nextAnchor?.id);
-    if (isCategoryRoute) {
-      window.history.pushState({}, '', categoryPath(sectorId));
-      setRoute(`${window.location.pathname}${window.location.search}`);
-    }
-  }
-
-  function changeAnchor(anchorId: string) {
-    setSelectedAnchorId(anchorId);
-    setSelectedCompanyId(anchorId);
-    setQuery('');
-    setRiskFilter('all');
-    setStageFilter('all');
-    setListingFilter('all');
-    setRelationshipFilter('all');
-    setConfidenceFilter('all');
-    setMapViewMode('core');
-    setFlowViewMode('core');
-    setRoleFilter('all');
-    setShowReferenceNodes(false);
-    setShowNeedsVerification(false);
-    setShowDetailedLinks(false);
-    setExpandedCompanyIds(new Set());
-    setSelectedFlowStage(null);
-    setHoveredLinkId(null);
-    setSelectedLinkId(null);
-    setSourcePanelLinkId(null);
-  }
+  const navigation = (active: PrimaryNavKey) => (
+    <PrimaryNavigation
+      active={active}
+      onHome={openHome}
+      onOpenPicks={openPicks}
+      onOpenMarketMap={openDemandSupply}
+      onOpenDisclosures={openDisclosures}
+      onOpenReports={openReports}
+    />
+  );
 
   if (routeCompanyProfileMatch) {
-    const navigation = (
-      <PrimaryNavigation
-        active="companies"
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-      />
-    );
-    return routeCompanyResearchProfile ? (
-      <CompanyResearchProfilePage viewModel={routeCompanyResearchProfile} navigation={navigation} onNavigate={navigateWithinApp} />
-    ) : (
-      <CompanyProfileNotFoundPage navigation={navigation} onNavigate={navigateWithinApp} />
-    );
+    return routeCompanyResearchProfile
+      ? <CompanyResearchProfilePage viewModel={routeCompanyResearchProfile} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      : <CompanyProfileNotFoundPage navigation={navigation('companies')} onNavigate={navigateWithinApp} />;
   }
 
   if (routeCompaniesMatch) {
-    return (
-      <CompanyProfilesListPage
-        profiles={companyResearchProfileList()}
-        navigation={(
-          <PrimaryNavigation
-            active="companies"
-            onHome={openHome}
-            onOpenPicks={openPicks}
-            onOpenMarketMap={openMarketMapLibrary}
-            onOpenDisclosures={openDisclosures}
-            onOpenReports={openReports}
-          />
-        )}
-        onNavigate={navigateWithinApp}
-      />
-    );
+    return <CompanyProfilesListPage profiles={companyResearchProfileList()} navigation={navigation('companies')} onNavigate={navigateWithinApp} />;
   }
 
   if (isPicksRoute) {
     return (
       <StockAutopsyPicksPage
         selectedPickId={routePickId}
-        isArchive={isPickArchiveRoute}
+        isArchive={Boolean(routePickArchiveMatch)}
         onHome={openHome}
-        onOpenMarketMap={openMarketMapLibrary}
+        onOpenMarketMap={openDemandSupply}
         onOpenCategory={openCategory}
         onOpenAnalysis={openAnalysis}
         onOpenPick={openPick}
@@ -10162,79 +7945,23 @@ function App() {
   }
 
   if (isDisclosuresRoute) {
-    return (
-      <MarketDisclosuresPage
-        disclosures={marketDisclosures}
-        secFilings={marketSecFilings}
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenReports={openReports}
-      />
-    );
+    return <MarketDisclosuresPage disclosures={marketDisclosures} secFilings={marketSecFilings} onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenReports={openReports} />;
   }
 
   if (isCompanyEventsRoute) {
-    return (
-      <CompanyEventsPage
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-      />
-    );
+    return <CompanyEventsPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
   }
 
-  if (isMarketMapRoute) {
-    return (
-      <MarketMapLibraryPage
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenDisclosures={openDisclosures}
-        onOpenCategory={openCategory}
-        onOpenReports={openReports}
-        regionQuery={routeParams.get('region')}
-        categoryQuery={routeParams.get('category')}
-        onFilterChange={updateMarketMapFilters}
-      />
-    );
+  if (routeMacroDashboardMatch) {
+    return <MacroDashboardPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
   }
 
-  if (isMacroDashboardRoute) {
-    return (
-      <MacroDashboardPage
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-      />
-    );
+  if (routeMarketRelationsMatch) {
+    return <MarketRelationsPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
   }
 
-  if (isMarketRelationsRoute) {
-    return (
-      <MarketRelationsPage
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-      />
-    );
-  }
-
-  if (isDemandSupplyRoute) {
-    return (
-      <DemandSupplyPage
-        onHome={openHome}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-      />
-    );
+  if (routeDemandSupplyMatch || routeCategoryMatch) {
+    return <DemandSupplyPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
   }
 
   if (routeBottleneckDetailMatch) {
@@ -10244,7 +7971,7 @@ function App() {
         onHome={openHome}
         onOpenBottlenecks={openBottlenecks}
         onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
+        onOpenMarketMap={openDemandSupply}
         onOpenDisclosures={openDisclosures}
         onOpenReports={openReports}
         onOpenCategory={openCategory}
@@ -10254,1193 +7981,55 @@ function App() {
   }
 
   if (routeBottlenecksMatch) {
-    return (
-      <SupplyChainBottlenecksPage
-        onHome={openHome}
-        onOpenBottlenecks={openBottlenecks}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-        onOpenCategory={openCategory}
-      />
-    );
+    return <SupplyChainBottlenecksPage onHome={openHome} onOpenBottlenecks={openBottlenecks} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} onOpenCategory={openCategory} />;
   }
 
   if (routeReportDetailMatch) {
-    return (
-      <IndustryReportDetailPage
-        report={routeIndustryReport}
-        onHome={openHome}
-        onOpenReports={openReports}
-        onOpenPicks={openPicks}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenDisclosures={openDisclosures}
-        onOpenCategory={openCategory}
-        onOpenPick={openPick}
-      />
-    );
+    return <IndustryReportDetailPage report={routeIndustryReport} onHome={openHome} onOpenReports={openReports} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenPick={openPick} />;
   }
 
   if (routeReportsMatch) {
-    return (
-      <IndustryReportsPage
-        onHome={openHome}
-        onOpenMarketMap={openMarketMapLibrary}
-        onOpenPicks={openPicks}
-        onOpenDisclosures={openDisclosures}
-        onOpenCategory={openCategory}
-        onOpenReport={openReports}
-        onOpenPick={openPick}
-      />
-    );
+    return <IndustryReportsPage onHome={openHome} onOpenMarketMap={openDemandSupply} onOpenPicks={openPicks} onOpenDisclosures={openDisclosures} onOpenCategory={openCategory} onOpenReport={openReports} onOpenPick={openPick} />;
   }
 
-  if (isReconstructionInfrastructureRoute) {
-    return (
-      <ReactFlowProvider>
-        <InfrastructureStoryMapPage
-          map={reconstructionInfrastructureMap}
-          kicker="재건 / 인프라 시장지도"
-          graphAriaLabel="재건 인프라 전체 관계도"
-          requestedCompanyId={routeParams.get('company')}
-          activeView={marketMapDetailView}
-          onViewChange={updateMarketMapDetailView}
-          relationRegion={marketMapRelationRegion}
-          relationDensity={marketMapRelationDensity}
-          relationType={marketMapRelationType}
-          requestedRelationId={requestedMarketMapRelationId}
-          onRelationRegionChange={updateMarketMapRelationRegion}
-          onRelationDensityChange={updateMarketMapRelationDensity}
-          onRelationTypeChange={updateMarketMapRelationType}
-          onRelationChange={updateMarketMapRelation}
-          onHome={openHome}
-          onOpenMarketMap={openMarketMapLibrary}
-          onOpenPicks={openPicks}
-          onOpenDisclosures={openDisclosures}
-          onOpenPick={openPick}
-          onOpenReports={openReports}
-          onSelectCompany={openReconstructionCompany}
-          marketPrices={marketPrices}
-        />
-      </ReactFlowProvider>
-    );
-  }
-
-  if (isSemiconductorClusterInfrastructureRoute) {
-    return (
-      <ReactFlowProvider>
-        <InfrastructureStoryMapPage
-          map={semiconductorClusterInfrastructureMap}
-          kicker="반도체 클러스터 / 산업단지 인프라 시장지도"
-          graphAriaLabel="반도체 클러스터 산업단지 인프라 전체 관계도"
-          shellClassName="semiconductor-cluster-map-shell"
-          requestedCompanyId={routeParams.get('company')}
-          activeView={marketMapDetailView}
-          onViewChange={updateMarketMapDetailView}
-          relationRegion={marketMapRelationRegion}
-          relationDensity={marketMapRelationDensity}
-          relationType={marketMapRelationType}
-          requestedRelationId={requestedMarketMapRelationId}
-          onRelationRegionChange={updateMarketMapRelationRegion}
-          onRelationDensityChange={updateMarketMapRelationDensity}
-          onRelationTypeChange={updateMarketMapRelationType}
-          onRelationChange={updateMarketMapRelation}
-          onHome={openHome}
-          onOpenMarketMap={openMarketMapLibrary}
-          onOpenPicks={openPicks}
-          onOpenDisclosures={openDisclosures}
-          onOpenPick={openPick}
-          onOpenReports={openReports}
-          onSelectCompany={openSemiconductorClusterCompany}
-          marketPrices={marketPrices}
-        />
-      </ReactFlowProvider>
-    );
-  }
-
-  if (isOwnershipRoute) {
+  if (routeOwnershipMatch) {
     return <OwnershipReportsPage onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />;
   }
 
-  if (isFinancialLearnRoute) {
+  if (routeFinancialLearnMatch) {
     return <FinancialLearningPage onHome={openHome} />;
   }
 
-  if (isAnalysisRoute && analysisCompany && canOpenCompanyAnalysis(analysisCompany)) {
-    return (
-      <ReactFlowProvider>
-        <AnalysisPage
-          company={analysisCompany}
-          anchor={analysisAnchor}
-          newsState={newsState}
-          onHome={openHome}
-          onBack={closeAnalysis}
-          onOpenAnalysis={openAnalysis}
-          onRefreshNews={() => setNewsRefreshKey((current) => current + 1)}
-          marketPrices={marketPrices}
-        />
-      </ReactFlowProvider>
-    );
+  if (routeAnalysisMatch && analysisCompany && analysisAnchor) {
+    return <AnalysisPage company={analysisCompany} anchor={analysisAnchor} newsState={newsState} onHome={openHome} onBack={closeAnalysis} onOpenAnalysis={openAnalysis} onRefreshNews={() => setNewsRefreshKey((current) => current + 1)} marketPrices={marketPrices} />;
   }
 
-  if (isAnalysisRoute) {
-    const fallbackConnection = analysisCompany ? companyConnectionState(analysisCompany) : null;
+  if (routeAnalysisMatch) {
     return (
       <div className="pick-shell story-dark-shell story-pick-shell">
-        <header className="pick-nav">
-          <button type="button" onClick={openHome}>홈</button>
-          <button type="button" onClick={() => openCategory(analysisCompany?.sectorId ?? 'us-semiconductors', analysisCompany?.id)}>
-            시장 흐름 지도
-          </button>
-        </header>
+        {navigation('analysis')}
         <main className="pick-empty">
-          <h1>{analysisCompany ? `${analysisCompany.name} 해설 준비 중` : '기업 해설을 찾을 수 없습니다.'}</h1>
-          <p>
-            {analysisCompany
-              ? `${fallbackConnection?.label ?? '해설 준비 중'} 상태입니다. 빈 분석 화면 대신 시장 흐름 지도에서 관계만 확인할 수 있습니다.`
-              : '아직 등록되지 않은 기업입니다. 시장 흐름 지도에서 연결된 기업을 다시 선택해주세요.'}
-          </p>
-          <button type="button" onClick={() => openCategory(analysisCompany?.sectorId ?? 'us-semiconductors', analysisCompany?.id)}>
-            시장 흐름에서 보기
-          </button>
+          <h1>기업 해설을 찾을 수 없습니다.</h1>
+          <p>기업 한눈에 보기에서 등록된 기업과 공식 발표를 다시 확인해 주세요.</p>
+          <button type="button" onClick={() => navigateWithinApp(companiesPath())}>기업 한눈에 보기</button>
         </main>
       </div>
-    );
-  }
-
-  if (!isCategoryRoute) {
-    return (
-      <LandingPage
-        onHome={openHome}
-        onOpenMarketMapLibrary={openMarketMapLibrary}
-        onOpenPicks={openPicks}
-        onOpenDisclosures={openDisclosures}
-        onOpenReports={openReports}
-        onOpenCategory={openCategory}
-        onOpenPick={openPick}
-        marketPrices={marketPrices}
-        disclosures={marketDisclosures}
-        secFilings={marketSecFilings}
-      />
     );
   }
 
   return (
-    <ReactFlowProvider>
-      <div className={`app-shell ${isStoryMarketMap ? 'ai-mvp-map market-map-unified-shell' : ''} ${shouldShowReadingTemplate ? 'ai-board-default' : ''} ${isAdvancedRelationshipView ? 'advanced-relationship-view' : ''} ${isDetailCollapsed ? 'detail-collapsed' : ''}`}>
-        {isStoryMarketMap ? (
-          <PrimaryNavigation
-            active="market-map"
-            onHome={openHome}
-            onOpenPicks={openPicks}
-            onOpenMarketMap={openMarketMapLibrary}
-            onOpenDisclosures={openDisclosures}
-            onOpenReports={openReports}
-          />
-        ) : null}
-        <aside className="left-panel">
-          <div className="brand-block">
-            <div className="brand-mark">
-              <Network size={22} />
-            </div>
-            <div>
-              <p className="eyebrow">주가해부실 · 초보 투자자용 흐름 학습</p>
-              <h1>시장 흐름 지도</h1>
-            </div>
-          </div>
-
-          <div className="country-toggle" aria-label="국가 선택">
-            {countries.map((item) => (
-              <button
-                key={item.id}
-                className={selectedCountry === item.id ? 'active' : ''}
-                type="button"
-                onClick={() => changeCountry(item.id)}
-              >
-                <Globe2 size={15} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <label className="field-label" htmlFor="sector-select">
-            산업 섹터
-          </label>
-          <div className="select-wrap">
-            <select id="sector-select" value={selectedSector.id} onChange={(event) => changeSector(event.target.value)}>
-              {countrySectors.map((sector) => (
-                <option key={sector.id} value={sector.id}>
-                  {sector.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} />
-          </div>
-          <p className="context-copy">{selectedSector.description}</p>
-
-          <div className="term-guide" aria-label="초보자용 용어 설명">
-            <div><strong>밸류체인</strong><span>제품이 만들어지고 팔리기까지의 연결 구조</span></div>
-            <div><strong>경제적 해자</strong><span>경쟁사가 쉽게 따라오기 어려운 이유</span></div>
-            <div><strong>고객 의존도</strong><span>매출이 특정 고객에게 얼마나 기대는지</span></div>
-            <div><strong>병목 기업</strong><span>없으면 산업 흐름이 막힐 수 있는 핵심 기업</span></div>
-          </div>
-
-          {isAiRelationshipMap && (
-            <section className="first-look-card" aria-label="먼저 볼 기업">
-              <div className="section-title">
-                <Target size={16} />
-                <span>먼저 볼 기업</span>
-              </div>
-              <div className="first-look-list">
-                {firstLookCompanies.map((company, index) => {
-                  const role = companyRoleProfile(company);
-                  return (
-                    <button key={company.id} type="button" onClick={() => focusCompany(company.id)}>
-                      <span>{index + 1}</span>
-                      <CompanyIdentityForCompany company={company} size="compact" />
-                      <small>{role.primary} · {role.secondary}</small>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <div className="anchor-list">
-            <div className="section-title">
-              <Target size={16} />
-              <span>섹터 중심 기업 3개</span>
-            </div>
-            {topAnchors.map((anchor) => (
-              <button
-                key={anchor.id}
-                className={`anchor-row ${selectedAnchor.id === anchor.id ? 'selected' : ''}`}
-                type="button"
-                onClick={() => changeAnchor(anchor.id)}
-              >
-                <span className="rank-badge">#{anchor.rank}</span>
-                <span>
-                  <CompanyIdentity
-                    companyName={anchor.name}
-                    ticker={anchor.ticker}
-                    countryLabel={countryLabelFromMarket(anchor.country) || countryLabelFromMarket(anchor.exchange)}
-                    size="compact"
-                  />
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <label className="field-label" htmlFor="company-search">
-            기업 관계 검색
-          </label>
-          <div className="search-box">
-            <Search size={17} />
-            <input
-              id="company-search"
-              type="search"
-              placeholder="기업, 제품, 밸류체인, 해자"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-
-          <div className="role-filter-card" aria-label="기본 역할 필터">
-            <span>기본 필터</span>
-            <div>
-              {roleFilterOptions.map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  className={roleFilter === filter.value ? 'active' : ''}
-                  onClick={() => setRoleFilter(filter.value)}
-                >
-                  <strong>{filter.label}</strong>
-                  <small>{filter.note}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <details className="advanced-filter-card">
-            <summary>고급 필터 열기</summary>
-            <div className="filter-row" aria-label="리스크 필터">
-              <button className={riskFilter === 'all' ? 'active' : ''} onClick={() => setRiskFilter('all')} type="button">
-                전체
-              </button>
-              <button className={riskFilter === 'high' ? 'active danger' : ''} onClick={() => setRiskFilter('high')} type="button">
-                고위험
-              </button>
-              <button className={riskFilter === 'medium' ? 'active warn' : ''} onClick={() => setRiskFilter('medium')} type="button">
-                중간
-              </button>
-              <button className={riskFilter === 'low' ? 'active stable' : ''} onClick={() => setRiskFilter('low')} type="button">
-                낮음
-              </button>
-            </div>
-
-            <div className="stage-filter" aria-label="밸류체인 단계 필터">
-              <span>밸류체인 단계</span>
-              <div>
-                <button type="button" className={stageFilter === 'all' ? 'active' : ''} onClick={() => setStageFilter('all')}>
-                  전체
-                </button>
-                {stageOptions.map((stage) => (
-                  <button key={stage} type="button" className={stageFilter === stage ? 'active' : ''} onClick={() => setStageFilter(stage)}>
-                    {stage}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="stage-filter" aria-label="상장 여부 필터">
-              <span>분석 대상 구분</span>
-              <div>
-                {[
-                  { value: 'all', label: '전체' },
-                  { value: 'listed', label: '상장기업' },
-                  { value: 'reference', label: '비상장/참고' },
-                ].map((filter) => (
-                  <button
-                    key={filter.value}
-                    type="button"
-                    className={listingFilter === filter.value ? 'active' : ''}
-                    onClick={() => setListingFilter(filter.value as ListingFilter)}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="stage-filter" aria-label="관계 유형 필터">
-              <span>관계 유형</span>
-              <div>
-                <button type="button" className={relationshipFilter === 'all' ? 'active' : ''} onClick={() => setRelationshipFilter('all')}>
-                  전체
-                </button>
-                {relationshipOptions.map((type) => (
-                  <button key={type} type="button" className={relationshipFilter === type ? 'active' : ''} onClick={() => setRelationshipFilter(type)}>
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="stage-filter" aria-label="관계 확실성 필터">
-              <span>관계 확실성</span>
-              <div>
-                <button type="button" className={confidenceFilter === 'all' ? 'active' : ''} onClick={() => setConfidenceFilter('all')}>
-                  전체
-                </button>
-                {confidenceOptions.map((confidence) => (
-                  <button
-                    key={confidence}
-                    type="button"
-                    className={confidenceFilter === confidence ? 'active' : ''}
-                    onClick={() => setConfidenceFilter(confidence)}
-                  >
-                    {confidence}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </details>
-
-          <div className="metric-grid">
-            <div className="metric">
-              <span>중심 기업</span>
-              <strong>3</strong>
-            </div>
-            <div className="metric">
-              <span>보조 기업</span>
-              <strong>{groupCompanies.filter((company) => company.tier === 'tier2').length}</strong>
-            </div>
-            <div className="metric">
-              <span>고위험</span>
-              <strong>{highRiskCount}</strong>
-            </div>
-            <div className="metric">
-              <span>필터 제외</span>
-              <strong>{filteredOutCount}</strong>
-            </div>
-          </div>
-
-          <div className="company-list">
-            <div className="section-title">
-              <Filter size={16} />
-              <span>선택 기업 관계</span>
-            </div>
-            {visibleCompanies.map((company) => {
-              const role = companyRoleProfile(company);
-              const connection = companyConnectionState(company);
-              return (
-                <div className={`company-row-card connection-${connection.level} ${selectedCompany?.id === company.id ? 'selected' : ''}`} key={company.id}>
-                  <button
-                    className="company-row"
-                    onClick={() => focusCompany(company.id)}
-                    type="button"
-                  >
-                    <span className={`role-badge role-${role.className}`}>{role.primary}</span>
-                    <span className="company-row-main">
-                      <CompanyIdentityForCompany company={company} size="compact" />
-                      <small>{role.secondary} · {productText(company)}</small>
-                      <em>{companyScopeLabel(company)}</em>
-                    </span>
-                    <span className={`risk-dot ${riskClass[company.riskLevel]}`} />
-                  </button>
-                  {connection.canOpenAnalysis ? (
-                    <button className="company-row-action" type="button" onClick={() => openAnalysis(company)}>
-                      {connection.canOpenFinancials ? '재무·공시 보기' : '기업 해설 보기'}
-                    </button>
-                  ) : (
-                    <span className="company-row-disabled">{connection.label}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </aside>
-
-        <main className="map-panel">
-          <header className="topbar">
-            <div className="topbar-copy">
-              <nav className="breadcrumb" aria-label="현재 위치">
-                <button type="button" onClick={openHome}>홈</button>
-                <span>주가해부실</span>
-                <span>기업 관계</span>
-                <span>{selectedSector.label}</span>
-                <strong>{isStoryMarketMap && selectedCompany ? selectedCompany.name : selectedAnchor.name}</strong>
-              </nav>
-              <p className="eyebrow">
-                {country.label} · {selectedSector.label}
-              </p>
-              <h2>
-                {isAdvancedRelationshipView
-                  ? '전체 연결 보기'
-                  : isAiRelationshipMap
-                    ? 'AI를 많이 쓰면 어떤 회사들이 같이 움직일까?'
-                    : isDatacenterPowerCoolingMap
-                      ? 'AI 서버가 늘면 전기와 열 관리도 같이 커집니다'
-                    : `${selectedAnchor.name} 기업 관계 지도`}
-              </h2>
-              <p className="topbar-subcopy">
-                {isAdvancedRelationshipView
-                  ? '흐름을 다 본 뒤, 회사들이 어떻게 이어지는지 한 번에 확인합니다.'
-                  : isAiRelationshipMap
-                  ? '어려운 용어보다 흐름부터 봅니다.'
-                  : isDatacenterPowerCoolingMap
-                  ? 'GPU와 HBM은 AI 인프라의 앞부분입니다. 실제 데이터센터는 전기를 안정적으로 공급하고, 서버에서 나는 열을 식혀야 계속 돌아갑니다.'
-                  : selectedSector.description}
-              </p>
-              {isDatacenterPowerCoolingMap && (
-                <p className="topbar-support-copy">
-                  그래서 전력 장비, UPS, 배전, 냉각/HVAC 기업을 함께 봅니다.
-                </p>
-              )}
-              {selectedCompany && (
-                <div className="selected-company-context">
-                  <span>선택한 기업</span>
-                  <CompanyIdentityForCompany company={selectedCompany} size="compact" />
-                  <em>{selectedCompanyStatusLabel}</em>
-                  {companyEventsForCompany(selectedCompany.id, 1).map((event) => <a key={event.id} href={companyEventsPath(event.id)} onClick={(clickEvent) => { clickEvent.preventDefault(); navigateWithinApp(companyEventsPath(event.id)); }}>최근 공식 변화 · {event.title} <ArrowRight size={12} aria-hidden="true" /></a>)}
-                </div>
-              )}
-            </div>
-            <div className="topbar-actions">
-              {isAdvancedRelationshipView ? (
-                <button
-                  type="button"
-                  className="icon-action text-action advanced-close-action"
-                  onClick={() => {
-                    applyFlowViewMode('core');
-                    window.setTimeout(() => storyAdvancedTriggerRef.current?.focus(), 0);
-                  }}
-                >
-                  <Network size={18} aria-hidden="true" />
-                  전체 연결 접기
-                </button>
-              ) : null}
-              <button type="button" className="icon-action text-action" onClick={openHome}>
-                <Network size={18} />
-                홈
-              </button>
-              <button
-                type="button"
-                className={`icon-action text-action lock-action ${isMapLocked ? 'active' : ''}`}
-                onClick={() => setIsMapLocked((current) => !current)}
-                aria-pressed={isMapLocked}
-              >
-                {isMapLocked ? <Lock size={18} /> : <Unlock size={18} />}
-                {isMapLocked ? '지도 잠금' : '지도 이동'}
-              </button>
-              <button
-                type="button"
-                className="icon-action text-action"
-                disabled={!selectedCanOpenFinancials}
-                onClick={() => selectedCompany && selectedCanOpenFinancials && openAnalysis(selectedCompany, 'financial-easy-view')}
-              >
-                <Database size={18} />
-                {selectedCanOpenFinancials ? '숫자 3개 보기' : selectedCanOpenAnalysis ? '재무 준비 중' : '관계 참고용'}
-              </button>
-              <button type="button" className="icon-action text-action detail-action" onClick={() => setIsDetailCollapsed((current) => !current)}>
-                <PanelRightOpen size={18} />
-                {isDetailCollapsed ? '상세 열기' : '상세 접기'}
-              </button>
-              {selectedReportLink && selectedCanOpenAnalysis && (
-                <ReportAction
-                  reportLink={selectedReportLink}
-                  className="topbar-report-action"
-                  iconSize={15}
-                  label={
-                    selectedReportLink.status === 'direct'
-                      ? '원문 보고서'
-                      : selectedReportLink.status === 'search-only'
-                        ? '검색으로 확인'
-                        : selectedReportLink.status === 'private-company'
-                          ? '비상장/공시 없음'
-                          : selectedReportLink.status === 'no-public-filing'
-                            ? '공개 보고서 없음'
-                            : selectedReportLink.status === 'listing-unknown'
-                              ? '상장 정보 확인'
-                              : '원문 연결 필요'
-                  }
-                />
-              )}
-              {selectedCompany && !selectedCanOpenAnalysis && <span className="topbar-reference-note">{selectedConnectionState?.label ?? '시장 흐름 참고'}</span>}
-            </div>
-          </header>
-
-
-          {shouldShowReadingTemplate && selectedCompany && storyMapViewModel && (
-            <MarketMapDetailTemplate
-              viewModel={storyMapViewModel}
-              activeView={marketMapDetailView}
-              onViewChange={updateMarketMapDetailView}
-              onCompanyAction={handleStoryMapCompanyAction}
-              renderIdentity={(company, size) => {
-                const sourceCompany = companies.find((item) => item.id === company.id);
-                return sourceCompany
-                  ? <CompanyIdentityForCompany company={sourceCompany} size={size} statusLabel={company.statusLabel} />
-                  : <CompanyIdentity companyName={company.name} ticker={company.ticker} countryLabel={company.countryLabel} statusLabel={company.statusLabel} size={size} />;
-              }}
-              renderLogo={(company, size) => {
-                const sourceCompany = companies.find((item) => item.id === company.id);
-                return sourceCompany
-                  ? <CompanyLogo company={sourceCompany} size={size} />
-                  : <div className="market-map-template-monogram" aria-hidden="true">{company.mark ?? company.name.slice(0, 2)}</div>;
-              }}
-              renderPrice={(companyId) => {
-                const sourceCompany = companies.find((item) => item.id === companyId);
-                if (!sourceCompany || !hasTradableTicker(sourceCompany)) return null;
-                const companyPrice = getPriceForCompany(sourceCompany, marketPrices);
-                return companyPrice && priceDirection(companyPrice) !== 'pending' ? <PriceBadge price={companyPrice} compact /> : null;
-              }}
-              advancedContent={
-                <MarketMapCompanyNetworkGraph
-                  id={selectedSector.id}
-                  ariaLabel={`${storyMapViewModel.title} 기업 연결 관계도`}
-                  companies={storyCompanyGraphCompanies}
-                  relations={storyCompanyGraphRelations}
-                  selectedCompanyId={selectedCompany.id}
-                  region={marketMapRelationRegion}
-                  density={marketMapRelationDensity}
-                  relationType={marketMapRelationType}
-                  requestedRelationId={requestedMarketMapRelationId}
-                  onSelectCompany={focusCompany}
-                  onRegionChange={updateMarketMapRelationRegion}
-                  onDensityChange={updateMarketMapRelationDensity}
-                  onRelationTypeChange={updateMarketMapRelationType}
-                  onRelationChange={updateMarketMapRelation}
-                />
-              }
-              resources={
-                <>
-                  <RelatedIndustryReports
-                    title="산업 보고서로 더 넓게 보기"
-                    description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
-                    reports={reportsForMap(selectedSector.id)}
-                    onOpenReports={openReports}
-                  />
-                  <EvidenceDetails
-                    description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
-                    groups={evidenceGroupsForMap(selectedSector.id)}
-                    onOpenReports={openReports}
-                  />
-                </>
-              }
-            />
-          )}
-
-
-
-          {isStoryMarketMap && !shouldShowReadingTemplate && (
-            <>
-              <RelatedIndustryReports
-                title="산업 보고서로 더 넓게 보기"
-                description="이 시장 흐름을 이해하는 데 도움이 되는 공개 보고서입니다. 숫자는 공시로, 산업 구조는 보고서로 함께 확인합니다."
-                reports={reportsForMap(selectedSector.id)}
-                onOpenReports={openReports}
-              />
-              <EvidenceDetails
-                description="산업 구조는 공개 보고서로, 기업 활동과 숫자는 공시·IR로 따로 확인합니다."
-                groups={evidenceGroupsForMap(selectedSector.id)}
-                onOpenReports={openReports}
-              />
-            </>
-          )}
-
-          {shouldShowRelationshipCanvas && (
-          <>
-          <MarketMapGraphShell
-            id={selectedSector.id}
-            expanded
-            description={storyMapViewModel?.advancedDescription ?? '산업 단계와 관련 기업의 전체 연결을 확인합니다.'}
-            onToggle={() => {
-              applyFlowViewMode('core');
-              window.setTimeout(() => storyAdvancedTriggerRef.current?.focus(), 0);
-            }}
-            controls={
-              <MarketMapGraphToolbar
-                availableRegions={storyGraphRegions}
-                activeRegion={storyGraphRegion}
-                onRegionChange={setStoryGraphRegion}
-                activeViewMode={storyGraphViewMode}
-                onFocusSelected={focusSelectedRelationshipMap}
-                onFitAll={fitEntireRelationshipMap}
-              />
-            }
-          >
-          {isAiRelationshipMap ? (
-            <div className="advanced-map-note">
-              전체 연결은 고급 참고입니다. 선을 누르면 관계 요약과 출처를 확인할 수 있습니다.
-            </div>
-          ) : null}
-          <section ref={graphWrapRef} className={`graph-wrap ${isMapLocked ? 'locked' : ''}`} aria-label="기업 관계 지도">
-            {isAiRelationshipMap && (
-              <div className="map-stage-ribbon" aria-hidden="true">
-                {aiStageColumns.map((stage) => (
-                  <span key={stage}>{stage}</span>
-                ))}
-              </div>
-            )}
-            {activeRelationship && activeRelationshipSummary && (
-              <div className="relationship-popover" role="status" aria-live="polite">
-                <button type="button" className="relationship-popover-close" onClick={() => { setHoveredLinkId(null); setSelectedLinkId(null); }} aria-label="관계 카드 닫기">
-                  ×
-                </button>
-                <span>관계 카드</span>
-                <strong>
-                  {companies.find((company) => company.id === activeRelationship.source)?.name}
-                  {' → '}
-                  {companies.find((company) => company.id === activeRelationship.target)?.name}
-                </strong>
-                <p>{activeRelationshipSummary.description}</p>
-                <dl>
-                  <div><dt>관계 유형</dt><dd>{activeRelationshipSummary.type}</dd></div>
-                  <div><dt>무엇이 연결되나</dt><dd>{activeRelationshipSummary.whatIsSold}</dd></div>
-                  <div>
-                    <dt>확실성</dt>
-                    <dd>
-                      <span className={`confidence-badge tiny ${confidenceClassName(activeRelationshipSummary.confidence)}`} title={confidenceHelpText(activeRelationshipSummary.confidence)}>
-                        {activeRelationshipSummary.confidence}
-                      </span>
-                    </dd>
-                  </div>
-                  <div><dt>매출 비중</dt><dd>{activeRelationshipSummary.revenueExposure}</dd></div>
-                  <div><dt>근거</dt><dd>{activeRelationshipSummary.evidenceSummary}</dd></div>
-                </dl>
-                <div className="relationship-popover-actions">
-                  <button type="button" onClick={() => setSourcePanelLinkId(activeRelationship.id)}>출처 보기</button>
-                  {activeRelationshipSummary.sourceUrl ? (
-                    <a href={activeRelationshipSummary.sourceUrl} target="_blank" rel="noreferrer">
-                      원문 열기
-                    </a>
-                  ) : (
-                    <span>출처 확인 필요</span>
-                  )}
-                </div>
-                <small>{activeRelationshipSummary.note}</small>
-              </div>
-            )}
-            <ReactFlow
-              nodes={flowNodes}
-              edges={flowEdges}
-              nodeTypes={nodeTypes}
-              onNodeClick={(_, node) => focusCompany(node.id)}
-              onEdgeMouseEnter={(_, edge) => setHoveredLinkId(edge.id)}
-              onEdgeMouseLeave={() => setHoveredLinkId(null)}
-              onEdgeClick={(_, edge) => setSelectedLinkId((current) => (current === edge.id ? null : edge.id))}
-              onInit={(instance) => setFlowInstance(instance)}
-              fitView={!isAiRelationshipMap}
-              fitViewOptions={{ padding: marketMapGraphConfig.fitViewPadding, duration: prefersReducedMotion() ? 0 : 420 }}
-              minZoom={marketMapGraphConfig.minZoom}
-              maxZoom={marketMapGraphConfig.maxZoom}
-              nodesDraggable={false}
-              nodesConnectable={false}
-              elementsSelectable={false}
-              panOnDrag
-              panOnScroll
-              zoomOnScroll
-              zoomOnPinch
-              zoomOnDoubleClick={false}
-              preventScrolling
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background color={isAdvancedRelationshipView ? '#edf2f7' : isAiRelationshipMap ? '#eef2f7' : '#d1d5db'} gap={isAdvancedRelationshipView ? 42 : isAiRelationshipMap ? 36 : 22} />
-              <Controls position="bottom-left" showInteractive={false} />
-            </ReactFlow>
-          </section>
-          </MarketMapGraphShell>
-
-          {sourcePanelLink && sourcePanelSummary && (
-            <div className="relationship-source-backdrop" role="presentation" onClick={() => setSourcePanelLinkId(null)}>
-              <aside
-                className="relationship-source-panel"
-                role="dialog"
-                aria-modal="true"
-                aria-label="관계 출처 보기"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <button type="button" className="relationship-source-close" onClick={() => setSourcePanelLinkId(null)} aria-label="출처 패널 닫기">
-                  ×
-                </button>
-                <span>관계 출처 보기</span>
-                <h3>
-                  {companies.find((company) => company.id === sourcePanelLink.source)?.name}
-                  {' → '}
-                  {companies.find((company) => company.id === sourcePanelLink.target)?.name}
-                </h3>
-                <p>{sourcePanelSummary.description}</p>
-                <dl>
-                  <div><dt>관계 유형</dt><dd>{sourcePanelSummary.type}</dd></div>
-                  <div>
-                    <dt>관계 확실성</dt>
-                    <dd>
-                      <span className={`confidence-badge ${confidenceClassName(sourcePanelSummary.confidence)}`} title={confidenceHelpText(sourcePanelSummary.confidence)}>
-                        {sourcePanelSummary.confidence}
-                      </span>
-                      <small>{confidenceHelpText(sourcePanelSummary.confidence)}</small>
-                    </dd>
-                  </div>
-                  <div><dt>근거 요약</dt><dd>{sourcePanelSummary.evidenceSummary}</dd></div>
-                  <div><dt>근거 종류</dt><dd>{sourcePanelSummary.evidenceTypeLabel}</dd></div>
-                  <div><dt>매출 비중</dt><dd>{sourcePanelSummary.revenueExposure}</dd></div>
-                  <div><dt>출처 이름</dt><dd>{sourcePanelSummary.sourceName}</dd></div>
-                  <div><dt>출처 날짜</dt><dd>{sourcePanelSummary.sourceDate}</dd></div>
-                  <div><dt>신뢰도</dt><dd>{sourcePanelSummary.sourceReliabilityLabel}</dd></div>
-                  <div><dt>마지막 확인일</dt><dd>{sourcePanelSummary.lastVerifiedAt}</dd></div>
-                </dl>
-                {sourcePanelSummary.sourceUrl ? (
-                  <a className="relationship-source-link" href={sourcePanelSummary.sourceUrl} target="_blank" rel="noreferrer">
-                    출처 원문 열기
-                    <ExternalLink size={14} />
-                  </a>
-                ) : (
-                  <span className="relationship-source-pending">출처 링크 연결 필요</span>
-                )}
-                <p className="relationship-source-warning">
-                  직접 납품, 독점 공급, 고객별 매출 비중은 공식 공시·IR·계약 원문이 확인될 때만 단정합니다.
-                </p>
-              </aside>
-            </div>
-          )}
-
-          <section className="bottom-panel intelligence-panel">
-            <div className="live-news-panel">
-              <div className="news-header">
-                <div className="section-title">
-                  <Radio size={16} />
-                  <span>최근 24시간 뉴스 API</span>
-                </div>
-                <button
-                  type="button"
-                  className="refresh-action"
-                  onClick={() => setNewsRefreshKey((current) => current + 1)}
-                  disabled={newsState.status === 'loading'}
-                >
-                  <RefreshCw size={14} />
-                  새로고침
-                </button>
-              </div>
-              <div className="news-meta">
-                <span>GDELT DOC 2.0</span>
-                <span>{newsState.updatedAt ? new Date(newsState.updatedAt).toLocaleTimeString() : '대기 중'}</span>
-              </div>
-              <div className="news-list">
-                {newsState.status === 'loading' && <div className="news-empty">뉴스 수집 중</div>}
-                {newsState.status === 'error' && (
-                  <div className="news-empty">
-                    Vercel 배포 또는 `npm run dev:vercel`에서 `/api/news`가 활성화됩니다.
-                    {newsState.error && <small>{newsState.error}</small>}
-                  </div>
-                )}
-                {newsState.status === 'empty' && <div className="news-empty">신뢰 도메인 기준 최근 24시간 새 뉴스 없음</div>}
-                {newsState.status === 'success' &&
-                  newsState.items.slice(0, 4).map((item) => (
-                    <a className="news-item" href={item.url} key={item.url} target="_blank" rel="noreferrer">
-                      <span>
-                        <Newspaper size={14} />
-                        {item.domain || item.source}
-                      </span>
-                      <strong>{item.title}</strong>
-                      <small>
-                        {formatNewsDate(item.seendate)}
-                        <ExternalLink size={12} />
-                      </small>
-                    </a>
-                  ))}
-              </div>
-            </div>
-          </section>
-          </>
-          )}
-        </main>
-
-        <aside className="right-panel">
-          {selectedCompany && selectedDisplayMetrics && (
-            <>
-              <div className="panel-heading">
-                <div className="panel-title-row">
-                  <CompanyLogo company={selectedCompany} size="large" />
-                  <div>
-                    <p className="eyebrow">현재 선택한 기업</p>
-                    <CompanyIdentityForCompany company={selectedCompany} size="hero" />
-                  </div>
-                </div>
-                <div className="panel-heading-actions">
-                  {selectedIsMainListed && hasTradableTicker(selectedCompany) ? (
-                    <PriceBadge price={selectedCompanyPrice} compact />
-                  ) : (
-                    <span className="reference-status-pill">{selectedIsMainListed ? '가격 티커 연결 필요' : companyScopeLabel(selectedCompany)}</span>
-                  )}
-                  <span className={`risk-badge ${riskClass[selectedCompany.riskLevel]}`}>
-                    리스크 {riskLabels[selectedCompany.riskLevel]}
-                  </span>
-                </div>
-              </div>
-
-              <div className="detail-card summary">
-                <div className="summary-main">
-                  {selectedRole && <span className={`role-badge large role-${selectedRole.className}`}>{selectedRole.primary}</span>}
-                  <span className={`scope-pill ${selectedCanOpenAnalysis ? 'listed' : 'reference'}`}>{companyScopeLabel(selectedCompany)}</span>
-                  {selectedConnectionState && (
-                    <div className="connection-badge-row">
-                      {selectedConnectionState.badges.map((badge) => (
-                        <span key={badge} className={`connection-status-badge ${selectedConnectionState.level}`}>{badge}</span>
-                      ))}
-                    </div>
-                  )}
-                  {selectedRole && <p className="role-explanation">{selectedRole.explanation}</p>}
-                  <strong>{companyBusinessSummary(selectedCompany)}</strong>
-                  <p>{companyScopeDetail(selectedCompany)}</p>
-                  {selectedCanOpenAnalysis ? (
-                    <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany)}>
-                      <FileSearch size={15} />
-                      기업 해설 보기
-                    </button>
-                  ) : (
-                    <span className="reference-status-card">{selectedConnectionState?.detail ?? '시장 흐름 참고 기업입니다.'}</span>
-                  )}
-                  {selectedRelatedPick && !selectedCanOpenAnalysis && (
-                    <button type="button" className="analysis-link-button" onClick={() => openPick(selectedRelatedPick)}>
-                      <FileSearch size={15} />
-                      관련 Pick 보기
-                    </button>
-                  )}
-                  <div className="summary-action-row">
-                    {selectedCanOpenFinancials ? (
-                      <button type="button" className="analysis-link-button" onClick={() => openAnalysis(selectedCompany, 'financial-easy-view')}>
-                        <Database size={15} />
-                        숫자 3개 보기
-                      </button>
-                    ) : selectedCanOpenAnalysis ? (
-                      <span className="analysis-link-button pending" aria-disabled="true">
-                        <Database size={15} />
-                        재무 연결 준비 중
-                      </span>
-                    ) : null}
-                    {isAiRelationshipMap && (
-                      <button type="button" className="analysis-link-button" onClick={() => toggleCompanyExpansion(selectedCompany.id)}>
-                        <Network size={15} />
-                        {expandedCompanyIds.has(selectedCompany.id) ? '관계 접기' : '관련 기업 보기'}
-                      </button>
-                    )}
-                  </div>
-                  <details className="map-advanced-actions">
-                    <summary>
-                      <span>고급 참고자료</span>
-                      <ChevronDown size={14} />
-                    </summary>
-                    <div>
-                      {selectedReportLink && selectedCanOpenAnalysis && <ReportAction reportLink={selectedReportLink} className="analysis-link-button" iconSize={15} />}
-                      {selectedReportLink && selectedCanOpenAnalysis && (
-                        <div className={`report-state-note ${selectedReportLink.status}`}>
-                          <strong>{selectedReportLink.statusLabel}</strong>
-                          <span>{selectedReportLink.statusDetail}</span>
-                        </div>
-                      )}
-                      {primaryDirectLinks[0] && (
-                        <button type="button" className="analysis-link-button" onClick={() => setSourcePanelLinkId(primaryDirectLinks[0].id)}>
-                          <FileSearch size={15} />
-                          관계 출처 보기
-                        </button>
-                      )}
-                      <button type="button" className="analysis-link-button" onClick={openOwnershipReports}>
-                        <Database size={15} />
-                        기관 보유 보고 보기
-                      </button>
-                      <button type="button" className="analysis-link-button" onClick={() => setNewsRefreshKey((current) => current + 1)}>
-                        <Newspaper size={15} />
-                        관련 뉴스 보기
-                      </button>
-                    </div>
-                  </details>
-                </div>
-              </div>
-
-              <div className="relationship-brief-grid" aria-label="선택 기업 핵심 관계">
-                <article>
-                  <span>이 회사는 뭐 해요?</span>
-                  <strong>{companyQuestionProductCopy(selectedCompany)}</strong>
-                  <p>{productText(selectedCompany)}</p>
-                </article>
-                <article>
-                  <span>왜 이 흐름에 있나요?</span>
-                  <strong>{companyQuestionDemandCopy(selectedCompany)}</strong>
-                  <p>{companyDemandTitle(selectedCompany)}</p>
-                </article>
-                <article>
-                  <span>같이 볼 회사는?</span>
-                  <strong>{selectedRelatedCompanyNames}</strong>
-                  <p>{selectedRelatedCompanyCopy}</p>
-                  <span className={`confidence-badge ${confidenceClassName(relationshipConfidenceLabel(selectedCompany))}`}>
-                    {relationshipConfidenceLabel(selectedCompany)}
-                    <em>{confidenceHelpText(relationshipConfidenceLabel(selectedCompany))}</em>
-                  </span>
-                </article>
-                <article>
-                  <span>경제적 해자 <em>경쟁사가 쉽게 따라오기 어려운 이유</em></span>
-                  <strong>{selectedMoat?.title}</strong>
-                  <p>{selectedMoat?.explanation}</p>
-                </article>
-                <article className="wide">
-                  <span>투자자가 볼 포인트</span>
-                  <strong>{companyInvestorWatchPoint(selectedCompany)}</strong>
-                  <p>{companyRevenueExposure(selectedCompany)}</p>
-                </article>
-              </div>
-
-              {selectedCanOpenFinancials && selectedBeginnerMetrics.length > 0 && (
-                <div className="detail-card beginner-metrics-compact">
-                  <div className="section-title">
-                    <BarChart3 size={16} />
-                    <span>먼저 볼 지표 3개</span>
-                  </div>
-                  <div>
-                    {selectedBeginnerMetrics.map((metric) => (
-                      <article key={metric.label}>
-                        <strong>{metric.label}</strong>
-                        <span>{metric.value}</span>
-                        <p>{metric.note}</p>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="detail-card direct-connections-card">
-                <div className="section-title">
-                  <ArrowRight size={16} />
-                  <span>직접 연결된 주요 기업</span>
-                </div>
-                <div className="direct-connection-list">
-                  {primaryDirectLinks.map((link) => {
-                    const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
-                    const counterpart = companies.find((company) => company.id === counterpartId);
-                    const relationship = linkRelationshipSummary(link);
-                    return (
-                      <article key={link.id}>
-                        <button type="button" className="direct-connection-main" onClick={() => { focusCompany(counterpartId); setSelectedLinkId(link.id); }}>
-                          <strong>{counterpart?.name ?? '연결 기업'}</strong>
-                          <span>{shortRelationshipLabel(relationship.type)}</span>
-                          <em className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`}>{relationship.confidence}</em>
-                        </button>
-                        <button type="button" className="direct-source-button" onClick={() => setSourcePanelLinkId(link.id)}>
-                          출처
-                        </button>
-                      </article>
-                    );
-                  })}
-                  {!primaryDirectLinks.length && <p>현재 공개 데이터 기준 직접 연결 관계가 아직 정리되지 않았습니다.</p>}
-                </div>
-                {selectedDirectLinks.length > primaryDirectLinks.length && (
-                  <button type="button" className="more-connections-button" onClick={() => setShowDetailedLinks(true)}>
-                    연결 {selectedDirectLinks.length - primaryDirectLinks.length}개 더 보기
-                  </button>
-                )}
-              </div>
-
-              {selectedCanOpenFinancials ? (
-                <>
-                  <div className="finance-grid">
-                    <div className="finance-item">
-                      <CircleDollarSign size={17} />
-                      <span>매출</span>
-                      <strong>{selectedRevenueDisplay?.primary ?? selectedDisplayMetrics.revenue}</strong>
-                      <small>{selectedRevenueDisplay?.sourceUnit ?? selectedDisplayMetrics.revenueUnit}</small>
-                    </div>
-                    <div className="finance-item">
-                      <LineChart size={17} />
-                      <span>성장률</span>
-                      <strong>{selectedDisplayMetrics.growth}</strong>
-                      <small>{selectedDisplayMetrics.growthBasis}</small>
-                    </div>
-                    <div className="finance-item">
-                      <BarChart3 size={17} />
-                      <span>영업이익률</span>
-                      <strong>{selectedDisplayMetrics.opMargin}</strong>
-                    </div>
-                    <div className="finance-item">
-                      <AlertTriangle size={17} />
-                      <span>부채비율</span>
-                      <strong>{selectedDisplayMetrics.debtRatio}</strong>
-                    </div>
-                  </div>
-                  <p className="finance-basis">{selectedRevenueDisplay?.basis ?? selectedDisplayMetrics.revenueBasis}</p>
-                </>
-              ) : (
-                <div className="reference-finance-note">
-                  <strong>{selectedCanOpenAnalysis ? '재무 연결 준비 중' : selectedConnectionState?.label ?? '시장 흐름 참고'}</strong>
-                  <p>{selectedConnectionState?.detail ?? '출처 없는 매출·영업이익률·부채비율을 표시하지 않습니다.'}</p>
-                </div>
-              )}
-
-              {selectedDependency && (
-                <div className={`dependency-card ${selectedDependency.className}`}>
-                  <span>고객 의존도 <em>매출이 특정 고객에게 얼마나 기대는지</em></span>
-                  <strong>{selectedDependency.level}</strong>
-                  {selectedDependency.value && <em>{selectedDependency.value}</em>}
-                  <p>{selectedDependency.copy}</p>
-                </div>
-              )}
-
-              <div className="detail-card">
-                <div className="section-title">
-                  <FileSearch size={16} />
-                  <span>애널리스트/리스크 의견</span>
-                </div>
-                <div className={`opinion-summary ${selectedAnalystSummary.className}`}>
-                  <strong>{selectedAnalystSummary.label}</strong>
-                  <span>{selectedAnalystSummary.ratio}</span>
-                </div>
-                <div className="opinion-list">
-                  {selectedAnalystSummary.riskNotes.slice(0, 4).map((opinion) => (
-                    <article className="opinion-item" key={opinion.id}>
-                      <div>
-                        <strong>{opinion.stance}</strong>
-                        <span>{opinion.firm}</span>
-                      </div>
-                      <p>{opinion.summary}</p>
-                      <small>
-                        {opinion.horizon} · {opinion.date}
-                      </small>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="detail-card">
-                <div className="section-title">
-                  <PanelRightOpen size={16} />
-                  <span>관계 요약</span>
-                </div>
-                <dl className="relationship-list">
-                  <div>
-                    <dt>관계 유형</dt>
-                    <dd>{relationshipTypeLabel(selectedCompany)}</dd>
-                  </div>
-                  <div>
-                    <dt>관계 확실성</dt>
-                    <dd>{relationshipConfidenceLabel(selectedCompany)}</dd>
-                  </div>
-                  <div>
-                    <dt>매출 비중</dt>
-                    <dd>{companyRevenueExposure(selectedCompany)}</dd>
-                  </div>
-                  <div>
-                    <dt>검증 상태</dt>
-                    <dd>{relationshipSourceNote(selectedCompany)}</dd>
-                  </div>
-                  <div>
-                    <dt>병목 기업</dt>
-                    <dd>{bottleneckSummary(selectedCompany)}</dd>
-                  </div>
-                </dl>
-              </div>
-
-              <div className="detail-card">
-                <div className="section-title">
-                  <Factory size={16} />
-                  <span>제품/태그</span>
-                </div>
-                <div className="tag-cloud">
-                  {selectedCompany.products.concat(selectedCompany.tags).map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="detail-card">
-                <div className="section-title">
-                  <ArrowRight size={16} />
-                  <span>직접 연결</span>
-                </div>
-                <div className="link-list">
-                  {groupLinks
-                    .filter((link) => link.source === selectedCompany.id || link.target === selectedCompany.id)
-                    .map((link) => {
-                      const counterpartId = link.source === selectedCompany.id ? link.target : link.source;
-                      const counterpart = companies.find((company) => company.id === counterpartId);
-                      const relationship = linkRelationshipSummary(link);
-                      return (
-                        <button key={link.id} type="button" onClick={() => focusCompany(counterpartId)}>
-                          <span>{counterpart?.name}</span>
-                          <small>
-                            {relationship.type}
-                            <span className={`confidence-badge tiny ${confidenceClassName(relationship.confidence)}`} title={confidenceHelpText(relationship.confidence)}>
-                              {relationship.confidence}
-                            </span>
-                          </small>
-                          <em>{relationship.description}</em>
-                          <em>무엇을 파는가: {relationship.whatIsSold}</em>
-                          <em>수요 연결: {relationship.demandConnection}</em>
-                          <em>매출 비중: {relationship.revenueExposure}</em>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-
-              <div className="detail-card source-card">
-                <div className="section-title">
-                  <Database size={16} />
-                  <span>검증 소스 정책</span>
-                </div>
-                {sourcePolicies.map((policy) => (
-                  <div className="source-policy" key={policy.label}>
-                    <strong>{policy.label}</strong>
-                    <p>{policy.note}</p>
-                    <span>{policy.domains.slice(0, 5).join(' · ')}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </aside>
-      </div>
-    </ReactFlowProvider>
+    <LandingPage
+      onHome={openHome}
+      onOpenMarketMapLibrary={openDemandSupply}
+      onOpenPicks={openPicks}
+      onOpenDisclosures={openDisclosures}
+      onOpenReports={openReports}
+      onOpenCategory={openCategory}
+      onOpenPick={openPick}
+      marketPrices={marketPrices}
+      disclosures={marketDisclosures}
+      secFilings={marketSecFilings}
+    />
   );
 }
 

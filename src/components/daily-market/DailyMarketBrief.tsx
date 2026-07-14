@@ -14,6 +14,7 @@ import { sourceRegistry } from '../../content/sources/index.js';
 import { reportById } from '../../content/reports/index.js';
 import { bottleneckById } from '../../content/bottlenecks/index.js';
 import { homeIndustryFlows, homeMarketAssetIds } from '../../content/home/index.js';
+import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
 
 type DailyMarketBriefProps = {
   marketPrices: MarketPrice[];
@@ -35,11 +36,11 @@ const evidenceLabels: Record<MarketFlowEvidenceType, string> = {
   interpretation: '오늘의 시장 해석',
 };
 
-const marketMapLabels: Record<string, string> = {
-  'us-semiconductors': 'AI 반도체 시장지도',
-  'datacenter-power-cooling': '데이터센터 전력·냉각 시장지도',
-  'semiconductor-cluster-infrastructure': '반도체 클러스터 인프라 시장지도',
-  'reconstruction-infrastructure': '재건·인프라 시장지도',
+const industryFlowLabels: Record<string, string> = {
+  'us-semiconductors': 'AI 반도체·서버 수요 배경',
+  'datacenter-power-cooling': '데이터센터 전력·냉각 수요 배경',
+  'semiconductor-cluster-infrastructure': '반도체 클러스터 수요 배경',
+  'reconstruction-infrastructure': '재건·인프라 수요 배경',
 };
 
 function numericValue(value?: string) {
@@ -322,32 +323,16 @@ export function BeginnerMarketDrivers() {
 
 export function BeginnerIndustryFlows({ onOpenCategory }: Pick<DailyMarketBriefProps, 'onOpenCategory'>) {
   const flows = homeIndustryFlows();
+  void onOpenCategory;
   return (
     <section className="beginner-home-section beginner-industry-flow-section" aria-labelledby="beginner-industry-flow-title">
       <div className="beginner-section-head">
         <div><p>4 · 연결</p><h2 id="beginner-industry-flow-title">산업이 연결되는 과정</h2></div>
-        <a href="/ko/market-map">산업 구조 전체 보기 <ArrowRight size={15} /></a>
+        <a href="/ko/demand-supply">수요와 공급 전체 보기 <ArrowRight size={15} /></a>
       </div>
       <p className="beginner-section-lead">시장 변화가 산업과 기업으로 이어질 수 있는 대표 경로입니다. 당일 성과를 보장하는 관계는 아닙니다.</p>
       <div className="beginner-industry-flow-grid">
-        {flows.map((flow) => (
-          <article key={flow.id}>
-            <h3>{flow.title}</h3>
-            <ol>
-              {flow.steps.map((step, index) => (
-                <li key={`${flow.id}-${step.label}`}>
-                  <span>{index + 1}</span>
-                  <div><strong>{step.label}</strong><small>{step.detail}</small></div>
-                </li>
-              ))}
-            </ol>
-            {flow.steps.find((step) => step.marketMapId)?.marketMapId ? (
-              <button type="button" onClick={() => onOpenCategory(flow.steps.find((step) => step.marketMapId)!.marketMapId!)}>
-                연결된 시장지도 보기 <ArrowRight size={14} />
-              </button>
-            ) : null}
-          </article>
-        ))}
+        {flows.map((flow) => <IndustryFlowCard key={flow.id} flow={flow} compact />)}
       </div>
     </section>
   );
@@ -373,7 +358,7 @@ function MarketImpactLinks({
     <div className="market-impact-links">
       <button type="button" onClick={() => onOpenCategory(step.marketMapId!)}>
         <Network size={14} />
-        {marketMapLabels[step.marketMapId] ?? '시장지도 보기'}
+        {industryFlowLabels[step.marketMapId] ?? '산업 수요·공급 보기'}
         <ArrowRight size={14} />
       </button>
       <div aria-label="연결 기업">
@@ -540,7 +525,7 @@ export function DailyMarketBrief({ marketPrices, onOpenCategory, onOpenReports }
           <span>D</span>
           <div>
             <h3>자산에서 산업·기업으로 이어지는 흐름</h3>
-            <p>대표 흐름 2개만 보여주며, 마지막 단계에서 기존 시장지도와 기업으로 연결합니다.</p>
+            <p>대표 흐름 2개만 보여주며, 마지막 단계에서 수요·공급 배경과 기업 정보로 연결합니다.</p>
           </div>
         </div>
         <div className="market-flow-grid">

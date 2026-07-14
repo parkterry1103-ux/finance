@@ -5,7 +5,6 @@ import {
   companyEventsForBottleneck,
   companyEventsForCompany,
   companyEventsForDemandSupply,
-  companyEventsForMarketMap,
   latestCompanyEvents,
   resolveCompanyEventSelection,
   sortCompanyEvents,
@@ -38,7 +37,6 @@ check(latestCompanyEvents(3).length === 3 && latestCompanyEvents(3)[0]?.id === s
 check(companyEventsForCompany('ai-datacenter-sk-hynix', 2).length === 2, 'company latest two');
 check(companyEventsForBottleneck('data-center-power-cooling', 2).length === 2, 'bottleneck latest two');
 check(companyEventsForDemandSupply('data-center-power-cooling-demand-supply', 2).length === 2, 'demand-supply latest two');
-check(companyEventsForMarketMap('us-semiconductors', undefined, 1).length === 1, 'market map latest one');
 
 const missingSources = companyEvents.filter((event) => event.sourceRefs.some((sourceId) => !sourceRegistry[sourceId]));
 check(missingSources.length === 0, 'source refs present');

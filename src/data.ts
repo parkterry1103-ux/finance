@@ -374,7 +374,6 @@ export interface StockAutopsyPick {
 }
 
 export type WeeklyDigestMarketTabId = 'ALL' | CountryId;
-export type WeeklyDigestMarketMapStatus = 'active' | 'coming-soon';
 export type WeeklyDigestTarget = 'pick' | 'analysis' | 'coming-soon';
 
 export interface WeeklyDigestRecentItem {
@@ -388,16 +387,6 @@ export interface WeeklyDigestRecentItem {
   summary: string;
   relatedCompanies?: string[];
   target?: WeeklyDigestTarget;
-}
-
-export interface WeeklyDigestMarketMapItem {
-  title: string;
-  status: WeeklyDigestMarketMapStatus;
-  href?: string;
-  sectorId?: string;
-  note: string;
-  supportingNote?: string;
-  ctaLabel?: string;
 }
 
 export interface WeeklyDigest {
@@ -420,7 +409,6 @@ export interface WeeklyDigest {
   };
   recentItems: WeeklyDigestRecentItem[];
   marketTabs: Array<{ id: WeeklyDigestMarketTabId; label: string }>;
-  marketMapItems: WeeklyDigestMarketMapItem[];
 }
 
 export interface MarketPrice {
@@ -6295,7 +6283,7 @@ function makeDatacenterPowerCoolingCompany(input: DatacenterPowerCoolingCompanyI
     opMargin: '원문 확인',
     debtRatio: '원문 확인',
     customerConcentration: '공시·IR 기준 확인 필요',
-    analystSignal: '데이터센터 냉각 / 전력 인프라 시장지도 v0.1',
+    analystSignal: '데이터센터 냉각 / 전력 인프라 산업 흐름',
     investmentView: input.investorWatchPoint,
     riskLevel: input.riskLevel ?? 'medium',
     status: input.status ?? 'core',

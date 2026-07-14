@@ -15,13 +15,9 @@ import {
 } from '../../content/relations/index.js';
 import { reportById } from '../../content/reports/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
+import { industryFlowById } from '../../content/industry-flows/index.js';
 import { fetchMarketRelations } from '../../services/relations.js';
 import { RelationDualTrendChart } from './RelationDualTrendChart.js';
-
-const mapLabels: Record<string, string> = {
-  'us-semiconductors': '미국 반도체 시장지도',
-  'datacenter-power-cooling': '데이터센터 전력·냉각 시장지도',
-};
 
 function initialSelection() {
   const params = new URLSearchParams(window.location.search);
@@ -163,7 +159,11 @@ export function MarketRelationsBoard() {
         <div className="relation-section-head"><span>더 읽기</span><h2 id="relation-related-title">같이 읽어볼 자료</h2></div>
         <div className="relation-related-grid">
           {reports.map((report) => <a key={report.id} href={`/ko/reports/${encodeURIComponent(report.slug)}`}><span>{report.publisher}</span><strong>{report.titleKo}</strong><small>맥락 자료로 보기 <ArrowRight size={14} /></small></a>)}
-          {definition.marketMapIds.slice(0, 1).map((mapId) => <a key={mapId} href={`/ko/category/${encodeURIComponent(mapId)}`}><span>관련 산업 구조</span><strong>{mapLabels[mapId] ?? mapId}</strong><small>시장지도 열기 <ArrowRight size={14} /></small></a>)}
+          {definition.marketMapIds.slice(0, 1).map((mapId) => {
+            const flow = industryFlowById.get(mapId);
+            const demandSupplyId = flow?.demandSupplyIds[0];
+            return <a key={mapId} href={`/ko/demand-supply${demandSupplyId ? `?industry=${encodeURIComponent(demandSupplyId)}` : ''}`}><span>관련 산업 흐름</span><strong>{flow?.title ?? mapId}</strong><small>수요와 공급 보기 <ArrowRight size={14} /></small></a>;
+          })}
         </div>
       </section>
 

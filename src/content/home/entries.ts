@@ -2,7 +2,6 @@ import type {
   BeginnerTermDefinition,
   DisclosureEventDefinition,
   HomeFeatureLabel,
-  HomeIndustryFlowReference,
   HomeInsightReference,
   HomeMacroReference,
   HomeNavigationGroup,
@@ -39,11 +38,11 @@ export const homeFeatureLabels: HomeFeatureLabel[] = [
     href: '/ko/disclosures',
   },
   {
-    id: 'market-map',
+    id: 'demand-supply',
     easyName: '산업이 연결되는 구조',
-    professionalName: '시장지도·공급망 구조',
-    description: '원재료와 장비에서 완제품 기업까지 이어지는 구조를 봅니다.',
-    href: '/ko/market-map',
+    professionalName: '수요·공급과 산업 흐름',
+    description: '수요 배경, 공급 제약과 다섯 단계 산업 흐름을 함께 봅니다.',
+    href: '/ko/demand-supply',
   },
   {
     id: 'picks',
@@ -70,7 +69,6 @@ export const homeNavigationGroups: HomeNavigationGroup[] = [
     items: [
       { id: 'bottleneck-radar', label: '공급이 부족한 곳', href: '/ko/bottlenecks', activeKey: 'bottlenecks' },
       { id: 'demand-supply', label: '수요와 공급을 함께 보기', href: '/ko/demand-supply', activeKey: 'demand-supply' },
-      { id: 'market-map', label: '산업이 연결되는 구조', href: '/ko/market-map', activeKey: 'market-map' },
     ],
   },
   {
@@ -122,32 +120,6 @@ export const homeInsightReferences: HomeInsightReference[] = [
   },
 ];
 
-export const homeIndustryFlowReferences: HomeIndustryFlowReference[] = [
-  {
-    id: 'ai-power-cooling',
-    title: 'AI 서버에서 전력·냉각 기업으로 이어지는 구조',
-    marketMapId: 'datacenter-power-cooling',
-    steps: [
-      { label: 'AI 서버 증설', detail: '서버가 늘면 데이터센터가 사용하는 전력과 열도 함께 늘 수 있습니다.' },
-      { label: '전력 관리 장비', detail: '전력을 안정적으로 나누고 보호하는 장비가 필요합니다.', companyIds: ['datacenter-power-eaton'] },
-      { label: '열 관리·냉각', detail: '서버에서 생긴 열을 식히는 설비가 필요합니다.', companyIds: ['datacenter-power-vertiv'] },
-      { label: '수주와 실적 확인', detail: '산업의 기대가 실제 주문과 매출로 이어졌는지 기업 자료에서 확인합니다.', marketMapId: 'datacenter-power-cooling' },
-    ],
-  },
-  {
-    id: 'semiconductor-cluster',
-    title: '반도체 공장 계획이 산업 인프라로 이어지는 구조',
-    marketMapId: 'semiconductor-cluster-infrastructure',
-    steps: [
-      { label: '반도체 공장·산업단지 계획', detail: '공장 계획은 건물뿐 아니라 전력·용수·기초 공사를 함께 요구합니다.' },
-      { label: '기초 공사', detail: '대형 생산시설을 지지하는 파일과 기초 공사가 먼저 필요합니다.', companyIds: ['cluster-dongyang-pile'] },
-      { label: '전력 설비', detail: '변압기와 배전 설비가 공장 가동을 뒷받침합니다.', companyIds: ['cluster-ls-electric', 'cluster-hyosung-heavy'] },
-      { label: '건축·소재', detail: '건물과 설비에 필요한 자재 공급을 확인합니다.', companyIds: ['cluster-kcc'] },
-      { label: '계약과 매출 확인', detail: '계획이 실제 공급계약과 매출로 이어졌는지 공식 자료에서 확인합니다.', marketMapId: 'semiconductor-cluster-infrastructure' },
-    ],
-  },
-];
-
 export const homeMarketAssetIds = ['kospi', 'nasdaq-composite', 'usd-krw', 'copper'] as const;
 
 export const homeMacroReferences: HomeMacroReference[] = [
@@ -176,7 +148,7 @@ export const homeContentLimits = {
   bottlenecks: 3,
 } as const;
 
-export const homeDeeperFeatureIds = ['macro', 'bottlenecks', 'market-map', 'reports'] as const;
+export const homeDeeperFeatureIds = ['macro', 'bottlenecks', 'demand-supply', 'reports'] as const;
 
 export const disclosureEventDefinitions: DisclosureEventDefinition[] = [
   { id: 'earnings', label: '실적', description: '매출·이익·전망이 새로 공개된 공시입니다.' },

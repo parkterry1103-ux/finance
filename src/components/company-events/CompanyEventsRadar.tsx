@@ -12,6 +12,7 @@ import {
 import type { CompanyEvent, CompanyEventGroup, CompanyEventType } from '../../content/company-events/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { companyProfilePathForCompanyId } from '../../content/company-profiles/index.js';
+import { industryFlowById } from '../../content/industry-flows/index.js';
 
 type GroupFilter = CompanyEventGroup | 'all';
 
@@ -177,7 +178,11 @@ export function CompanyEventsRadar() {
                   {companyProfilePathForCompanyId(selectedEvent.companyId) ? <a href={companyProfilePathForCompanyId(selectedEvent.companyId)}>기업 자세히 보기 <ArrowRight size={13} aria-hidden="true" /></a> : null}
                   {selectedEvent.bottleneckIds.map((id) => <a key={`b-${id}`} href={`/ko/bottlenecks/${encodeURIComponent(id)}`}>관련 공급 병목 <ArrowRight size={13} aria-hidden="true" /></a>)}
                   {selectedEvent.demandSupplyIds.map((id) => <a key={`d-${id}`} href={`/ko/demand-supply?industry=${encodeURIComponent(id)}`}>수요·공급 배경 <ArrowRight size={13} aria-hidden="true" /></a>)}
-                  {selectedEvent.marketMapIds.map((id) => <a key={`m-${id}`} href="/ko/market-map">같이 확인할 시장 구조 <ArrowRight size={13} aria-hidden="true" /></a>)}
+                  {selectedEvent.marketMapIds.map((id) => {
+                    const demandSupplyId = industryFlowById.get(id)?.demandSupplyIds[0];
+                    const href = demandSupplyId ? `/ko/demand-supply?industry=${encodeURIComponent(demandSupplyId)}` : '/ko/demand-supply';
+                    return <a key={`m-${id}`} href={href}>같이 확인할 산업 흐름 <ArrowRight size={13} aria-hidden="true" /></a>;
+                  })}
                   {selectedEvent.reportIds.map((id) => <a key={`r-${id}`} href={`/ko/reports/${encodeURIComponent(id)}`}>관련 공식 자료 <ArrowRight size={13} aria-hidden="true" /></a>)}
                   {selectedEvent.pickIds.slice(0, 2).map((id) => <a key={`p-${id}`} href={`/ko/picks/${encodeURIComponent(id)}`}>기업 해설 함께 보기 <ArrowRight size={13} aria-hidden="true" /></a>)}
                 </div>

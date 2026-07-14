@@ -48,7 +48,7 @@ export const marketFlows: MarketFlow[] = [
         type: 'fact',
       },
       {
-        label: 'AI 반도체 시장지도',
+        label: 'AI 반도체 산업 흐름',
         detail: 'GPU, HBM, 메모리 기업의 실적과 설비투자를 함께 확인합니다.',
         type: 'relationship',
         marketMapId: 'us-semiconductors',

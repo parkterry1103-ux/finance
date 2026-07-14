@@ -91,8 +91,3 @@ export function companyEventsForBottleneck(bottleneckId: string, limit = 2) {
 export function companyEventsForDemandSupply(entryId: string, limit = 2) {
   return sortCompanyEvents(companyEvents.filter((event) => event.demandSupplyIds.includes(entryId))).slice(0, limit);
 }
-
-export function companyEventsForMarketMap(mapId: string, companyId?: string, limit = 1) {
-  return sortCompanyEvents(companyEvents.filter((event) =>
-    event.marketMapIds.includes(mapId) && (!companyId || event.companyId === companyId))).slice(0, limit);
-}

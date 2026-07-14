@@ -1,5 +1,7 @@
 # 기업 통합 리서치 프로필 사전 Inventory
 
+> 아래 사전 감사의 시장지도 관계 수치는 폐기 전 기록입니다. 2026-07-14 이후 프로필은 `industry-flows`와 `company-profile-relations`만 사용하며 42개 시장지도 관계 registry를 소비하지 않습니다.
+
 기준일: 2026-07-14
 시작 HEAD: `613583690f94f60b28cbec930054baa901cda0b1`
 
@@ -63,3 +65,9 @@ Meta에는 현재 시장지도 관계 registry의 직접 연결선이 없습니�
 ## 금지 범위 확인
 
 신규 API, Serverless Function, DB, migration, cron, sync endpoint, sync 실행, dependency, 자동 기업 평가, 투자 의견, 기업 점수는 추가하지 않습니다. `package.json`과 `package-lock.json`은 변경하지 않습니다.
+
+## 공개 시장지도 폐기 후 상태
+
+프로필 8개는 그대로 유지한다. 관련 기업은 SK하이닉스 2, LG전자 2, NVIDIA 3, Micron 2, Dell 2, Eaton 2, Meta 0, Supermicro 3개로 총 16개다. 모든 관계는 `same-demand`, `production-stage`, `infrastructure` 중 하나이며 source를 최소 하나 가진다. self relation과 기업별 중복은 0개다. 직접 계약이나 공식 공급망을 나타내는 관계망으로 사용하지 않는다.
+
+각 프로필의 산업 위치는 네 개 정적 5단계 flow에서 해석한다. 프로필의 CTA는 수요·공급과 관련 산업 리포트로 이동한다. Meta의 관련 기업 빈 상태와 Eaton의 Pick 생략은 그대로 유지한다.

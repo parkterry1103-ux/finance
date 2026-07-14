@@ -28,49 +28,6 @@ const currentWeeklyDigestShell = {
     { id: 'US', label: '미국' },
     { id: 'KR', label: '한국' },
   ],
-  marketMapItems: [
-    {
-      title: 'AI 반도체 / 데이터센터',
-      status: 'active',
-      href: '/ko/category/us-semiconductors',
-      sectorId: 'us-semiconductors',
-      note: 'GPU, 메모리, 파운드리, 전력·냉각으로 이어지는 흐름',
-    },
-    {
-      title: '데이터센터 냉각 / 전력 인프라',
-      status: 'active',
-      href: '/ko/category/datacenter-power-cooling',
-      sectorId: 'datacenter-power-cooling',
-      note: 'AI 서버가 늘 때 전력 관리, 냉각, HVAC, 운영 안정성이 함께 움직이는 흐름',
-    },
-    {
-      title: '재건 / 인프라',
-      status: 'active',
-      href: '/ko/category/reconstruction-infrastructure',
-      sectorId: 'reconstruction-infrastructure',
-      note: '종전 기대감이 커질 때 시장이 보는 건설사, 중장비, 철강·소재 흐름입니다.',
-      ctaLabel: '시장 지도 보기',
-    },
-    {
-      title: '반도체 클러스터 / 산업단지 인프라',
-      status: 'active',
-      href: '/ko/category/semiconductor-cluster-infrastructure',
-      sectorId: 'semiconductor-cluster-infrastructure',
-      note: '반도체 공장이 들어서기 전 필요한 부지, 기초 공사, 전력, 건축·소재와 실제 발주 흐름을 살펴봅니다.',
-      supportingNote: '정책 기대가 실제 예산·착공·공급계약과 실적으로 이어지는지는 따로 확인해야 합니다.',
-      ctaLabel: '시장 지도 보기',
-    },
-    {
-      title: 'M&A / 인수 프리미엄',
-      status: 'coming-soon',
-      note: 'Taylor Morrison처럼 인수 가격과 승인 절차를 따로 보는 흐름',
-    },
-    {
-      title: '클라우드 / 데이터 플랫폼',
-      status: 'coming-soon',
-      note: 'AI 워크로드가 클라우드와 데이터 플랫폼 수요로 번지는 흐름',
-    },
-  ],
 } satisfies Omit<WeeklyDigest, 'weekLabel' | 'kicker' | 'featuredPickId' | 'featured' | 'recentItems'>;
 
 const featuredPickTemplates: Record<string, WeeklyDigest['featured']> = {
@@ -282,7 +239,6 @@ export const currentWeeklyDigest: WeeklyDigest = {
   featured: featuredPickTemplates[representativePick.id] ?? fallbackFeaturedPick(representativePick),
   recentItems: currentWeeklyPicks.map(weeklyRecentItemForPick),
   marketTabs: currentWeeklyDigestShell.marketTabs,
-  marketMapItems: currentWeeklyDigestShell.marketMapItems,
 };
 
 export const weeklyDigest = currentWeeklyDigest;

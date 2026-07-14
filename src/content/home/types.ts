@@ -3,7 +3,7 @@ export type HomeFeatureId =
   | 'bottlenecks'
   | 'reports'
   | 'disclosures'
-  | 'market-map'
+  | 'demand-supply'
   | 'picks';
 
 export type HomeFeatureLabel = {
@@ -18,7 +18,7 @@ export type HomeNavigationItem = {
   id: string;
   label: string;
   href: string;
-  activeKey: 'today' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'market-map' | 'companies' | 'picks' | 'analysis' | 'company-events' | 'disclosures' | 'reports';
+  activeKey: 'today' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'picks' | 'analysis' | 'company-events' | 'disclosures' | 'reports';
 };
 
 export type HomeNavigationGroup = {
@@ -35,18 +35,6 @@ export type HomeInsightReference = {
   title: string;
   whyItMatters: string;
   href: string;
-};
-
-export type HomeIndustryFlowReference = {
-  id: string;
-  title: string;
-  marketMapId: string;
-  steps: Array<{
-    label: string;
-    detail: string;
-    companyIds?: string[];
-    marketMapId?: string;
-  }>;
 };
 
 export type HomeMacroReference = {

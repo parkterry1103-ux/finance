@@ -4773,3 +4773,23 @@ URL은 기존 `company`, `view`, `region`과 신규 `density`, `relationType`, �
 - 기존 가격·거시·시장 관계·공시·수요공급·기업 이벤트·시장지도 관계·리포트·병목 registry를 변경하지 않습니다.
 
 신규 API, Serverless Function, DB, cron, sync, dependency, AI 기업 평가, 투자 추천, 기업 점수는 없습니다. 관계 수는 경쟁력이나 순위로 사용하지 않습니다. 사전 route·identity·연결 데이터 감사는 `docs/company-profile-inventory.md`에 기록했습니다.
+
+## 시장지도 공개 기능 폐기 및 산업 흐름 통합
+
+> 이 섹션은 위의 시장지도 구현 이력을 대체하는 현재 운영 기준입니다. 시장지도는 더 이상 공개 기능이 아니며, 과거 섹션은 변경 이력으로만 남습니다.
+
+시장지도는 기업 프로필, 수요·공급, 병목, 기업 변화 레이더와 정보가 중복되고 ReactFlow 좌표·관계 taxonomy·필터·query를 별도 유지해야 했기 때문에 공개 기능에서 폐기했습니다. 허브의 available 카드 4개와 planned 카드 2개, 상세 graph 4개, 기업 관계 42개, 관계 유형 6개, 근거 수준 3개, 국가·관계·밀도 필터, 관계 panel·접근성 표를 공개 runtime에서 제거했습니다. 42개 관계는 현재 runtime이나 기업 프로필에서 사용하지 않으며 직접 계약 관계망으로 제공하지 않습니다.
+
+그래프와 산업 설명은 분리했습니다. `src/content/industry-flows`는 AI 반도체·서버, 데이터센터 전력·냉각, 재건·인프라, 반도체 클러스터·산업단지 네 개를 각각 수요 → 필요 요소 → 공급 기업 → 사용처 → 확인 항목의 정적 5단계로 보존합니다. `IndustryFlowCard`는 semantic `ol`·`li`, 단계 번호·유형 text, 최대 2개 기업 pill을 사용합니다. 수요·공급 4개 entry는 selector로 flow 하나씩 연결하고, 기업 프로필은 현재 기업의 단계와 앞뒤 맥락을 같은 registry에서 읽습니다. 홈에는 새 section을 만들지 않고 기존 산업 흐름 영역에서 동일 registry를 재사용합니다.
+
+기업 프로필 8개는 유지합니다. `src/content/company-profile-relations`에는 프로필에 필요한 단순 reference 16개만 두며 기업별 최대 3개, source 누락·self·중복은 0개입니다. SK하이닉스 2, LG전자 2, NVIDIA 3, Micron 2, Dell 2, Eaton 2, Meta 0, Supermicro 3개입니다. 관계 label은 같은 수요 흐름, 생산 단계 연관, 인프라 연관만 사용하고 특정 직접 계약을 암시하지 않습니다. Meta의 빈 관련 기업 상태와 Eaton의 Pick 생략도 유지합니다.
+
+Legacy route 10개는 SPA route resolver에서 404 없이 교체합니다. `/ko/market-map`과 `/market-map`은 각각 한국어·영문 수요·공급으로, 한국어 상세 4개와 영문 alias 4개는 가장 가까운 기존 수요·공급 entry로 이동합니다. `company`, `view`, `region`, `density`, `relationType`, `relation`이 포함돼도 폐기 상태를 복원하지 않고 안전하게 대체 URL에 도착합니다. 안내 화면과 redirect용 Serverless Function은 만들지 않았습니다.
+
+상단 navigation은 오늘·산업·기업·자료 네 그룹을 유지합니다. 홈·navigation·기업 이벤트·프로필·수요공급·병목·Pick·보고서의 공개 시장지도 링크와 CTA는 0개입니다. 산업 그룹은 리포트, 수요와 공급, 병목과 거시 기능으로, 기업 그룹은 기업 한눈에 보기, 기업 변화와 Pick으로 연결합니다. desktop route 이동 뒤 dropdown과 `aria-expanded`가 닫히고 mobile menu와 body scroll lock이 남지 않는 기존 공통 동작을 유지합니다.
+
+ReactFlow runtime import가 0개가 된 뒤 `@xyflow/react`와 전용 CSS import를 `package.json`·`package-lock.json`에서 제거했습니다. 신규 dependency는 0개, 제거 dependency는 1개입니다. 시장지도 detail·relation registry와 component, obsolete test 3개, 전용 CSS를 제거했으며 node·relation inventory는 `docs/market-map-node-inventory.md`, `docs/market-map-relation-inventory.md`에 폐기 구현 archive로 보존합니다. 전체 소비 지점과 route 처리는 `docs/market-map-retirement-inventory.md`에 기록했습니다.
+
+접근성은 단계별 text label, heading 순서, native link, `aria-current`, focus-visible과 모바일 세로 stepper로 유지합니다. 1280×844, 390×844, 360×800, 320×700, 200% 상당 640px CSS viewport에서 산업 흐름·기업명·pill·CTA·navigation과 page horizontal overflow를 확인합니다.
+
+가격, market brief, 거시, 거시·시장 관계, OpenDART, SEC 응답 계약을 유지합니다. 기업 프로필 8개, 이벤트 12개, 수요·공급 4개, 병목 6개, 리포트 15개, 거시지표 9개, 거시·시장 관계 3개와 Serverless Function 12개도 유지합니다. 신규 API, Function, DB, migration, cron, sync endpoint와 페이지 전용 산업 흐름 요청은 모두 0개입니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.
