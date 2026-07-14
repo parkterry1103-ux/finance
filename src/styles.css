@@ -29550,6 +29550,8 @@ button.flow-stage-company-chip:focus-visible {
 
 /* Static industry flows shared by demand-supply, home, and company profiles. */
 .industry-flow-card {
+  container-name: industry-flow-card;
+  container-type: inline-size;
   width: 100%;
   min-width: 0;
   margin: 22px 0;
@@ -29584,39 +29586,43 @@ button.flow-stage-company-chip:focus-visible {
 
 .industry-flow-steps {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   margin: 22px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.industry-flow-steps > li {
+.industry-flow-step {
   position: relative;
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 10px;
   min-width: 0;
-  padding: 16px 14px;
+  padding: 16px;
   border: 1px solid #dfe7ef;
   border-radius: 15px;
   background: #f8fafc;
 }
 
-.industry-flow-steps > li:not(:last-child)::after {
+.industry-flow-step:not(:last-child)::after {
   position: absolute;
   z-index: 2;
-  top: 30px;
-  right: -10px;
-  width: 8px;
-  border-top: 2px solid #a8b8ca;
+  bottom: -11px;
+  left: 30px;
+  height: 10px;
+  border-left: 2px solid #a8b8ca;
   content: '';
 }
 
-.industry-flow-steps > li.is-current {
+.industry-flow-step.is-current {
   border-color: #2563eb;
   background: #eff6ff;
   box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.industry-flow-step__meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
 }
 
 .industry-flow-step__number {
@@ -29631,23 +29637,19 @@ button.flow-stage-company-chip:focus-visible {
   font-weight: 900;
 }
 
-.industry-flow-step__body {
-  min-width: 0;
-}
-
-.industry-flow-step__body h4 {
-  margin: 5px 0 7px;
-  font-size: 14px;
-  line-height: 1.4;
+.industry-flow-step__title {
+  margin: 12px 0 7px;
+  font-size: 15px;
+  line-height: 1.45;
   overflow-wrap: break-word;
   word-break: keep-all;
 }
 
-.industry-flow-step__body p {
+.industry-flow-step__description {
   margin: 0;
   color: #526072;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.65;
   overflow-wrap: break-word;
   word-break: keep-all;
 }
@@ -29669,7 +29671,8 @@ button.flow-stage-company-chip:focus-visible {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: keep-all;
   text-decoration: none;
 }
 
@@ -29686,6 +29689,12 @@ button.flow-stage-company-chip:focus-visible {
 
 .company-profile-flow-list {
   display: grid;
+  gap: 18px;
+}
+
+.industry-flow-detail-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -29714,13 +29723,67 @@ button.flow-stage-company-chip:focus-visible {
   margin: 0;
 }
 
-@media (max-width: 1050px) {
-  .industry-flow-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.industry-flow-card--summary .industry-flow-steps {
+  gap: 0;
+  margin-top: 18px;
+  border-top: 1px solid #dfe7ef;
+}
+
+.industry-flow-card--summary .industry-flow-step {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+  align-items: start;
+  gap: 8px 14px;
+  padding: 13px 0;
+  border: 0;
+  border-bottom: 1px solid #dfe7ef;
+  border-radius: 0;
+  background: transparent;
+}
+
+.industry-flow-card--summary .industry-flow-step.is-current {
+  padding-inline: 11px;
+  border-radius: 11px;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #2563eb;
+}
+
+.industry-flow-card--summary .industry-flow-step::after {
+  display: none;
+}
+
+.industry-flow-card--summary .industry-flow-step__number {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+
+.industry-flow-card--summary .industry-flow-step__title {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.industry-flow-card--summary .industry-flow-step__companies {
+  grid-column: 2;
+  margin-top: 0;
+}
+
+@container industry-flow-card (min-width: 960px) {
+  .industry-flow-card--detail .industry-flow-steps {
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    gap: 12px;
   }
 
-  .industry-flow-steps > li:not(:last-child)::after {
-    display: none;
+  .industry-flow-card--detail .industry-flow-step:not(:last-child)::after {
+    top: 30px;
+    right: -10px;
+    bottom: auto;
+    left: auto;
+    width: 8px;
+    height: 0;
+    border-top: 2px solid #a8b8ca;
+    border-left: 0;
   }
 }
 
@@ -29731,32 +29794,26 @@ button.flow-stage-company-chip:focus-visible {
     border-radius: 16px;
   }
 
-  .industry-flow-steps {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 9px;
-    margin-top: 17px;
-  }
-
-  .industry-flow-steps > li {
-    grid-template-columns: 28px minmax(0, 1fr);
+  .industry-flow-step {
     padding: 13px 12px;
   }
 
-  .industry-flow-steps > li:not(:last-child)::after {
-    display: block;
-    top: auto;
-    right: auto;
-    bottom: -10px;
-    left: 25px;
-    width: 0;
-    height: 9px;
-    border-top: 0;
-    border-left: 2px solid #a8b8ca;
+  .industry-flow-card--summary .industry-flow-step {
+    grid-template-columns: minmax(90px, max-content) minmax(0, 1fr);
+    padding: 12px 0;
   }
 
   .industry-flow-step__number {
     width: 28px;
     height: 28px;
+  }
+
+  .industry-flow-step__title {
+    margin-top: 10px;
+  }
+
+  .industry-flow-card--summary .industry-flow-step__title {
+    margin-top: 3px;
   }
 
   .company-profile-flow-actions,

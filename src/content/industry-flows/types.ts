@@ -13,6 +13,19 @@ export type IndustryFlowStep = {
   companyIds?: string[];
 };
 
+export type IndustryFlowCardVariant = 'summary' | 'detail';
+
+export type IndustryFlowStepViewModel = Omit<IndustryFlowStep, 'description'> & {
+  number: string;
+  typeLabel: string;
+  description: string | null;
+};
+
+export type IndustryFlowViewModel = Omit<IndustryFlowEntry, 'steps'> & {
+  variant: IndustryFlowCardVariant;
+  steps: IndustryFlowStepViewModel[];
+};
+
 export type IndustryFlowCategory =
   | 'semiconductor-ai'
   | 'power-datacenter'

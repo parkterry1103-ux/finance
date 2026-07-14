@@ -4793,3 +4793,17 @@ ReactFlow runtime import가 0개가 된 뒤 `@xyflow/react`와 전용 CSS import
 접근성은 단계별 text label, heading 순서, native link, `aria-current`, focus-visible과 모바일 세로 stepper로 유지합니다. 1280×844, 390×844, 360×800, 320×700, 200% 상당 640px CSS viewport에서 산업 흐름·기업명·pill·CTA·navigation과 page horizontal overflow를 확인합니다.
 
 가격, market brief, 거시, 거시·시장 관계, OpenDART, SEC 응답 계약을 유지합니다. 기업 프로필 8개, 이벤트 12개, 수요·공급 4개, 병목 6개, 리포트 15개, 거시지표 9개, 거시·시장 관계 3개와 Serverless Function 12개도 유지합니다. 신규 API, Function, DB, migration, cron, sync endpoint와 페이지 전용 산업 흐름 요청은 모두 0개입니다. Production 대상은 Vercel `finance1`, branch `main`, alias `https://finance1-flax.vercel.app`입니다.
+
+## 산업 흐름 카드 가독성 회귀 수정
+
+실제 회귀 원인은 viewport와 component 폭을 혼동한 중첩 grid였습니다. 홈의 산업 흐름 목록은 desktop 2열이어서 1280px viewport에서 카드 한 장이 548px이었지만, 카드 내부 단계는 1050px 이하 viewport에서만 바뀌는 고정 5열이었습니다. 그 결과 각 단계는 약 99.6px, 번호·간격을 제외한 본문은 약 29.6px에 불과했고 제목은 최대 11줄, 설명은 최대 21줄이 됐습니다. `word-break: keep-all`과 `overflow-wrap: break-word`는 이미 적용돼 있었으므로 글자 크기나 전역 줄바꿈을 바꾸는 대신 레이아웃 판단 기준을 수정했습니다.
+
+`IndustryFlowCard`는 `summary`와 `detail` 두 variant를 명시적으로 사용합니다. 홈과 기업 프로필의 `summary`는 흐름 요약과 번호·종류·짧은 제목, 최대 2개 기업 pill만 표시하고 단계별 상세 설명은 DOM에 만들지 않습니다. 홈의 기존 2열 section과 CTA는 유지하며 새 section은 추가하지 않습니다. 수요·공급의 `detail`은 `.industry-flow-detail-list`에서 항상 한 행 전체 폭을 사용하고 번호·종류, 제목, 설명, 기업 순서로 위계를 분리합니다.
+
+카드에는 `container-type: inline-size`와 이름 있는 container를 적용했습니다. 상세 5열은 card content 폭이 960px 이상일 때만 `repeat(5, minmax(140px, 1fr))`로 활성화됩니다. 1280·1440px QA에서 실제 단계 본문 폭은 174.4px이었고, 1024px 이하에서는 1열 세로 stepper로 전환됐습니다. summary는 container 폭과 무관하게 짧은 세로 label rail을 사용하므로 2열 홈 카드 안에서 다시 상세 5열이 생기지 않습니다.
+
+네 흐름 20개 단계의 제목과 설명을 모두 초보자용 한 문장으로 다듬었습니다. 제목 최대 길이는 11자, 설명 최대 길이는 47자이며 `word-break: keep-all`, `overflow-wrap: break-word`를 유지합니다. 기업 pill은 `overflow-wrap: anywhere`를 사용하지 않고 `keep-all`과 자연스러운 flex wrap을 사용합니다. 단계는 semantic `ol`·`li`, `01`부터 `05`까지의 text 번호, 종류 text, 정상 heading 순서, canonical 기업 link, `aria-current`, focus-visible과 기존 reduced-motion 규칙을 유지합니다.
+
+Browser QA는 1440×900, 1280×844, 1024×768, 768×900, 640px CSS viewport, 390×844, 360×800, 320×700과 200% 상당 640px 조건에서 홈, 한국어·영문 수요·공급, NVIDIA·SK하이닉스·Eaton 프로필과 legacy route를 확인합니다. 한 글자 단위 줄바꿈, 3줄 이상 제목, text·번호·badge·pill·CTA clipping, 연결선 겹침, page horizontal overflow, broken image와 빈 graph wrapper는 모두 0개입니다. Production은 `main`을 `finance1`에 배포한 뒤 alias·immutable URL의 route/API, JS·CSS asset hash, 최종 CSS container query와 JS variant 분기를 다시 확인합니다.
+
+시장지도와 ReactFlow는 복구하지 않았습니다. 산업 흐름 4개와 각 5단계를 유지하며 신규 API, Serverless Function, DB, migration, cron, sync, dependency와 페이지 전용 요청은 모두 0개입니다.

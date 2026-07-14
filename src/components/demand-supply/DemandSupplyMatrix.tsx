@@ -195,7 +195,7 @@ export function DemandSupplyMatrix() {
         </div>
       </section>
 
-      {industryFlow ? <IndustryFlowCard flow={industryFlow} /> : null}
+      {industryFlow ? <div className="industry-flow-detail-list"><IndustryFlowCard flow={industryFlow} variant="detail" /></div> : null}
 
       {bottleneck ? (
         <section className="demand-supply-signals" aria-labelledby="demand-supply-signals-title">

@@ -332,7 +332,7 @@ export function BeginnerIndustryFlows({ onOpenCategory }: Pick<DailyMarketBriefP
       </div>
       <p className="beginner-section-lead">시장 변화가 산업과 기업으로 이어질 수 있는 대표 경로입니다. 당일 성과를 보장하는 관계는 아닙니다.</p>
       <div className="beginner-industry-flow-grid">
-        {flows.map((flow) => <IndustryFlowCard key={flow.id} flow={flow} compact />)}
+        {flows.map((flow) => <IndustryFlowCard key={flow.id} flow={flow} variant="summary" />)}
       </div>
     </section>
   );

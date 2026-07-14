@@ -2407,6 +2407,8 @@ function validateIndustryFlowsAndMarketMapRetirement() {
       if (stepIds.has(step.id)) addError(`industry flow step id duplicated: ${flow.id} / ${step.id}`);
       stepIds.add(step.id);
       if (!step.title.trim() || !step.description.trim()) addError(`industry flow step copy missing: ${flow.id} / ${step.id}`);
+      if (step.title.length > 24) addError(`industry flow step title too long: ${flow.id} / ${step.id} / ${step.title.length}`);
+      if (step.description.length > 120) addError(`industry flow step description too long: ${flow.id} / ${step.id} / ${step.description.length}`);
       if ((step.companyIds?.length ?? 0) > 2) addError(`industry flow representative company maximum exceeded: ${flow.id} / ${step.id}`);
       step.companyIds?.forEach((companyId) => {
         industryFlowValidation.companyLinkCount += 1;
@@ -2494,6 +2496,8 @@ function validateIndustryFlowsAndMarketMapRetirement() {
   const companyEventsSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-events', 'CompanyEventsRadar.tsx'), 'utf8');
   const pickSelectorSource = readFileSync(join(process.cwd(), 'src', 'content', 'picks', 'selectors.ts'), 'utf8');
   const packageSource = readFileSync(join(process.cwd(), 'package.json'), 'utf8');
+  const stylesSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
+  const industryFlowStyles = stylesSource.slice(stylesSource.indexOf('/* Static industry flows shared by demand-supply, home, and company profiles. */'));
   const publicSources = [navigationSource, profileSource, demandSupplySource, dailyMarketSource, dailyMarketEntrySource, companyEventsSource].join('\n');
 
   marketMapRetirementValidation.legacyRouteCount = legacyMarketMapPaths.length;
@@ -2510,6 +2514,10 @@ function validateIndustryFlowsAndMarketMapRetirement() {
   marketMapRetirementValidation.reactFlowImportCount = (appSource.match(/@xyflow\/react|ReactFlow/g) ?? []).length;
   if (marketMapRetirementValidation.reactFlowImportCount) addError('ReactFlow runtime import remains');
   if (packageSource.includes('@xyflow/react')) addError('unused ReactFlow dependency remains');
+  if (/industry-flow[^}]*word-break:\s*break-all/s.test(industryFlowStyles)) addError('industry flow break-all rule remains');
+  if (/industry-flow[^}]*writing-mode\s*:/s.test(industryFlowStyles)) addError('industry flow writing-mode rule remains');
+  if (!/\.industry-flow-detail-list\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s.test(industryFlowStyles)) addError('industry flow detail list must stay one column');
+  if (!/@container industry-flow-card \(min-width:\s*960px\)[\s\S]*?\.industry-flow-card--detail \.industry-flow-steps\s*{[^}]*repeat\(5,\s*minmax\(140px,\s*1fr\)\)/.test(industryFlowStyles)) addError('industry flow detail five-column container guard missing');
   if (/marketMapItems|시장 지도 보기/.test(pickSelectorSource)) addError('retired available or planned map card registry remains');
   if (existsSync(join(process.cwd(), 'src', 'content', 'market-map-relations', 'entries.ts'))) addError('retired relation registry remains in runtime content');
   if (existsSync(join(process.cwd(), 'src', 'components', 'market-map', 'MarketMapDetailTemplate.tsx'))) addError('retired market-map detail component remains');
