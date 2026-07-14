@@ -13,7 +13,13 @@ declare module 'node:fs' {
   export function existsSync(path: string | URL): boolean;
   export function readdirSync(path: string | URL, options: { withFileTypes: true }): Dirent[];
   export function readFileSync(path: string | URL, encoding: string): string;
+  export function readFileSync(path: string | URL): unknown;
   export function statSync(path: string | URL): { size: number };
+}
+
+declare module 'node:zlib' {
+  export function gzipSync(data: string | unknown, options?: { level?: number }): { byteLength: number };
+  export function brotliCompressSync(data: string | unknown): { byteLength: number };
 }
 
 declare module 'node:path' {

@@ -2537,7 +2537,10 @@ function validateCompanyProfiles() {
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
   if (/\bfetch\s*\(|\/api\//.test(componentSource)) addError('company profile component must not issue page-specific requests');
   const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
-  if (!/routeCompanyProfileMatch/.test(appSource) || !/CompanyProfileNotFoundPage/.test(appSource)) addError('company profile canonical and invalid routes missing');
+  const routeSource = readFileSync(join(process.cwd(), 'src', 'routes', 'CompaniesRoute.tsx'), 'utf8');
+  if (!/routeCompanyProfileMatch/.test(appSource) || !/lazy\(\(\) => import\('\.\/routes\/CompaniesRoute'\)\)/.test(appSource) || !/CompanyProfileNotFoundPage/.test(routeSource)) {
+    addError('company profile canonical and invalid routes missing');
+  }
   const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as { rewrites?: Array<{ source?: string; destination?: string }> };
   if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/companies/:path*' && rewrite.destination === '/')) addError('company profile alias SPA rewrite missing');
 }

@@ -5,7 +5,7 @@ import {
   companyEventTypeLabels,
 } from '../../content/company-events/index.js';
 import { companyProfileRelationTypeLabels } from '../../content/company-profile-relations/index.js';
-import type { CompanyResearchProfileViewModel } from '../../content/company-profiles/index.js';
+import type { CompanyResearchProfileViewModel } from '../../content/company-profiles/types.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { priceDirection, priceDisplay } from '../../services/prices.js';

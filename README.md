@@ -4825,3 +4825,15 @@ Vite를 `^7.3.3`에서 `^7.3.6`으로 올렸습니다. 7.3.6은 Vite 자체 수�
 Production `dpl_4wFtX1q8DYzuCSKnR7n7xG7m8EN6`은 보안 업데이트 commit `4458b881a9ff82164f71e5d4c6909581bdeed85c`에서 40초에 Ready · Current가 됐습니다. alias `https://finance1-flax.vercel.app`와 immutable URL의 JS `index-BZosVaFs.js`·CSS `index-B7FbWP_N.css`, Node 22 Function 12개, 공개 API 9개의 HTTP 200·기존 schema·중복 0, sync 6개의 인증 없는 401을 확인했습니다. 1280px·390px·320px·200% 상당 640px UI와 navigation·legacy route는 overflow·산업 흐름 text clipping·빈 화면·broken image/route·undefined/NaN·console error/warning 0이었고 Vercel error·warning·5xx log도 0입니다. rollback 조건이 없어 기준 deployment `dpl_E22yN9GVmDTUjzCtnjpqwmtB1Hjq`로 복구하지 않았습니다. 상세 inventory, 공격 전제, 공식 근거와 lockfile 범위는 `docs/dependency-security-audit.md`에 기록했습니다.
 
 신규 API, Serverless Function, DB, migration, cron, sync endpoint, UI 기능·카피·CSS 변경은 없습니다. Function은 12개, 기업 profile 8개, 이벤트 12개, 수요·공급 4개, 병목 6개, 리포트 15개, 산업 흐름 4개, 거시 9개, 거시·시장 관계 3개를 유지합니다.
+
+## 초기 JavaScript bundle 감사 및 최소 route 분할
+
+홈 첫 방문에 기업 프로필, 기업 이벤트, 수요·공급 matrix, 공시·SEC filter, 거시 전체 지표, 시장 관계 board가 모두 포함되던 정적 route import를 감사했습니다. 홈 `LandingPage`, header와 `PrimaryNavigation`은 eager로 유지하고, 효과가 큰 고유 route module 6개만 `React.lazy`로 분리했습니다. 기업 목록·상세는 slug별 chunk를 만들지 않고 하나의 `CompaniesRoute`에서 profile 8개 selector와 component를 함께 불러옵니다. 보유 보고와 숫자 읽기도 같은 저빈도 기업 route group에 포함하며 trade fallback은 해당 route 또는 기존 기업 분석에서 필요할 때만 가져옵니다.
+
+Node 22·Vite 7.3.6 clean build 기준 entry는 `index-BZosVaFs.js` raw 887,568B·gzip 237,134B에서 `index-A2RI220G.js` raw 785,360B·gzip 213,726B로 줄었습니다. 홈 초기 raw JS 감소는 102,208B(11.52%), gzip 감소는 23,408B(9.87%)이며 100KB 감소 완료 기준을 충족합니다. 홈 초기 JS 요청은 entry 한 개이고 기업·공시·거시 등 lazy asset은 해당 route를 열기 전 요청하지 않습니다.
+
+route content는 공통 `DeferredRoute`를 사용합니다. `RouteLoadingFallback`은 `role=status`, `aria-live=polite`, 180px 최소 높이와 `페이지를 불러오는 중입니다.` 문구를 제공하고 기존 navigation은 fallback 바깥 또는 즉시 렌더되는 shell에 남습니다. dynamic import가 실패하면 홈으로 숨기지 않고 새로고침 안내를 표시합니다. 초기 mount preload와 navigation intent preload는 모두 0개이며 측정된 route chunk가 작아 별도 preload를 넣지 않았습니다. module top-level API fetch, 신규 API·Function, 계약 변경은 없습니다.
+
+이번 변경은 warning을 숨기는 작업이 아닙니다. entry가 여전히 500KB를 넘어 Vite warning 1개는 남지만 `chunkSizeWarningLimit` 변경, `manualChunks`, 신규 dependency, router·state library, CSS 분리, UI·카피·콘텐츠 변경은 모두 0개입니다. Node.js 22.x, npm audit 0, Function 12개와 기존 콘텐츠 수를 유지합니다. build 구조와 후보별 판단, route별 raw·gzip·Brotli, 검증 방법은 `docs/javascript-bundle-audit.md`에 기록했고 `npm run test:javascript-bundle` 및 `npm run report:javascript-bundle`로 재검증할 수 있습니다.
+
+Preview `dpl_BejE4dqP9da9jD9bLQC7W2vKy9Rm`은 Function 12개가 모두 Node 22였고, 변경 전 Production 대비 실제 압축 entry 전송량도 238,589B에서 215,042B로 23,547B 감소했습니다. lazy route 6개의 최초 화면 표시는 209~267ms였고 canonical·영문 alias·legacy 직접 진입과 뒤로·앞으로가 정상입니다. 로컬 7개 viewport×11개 화면 77회와 Preview 390px 13개 route에서 빈 화면·loading 고착·overflow·FOUC 징후·dynamic import 404·console error/warning은 0개였습니다. 공개 API 9개는 HTTP 200, sync 6개는 인증 없이 401이었으며 실제 sync는 실행하지 않았습니다. Production은 같은 asset hash, Function runtime, direct route, API와 network 조건을 배포 후 다시 확인합니다.

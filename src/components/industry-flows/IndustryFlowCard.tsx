@@ -1,6 +1,6 @@
 import { industryFlowViewModel, type IndustryFlowCardVariant, type IndustryFlowEntry } from '../../content/industry-flows/index.js';
 import { companyEventCompany } from '../../content/company-events/index.js';
-import { companyProfilePathForCompanyId } from '../../content/company-profiles/index.js';
+import { companyProfilePathForCompanyId } from '../../content/company-profiles/paths.js';
 
 type IndustryFlowCardProps = {
   flow: IndustryFlowEntry;

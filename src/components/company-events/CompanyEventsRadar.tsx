@@ -11,7 +11,7 @@ import {
 } from '../../content/company-events/index.js';
 import type { CompanyEvent, CompanyEventGroup, CompanyEventType } from '../../content/company-events/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
-import { companyProfilePathForCompanyId } from '../../content/company-profiles/index.js';
+import { companyProfilePathForCompanyId } from '../../content/company-profiles/paths.js';
 import { industryFlowById } from '../../content/industry-flows/index.js';
 
 type GroupFilter = CompanyEventGroup | 'all';

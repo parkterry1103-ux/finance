@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -55,7 +55,6 @@ import {
   semiconductorClusterInfrastructureMap,
   sectors,
   SmartMoneyMove,
-  smartMoneyMoves,
   sourcePolicies,
   StockAutopsyPick,
   stockAutopsyPicks,
@@ -93,8 +92,6 @@ import {
   type SupplyChainBottleneck,
 } from './content/bottlenecks';
 import {
-  currentPickDisclosureTickers,
-  currentPickSecTickers,
   disclosureCategoryLabels,
   disclosureCategoryOrder,
   disclosureCheckpoints,
@@ -102,12 +99,9 @@ import {
   enabledSecTrackedCompanies,
   findDartTrackedCompanyByTicker,
   findSecTrackedCompanyByTicker,
-  marketMapDisclosureTickers,
-  matchesSecFormPattern,
   secFilingCategoryLabels,
   secFilingCategoryOrder,
   secFilingCheckpoints,
-  secSupportedFormPatterns,
   type DisclosureCategory,
   type MarketDisclosure,
   type MarketDisclosureApiResponse,
@@ -116,9 +110,6 @@ import {
   type SecFilingCategory,
 } from './content/disclosures';
 import {
-  eightKItemDefinitionByItem,
-  secPrimaryTransactionCodes,
-  secTransactionCodeDefinitionByCode,
   type SecDerivativeTransaction,
   type SecNonDerivativeTransaction,
   type SecReportingOwner,
@@ -127,11 +118,10 @@ import { companyLogoToneClass, resolveCompanyLogo, resolveCompanyLogoMonogramTex
 import { fetchMarketDisclosures, fetchMarketSecFilings } from './services/disclosures';
 import { buildFallbackFinancials, fetchFinancialsByCompany } from './services/financials';
 import { resolveCompanyFilingLinks } from './services/filings';
-import { fetchOwnershipTrades, fetchTradesByCompany } from './services/trades';
 import { fetchMarketPrices, getPriceForCompany, getPriceForPick, getPriceForTicker, priceDirection, priceDisplay } from './services/prices';
 import { inferCompanyListing, isPriceSyncTarget } from './services/listing';
 import { BeginnerIndustryFlows, BeginnerMarketDrivers, BeginnerMarketOverview, DailyMarketBrief } from './components/daily-market/DailyMarketBrief';
-import { HomeMacroDashboard, MacroDashboard } from './components/macro/MacroDashboard';
+import { HomeMacroDashboard } from './components/macro/MacroDashboard';
 import { macroIndicatorById } from './content/macro';
 import { sourceRegistry } from './content/sources';
 import {
@@ -147,9 +137,6 @@ import {
 import { latestDailyMarketBrief, marketDriverRegistry } from './content/daily-market';
 import { macroDomainBriefs } from './content/macro';
 import { TermHelp } from './components/common/TermHelp';
-import { MarketRelationsBoard } from './components/relations/MarketRelationsBoard';
-import { DemandSupplyMatrix } from './components/demand-supply/DemandSupplyMatrix';
-import { CompanyEventsRadar } from './components/company-events/CompanyEventsRadar';
 import {
   companyEventCompany,
   companyEventGroupLabels,
@@ -161,18 +148,21 @@ import {
   latestCompanyEvents,
 } from './content/company-events';
 import {
-  buildCompanyResearchProfile,
+  canonicalCompanyProfileIdentity,
+  companyProfileByIdOrSlug,
   companyProfilePathForCompanyId,
   companyProfilePathForTicker,
-  companyResearchProfileList,
-} from './content/company-profiles';
-import {
-  CompanyProfileNotFoundPage,
-  CompanyProfilesListPage,
-  CompanyResearchProfilePage,
-} from './components/company-profiles/CompanyProfiles';
+} from './content/company-profiles/paths';
 import { industryFlows } from './content/industry-flows';
 import { replaceLegacyMarketMapLocation, resolveLegacyMarketMapRoute } from './lib/legacyMarketMapRoutes';
+import { DeferredRoute, RouteLoadingFallback } from './routes/RouteBoundary';
+
+const CompaniesRoute = lazy(() => import('./routes/CompaniesRoute'));
+const CompanyEventsRoute = lazy(() => import('./routes/CompanyEventsRoute'));
+const DemandSupplyRoute = lazy(() => import('./routes/DemandSupplyRoute'));
+const DisclosuresRoute = lazy(() => import('./routes/DisclosuresRoute'));
+const MacroDashboardRoute = lazy(() => import('./routes/MacroDashboardRoute'));
+const MarketRelationsRoute = lazy(() => import('./routes/MarketRelationsRoute'));
 
 type NewsItem = {
   title: string;
@@ -933,21 +923,6 @@ function resolveCategoryRouteCompanyId(companyId?: string | null) {
   return resolveAnalysisRouteCompanyId(companyId);
 }
 
-const prominentInstitutionFilters = [
-  'Berkshire Hathaway',
-  'ARK',
-  'BlackRock',
-  'Goldman Sachs',
-  'Vanguard',
-  'State Street',
-  'JPMorgan',
-  'Morgan Stanley',
-  'Bridgewater',
-  'Citadel',
-  'Renaissance',
-  'Baupost',
-  'Soros',
-];
 
 function marketDisplayLabel(company: Company) {
   return inferCompanyListing(company).market;
@@ -3456,18 +3431,6 @@ function secTransactionMetaLine(transaction: SecTransactionSummary) {
   ].filter(Boolean).join(' · ');
 }
 
-function secFilingMatchesTransactionFilter(filing: MarketSecFiling, filter: string | 'all' | 'other') {
-  if (filter === 'all') return true;
-  const transactions = secTransactionsForFiling(filing);
-  if (filter === 'other') {
-    return transactions.some(({ transaction }) => {
-      const code = transaction.transactionCode ?? '';
-      return code && !secPrimaryTransactionCodes.includes(code as typeof secPrimaryTransactionCodes[number]);
-    });
-  }
-  return transactions.some(({ transaction }) => transaction.transactionCode === filter);
-}
-
 function latestPriceAsOfForPicks(picks: StockAutopsyPick[], prices: MarketPrice[]) {
   const timestamps = picks
     .map((pick) => getPriceForPick(pick, prices)?.asOf)
@@ -3558,27 +3521,6 @@ function secCategoryCountSummary(items: MarketSecFiling[]) {
 
 function firstActionableSecFilingCategory(items: MarketSecFiling[]) {
   return secCategoryCountSummary(items)[0]?.category ?? null;
-}
-
-type OfficialDisclosureFeedItem =
-  | { source: 'opendart'; id: string; sortAt: string; disclosure: MarketDisclosure }
-  | { source: 'sec-edgar'; id: string; sortAt: string; filing: MarketSecFiling };
-
-function officialDisclosureFeedItems(disclosures: MarketDisclosure[], secFilings: MarketSecFiling[]) {
-  return [
-    ...disclosures.map((disclosure) => ({
-      source: 'opendart' as const,
-      id: disclosure.receiptNumber,
-      sortAt: disclosure.receivedAt,
-      disclosure,
-    })),
-    ...secFilings.map((filing) => ({
-      source: 'sec-edgar' as const,
-      id: filing.accessionNumber,
-      sortAt: filing.filedAt,
-      filing,
-    })),
-  ].sort((a, b) => b.sortAt.localeCompare(a.sortAt));
 }
 
 type TodayOverviewProps = {
@@ -3733,51 +3675,6 @@ function TodayOverview({ marketPrices, disclosures, secFilings, onOpenPicks, onO
   );
 }
 
-type MarketDisclosuresPageProps = {
-  disclosures: MarketDisclosureApiResponse;
-  secFilings: MarketSecFilingsApiResponse;
-  onHome: () => void;
-  onOpenPicks: () => void;
-  onOpenMarketMap: () => void;
-  onOpenReports: (reportId?: string) => void;
-};
-
-type DisclosureSourceFilter = 'all' | 'opendart' | 'sec-edgar';
-
-function DisclosureCard({ disclosure }: { disclosure: MarketDisclosure }) {
-  const categoryLabel = disclosureCategoryLabels[disclosure.category];
-  const checkpoint = disclosureCheckpoints[disclosure.category];
-  const trackedCompany = findDartTrackedCompanyByTicker(disclosure.ticker);
-  const identity = resolveCompanyIdentity({
-    companyName: disclosure.companyName,
-    ticker: disclosure.ticker,
-    countryLabel: trackedCompany ? '한국' : countryLabelFromTicker(disclosure.ticker),
-    statusLabel: disclosure.ticker ? undefined : '공시 기업',
-  });
-
-  return (
-    <article className="disclosure-radar-card">
-      <div className="disclosure-card-topline">
-        <span>OpenDART</span>
-        <span>{categoryLabel}</span>
-        <time dateTime={disclosure.receivedAt}>{formatKstDate(disclosure.receivedAt)}</time>
-      </div>
-      <div className="disclosure-company-line">
-        <CompanyIdentity {...identity} size="compact" />
-      </div>
-      <h3>{disclosure.reportName}</h3>
-      <p>
-        <b>확인할 것:</b>
-        {checkpoint}
-      </p>
-      <a href={disclosure.sourceUrl} target="_blank" rel="noopener noreferrer">
-        OpenDART 원문 보기
-        <ExternalLink size={14} />
-      </a>
-    </article>
-  );
-}
-
 function SecFilingDetailSummary({ filing, compact = false }: { filing: MarketSecFiling; compact?: boolean }) {
   if (isEightKFiling(filing.formType)) {
     const items = filing.eightKItems ?? [];
@@ -3840,369 +3737,6 @@ function SecFilingDetailSummary({ filing, compact = false }: { filing: MarketSec
   }
 
   return null;
-}
-
-function SecFilingCard({ filing }: { filing: MarketSecFiling }) {
-  const categoryLabel = secFilingCategoryLabels[filing.category];
-  const checkpoint = secFilingCheckpoints[filing.category];
-  const trackedCompany = findSecTrackedCompanyByTicker(filing.ticker);
-  const identity = resolveCompanyIdentity({
-    companyName: filing.companyName,
-    ticker: filing.ticker,
-    countryLabel: '미국',
-    statusLabel: trackedCompany?.source === 'current-pick' ? '현재 Pick' : '미국 Pick',
-  });
-
-  return (
-    <article className="disclosure-radar-card sec-filing-card">
-      <div className="disclosure-card-topline">
-        <span>SEC EDGAR</span>
-        <span>{filing.formType}</span>
-        {isSecAmendedFiling(filing.formType) ? <span>수정 공시</span> : null}
-        <time dateTime={filing.filedAt}>{formatKstDate(filing.filedAt)}</time>
-      </div>
-      <div className="disclosure-company-line">
-        <CompanyIdentity {...identity} size="compact" />
-      </div>
-      <h3>{categoryLabel}</h3>
-      <p>
-        <b>확인할 것:</b>
-        {checkpoint}
-      </p>
-      <SecFilingDetailSummary filing={filing} />
-      {isSecAmendedFiling(filing.formType) ? <small className="disclosure-card-submeta">수정 공시입니다. 원본과 함께 확인하세요.</small> : null}
-      {filing.reportDate ? <small className="disclosure-card-submeta">보고 기준일 · {formatKstDate(filing.reportDate)}</small> : null}
-      <a href={filing.sourceUrl} target="_blank" rel="noopener noreferrer">
-        SEC EDGAR 원문 보기
-        <ExternalLink size={14} />
-      </a>
-    </article>
-  );
-}
-
-function MarketDisclosuresPage({ disclosures, secFilings, onHome, onOpenPicks, onOpenMarketMap, onOpenReports }: MarketDisclosuresPageProps) {
-  const [sourceFilter, setSourceFilter] = useState<DisclosureSourceFilter>('all');
-  const [categoryFilter, setCategoryFilter] = useState<DisclosureCategory | 'all'>('all');
-  const [secCategoryFilter, setSecCategoryFilter] = useState<SecFilingCategory | 'all'>('all');
-  const [secFormFilter, setSecFormFilter] = useState<string | 'all'>('all');
-  const [secItemFilter, setSecItemFilter] = useState<string | 'all'>('all');
-  const [secTransactionFilter, setSecTransactionFilter] = useState<string | 'all' | 'other'>('all');
-  const [companyFilter, setCompanyFilter] = useState('all');
-  const recent24 = disclosureItemsWithin(disclosures.items, 24);
-  const recent7 = disclosureItemsWithin(disclosures.items, 24 * 7);
-  const recentSec24 = secFilingItemsWithin(secFilings.items, 24);
-  const recentSec30 = secFilingItemsWithin(secFilings.items, 24 * 30);
-  const shouldShowDart = sourceFilter === 'all' || sourceFilter === 'opendart';
-  const shouldShowSec = sourceFilter === 'all' || sourceFilter === 'sec-edgar';
-  const showDartSpecificFilters = sourceFilter === 'opendart';
-  const showSecSpecificFilters = sourceFilter === 'sec-edgar';
-
-  const filteredDartItems = useMemo(() => {
-    if (!shouldShowDart) return [];
-    return disclosures.items
-      .filter((item) => categoryFilter === 'all' || item.category === categoryFilter)
-      .filter((item) => {
-        if (companyFilter === 'all') return true;
-        if (companyFilter === 'current-pick') return currentPickDisclosureTickers.has(item.ticker ?? '');
-        if (companyFilter === 'market-map') return marketMapDisclosureTickers.has(item.ticker ?? '');
-        if (companyFilter === 'us-pick') return false;
-        return item.ticker === companyFilter;
-      })
-      .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
-  }, [categoryFilter, companyFilter, disclosures.items, shouldShowDart]);
-
-  const filteredSecItems = useMemo(() => {
-    if (!shouldShowSec) return [];
-    return secFilings.items
-      .filter((item) => secCategoryFilter === 'all' || item.category === secCategoryFilter)
-      .filter((item) => secFormFilter === 'all' || matchesSecFormPattern(item.formType, secFormFilter))
-      .filter((item) => secItemFilter === 'all' || item.eightKItems?.some((detail) => detail.item === secItemFilter))
-      .filter((item) => secFilingMatchesTransactionFilter(item, secTransactionFilter))
-      .filter((item) => {
-        if (companyFilter === 'all') return true;
-        if (companyFilter === 'current-pick') return currentPickSecTickers.has(item.ticker);
-        if (companyFilter === 'market-map') return false;
-        if (companyFilter === 'us-pick') return enabledSecTrackedCompanies.some((company) => company.ticker === item.ticker);
-        return item.ticker === companyFilter;
-      })
-      .sort((a, b) => b.filedAt.localeCompare(a.filedAt));
-  }, [companyFilter, secCategoryFilter, secFilings.items, secFormFilter, secItemFilter, secTransactionFilter, shouldShowSec]);
-
-  const filteredItems = officialDisclosureFeedItems(filteredDartItems, filteredSecItems);
-
-  const stateMessage = disclosureStateMessage(disclosures);
-  const secStateMessage = secFilingStateMessage(secFilings);
-  const sourceNotices = [
-    shouldShowDart && stateMessage ? `OpenDART · ${stateMessage}` : '',
-    shouldShowSec && secStateMessage ? `SEC EDGAR · ${secStateMessage}` : '',
-  ].filter(Boolean);
-
-  const updateSourceFilter = (next: DisclosureSourceFilter) => {
-    setSourceFilter(next);
-    setCategoryFilter('all');
-    setSecCategoryFilter('all');
-    setSecFormFilter('all');
-    setSecItemFilter('all');
-    setSecTransactionFilter('all');
-    setCompanyFilter('all');
-  };
-  const secItemFilterOptions = ['2.02', '5.02', '7.01', '8.01', '9.01'];
-  const secTransactionFilterOptions = ['P', 'S', 'A', 'F', 'G', 'M'];
-
-  return (
-    <div className="pick-shell story-dark-shell disclosure-radar-shell">
-      <PrimaryNavigation
-        active="disclosures"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={() => undefined}
-        onOpenReports={onOpenReports}
-      />
-
-      <main className="disclosure-radar-main">
-        <section className="disclosure-radar-hero">
-          <p className="home-kicker">공식 공시</p>
-          <h1>기업이 직접 밝힌 변화</h1>
-          <span className="beginner-professional-name">OpenDART·SEC EDGAR 공시 레이더</span>
-          <p>
-            현재 Pick과 추적 기업에서 새로 나온 OpenDART·SEC EDGAR 공식 공시를 모아봅니다.
-            공시 제목은 신호일 뿐이며, 실제 내용은 원문에서 확인해야 합니다.
-          </p>
-          <a className="disclosure-company-events-cta" href={companyEventsPath()} onClick={(event) => {
-            event.preventDefault();
-            navigateWithinApp(companyEventsPath());
-          }}>해석된 기업 변화만 보기 <ArrowRight size={14} aria-hidden="true" /></a>
-        </section>
-
-        <section className="disclosure-status-section" aria-labelledby="disclosure-status-title">
-          <div className="beginner-page-subhead"><span>한눈에 보기</span><h2 id="disclosure-status-title">지금 확인 가능한 공식 문서</h2></div>
-          <div className="disclosure-status-grid">
-          <article>
-            <span>출처</span>
-            <strong>OpenDART · SEC EDGAR</strong>
-          </article>
-          <article>
-            <span>OpenDART 동기화</span>
-            <strong>{disclosureSyncLabel(disclosures)}</strong>
-          </article>
-          <article>
-            <span>SEC EDGAR 동기화</span>
-            <strong>{secFilingSyncLabel(secFilings)}</strong>
-          </article>
-          <article>
-            <span>감시 기업 수</span>
-            <strong>KR {disclosures.meta.trackedCompanyCount}개 · US {secFilings.meta.trackedCompanyCount}개</strong>
-          </article>
-          <article>
-            <span>최근 24시간</span>
-            <strong>{recent24.length + recentSec24.length}건</strong>
-          </article>
-          <article>
-            <span>표시 범위</span>
-            <strong>OpenDART 7일 {recent7.length}건 · SEC 30일 {recentSec30.length}건</strong>
-          </article>
-          </div>
-        </section>
-
-        <section className="disclosure-source-tabs" aria-label="공시 출처 선택">
-          <button type="button" className={sourceFilter === 'all' ? 'active' : ''} aria-pressed={sourceFilter === 'all'} onClick={() => updateSourceFilter('all')}>
-            전체
-          </button>
-          <button type="button" className={sourceFilter === 'opendart' ? 'active' : ''} aria-pressed={sourceFilter === 'opendart'} onClick={() => updateSourceFilter('opendart')}>
-            한국 공시
-          </button>
-          <button type="button" className={sourceFilter === 'sec-edgar' ? 'active' : ''} aria-pressed={sourceFilter === 'sec-edgar'} onClick={() => updateSourceFilter('sec-edgar')}>
-            미국 공시
-          </button>
-        </section>
-
-        <details className="disclosure-filter-details">
-          <summary>자세한 필터</summary>
-        <section className="disclosure-filter-panel" aria-label="공시 필터">
-          {showDartSpecificFilters ? (
-            <div>
-              <span><Filter size={14} /> 한국 공시 · OpenDART</span>
-              <div className="disclosure-chip-row">
-                <button type="button" className={categoryFilter === 'all' ? 'active' : ''} aria-pressed={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>
-                  전체
-                </button>
-                {disclosureCategoryOrder.map((category) => (
-                  <button
-                    type="button"
-                    key={category}
-                    className={categoryFilter === category ? 'active' : ''}
-                    aria-pressed={categoryFilter === category}
-                    onClick={() => setCategoryFilter(category)}
-                  >
-                    {disclosureCategoryLabels[category]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {showSecSpecificFilters ? (
-            <>
-              <div>
-                <span><Filter size={14} /> 미국 공시 · SEC EDGAR</span>
-                <div className="disclosure-chip-row">
-                  <button type="button" className={secCategoryFilter === 'all' ? 'active' : ''} aria-pressed={secCategoryFilter === 'all'} onClick={() => setSecCategoryFilter('all')}>
-                    전체
-                  </button>
-                  {secFilingCategoryOrder.map((category) => (
-                    <button
-                      type="button"
-                      key={category}
-                      className={secCategoryFilter === category ? 'active' : ''}
-                      aria-pressed={secCategoryFilter === category}
-                      onClick={() => setSecCategoryFilter(category)}
-                    >
-                      {secFilingCategoryLabels[category]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span><Filter size={14} /> SEC Form</span>
-                <div className="disclosure-chip-row">
-                  <button type="button" className={secFormFilter === 'all' ? 'active' : ''} aria-pressed={secFormFilter === 'all'} onClick={() => setSecFormFilter('all')}>
-                    전체
-                  </button>
-                  {secSupportedFormPatterns.map((formType) => (
-                    <button
-                      type="button"
-                      key={formType}
-                      className={secFormFilter === formType ? 'active' : ''}
-                      aria-pressed={secFormFilter === formType}
-                      onClick={() => setSecFormFilter(formType)}
-                    >
-                      {formType === '424B' ? '424B 계열' : formType}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span><Filter size={14} /> 8-K Item</span>
-                <div className="disclosure-chip-row">
-                  <button type="button" className={secItemFilter === 'all' ? 'active' : ''} aria-pressed={secItemFilter === 'all'} onClick={() => setSecItemFilter('all')}>
-                    전체 Item
-                  </button>
-                  {secItemFilterOptions.map((item) => {
-                    const definition = eightKItemDefinitionByItem.get(item);
-                    return (
-                      <button
-                        type="button"
-                        key={item}
-                        className={secItemFilter === item ? 'active' : ''}
-                        aria-pressed={secItemFilter === item}
-                        onClick={() => setSecItemFilter(item)}
-                      >
-                        {definition?.labelKo ?? '공식 설명 확인 필요'} · {item}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <span><Filter size={14} /> Form 4 거래</span>
-                <div className="disclosure-chip-row">
-                  <button type="button" className={secTransactionFilter === 'all' ? 'active' : ''} aria-pressed={secTransactionFilter === 'all'} onClick={() => setSecTransactionFilter('all')}>
-                    전체 거래
-                  </button>
-                  {secTransactionFilterOptions.map((code) => {
-                    const definition = secTransactionCodeDefinitionByCode.get(code);
-                    return (
-                      <button
-                        type="button"
-                        key={code}
-                        className={secTransactionFilter === code ? 'active' : ''}
-                        aria-pressed={secTransactionFilter === code}
-                        onClick={() => setSecTransactionFilter(code)}
-                      >
-                        {code} · {definition?.labelKo ?? '공식 코드 설명 확인 필요'}
-                      </button>
-                    );
-                  })}
-                  <button type="button" className={secTransactionFilter === 'other' ? 'active' : ''} aria-pressed={secTransactionFilter === 'other'} onClick={() => setSecTransactionFilter('other')}>
-                    기타
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : null}
-          <div>
-            <span><Filter size={14} /> 회사</span>
-            <div className="disclosure-chip-row">
-              <button type="button" className={companyFilter === 'all' ? 'active' : ''} aria-pressed={companyFilter === 'all'} onClick={() => setCompanyFilter('all')}>
-                전체
-              </button>
-              <button type="button" className={companyFilter === 'current-pick' ? 'active' : ''} aria-pressed={companyFilter === 'current-pick'} onClick={() => setCompanyFilter('current-pick')}>
-                현재 Pick
-              </button>
-              {sourceFilter !== 'sec-edgar' ? (
-                <button type="button" className={companyFilter === 'market-map' ? 'active' : ''} aria-pressed={companyFilter === 'market-map'} onClick={() => setCompanyFilter('market-map')}>
-                  추적 기업
-                </button>
-              ) : null}
-              {sourceFilter !== 'opendart' ? (
-                <button type="button" className={companyFilter === 'us-pick' ? 'active' : ''} aria-pressed={companyFilter === 'us-pick'} onClick={() => setCompanyFilter('us-pick')}>
-                  미국 Pick
-                </button>
-              ) : null}
-              {sourceFilter === 'opendart' ? enabledDartTrackedCompanies.map((company) => (
-                  <button
-                    type="button"
-                    key={`dart-${company.id}`}
-                    className={companyFilter === company.ticker ? 'active' : ''}
-                    aria-pressed={companyFilter === company.ticker}
-                    onClick={() => setCompanyFilter(company.ticker)}
-                  >
-                    {company.companyName}
-                  </button>
-                )) : null}
-              {sourceFilter === 'sec-edgar' ? enabledSecTrackedCompanies.map((company) => (
-                  <button
-                    type="button"
-                    key={`sec-${company.id}`}
-                    className={companyFilter === company.ticker ? 'active' : ''}
-                    aria-pressed={companyFilter === company.ticker}
-                    onClick={() => setCompanyFilter(company.ticker)}
-                  >
-                    {company.companyName}
-                  </button>
-                )) : null}
-            </div>
-          </div>
-        </section>
-        </details>
-
-        {sourceNotices.length ? (
-          <section className="disclosure-source-notice" aria-label="공시 데이터 상태">
-            <RefreshCw size={18} />
-            <div>
-              {sourceNotices.map((message) => <strong key={message}>{message}</strong>)}
-            </div>
-          </section>
-        ) : null}
-
-        {filteredItems.length ? (
-          <section className="disclosure-card-grid" aria-labelledby="disclosure-list-title">
-            <h2 className="disclosure-list-title" id="disclosure-list-title">공시 목록</h2>
-            {filteredItems.map((item) => (
-              item.source === 'opendart'
-                ? <DisclosureCard key={`dart-${item.id}`} disclosure={item.disclosure} />
-                : <SecFilingCard key={`sec-${item.id}`} filing={item.filing} />
-            ))}
-          </section>
-        ) : (
-          <section className="disclosure-empty-state">
-            <CheckCircle size={18} />
-            <strong>선택한 조건에 맞는 새 공식 공시가 없습니다.</strong>
-          </section>
-        )}
-      </main>
-    </div>
-  );
 }
 
 function PickDisclosurePanel({
@@ -4290,60 +3824,6 @@ function PickDisclosurePanel({
   );
 }
 
-function isQuarterlyHoldingReport(move: SmartMoneyMove) {
-  return move.action === 'holding' || move.sourceLabel.includes('13F') || move.investorType === 'fund';
-}
-
-function isCongressTradeReport(move: SmartMoneyMove) {
-  return move.investorType === 'us-politician' || move.sourceLabel.toLowerCase().includes('congress');
-}
-
-function publicReportActionLabel(move: SmartMoneyMove) {
-  if (isQuarterlyHoldingReport(move)) return '13F 보유 변화';
-  if (isCongressTradeReport(move)) return `공개 거래 보고${move.actionLabel ? ` · ${move.actionLabel}` : ''}`;
-  return move.actionLabel;
-}
-
-function publicReportDateLabel(move: SmartMoneyMove) {
-  if (isQuarterlyHoldingReport(move)) return '보고 기준일';
-  if (isCongressTradeReport(move)) return '보고된 거래일';
-  return '거래일';
-}
-
-function publicReportDateFallback(move: SmartMoneyMove) {
-  if (isQuarterlyHoldingReport(move)) return '분기 기준일 확인 필요';
-  return '공개 자료에서 확인 필요';
-}
-
-function publicReportDelayNote(move: SmartMoneyMove) {
-  if (isQuarterlyHoldingReport(move)) {
-    return '13F는 분기 말 기관 보유 현황이며 실제 매수·매도 시점과 차이가 있습니다.';
-  }
-  if (isCongressTradeReport(move)) {
-    return '국회의원 거래는 공개된 거래 보고 기준이며 실제 매매일과 공개일이 다를 수 있습니다.';
-  }
-  if (move.isDelayedDisclosure) return '공개 자료 기준이며 실제 매매 시점과 차이가 있을 수 있습니다.';
-  return move.note;
-}
-
-function publicReportTypeBadge(move: SmartMoneyMove) {
-  if (isQuarterlyHoldingReport(move)) return '13F 보유 보고';
-  if (isCongressTradeReport(move)) return '공개 거래 보고';
-  if (move.investorType === 'insider') return 'Form 4 내부자 거래';
-  return move.investorTypeLabel;
-}
-
-function SourceReportAction({ move }: { move: SmartMoneyMove }) {
-  if (move.sourceUrl) {
-    return (
-      <a href={move.sourceUrl} target="_blank" rel="noreferrer">
-        출처 보기
-      </a>
-    );
-  }
-
-  return <span className="source-pending-action">출처 준비 중</span>;
-}
 
 function parsePercentValue(value: string) {
   const parsed = Number(value.replace(/[^0-9.-]/g, ''));
@@ -4550,78 +4030,6 @@ function HomeBottleneckRadar() {
   );
 }
 
-type MacroDashboardPageProps = {
-  onHome: () => void;
-  onOpenPicks: () => void;
-  onOpenMarketMap: () => void;
-  onOpenDisclosures: () => void;
-  onOpenReports: (reportId?: string) => void;
-};
-
-function MacroDashboardPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
-  return (
-    <div className="pick-shell story-dark-shell macro-dashboard-shell">
-      <PrimaryNavigation
-        active="macro"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-      <MacroDashboard />
-    </div>
-  );
-}
-
-function MarketRelationsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
-  return (
-    <div className="pick-shell story-dark-shell market-relations-shell">
-      <PrimaryNavigation
-        active="relations"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-      <MarketRelationsBoard />
-    </div>
-  );
-}
-
-function DemandSupplyPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
-  return (
-    <div className="pick-shell demand-supply-shell">
-      <PrimaryNavigation
-        active="demand-supply"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-      <DemandSupplyMatrix />
-    </div>
-  );
-}
-
-function CompanyEventsPage({ onHome, onOpenPicks, onOpenMarketMap, onOpenDisclosures, onOpenReports }: MacroDashboardPageProps) {
-  return (
-    <div className="pick-shell company-events-shell">
-      <PrimaryNavigation
-        active="company-events"
-        onHome={onHome}
-        onOpenPicks={onOpenPicks}
-        onOpenMarketMap={onOpenMarketMap}
-        onOpenDisclosures={onOpenDisclosures}
-        onOpenReports={onOpenReports}
-      />
-      <CompanyEventsRadar />
-    </div>
-  );
-}
-
 type LandingPageProps = {
   onHome: () => void;
   onOpenMarketMapLibrary: () => void;
@@ -4697,6 +4105,10 @@ function HomeInsightCards({ onOpenMarketDetail }: { onOpenMarketDetail: () => vo
     </section>
   );
 }
+
+type OfficialDisclosureFeedItem =
+  | { source: 'opendart'; id: string; sortAt: string; disclosure: MarketDisclosure }
+  | { source: 'sec-edgar'; id: string; sortAt: string; filing: MarketSecFiling };
 
 function disclosureEventTypeForItem(item: OfficialDisclosureFeedItem): DisclosureEventType {
   if (item.source === 'opendart') {
@@ -6959,9 +6371,14 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
     fetchFinancialsByCompany(company).then((summary) => {
       if (!cancelled) setFinancialSummary(summary);
     });
-    fetchTradesByCompany(company).then((items) => {
-      if (!cancelled) setCompanyTrades(items);
-    });
+    import('./services/trades')
+      .then(({ fetchTradesByCompany }) => fetchTradesByCompany(company))
+      .then((items) => {
+        if (!cancelled) setCompanyTrades(items);
+      })
+      .catch(() => {
+        if (!cancelled) setCompanyTrades([]);
+      });
 
     return () => {
       cancelled = true;
@@ -7508,212 +6925,6 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
   );
 }
 
-type OwnershipReportsPageProps = {
-  onHome: () => void;
-  onOpenAnalysis: (company: Company, anchor?: string) => void;
-  onOpenCategory: (sectorId: string, selectedCompanyId?: string) => void;
-};
-
-function OwnershipReportsPage({ onHome, onOpenAnalysis, onOpenCategory }: OwnershipReportsPageProps) {
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'sec-13f' | 'sec-form4'>('all');
-  const [investorQuery, setInvestorQuery] = useState('');
-  const [tickerQuery, setTickerQuery] = useState('');
-  const [items, setItems] = useState<SmartMoneyMove[]>(smartMoneyMoves);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
-
-  useEffect(() => {
-    let cancelled = false;
-    setStatus('loading');
-    const hasNarrowFilter = Boolean(investorQuery.trim() || tickerQuery.trim() || sourceFilter !== 'all');
-    fetchOwnershipTrades({
-      source: sourceFilter,
-      investor: investorQuery.trim() || undefined,
-      ticker: tickerQuery.trim() || undefined,
-      limit: 50,
-    }).then((rows) => {
-      if (cancelled) return;
-      if (rows.length) {
-        setItems(rows);
-        setStatus('ready');
-        return;
-      }
-      setItems(hasNarrowFilter ? [] : smartMoneyMoves);
-      setStatus(hasNarrowFilter ? 'ready' : 'fallback');
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [investorQuery, sourceFilter, tickerQuery]);
-
-  return (
-    <div className="ownership-shell">
-      <header className="pick-nav">
-        <div className="breadcrumb" aria-label="현재 위치">
-          <button type="button" onClick={onHome}>홈</button>
-          <strong>기관 보유·거래 보고</strong>
-        </div>
-        <button type="button" className="ghost-action" onClick={onHome}>
-          <Network size={15} />
-          홈
-        </button>
-      </header>
-
-      <main className="ownership-main">
-        <section className="ownership-hero">
-          <p className="home-kicker">공개 자료 기준</p>
-          <h1>최근 공개된 기관 보유·내부자 거래 보고</h1>
-          <p>13F는 분기 포트폴리오, Form 4는 내부자 거래 보고입니다. 한 번에 최대 50개만 보여줍니다.</p>
-        </section>
-
-        <section className="ownership-filter-panel" aria-label="기관 보유 거래 보고 필터">
-          <div className="trade-filter-row">
-            {[
-              { value: 'all', label: '전체' },
-              { value: 'sec-13f', label: '13F 보유 보고' },
-              { value: 'sec-form4', label: 'Form 4 내부자' },
-            ].map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={sourceFilter === filter.value ? 'active' : ''}
-                onClick={() => setSourceFilter(filter.value as 'all' | 'sec-13f' | 'sec-form4')}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-          <label>
-            <span>기관명</span>
-            <input type="search" placeholder="Berkshire, ARK..." value={investorQuery} onChange={(event) => setInvestorQuery(event.target.value)} />
-          </label>
-          <label>
-            <span>종목명/티커</span>
-            <input type="search" placeholder="AAPL, NVDA..." value={tickerQuery} onChange={(event) => setTickerQuery(event.target.value)} />
-          </label>
-          <div className="ownership-chip-row" aria-label="주요 기관 빠른 검색">
-            {prominentInstitutionFilters.map((name) => (
-              <button key={name} type="button" onClick={() => setInvestorQuery(name)}>
-                {name}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="ownership-status-row">
-          <span>{status === 'loading' ? '불러오는 중' : status === 'ready' ? 'Supabase 최신 공개 기록' : '예시 공개 보고 데이터 표시 중'}</span>
-          <small>기본 50개 제한 · 화면 과밀 방지</small>
-        </div>
-
-        <section className="home-card-grid smart-money-grid">
-          {items.slice(0, 50).map((move) => {
-            const company = companies.find((item) => item.id === (move.relatedCompanyId ?? move.companyId));
-            const supplyChainId = move.relatedSupplyChainId ?? move.sectorId;
-            return (
-              <article className="smart-card" key={move.id}>
-                <div className="smart-card-primary">
-                  <div>
-                    <h3>{move.investorName}</h3>
-                  </div>
-                  <strong className="trade-action-badge">{publicReportActionLabel(move)}</strong>
-                </div>
-                <div className="smart-company-focus">
-                  <CompanyIdentity
-                    companyName={move.companyName}
-                    ticker={move.ticker}
-                    countryLabel={countryLabelFromMarket(move.market)}
-                    size="compact"
-                  />
-                </div>
-                <span className="trade-type-badge">{publicReportTypeBadge(move)}</span>
-                <p>{move.beginnerExplanation}</p>
-                <dl className="smart-meta-list">
-                  <div><dt>공개일</dt><dd>{move.disclosedDate || '확인 필요'}</dd></div>
-                  <div><dt>{publicReportDateLabel(move)}</dt><dd>{move.tradeDateOptional ?? publicReportDateFallback(move)}</dd></div>
-                  <div><dt>출처</dt><dd>{move.sourceLabel}</dd></div>
-                </dl>
-                <small className="trade-delay-note">{publicReportDelayNote(move)}</small>
-                <div className="card-actions">
-                  <button type="button" onClick={() => onOpenCategory(supplyChainId, company?.id ?? move.relatedCompanyId ?? move.companyId)}>기업 관계 보기</button>
-                  {company ? <button type="button" onClick={() => onOpenAnalysis(company)}>기업 분석 보기</button> : <button type="button">관련 분석 준비 중</button>}
-                  <SourceReportAction move={move} />
-                </div>
-              </article>
-            );
-          })}
-          {items.length === 0 && <div className="trade-empty">현재 조건에 맞는 공개 보유·거래 보고가 없습니다.</div>}
-        </section>
-
-        <div className="home-note">
-          <p>13F는 분기 말 기관 보유 보고이며 실제 매수·매도 시점과 차이가 있습니다.</p>
-          <p>Form 4 내부자 거래 보고도 공개 시점이 늦을 수 있습니다.</p>
-          <p>투자 권유가 아닌 참고용 데이터입니다.</p>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-type FinancialLearningPageProps = {
-  onHome: () => void;
-};
-
-function FinancialLearningPage({ onHome }: FinancialLearningPageProps) {
-  const coreItems = [
-    {
-      title: '매출',
-      body: '회사가 얼마나 팔았는지 보는 출발점입니다. 매출만 커도 비용이 같이 커지면 남는 돈은 작을 수 있습니다.',
-    },
-    {
-      title: '영업이익률',
-      body: '영업이익을 매출로 나눈 비율입니다. 회사 크기보다 본업 수익성이 어떤 흐름인지 볼 때 씁니다.',
-    },
-    {
-      title: '영업현금흐름',
-      body: '장부상 이익이 실제 현금 흐름으로 이어졌는지 봅니다. 이익과 현금흐름이 함께 움직이는지가 중요합니다.',
-    },
-  ];
-
-  return (
-    <div className="financial-learn-shell">
-      <header className="pick-nav financial-learn-nav">
-        <div className="breadcrumb" aria-label="현재 위치">
-          <button type="button" onClick={onHome}>홈</button>
-          <strong>숫자 읽기</strong>
-        </div>
-        <button type="button" className="ghost-action" onClick={onHome}>
-          <Network size={15} />
-          홈
-        </button>
-      </header>
-
-      <main className="financial-learn-main">
-        <section className="financial-learn-hero">
-          <span className="home-kicker">재무 숫자 참고</span>
-          <h1>숫자 3개 읽는 법</h1>
-          <p>기업해설에서 보는 매출, 영업이익률, 현금흐름의 순서를 짧게 정리했습니다.</p>
-        </section>
-
-        <section className="financial-learn-guide" aria-label="재무 숫자 읽는 법">
-          {coreItems.map((item) => (
-            <article key={item.title}>
-              <span>{item.title}</span>
-              <p>{item.body}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="financial-learn-note">
-          <CheckCircle size={18} />
-          <div>
-            <strong>비교는 그다음입니다</strong>
-            <p>YoY/QoQ, 부채비율, FCF, EPS는 핵심 3개를 본 뒤에 확인합니다.</p>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
-}
-
 function App() {
   const [route, setRoute] = useState(() => {
     const replacement = replaceLegacyMarketMapLocation();
@@ -7751,7 +6962,8 @@ function App() {
   const routeCategoryMatch = routePath.match(/^\/(?:ko\/)?category\/([^/]+)\/?$/) ?? (routePath === '/dashboard' || routePath === '/app' ? [routePath, ''] : null);
 
   const routeCompanyProfileSlug = routeCompanyProfileMatch?.[1] ? decodeURIComponent(routeCompanyProfileMatch[1]) : undefined;
-  const routeCompanyResearchProfile = routeCompanyProfileSlug ? buildCompanyResearchProfile(routeCompanyProfileSlug, marketPrices) : undefined;
+  const routeCompanyProfileEntry = routeCompanyProfileSlug ? companyProfileByIdOrSlug(routeCompanyProfileSlug) : undefined;
+  const routeCompanyIdentity = routeCompanyProfileEntry ? canonicalCompanyProfileIdentity(routeCompanyProfileEntry.companyId) : undefined;
   const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
   const routeIndustryReport = routeReportSlug ? industryReports.find((report) => report.slug === routeReportSlug || report.id === routeReportSlug) : undefined;
   const routeBottleneckSlug = routeBottleneckDetailMatch?.[1] ? decodeURIComponent(routeBottleneckDetailMatch[1]) : undefined;
@@ -7780,8 +6992,8 @@ function App() {
 
   useEffect(() => {
     if (routeCompanyProfileMatch) {
-      document.title = routeCompanyResearchProfile
-        ? `${routeCompanyResearchProfile.company.name} 기업 한눈에 보기 | 주가해부실`
+      document.title = routeCompanyIdentity
+        ? `${routeCompanyIdentity.name} 기업 한눈에 보기 | 주가해부실`
         : '기업을 찾을 수 없습니다 | 주가해부실';
     } else if (routeCompaniesMatch) {
       document.title = '기업 한눈에 보기 | 주가해부실';
@@ -7792,11 +7004,11 @@ function App() {
     }
     const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (description) {
-      description.content = routeCompanyResearchProfile
-        ? `${routeCompanyResearchProfile.company.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
+      description.content = routeCompanyIdentity
+        ? `${routeCompanyIdentity.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
         : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 산업과 기업으로 이어지는지 확인합니다.';
     }
-  }, [isDemandSupplyRoute, routeCompanyResearchProfile?.company.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
+  }, [isDemandSupplyRoute, routeCompanyIdentity?.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
 
   useEffect(() => {
     if (isDemandSupplyRoute || isCompanyEventsRoute) return;
@@ -7914,13 +7126,25 @@ function App() {
   );
 
   if (routeCompanyProfileMatch) {
-    return routeCompanyResearchProfile
-      ? <CompanyResearchProfilePage viewModel={routeCompanyResearchProfile} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
-      : <CompanyProfileNotFoundPage navigation={navigation('companies')} onNavigate={navigateWithinApp} />;
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <CompaniesRoute slug={routeCompanyProfileSlug} marketPrices={marketPrices} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
   }
 
   if (routeCompaniesMatch) {
-    return <CompanyProfilesListPage profiles={companyResearchProfileList()} navigation={navigation('companies')} onNavigate={navigateWithinApp} />;
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <CompaniesRoute marketPrices={marketPrices} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
   }
 
   if (isPicksRoute) {
@@ -7945,23 +7169,50 @@ function App() {
   }
 
   if (isDisclosuresRoute) {
-    return <MarketDisclosuresPage disclosures={marketDisclosures} secFilings={marketSecFilings} onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenReports={openReports} />;
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell story-dark-shell disclosure-radar-shell">{navigation('disclosures')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <DisclosuresRoute disclosures={marketDisclosures} secFilings={marketSecFilings} navigation={navigation('disclosures')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
   }
 
   if (isCompanyEventsRoute) {
-    return <CompanyEventsPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
+    return (
+      <div className="pick-shell company-events-shell">
+        {navigation('company-events')}
+        <DeferredRoute resetKey={routePath}><CompanyEventsRoute /></DeferredRoute>
+      </div>
+    );
   }
 
   if (routeMacroDashboardMatch) {
-    return <MacroDashboardPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
+    return (
+      <div className="pick-shell story-dark-shell macro-dashboard-shell">
+        {navigation('macro')}
+        <DeferredRoute resetKey={routePath}><MacroDashboardRoute /></DeferredRoute>
+      </div>
+    );
   }
 
   if (routeMarketRelationsMatch) {
-    return <MarketRelationsPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
+    return (
+      <div className="pick-shell story-dark-shell market-relations-shell">
+        {navigation('relations')}
+        <DeferredRoute resetKey={routePath}><MarketRelationsRoute /></DeferredRoute>
+      </div>
+    );
   }
 
   if (routeDemandSupplyMatch || routeCategoryMatch) {
-    return <DemandSupplyPage onHome={openHome} onOpenPicks={openPicks} onOpenMarketMap={openDemandSupply} onOpenDisclosures={openDisclosures} onOpenReports={openReports} />;
+    return (
+      <div className="pick-shell demand-supply-shell">
+        {navigation('demand-supply')}
+        <DeferredRoute resetKey={routePath}><DemandSupplyRoute /></DeferredRoute>
+      </div>
+    );
   }
 
   if (routeBottleneckDetailMatch) {
@@ -7993,11 +7244,25 @@ function App() {
   }
 
   if (routeOwnershipMatch) {
-    return <OwnershipReportsPage onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />;
+    return (
+      <DeferredRoute
+        fallback={<div className="ownership-shell">{navigation('analysis')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <CompaniesRoute view="ownership" onHome={openHome} onOpenAnalysis={openAnalysis} onOpenCategory={openCategory} />
+      </DeferredRoute>
+    );
   }
 
   if (routeFinancialLearnMatch) {
-    return <FinancialLearningPage onHome={openHome} />;
+    return (
+      <DeferredRoute
+        fallback={<div className="financial-learn-shell">{navigation('analysis')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <CompaniesRoute view="financial-learning" onHome={openHome} />
+      </DeferredRoute>
+    );
   }
 
   if (routeAnalysisMatch && analysisCompany && analysisAnchor) {

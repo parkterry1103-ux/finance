@@ -16,6 +16,8 @@
     "test:company-profiles": "npm run sync:compile && node .sync-build/scripts/company-profile-unit.js",
     "test:company-events": "npm run sync:compile && node .sync-build/scripts/company-events-unit.js",
     "test:dependency-security": "npm run sync:compile && node .sync-build/scripts/dependency-security-unit.js",
+    "test:javascript-bundle": "npm run sync:compile && node .sync-build/scripts/javascript-bundle-unit.js",
+    "report:javascript-bundle": "npm run sync:compile && node .sync-build/scripts/javascript-bundle-report.js",
     "dev:vercel": "npx vercel dev",
     "sync:compile": "tsc -p tsconfig.scripts.json",
     "sync:opendart": "npm run sync:compile && node .sync-build/scripts/sync-opendart-financials.js",

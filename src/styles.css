@@ -29825,3 +29825,21 @@ button.flow-stage-company-chip:focus-visible {
     justify-content: center;
   }
 }
+
+.route-loading-fallback {
+  display: grid;
+  min-height: 180px;
+  padding: 32px 20px;
+  place-items: center;
+  text-align: center;
+}
+
+.route-loading-fallback h1 {
+  margin: 0 0 8px;
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.route-loading-fallback p {
+  margin: 0;
+  color: inherit;
+}

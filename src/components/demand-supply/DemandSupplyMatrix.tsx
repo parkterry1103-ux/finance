@@ -22,7 +22,7 @@ import { reportById } from '../../content/reports/index.js';
 import { companies, reconstructionInfrastructureMap, semiconductorClusterInfrastructureMap } from '../../data.js';
 import { fetchMacroIndicators } from '../../services/macro.js';
 import { companyEventCompany, companyEventsForDemandSupply, companyEventStageLabels } from '../../content/company-events/index.js';
-import { companyProfilePathForCompanyId, companyProfilePathForTicker } from '../../content/company-profiles/index.js';
+import { companyProfilePathForCompanyId, companyProfilePathForTicker } from '../../content/company-profiles/paths.js';
 import { industryFlowForDemandSupply } from '../../content/industry-flows/index.js';
 import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
 

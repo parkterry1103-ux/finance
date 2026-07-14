@@ -5,7 +5,7 @@ import {
 } from '../../data.js';
 import { getPriceForTicker } from '../../services/prices.js';
 import { supplyChainBottlenecks } from '../bottlenecks/entries.js';
-import { companyEventCompanies, companyEvents } from '../company-events/entries.js';
+import { companyEvents } from '../company-events/entries.js';
 import { sortCompanyEvents } from '../company-events/selectors.js';
 import { demandSupplyEntries } from '../demand-supply/entries.js';
 import { relatedCompaniesForProfile } from '../company-profile-relations/selectors.js';
@@ -13,58 +13,30 @@ import { industryFlowsForCompany } from '../industry-flows/selectors.js';
 import { industryReports } from '../reports/entries.js';
 import { sourceRegistry } from '../sources/registry.js';
 import { companyProfileCanonicalAliases, companyProfiles } from './entries.js';
+import {
+  canonicalCompanyProfileIdentity,
+  companyProfileByIdOrSlug,
+  companyProfilePath,
+} from './paths.js';
 import type {
-  CanonicalCompanyProfileIdentity,
   CompanyProfileEntry,
   CompanyRelationSummary,
   CompanyResearchProfileViewModel,
   VerifiedCompanyMetric,
 } from './types.js';
 
-const profileByCompanyId = new Map(companyProfiles.map((profile) => [profile.companyId, profile]));
-const profileBySlug = new Map(companyProfiles.map((profile) => [profile.slug, profile]));
-const eventCompanyById = new Map(companyEventCompanies.map((company) => [company.id, company]));
+export {
+  canonicalCompanyProfileId,
+  canonicalCompanyProfileIdentity,
+  companyProfileByIdOrSlug,
+  companyProfileForTicker,
+  companyProfilePath,
+  companyProfilePathForCompanyId,
+  companyProfilePathForTicker,
+} from './paths.js';
 
 function uniqueById<T extends { id: string }>(items: T[]) {
   return items.filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
-}
-
-export function canonicalCompanyProfileId(companyId: string) {
-  return companyProfileCanonicalAliases[companyId] ?? companyId;
-}
-
-export function companyProfileByIdOrSlug(value?: string | null) {
-  if (!value) return undefined;
-  const canonicalId = canonicalCompanyProfileId(value);
-  return profileByCompanyId.get(canonicalId) ?? profileBySlug.get(value);
-}
-
-export function companyProfileForTicker(ticker?: string | null) {
-  if (!ticker) return undefined;
-  const normalized = ticker.trim().toUpperCase();
-  const identity = companyEventCompanies.find((company) => company.ticker.toUpperCase() === normalized);
-  return identity ? profileByCompanyId.get(identity.id) : undefined;
-}
-
-export function companyProfilePath(profile: CompanyProfileEntry | string) {
-  const resolved = typeof profile === 'string' ? companyProfileByIdOrSlug(profile) : profile;
-  return resolved ? `/ko/companies/${encodeURIComponent(resolved.slug)}` : '/ko/companies';
-}
-
-export function companyProfilePathForCompanyId(companyId: string) {
-  const profile = companyProfileByIdOrSlug(companyId);
-  return profile ? companyProfilePath(profile) : undefined;
-}
-
-export function companyProfilePathForTicker(ticker?: string | null) {
-  const profile = companyProfileForTicker(ticker);
-  return profile ? companyProfilePath(profile) : undefined;
-}
-
-export function canonicalCompanyProfileIdentity(companyId: string): CanonicalCompanyProfileIdentity | undefined {
-  const canonicalId = canonicalCompanyProfileId(companyId);
-  const identity = eventCompanyById.get(canonicalId);
-  return identity ? { ...identity } : undefined;
 }
 
 function aliasesForCompany(companyId: string) {
