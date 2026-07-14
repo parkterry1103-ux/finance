@@ -108,6 +108,18 @@
       "destination": "/"
     },
     {
+      "source": "/demand-supply",
+      "destination": "/"
+    },
+    {
+      "source": "/market-map",
+      "destination": "/"
+    },
+    {
+      "source": "/category/:path*",
+      "destination": "/"
+    },
+    {
       "source": "/ko",
       "destination": "/"
     },

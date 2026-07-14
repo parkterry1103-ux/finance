@@ -30,10 +30,21 @@ const eventsSource = readFileSync(join(process.cwd(), 'src', 'components', 'comp
 const dailyEntrySource = readFileSync(join(process.cwd(), 'src', 'content', 'daily-market', 'entries.ts'), 'utf8');
 const pickSelectorSource = readFileSync(join(process.cwd(), 'src', 'content', 'picks', 'selectors.ts'), 'utf8');
 const packageSource = readFileSync(join(process.cwd(), 'package.json'), 'utf8');
+const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as {
+  rewrites?: Array<{ source?: string; destination?: string }>;
+};
+const hostedSpaRoutes = new Set(
+  (vercelConfig.rewrites ?? [])
+    .filter((rewrite) => rewrite.destination === '/')
+    .map((rewrite) => rewrite.source),
+);
 check(!/@xyflow\/react|ReactFlow/.test(appSource), 'ReactFlow runtime removed');
 check(!/content\/market-map-relations/.test(appSource), 'relation registry runtime consumer removed');
 check(!/시장지도|href=[^\n>]*market-map/.test(`${profileSource}\n${demandSource}\n${eventsSource}\n${dailyEntrySource}`), 'public market-map copy and CTA removed');
 check(!/marketMapItems|시장 지도 보기/.test(pickSelectorSource), 'available and planned map card registry removed');
 check(!packageSource.includes('@xyflow/react'), 'ReactFlow dependency removed');
+check(hostedSpaRoutes.has('/market-map'), 'English retired hub reaches the SPA in Production');
+check(hostedSpaRoutes.has('/category/:path*'), 'English retired category aliases reach the SPA in Production');
+check(hostedSpaRoutes.has('/demand-supply'), 'English replacement route is refresh-safe in Production');
 
 console.log(`✓ 시장지도 폐기 unit ${checks}개 검증`);
