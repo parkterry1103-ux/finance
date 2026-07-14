@@ -72,3 +72,13 @@ Preview lazy asset 8개는 모두 HTTP 200이었고 압축 전송량은 기업 8
 로컬 Preview는 7개 viewport와 11개 화면, 총 77개 조합을 검사했고 실패 0개였다. 배포 Preview는 390×844에서 canonical·alias·legacy 13개 직접 URL, 기업 목록 → NVIDIA → 뒤로 → 앞으로를 다시 검사했다. 단일 H1, 빈 화면, loading 고착, FOUC 징후, horizontal overflow, broken image, `undefined`·`NaN`, dynamic import 404, console error/warning은 모두 0개였다. 브라우저 격리 evaluate가 Resource Timing, DOMContentLoaded와 load timing을 노출하지 않아 해당 값은 허위로 보완하지 않고 wall time·immutable asset 응답·manifest로 기록했다.
 
 Preview 공개 API 9개는 모두 HTTP 200이었다. 가격 103개, 거시 9개, 시장 관계 3개, OpenDART 13개, SEC 20개, ownership 20개와 financials·news 기존 schema를 확인했다. sync Function 6개는 인증 없는 POST가 모두 401이었고 실제 sync 실행은 0회다. Preview error log도 0개였다.
+
+## Production 검증
+
+Production `dpl_3dhxPABLgRAjexPxkaAK3VA9fp8L`은 구현 commit `364df8b69ad8608a64e94b8f345dadc5dc561ab4`에서 약 1분에 Ready가 됐다. canonical alias는 `https://finance1-flax.vercel.app`, immutable URL은 `https://finance1-5xkyg9rkc-terrypark-s-projects.vercel.app`이다. 배포 metadata의 build Node는 `22.x`이고, Function 12개는 모두 `nodejs22.x`다.
+
+Production 홈 HTML의 application script는 `index-A2RI220G.js` 한 개이고 CSS는 `index-AtZWZZCy.css`다. entry는 raw 785,360B이며 CDN 압축 전송량 3회는 모두 215,042B, 응답 시간은 0.126초·0.153초·0.204초였다. 변경 전 Production 238,589B 대비 실제 전송량은 23,547B(9.87%) 감소했다. 홈 HTML에는 route asset이 없고 manifest의 route asset은 dynamic import로만 연결돼 홈의 불필요한 route chunk 요청은 0개다.
+
+Production lazy asset 8개는 모두 HTTP 200이었다. 압축 전송량은 기업 8,436B, 공시 7,687B, 시장 관계 5,558B, 수요·공급 4,661B, 기업 이벤트 3,721B, 거시 3,094B, trade service 1,772B, profile path shared 1,257B다. canonical 11개, 영문 alias 3개, legacy 3개를 직접 진입했고 390×844 필수 화면 11개에서 단일 H1, 빈 화면, fallback 고착, page overflow, broken image, `undefined`·`NaN`, import 오류와 console error/warning이 모두 0개였다. 기업 목록 → NVIDIA → 뒤로 → 앞으로도 정상이고 legacy market-map은 수요·공급 화면으로 안전하게 대체됐다.
+
+공개 API 9개는 모두 HTTP 200이었다. 가격과 market brief 각 103개, 거시 9개, 시장 관계 3개, OpenDART 13개, SEC 20개, ownership 20개, news 11개와 financials 기존 schema를 확인했고 각 응답의 식별자 중복은 0개였다. news는 기존 계약대로 `ok` field가 없으며 나머지는 `ok:true`다. sync Function 6개는 인증 없는 POST가 모두 401이어서 실제 sync 실행은 0회다. 배포 후 Vercel error log도 0개였다. rollback 조건이 없어 시작 기준 `dpl_7Hu6VUGtDVFvTgWYmUosdx2Ed4MD`로 복구하지 않았다.
