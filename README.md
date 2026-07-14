@@ -4809,3 +4809,17 @@ ReactFlow runtime import가 0개가 된 뒤 `@xyflow/react`와 전용 CSS import
 Browser QA는 1440×900, 1280×844, 1024×768, 768×900, 640px CSS viewport, 390×844, 360×800, 320×700과 200% 상당 640px 조건에서 홈, 한국어·영문 수요·공급, NVIDIA·SK하이닉스·Eaton 프로필과 legacy route를 확인합니다. 한 글자 단위 줄바꿈, 3줄 이상 제목, text·번호·badge·pill·CTA clipping, 연결선 겹침, page horizontal overflow, broken image와 빈 graph wrapper는 모두 0개입니다. Production은 `main`을 `finance1`에 배포한 뒤 alias·immutable URL의 route/API, JS·CSS asset hash, 최종 CSS container query와 JS variant 분기를 다시 확인합니다.
 
 시장지도와 ReactFlow는 복구하지 않았습니다. 산업 흐름 4개와 각 5단계를 유지하며 신규 API, Serverless Function, DB, migration, cron, sync, dependency와 페이지 전용 요청은 모두 0개입니다.
+
+## 의존성 취약점 영향도 감사 및 최소 안전 업데이트
+
+2026-07-14 Node.js 22.23.1·npm 10.9.8에서 변경 전 `npm audit`은 high 1, low 2의 취약 패키지 노드 3개를 보고했고 `npm audit --omit=dev`는 0개였습니다. Vite 노드에 두 advisory가 연결되어 실제 검토 대상은 [GHSA-fx2h-pf6j-xcff](https://github.com/advisories/GHSA-fx2h-pf6j-xcff), [GHSA-v6wh-96g9-6wx3](https://github.com/advisories/GHSA-v6wh-96g9-6wx3), [GHSA-4x5r-pxfx-6jf8](https://github.com/advisories/GHSA-4x5r-pxfx-6jf8), [GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) 네 개입니다.
+
+경로는 root → Vite 7.3.3, root → Vite → esbuild 0.27.7, root → `@vitejs/plugin-react` 5.2.0 → `@babel/core` 7.29.0입니다. Vite 두 건은 Windows 로컬 dev server의 NTFS alternate path 또는 UNC/NTLM 조건, esbuild는 Windows에서 esbuild 자체 `servedir` server를 실행하는 조건, Babel은 공격자가 악성 source와 변환 output을 통제하고 대상 source map 경로를 아는 조건이 필요합니다. 이 프로젝트는 dev/preview를 `127.0.0.1`에 고정하고 esbuild serve·외부 코드 compilation을 사용하지 않으며, 세 패키지를 Serverless Function이나 Production browser runtime에서 import하지 않습니다. advisory 단위 도달성은 production-server 0, production-browser 0, build-only 4, test-only 0, unknown 0입니다.
+
+Vite를 `^7.3.3`에서 `^7.3.6`으로 올렸습니다. 7.3.6은 Vite 자체 수정이 포함된 최소 안전 7.3.5 다음 patch이며 공식적으로 esbuild 0.28을 허용하므로 override 없이 esbuild 0.28.1을 선택할 수 있습니다. 기존 plugin-react 범위 안에서 `@babel/core` 7.29.6과 필수 `@babel/generator` 7.29.6을 선택했습니다. direct 변경은 Vite patch 1개뿐이고 신규 direct dependency, 제거 dependency, override, major 업데이트는 0개입니다. transitive에서는 Babel patch 2개와 esbuild family minor 1개를 적용했습니다. lockfileVersion 3과 Node engine 22.x를 유지하며 version 변경 30 entry 중 26개는 esbuild의 필수 platform optional metadata입니다. 무관한 React·TypeScript·Rollup·PostCSS·브라우저 데이터는 갱신하지 않았습니다.
+
+변경 후 전체/Production audit 목표는 모두 0이며 남겨 둔 advisory는 없습니다. `scripts/dependency-security-unit.ts`가 안전 버전, direct dependency 집합, audit 숨김·force script 부재, override 부재, Node 22와 Function 12개를 고정합니다. `npm audit fix --force`, 전체 `npm update`, force/legacy peer 설치는 사용하지 않습니다.
+
+배포 gate는 Node 22 `npm ci`, 기존 validator와 모든 unit, scripts/application TypeScript, Vite build, Preview Node 22 Function 12개, 전체 Function smoke, 지정 route와 desktop·390px·320px·200% browser QA입니다. Preview `dpl_6z3ztnDDpMoQLJSqU5p3VBvZQemL`에서 12개 Function의 `nodejs22.x`, 공개 API의 HTTP 200·기존 schema, sync 6개의 인증 없는 401, 지정 route의 overflow·빈 화면·broken image·undefined/NaN·console error/warning 0을 확인했습니다. 실제 sync 실행은 0회입니다. Production에서도 같은 API schema·Function 수·UI·로그를 확인하며 rollback 기준은 작업 시작 시 정상 deployment `dpl_E22yN9GVmDTUjzCtnjpqwmtB1Hjq`입니다. 상세 inventory, 공격 전제, 공식 근거와 lockfile 범위는 `docs/dependency-security-audit.md`에 기록했습니다.
+
+신규 API, Serverless Function, DB, migration, cron, sync endpoint, UI 기능·카피·CSS 변경은 없습니다. Function은 12개, 기업 profile 8개, 이벤트 12개, 수요·공급 4개, 병목 6개, 리포트 15개, 산업 흐름 4개, 거시 9개, 거시·시장 관계 3개를 유지합니다.
