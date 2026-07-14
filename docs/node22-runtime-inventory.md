@@ -72,3 +72,19 @@
 - warm 응답: 가격 5.97초, 나머지 주요 API 0.08~0.10초. 가격 기준선 5.19초 대비 약 15% 증가했지만 외부·DB 왕복 특성과 허용 범위 안이며 나머지는 개선됐다.
 - SPA: 홈·수요/공급·기업·거시 화면 렌더링, legacy 시장지도 hub/detail 대체 route, 콘솔 warning/error 0, 800px viewport 가로 overflow 0. 브라우저의 최소 viewport가 800px로 유지되어 390px 실브라우저 확인은 수행하지 못했고, 모바일 회귀는 기존 `industry-flow-layout-unit` 13개와 반응형 CSS 검증으로 보완했다.
 - Project Setting: Preview 검증 뒤 `finance1`의 Node.js Version을 24.x에서 22.x로 변경하고 API·CLI 양쪽에서 22.x를 재확인했다.
+
+## Production 전환 결과
+
+- 최초 Node 22 Production deployment: `dpl_7fcgvXjSLz2rFcj7uPtSqBo5yyNn`
+- 전환 commit: `f4f036f806f192ad863aaa4f30ef428625c9b99e` (`main`)
+- alias: `https://finance1-flax.vercel.app`
+- 배포 상태: READY, target `production`, build config Node.js `22.x`
+- Functions: 12개 전부 `nodejs22.x`; 2,048 MB·300초 유지
+- Vercel Project Setting: Node.js `22.x`
+- build log: Node 20 deprecation/runtime 경고 0. 기존 Function TypeScript 진단 220건은 Node 20 기준선과 동일하고 build output은 정상 생성됐다.
+- 주요 API 6종: 가격 103, 시장 브리핑 103, 거시 9, 시장 관계 3, DART 15, SEC 20. root schema와 payload가 기준선과 일치하고 고유키 중복 0, 날짜 파싱 오류 0, null 수 회귀 0이다.
+- 거시 API 첫 병렬 cold 요청에서 FRED 2종 timeout으로 partial 응답이 CDN에 잠시 남았으나, 고유 query 단독 호출에서 즉시 9/9를 확인했다. QA가 만든 partial CDN cache만 purge한 뒤 canonical 경로도 9/9·`partial: false`·cache MISS로 복구했다. DB와 data cache는 변경하지 않았다.
+- 추가 읽기 Function 3종은 HTTP 200, sync Function 6종은 인증 없는 요청에 HTTP 401이다. sync 실행은 0회다.
+- Production warm 응답은 가격 4.29초, 시장 브리핑 0.08초, 거시 cache 갱신 1.00초, 관계 0.08초, DART 0.05초, SEC 0.06초였다. 기준선 대비 주요 성능 회귀는 없다.
+- 실제 브라우저: 390px 홈·산업 흐름 상세에서 `scrollWidth = clientWidth = 390`, overflow 0, console warning/error 0, `undefined`/`NaN` 노출 0. NVIDIA 기업 화면과 legacy 시장지도 hub 대체도 정상이다.
+- 주요 회귀가 없어 rollback은 수행하지 않았다. 직전 Node 20 deployment `dpl_6yJvhXnZLgSQop85Lc26zXGNRtuA`는 비교·비상 복구 기준으로만 기록한다.
