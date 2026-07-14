@@ -34,7 +34,7 @@
     "sync:all": "npm run sync:financials && npm run sync:trades && npm run sync:prices"
   },
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

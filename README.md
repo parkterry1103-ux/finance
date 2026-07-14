@@ -1291,7 +1291,7 @@ PRICE_SYNC_SOURCE=
 
 ### 수동 동기화
 
-동기화 스크립트는 `.ts` 파일이지만 Node 20에서도 실행되도록 먼저 `.sync-build`에 JS로 컴파일한 뒤 실행합니다.
+동기화 스크립트는 `.ts` 파일이므로 Node 22에서 먼저 `.sync-build`에 JS로 컴파일한 뒤 실행합니다.
 
 ```bash
 npm run sync:compile
@@ -1844,7 +1844,7 @@ GitHub Deployments 공개 기록상 이 GitHub repo에서 Vercel bot이 `Product
 #### GitHub Actions 설정 확인
 
 - `.github/workflows/sync.yml`은 `workflow_dispatch`와 평일 schedule 두 개를 사용합니다: `15 9 * * 1-5`, `15 */6 * * 1-5`.
-- job은 Node 20, `npm ci`, `npm run sync:all`을 실행합니다. 즉 가격 sync만의 주 경로라기보다 재무/거래/가격을 모두 돌리는 대안 또는 보조 경로입니다.
+- job은 Node 22.x, `npm ci`, `npm run sync:all`을 실행합니다. 즉 가격 sync만의 주 경로라기보다 재무/거래/가격을 모두 돌리는 대안 또는 보조 경로입니다.
 - workflow env에는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `MARKET_PRICES_IMPORT_URL` secret reference가 있습니다. `PRICE_IMPORT_URL`, `PRICE_SYNC_SOURCE`는 전달하지 않습니다.
 - GitHub Actions 공개 API와 공개 run page 기준 최근 run은 성공입니다.
 - 공개 run page에서 run 번호, schedule trigger 시각, status, total duration, job 이름은 보입니다.
@@ -3104,7 +3104,7 @@ Pick 원문 출처는 `src/content/sources`의 공통 레지스트리에서 관�
 - workflow 이름: `CI`
 - status check/job 이름: `Validate content, types, and build`
 - trigger: `pull_request`, `push` to `main`
-- Node 버전: `20.x`
+- Node 버전: `22.x`
 - 권한: `contents: read`
 
 CI는 다음 순서로 실행합니다.
@@ -4402,7 +4402,9 @@ CTA 역할은 겹치지 않게 관리합니다. `기업 해설 보기`는 분석
 
 ## Vercel Node runtime
 
-`package.json`에서 Vercel 런타임을 Node.js 20.x로 고정했습니다. 로컬도 Node 20.x를 권장합니다. Node 22/24로 실행하면 로컬 검증은 가능하지만, Vercel과 동일 조건을 보려면 Node 20에서 `npm ci && npm run build`를 확인하세요.
+`package.json`과 Vercel Project Setting을 Node.js 22.x로 맞춥니다. 로컬에서도 Node 22.x에서 `npm ci && npm run build`를 실행해야 Production과 같은 주 버전 조건을 재현할 수 있습니다.
+
+런타임 변경 시에는 `npm run sync:compile && node .sync-build/scripts/node-runtime-unit.js`로 manifest·Function 진입점·공개 진단 노출 여부를 먼저 확인합니다. Preview와 Production 배포 뒤에는 배포 metadata에서 Function 수가 12개이고 각 런타임이 `nodejs22.x`인지 별도로 확인합니다. `/api/sync/*`는 이 검증 중 실행하지 않습니다.
 
 ## TODO
 
