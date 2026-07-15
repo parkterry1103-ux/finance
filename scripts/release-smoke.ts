@@ -31,6 +31,8 @@ const root = process.cwd();
 const args = process.argv ?? [];
 const baseArgument = args.find((argument) => argument.startsWith('--base-url='));
 const baseValue = baseArgument?.slice('--base-url='.length) ?? '';
+const deploymentArgument = args.find((argument) => argument.startsWith('--deployment-url='));
+const deploymentValue = deploymentArgument?.slice('--deployment-url='.length) ?? '';
 const startedAt = Date.now();
 const routeResults: SmokeResult[] = [];
 const apiResults: SmokeResult[] = [];
@@ -49,15 +51,15 @@ function isAllowedVercelUrl(value: URL) {
     && (value.hostname === 'finance1-flax.vercel.app' || value.hostname.endsWith('.vercel.app'));
 }
 
-function validatedBaseUrl(value: string) {
+function validatedBaseUrl(value: string, label = 'base URL') {
   let parsed: URL;
   try {
     parsed = new URL(value);
   } catch {
-    throw new Error('base URL must be a valid absolute URL');
+    throw new Error(`${label} must be a valid absolute URL`);
   }
-  assert(isAllowedVercelUrl(parsed), 'base URL must use HTTPS on finance1-flax.vercel.app or *.vercel.app');
-  assert((parsed.pathname === '/' || parsed.pathname === '') && !parsed.search && !parsed.hash, 'base URL must not contain a path, query, or hash');
+  assert(isAllowedVercelUrl(parsed), `${label} must use HTTPS on finance1-flax.vercel.app or *.vercel.app`);
+  assert((parsed.pathname === '/' || parsed.pathname === '') && !parsed.search && !parsed.hash, `${label} must not contain a path, query, or hash`);
   return parsed.origin;
 }
 
@@ -263,11 +265,13 @@ function hasStackTrace(body: string) {
 
 async function main() {
   let baseUrl = '';
+  let deploymentUrl = '';
   let baseError: string | null = null;
   try {
     baseUrl = validatedBaseUrl(baseValue);
+    if (deploymentValue) deploymentUrl = validatedBaseUrl(deploymentValue, 'deployment URL');
   } catch (error) {
-    baseError = error instanceof Error ? error.message : String(error);
+    baseError = error instanceof Error ? `URL validation failed: ${error.message}` : String(error);
   }
 
   const entryReferences = new Set<string>();
@@ -354,7 +358,7 @@ async function main() {
     }
   }
 
-  if (baseError) routeResults.push(failedResult('base-url-validation', baseValue, new Error(baseError)));
+  if (baseError) routeResults.push(failedResult('url-validation', deploymentValue || baseValue, new Error(baseError)));
 
   const allResults = [...routeResults, ...assetResults, ...apiResults, ...syncResults];
   const failures = allResults.filter((result) => result.result === 'failed');
@@ -363,6 +367,7 @@ async function main() {
     timestamp: new Date().toISOString(),
     commit: process.env?.GITHUB_SHA ?? commitResult.stdout?.trim() ?? 'unknown',
     baseUrl: baseUrl || baseValue,
+    deploymentUrl: deploymentUrl || null,
     nodeVersion: process.version ?? process.versions?.node ?? 'unknown',
     policy: {
       httpsOnly: true,
@@ -389,7 +394,7 @@ async function main() {
   writeFileSync(join(root, 'artifacts', 'release-smoke-summary.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
   const row = (result: SmokeResult) => `| ${result.id} | ${result.status ?? '-'} | ${result.result.toUpperCase()} | ${result.count ?? '-'} | ${result.duplicates ?? '-'} | ${result.redirects} | ${result.retries} | ${result.durationMs}ms | ${result.detail.replaceAll('|', '\\|')} |`;
   const table = (items: SmokeResult[]) => `| Check | HTTP | Result | Count | Duplicates | Redirects | Retries | Duration | Detail |\n| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |\n${items.map(row).join('\n')}`;
-  const markdown = `## Deployment Smoke Gate\n\n- Commit: \`${summary.commit}\`\n- Base URL: \`${summary.baseUrl}\`\n- Final status: **${summary.status.toUpperCase()}**\n- Duration: **${summary.durationMs}ms**\n- Policy: HTTPS allowlist, ${config.smoke.timeoutMs}ms timeout, ${config.smoke.retries} retries, ${config.smoke.maxRedirects} redirects\n- Write operations: **0**; authenticated sync calls: **0**\n\n### Routes\n\n${table(routeResults)}\n\n### Deployment assets\n\n${table(assetResults)}\n\n### Public APIs\n\n${table(apiResults)}\n\n### Sync authentication\n\n${table(syncResults)}\n${failures.length ? `\n### Failures\n\n${failures.map((result) => `- ${result.id}: ${result.detail}`).join('\n')}\n` : ''}`;
+  const markdown = `## Deployment Smoke Gate\n\n- Commit: \`${summary.commit}\`\n- Base URL: \`${summary.baseUrl}\`\n- Deployment metadata URL: ${summary.deploymentUrl ? `\`${summary.deploymentUrl}\`` : 'not supplied'}\n- Final status: **${summary.status.toUpperCase()}**\n- Duration: **${summary.durationMs}ms**\n- Policy: HTTPS allowlist, ${config.smoke.timeoutMs}ms timeout, ${config.smoke.retries} retries, ${config.smoke.maxRedirects} redirects\n- Write operations: **0**; authenticated sync calls: **0**\n\n### Routes\n\n${table(routeResults)}\n\n### Deployment assets\n\n${table(assetResults)}\n\n### Public APIs\n\n${table(apiResults)}\n\n### Sync authentication\n\n${table(syncResults)}\n${failures.length ? `\n### Failures\n\n${failures.map((result) => `- ${result.id}: ${result.detail}`).join('\n')}\n` : ''}`;
   writeFileSync(join(root, 'artifacts', 'release-smoke-summary.md'), markdown, 'utf8');
 
   console.log(`Deployment smoke ${summary.status}: routes=${routeResults.length}, assets=${assetResults.length}, APIs=${apiResults.length}, sync=${syncResults.length}, duration=${summary.durationMs}ms`);

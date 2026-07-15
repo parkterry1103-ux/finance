@@ -64,7 +64,7 @@ route 17개는 최종 HTTP 200, HTML Content-Type, 비어 있지 않은 body, en
 
 sync Function 6개에는 인증 header와 body 없이 POST한다. `401`, JSON, `ok:false`, error string만 통과하며 유효 token 사용·실제 sync·재시도 인증 추가는 없다.
 
-`.github/workflows/deployment-smoke.yml`은 성공한 `deployment_status`의 `environment_url` 또는 필수 수동 `base_url`을 사용한다. 권한은 `contents: read`, `deployments: read`뿐이며 Vercel 설정·alias·Production data를 변경하지 않는다.
+`.github/workflows/deployment-smoke.yml`은 성공한 Production `deployment_status`에서만 자동 실행한다. event의 `environment_url`은 HTTPS Vercel allowlist metadata로 검증하고, Deployment Protection이 걸린 immutable URL 대신 같은 Current deployment를 가리키는 공개 canonical alias를 smoke한다. Preview immutable URL은 인증 화면으로 redirect되므로 자동 event에서 제외하며, 보호를 해제하지 않고 프로젝트 인증이 적용되는 `vercel curl`로 별도 검증한다. `workflow_dispatch`는 필수 수동 `base_url`을 그대로 검증한다. 권한은 `contents: read`, `deployments: read`뿐이며 Vercel 설정·alias·Production data를 변경하지 않는다.
 
 ## Summary와 artifact
 
