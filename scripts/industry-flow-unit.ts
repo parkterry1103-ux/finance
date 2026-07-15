@@ -6,6 +6,7 @@ import { supplyChainBottlenecks } from '../src/content/bottlenecks/index.js';
 import { industryReports } from '../src/content/reports/index.js';
 import { sourceRegistry } from '../src/content/sources/index.js';
 import { industryFlowForDemandSupply, industryFlows, industryFlowsForCompany, industryFlowViewModel } from '../src/content/industry-flows/index.js';
+import { loadReleaseGateConfig } from './release-gate-config.js';
 
 let checks = 0;
 function check(condition: unknown, label: string) {
@@ -18,9 +19,10 @@ const demandSupplyIds = new Set<string>(demandSupplyEntries.map((entry) => entry
 const bottleneckIds = new Set(supplyChainBottlenecks.map((entry) => entry.id));
 const reportIds = new Set(industryReports.map((entry) => entry.id));
 const expectedOrder = 'demand|requirements|suppliers|use-cases|evidence';
+const releaseConfig = loadReleaseGateConfig();
 
-check(industryFlows.length === 4, 'exactly four flows');
-check(new Set(industryFlows.map((flow) => flow.id)).size === 4, 'unique flow ids');
+check(industryFlows.length === releaseConfig.content.industryFlows, `exactly ${releaseConfig.content.industryFlows} flows`);
+check(new Set(industryFlows.map((flow) => flow.id)).size === releaseConfig.content.industryFlows, 'unique flow ids');
 industryFlows.forEach((flow) => {
   check(flow.steps.length === 5, `${flow.id} five steps`);
   check(flow.steps.map((step) => step.type).join('|') === expectedOrder, `${flow.id} step order`);

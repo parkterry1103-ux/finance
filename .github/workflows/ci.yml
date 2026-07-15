@@ -1,22 +1,24 @@
-name: CI
+name: Release Gate
 
 on:
   pull_request:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: release-gate-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate-and-build:
-    name: Validate content, types, and build
+    name: Pre-deployment release gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,11 +32,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate content
-        run: npm run validate:content
+      - name: Run release gate
+        run: npm run release:gate
 
-      - name: Type check
-        run: npm run check:types
+      - name: Add release gate summary
+        if: always()
+        run: |
+          if [ -f artifacts/release-gate-summary.md ]; then
+            cat artifacts/release-gate-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Release Gate" >> "$GITHUB_STEP_SUMMARY"
+            echo "Summary artifact was not generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
-      - name: Production build
-        run: npm run build:app
+      - name: Upload release gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-${{ github.sha }}
+          path: artifacts/release-gate-summary.*
+          if-no-files-found: error
+          retention-days: 14

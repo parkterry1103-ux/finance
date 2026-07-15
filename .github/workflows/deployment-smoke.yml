@@ -1,0 +1,64 @@
+name: Deployment Smoke Gate
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Vercel deployment or canonical HTTPS URL
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: deployment-smoke-${{ github.event.deployment.id || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Read-only deployment smoke
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' && github.event.deployment_status.environment_url != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.base_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run read-only smoke gate
+        run: npm run release:smoke -- --base-url="$BASE_URL"
+
+      - name: Add smoke summary
+        if: always()
+        run: |
+          if [ -f artifacts/release-smoke-summary.md ]; then
+            cat artifacts/release-smoke-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Deployment Smoke Gate" >> "$GITHUB_STEP_SUMMARY"
+            echo "Summary artifact was not generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-smoke-${{ github.sha }}
+          path: artifacts/release-smoke-summary.*
+          if-no-files-found: error
+          retention-days: 14

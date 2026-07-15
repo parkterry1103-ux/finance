@@ -101,6 +101,9 @@ import {
   companyProfiles,
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
+import { loadReleaseGateConfig } from './release-gate-config.js';
+
+const releaseConfig = loadReleaseGateConfig();
 
 const REQUIRED_PRICE_TICKERS = [
   '005930.KS',
@@ -549,8 +552,8 @@ function validateReferences() {
   reportValidation.categoryCount = new Set(industryReports.map((report) => report.category)).size;
   reportValidation.featuredCount = industryReports.filter((report) => report.featured).length;
 
-  if (industryReports.length < 12 || industryReports.length > 18) {
-    addError(`report registry count must be 12-18: ${industryReports.length}`);
+  if (industryReports.length !== releaseConfig.content.reports) {
+    addError(`report registry count must be ${releaseConfig.content.reports}: ${industryReports.length}`);
   }
   if (reportValidation.featuredCount !== 1) addError(`report featured count must be 1: ${reportValidation.featuredCount}`);
   duplicateValues(industryReports.map((report) => report.id)).forEach((id) => addError(`duplicate report id: ${id}`));
@@ -685,7 +688,7 @@ function validateBottlenecks() {
     0,
   );
 
-  if (supplyChainBottlenecks.length !== 6) addError(`bottleneck registry count must be 6: ${supplyChainBottlenecks.length}`);
+  if (supplyChainBottlenecks.length !== releaseConfig.content.bottlenecks) addError(`bottleneck registry count must be ${releaseConfig.content.bottlenecks}: ${supplyChainBottlenecks.length}`);
   duplicateValues(supplyChainBottlenecks.map((entry) => entry.id)).forEach((id) => addError(`duplicate bottleneck id: ${id}`));
   duplicateValues(supplyChainBottlenecks.map((entry) => entry.slug)).forEach((slug) => addError(`duplicate bottleneck slug: ${slug}`));
   const featuredCount = supplyChainBottlenecks.filter((entry) => entry.featured).length;
@@ -819,7 +822,7 @@ function validateMacroContent() {
 
   macroValidation.indicatorCount = macroIndicatorDefinitions.length;
   macroValidation.briefCount = macroDomainBriefs.length;
-  if (macroIndicatorDefinitions.length !== 9) addError(`macro indicator registry count must be 9: ${macroIndicatorDefinitions.length}`);
+  if (macroIndicatorDefinitions.length !== releaseConfig.content.macroSeries) addError(`macro indicator registry count must be ${releaseConfig.content.macroSeries}: ${macroIndicatorDefinitions.length}`);
   duplicateValues(macroIndicatorDefinitions.map((entry) => entry.id)).forEach((id) => addError(`duplicate macro indicator id: ${id}`));
   duplicateValues(macroIndicatorDefinitions.map((entry) => entry.seriesId)).forEach((id) => addError(`duplicate FRED seriesId: ${id}`));
   if ([...macroIndicatorDefinitions.map((entry) => entry.seriesId)].sort().join(',') !== [...expectedSeries].sort().join(',')) {
@@ -1146,7 +1149,7 @@ function validateMarketRelations() {
     'datacenter-power-cooling',
   ]);
   relationValidation.relationCount = relationDefinitions.length;
-  if (relationDefinitions.length !== 3) addError(`market relation count must be exactly 3: ${relationDefinitions.length}`);
+  if (relationDefinitions.length !== releaseConfig.content.marketRelations) addError(`market relation count must be exactly ${releaseConfig.content.marketRelations}: ${relationDefinitions.length}`);
   if (relationDefinitions.map((definition) => definition.id).join('|') !== expectedIds.join('|')) {
     addError(`market relation ids mismatch: ${relationDefinitions.map((definition) => definition.id).join(', ')}`);
   }
@@ -1207,7 +1210,7 @@ function validateMarketRelations() {
       .map((child) => `${entry.name}/${child.name}`);
   });
   relationValidation.serverlessFunctionCount = apiFunctions.length;
-  if (apiFunctions.length !== 12) addError(`serverless function count must remain 12: ${apiFunctions.length}`);
+  if (apiFunctions.length !== releaseConfig.function.count) addError(`serverless function count must remain ${releaseConfig.function.count}: ${apiFunctions.length}`);
   const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as {
     rewrites?: Array<{ source?: string; destination?: string }>;
   };
@@ -1235,7 +1238,7 @@ function validateDemandSupplyContent() {
     'datacenter-power-cooling',
   ]);
   demandSupplyValidation.entryCount = demandSupplyEntries.length;
-  if (demandSupplyEntries.length !== 4) addError(`demand supply entry count must be exactly 4: ${demandSupplyEntries.length}`);
+  if (demandSupplyEntries.length !== releaseConfig.content.demandSupplyEntries) addError(`demand supply entry count must be exactly ${releaseConfig.content.demandSupplyEntries}: ${demandSupplyEntries.length}`);
   if (demandSupplyEntries.map((entry) => entry.id).join('|') !== expectedIds.join('|')) addError(`demand supply ids mismatch: ${demandSupplyEntries.map((entry) => entry.id).join(', ')}`);
   duplicateValues(demandSupplyEntries.map((entry) => entry.id)).forEach((id) => addError(`duplicate demand supply entry id: ${id}`));
   duplicateValues(demandSupplyEntries.map((entry) => entry.bottleneckId)).forEach((id) => addError(`duplicate demand supply bottleneck: ${id}`));
@@ -1324,7 +1327,7 @@ function validateCompanyEventContent() {
   companyEventValidation.koreanCompanyCount = companyEventCompanies.filter((company) => company.country === 'KR').length;
   companyEventValidation.usCompanyCount = companyEventCompanies.filter((company) => company.country === 'US').length;
 
-  if (companyEvents.length !== 12) addError(`company event count must be exactly 12: ${companyEvents.length}`);
+  if (companyEvents.length !== releaseConfig.content.companyEvents) addError(`company event count must be exactly ${releaseConfig.content.companyEvents}: ${companyEvents.length}`);
   if (companyEventCompanies.length < 6 || companyEventCompanies.length > 8) addError(`company event company count must be 6-8: ${companyEventCompanies.length}`);
   if (companyEventValidation.koreanCompanyCount < 2) addError(`company event Korean company count must be >= 2: ${companyEventValidation.koreanCompanyCount}`);
   if (companyEventValidation.usCompanyCount < 2) addError(`company event US company count must be >= 2: ${companyEventValidation.usCompanyCount}`);
@@ -2393,7 +2396,7 @@ function validateIndustryFlowsAndMarketMapRetirement() {
   const flowIds = new Set<string>();
 
   industryFlowValidation.flowCount = industryFlows.length;
-  if (industryFlows.length !== 4) addError(`industry flow count must be exactly 4: ${industryFlows.length}`);
+  if (industryFlows.length !== releaseConfig.content.industryFlows) addError(`industry flow count must be exactly ${releaseConfig.content.industryFlows}: ${industryFlows.length}`);
   industryFlows.forEach((flow) => {
     if (flowIds.has(flow.id)) addError(`industry flow id duplicated: ${flow.id}`);
     flowIds.add(flow.id);
@@ -2527,6 +2530,7 @@ function validateIndustryFlowsAndMarketMapRetirement() {
 }
 function validateCompanyProfiles() {
   companyProfileValidation.profileCount = companyProfiles.length;
+  if (companyProfiles.length !== releaseConfig.content.companyProfiles) addError(`company profile count must be exactly ${releaseConfig.content.companyProfiles}: ${companyProfiles.length}`);
   const profileErrors = validateCompanyProfileRegistry();
   companyProfileValidation.invalidCount = profileErrors.length;
   profileErrors.forEach((message) => addError(`company profile: ${message}`));

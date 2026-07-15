@@ -4839,3 +4839,21 @@ route content는 공통 `DeferredRoute`를 사용합니다. `RouteLoadingFallbac
 Preview `dpl_BejE4dqP9da9jD9bLQC7W2vKy9Rm`은 Function 12개가 모두 Node 22였고, 변경 전 Production 대비 실제 압축 entry 전송량도 238,589B에서 215,042B로 23,547B 감소했습니다. lazy route 6개의 최초 화면 표시는 209~267ms였고 canonical·영문 alias·legacy 직접 진입과 뒤로·앞으로가 정상입니다. 로컬 7개 viewport×11개 화면 77회와 Preview 390px 13개 route에서 빈 화면·loading 고착·overflow·FOUC 징후·dynamic import 404·console error/warning은 0개였습니다. 공개 API 9개는 HTTP 200, sync 6개는 인증 없이 401이었으며 실제 sync는 실행하지 않았습니다.
 
 Production `dpl_3dhxPABLgRAjexPxkaAK3VA9fp8L`은 구현 commit `364df8b69ad8608a64e94b8f345dadc5dc561ab4`에서 Ready · Current가 됐습니다. alias와 immutable URL에서 JS `index-A2RI220G.js`·CSS `index-AtZWZZCy.css`, Node 22 Function 12개, lazy asset 8개의 HTTP 200을 확인했습니다. Production entry 3회 전송량은 모두 215,042B였고 canonical·alias·legacy 직접 URL 17개, 390px 필수 화면 11개, 기업 목록→NVIDIA 뒤로·앞으로가 정상입니다. 공개 API 9개는 HTTP 200·기존 schema·식별자 중복 0, sync 6개는 인증 없이 401, 실제 sync와 Vercel error log는 0개였습니다. rollback 조건이 없어 이전 정상 deployment로 복구하지 않았습니다.
+
+## Production 배포 전 자동 Release Gate
+
+배포 전 수동 확인을 로컬과 GitHub Actions가 같은 명령으로 재현하도록 `npm run release:gate`를 제공합니다. 단일 `config/release-gate.json`에서 Node 22, Function 12개, 정적 콘텐츠 8종, lazy route 6개와 bundle budget을 읽습니다. 최신 baseline raw 785,360B·gzip 213,726B에 약 5% 여유를 둬 entry raw 825,000B·gzip 225,000B를 초과하는 큰 회귀만 차단합니다. Vite 500KB warning을 숨기거나 dynamic chunk 수를 고정하지 않습니다.
+
+Pre-deployment gate는 scripts TypeScript, 전체/Production `npm audit`, content validator, runtime·dependency·JavaScript bundle·산업 흐름·layout·시장지도 폐기·기업 profile/event·수요공급·시장 관계 unit, application TypeScript, 단일 manifest build와 bundle/lazy budget을 18개 blocking check로 실행합니다. 실패는 exit code 1이며 `continue-on-error`, audit ignore, fallback 성공은 없습니다. PR·main push·수동 dispatch의 `Release Gate` workflow는 Node 22.x와 npm cache를 사용하고 권한은 `contents: read`입니다.
+
+배포 후에는 다음처럼 read-only smoke를 실행합니다.
+
+```bash
+npm run release:smoke -- --base-url=https://finance1-flax.vercel.app
+```
+
+base URL은 HTTPS Vercel host allowlist를 통과해야 합니다. route·영문 alias·legacy 17개, entry/CSS와 lazy asset, 공개 API 9개의 status·schema·동적 count·primary key 중복, sync Function 6개의 인증 없는 401을 검사합니다. OpenDART·SEC·뉴스 수량과 응답 시간 자체는 실패 기준이 아니며 뉴스의 기존 `ok` 없는 계약도 유지합니다. sync 요청은 token·body 없이 인증 단계에서 거부되므로 실제 sync와 쓰기는 0회입니다.
+
+Vercel이 생성하는 성공 `deployment_status`와 필수 `environment_url`을 확인해 `Deployment Smoke Gate` workflow에 연결했고, `workflow_dispatch`의 `base_url` 재실행도 지원합니다. 권한은 `contents: read`, `deployments: read`뿐입니다. 결과는 GitHub Step Summary와 14일 artifact에 남고 로컬에서는 `artifacts/release-*-summary.{json,md}`에서 확인합니다. 실패 시 summary의 command, exit code, duration과 오류 요약을 확인합니다. 상세 inventory와 동적 데이터·쓰기 위험 기준은 `docs/release-gate-inventory.md`에 기록했습니다.
+
+이번 gate는 신규 API·Serverless Function·DB·migration·cron·sync·dependency·UI 기능·API 계약을 추가하지 않습니다. Production secret, Vercel 배포·alias 변경, 인증된 sync, Production 데이터 쓰기도 수행하지 않습니다.

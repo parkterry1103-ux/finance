@@ -9,14 +9,16 @@ import {
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
 import type { MarketPrice } from '../src/data.js';
+import { loadReleaseGateConfig } from './release-gate-config.js';
 
 let checks = 0;
+const releaseConfig = loadReleaseGateConfig();
 function check(condition: unknown, label: string) {
   checks += 1;
   if (!condition) throw new Error(`company profile unit failed: ${label}`);
 }
 
-check(companyProfiles.length === 8, 'profile count');
+check(companyProfiles.length === releaseConfig.content.companyProfiles, 'profile count');
 check(companyProfileByIdOrSlug('nvidia')?.companyId === 'us-semiconductors-nvidia', 'profile slug resolve');
 check(companyProfileByIdOrSlug('us-semiconductors-nvidia')?.slug === 'nvidia', 'canonical company resolve');
 check(companyProfileByIdOrSlug('not-a-company') === undefined, 'invalid slug not found');
@@ -26,7 +28,7 @@ check(canonicalCompanyProfileId('datacenter-power-eaton') === 'ai-datacenter-eat
 check(companyProfilePathForCompanyId('us-energy-grid-eaton') === '/ko/companies/eaton', 'canonical alias path');
 
 const profiles = companyResearchProfileList();
-check(profiles.length === 8, 'profile list count');
+check(profiles.length === releaseConfig.content.companyProfiles, 'profile list count');
 const dell = buildCompanyResearchProfile('dell')!;
 check(dell.companyEvents.length === 2 && dell.companyEvents[0].eventDate >= dell.companyEvents[1].eventDate, 'latest two company events');
 check(profiles.every((profile) => profile.industryFlows.length <= 2), 'industry flow maximum');

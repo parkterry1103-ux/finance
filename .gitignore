@@ -3,6 +3,7 @@ dist/
 .sync-build/
 .vercel/
 reports/*.json
+artifacts/
 
 .env
 .env.*

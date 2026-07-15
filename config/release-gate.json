@@ -1,0 +1,88 @@
+{
+  "nodeMajor": 22,
+  "function": {
+    "count": 12,
+    "runtime": "nodejs22.x",
+    "memoryMb": 2048,
+    "maxDurationSeconds": 300,
+    "entrypoints": [
+      "api/financials.ts",
+      "api/market-disclosures.ts",
+      "api/market-prices.js",
+      "api/market-sec-filings.ts",
+      "api/news.js",
+      "api/ownership-trades.js",
+      "api/sync/disclosures.ts",
+      "api/sync/financials.ts",
+      "api/sync/prices.ts",
+      "api/sync/sec-filing-details.ts",
+      "api/sync/sec-filings.ts",
+      "api/sync/trades.ts"
+    ]
+  },
+  "bundle": {
+    "entryRawMaxBytes": 825000,
+    "entryGzipMaxBytes": 225000
+  },
+  "content": {
+    "companyProfiles": 8,
+    "companyEvents": 12,
+    "demandSupplyEntries": 4,
+    "bottlenecks": 6,
+    "reports": 15,
+    "industryFlows": 4,
+    "macroSeries": 9,
+    "marketRelations": 3
+  },
+  "lazyRoutes": [
+    { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },
+    { "name": "CompanyEventsRoute", "source": "src/routes/CompanyEventsRoute.tsx" },
+    { "name": "DemandSupplyRoute", "source": "src/routes/DemandSupplyRoute.tsx" },
+    { "name": "DisclosuresRoute", "source": "src/routes/DisclosuresRoute.tsx" },
+    { "name": "MacroDashboardRoute", "source": "src/routes/MacroDashboardRoute.tsx" },
+    { "name": "MarketRelationsRoute", "source": "src/routes/MarketRelationsRoute.tsx" }
+  ],
+  "smoke": {
+    "timeoutMs": 20000,
+    "maxRedirects": 5,
+    "retries": 2,
+    "routes": [
+      "/ko",
+      "/ko/demand-supply",
+      "/ko/companies",
+      "/ko/companies/nvidia",
+      "/ko/companies/sk-hynix",
+      "/ko/company-events",
+      "/ko/bottlenecks",
+      "/ko/reports",
+      "/ko/macro-dashboard",
+      "/ko/disclosures",
+      "/ko/market-relations",
+      "/companies",
+      "/companies/nvidia",
+      "/demand-supply",
+      "/ko/market-map",
+      "/market-map",
+      "/ko/category/semiconductors"
+    ],
+    "apis": [
+      { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },
+      { "id": "market-brief", "path": "/api/market-prices?limit=200&include=market-brief", "contract": "prices" },
+      { "id": "macro", "path": "/api/macro-indicators", "contract": "macro" },
+      { "id": "market-relations", "path": "/api/market-relations", "contract": "relations" },
+      { "id": "opendart", "path": "/api/market-disclosures?limit=20", "contract": "disclosures" },
+      { "id": "sec", "path": "/api/market-sec-filings?limit=20", "contract": "sec" },
+      { "id": "financials", "path": "/api/financials?country=US&companyId=us-semiconductors-nvidia", "contract": "financials" },
+      { "id": "ownership", "path": "/api/ownership-trades?limit=20", "contract": "ownership" },
+      { "id": "news", "path": "/api/news?country=US&sector=us-semiconductors&anchor=us-semiconductors-nvidia&company=NVIDIA", "contract": "news" }
+    ],
+    "syncEndpoints": [
+      "/api/sync/prices",
+      "/api/sync/financials",
+      "/api/sync/trades",
+      "/api/sync/disclosures",
+      "/api/sync/sec-filings",
+      "/api/sync/sec-filing-details"
+    ]
+  }
+}

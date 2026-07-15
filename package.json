@@ -18,6 +18,8 @@
     "test:dependency-security": "npm run sync:compile && node .sync-build/scripts/dependency-security-unit.js",
     "test:javascript-bundle": "npm run sync:compile && node .sync-build/scripts/javascript-bundle-unit.js",
     "report:javascript-bundle": "npm run sync:compile && node .sync-build/scripts/javascript-bundle-report.js",
+    "release:gate": "node scripts/run-release-gate.mjs",
+    "release:smoke": "npm run sync:compile && node .sync-build/scripts/release-smoke.js",
     "dev:vercel": "npx vercel dev",
     "sync:compile": "tsc -p tsconfig.scripts.json",
     "sync:opendart": "npm run sync:compile && node .sync-build/scripts/sync-opendart-financials.js",

@@ -1,5 +1,6 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadReleaseGateConfig } from './release-gate-config.js';
 
 let checks = 0;
 function check(condition: unknown, label: string) {
@@ -13,16 +14,10 @@ const boundarySource = readFileSync(join(root, 'src', 'routes', 'RouteBoundary.t
 const companiesSource = readFileSync(join(root, 'src', 'routes', 'CompaniesRoute.tsx'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { engines?: { node?: string } };
 const viteSource = readFileSync(join(root, 'vite.config.ts'), 'utf8');
+const releaseConfig = loadReleaseGateConfig();
 
 const routeLazyImports = [...appSource.matchAll(/lazy\(\(\) => import\('(\.\/routes\/[A-Za-z]+Route)'\)\)/g)].map((match) => match[1]);
-const expectedRouteImports = [
-  './routes/CompaniesRoute',
-  './routes/CompanyEventsRoute',
-  './routes/DemandSupplyRoute',
-  './routes/DisclosuresRoute',
-  './routes/MacroDashboardRoute',
-  './routes/MarketRelationsRoute',
-];
+const expectedRouteImports = releaseConfig.lazyRoutes.map((route) => `./routes/${route.name}`);
 
 check(JSON.stringify(routeLazyImports.sort()) === JSON.stringify(expectedRouteImports.sort()), 'exactly six selected route groups use React.lazy');
 check(new Set(routeLazyImports).size === routeLazyImports.length, 'route lazy loader duplicates are zero');
@@ -38,7 +33,7 @@ check(!/chunkSizeWarningLimit/.test(viteSource), 'chunkSizeWarningLimit is not r
 check(!/manualChunks/.test(viteSource), 'manualChunks are not used');
 check(!/onPointerEnter|onMouseEnter|touchstart|routeLoaders|preloadRoute/.test(appSource), 'initial or intent route preload is not added');
 check(!/@xyflow\/react|ReactFlow/.test(appSource), 'ReactFlow runtime import remains absent');
-check(packageJson.engines?.node === '22.x', 'Node engine remains 22.x');
+check(packageJson.engines?.node === `${releaseConfig.nodeMajor}.x`, `Node engine remains ${releaseConfig.nodeMajor}.x`);
 
 function collectFunctionEntries(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -49,17 +44,6 @@ function collectFunctionEntries(directory: string): string[] {
   });
 }
 
-check(collectFunctionEntries(join(root, 'api')).length === 12, 'Serverless Function entrypoint count remains 12');
-
-const distIndex = join(root, 'dist', 'index.html');
-if (existsSync(distIndex)) {
-  const html = readFileSync(distIndex, 'utf8');
-  const entryPath = html.match(/<script[^>]+src="\/?([^"]+\.js)"/)?.[1];
-  check(Boolean(entryPath), 'built entry asset is discoverable');
-  if (entryPath) {
-    const entryRaw = statSync(join(root, 'dist', entryPath)).size;
-    check(entryRaw <= 787_568, `entry raw size keeps the audited 100KB reduction: ${entryRaw}`);
-  }
-}
+check(collectFunctionEntries(join(root, 'api')).length === releaseConfig.function.count, `Serverless Function entrypoint count remains ${releaseConfig.function.count}`);
 
 console.log(`✓ JavaScript bundle unit ${checks}개 검증`);

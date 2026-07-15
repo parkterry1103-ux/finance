@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadReleaseGateConfig } from './release-gate-config.js';
 
 let checks = 0;
 function check(condition: unknown, label: string) {
@@ -29,6 +30,7 @@ const root = process.cwd();
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as PackageJson;
 const packageLock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8')) as PackageLock;
 const auditDoc = readFileSync(join(root, 'docs', 'dependency-security-audit.md'), 'utf8');
+const releaseConfig = loadReleaseGateConfig();
 
 function versionParts(version: string): [number, number, number] {
   const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
@@ -64,20 +66,7 @@ function collectFunctionEntries(directory: string, relativeDirectory = 'api'): s
 
 const expectedDependencies = ['lucide-react', 'react', 'react-dom'];
 const expectedDevDependencies = ['@types/react', '@types/react-dom', '@vitejs/plugin-react', 'typescript', 'vite'];
-const expectedFunctions = [
-  'api/financials.ts',
-  'api/market-disclosures.ts',
-  'api/market-prices.js',
-  'api/market-sec-filings.ts',
-  'api/news.js',
-  'api/ownership-trades.js',
-  'api/sync/disclosures.ts',
-  'api/sync/financials.ts',
-  'api/sync/prices.ts',
-  'api/sync/sec-filing-details.ts',
-  'api/sync/sec-filings.ts',
-  'api/sync/trades.ts',
-];
+const expectedFunctions = releaseConfig.function.entrypoints;
 
 const runtimeMajor = Number.parseInt(
   (process as unknown as { versions: { node: string } }).versions.node.split('.')[0] ?? '',
@@ -92,9 +81,9 @@ const esbuildVersions = installedVersions('esbuild');
 const generatorVersions = installedVersions('@babel/generator');
 const actualFunctions = collectFunctionEntries(join(root, 'api')).sort();
 
-check(runtimeMajor === 22, `validator runs on Node 22, received ${runtimeMajor || 'unknown'}`);
-check(packageJson.engines?.node === '22.x', 'package.json engines.node is exactly 22.x');
-check(lockRoot?.engines?.node === '22.x', 'package-lock root engines.node is exactly 22.x');
+check(runtimeMajor === releaseConfig.nodeMajor, `validator runs on Node ${releaseConfig.nodeMajor}, received ${runtimeMajor || 'unknown'}`);
+check(packageJson.engines?.node === `${releaseConfig.nodeMajor}.x`, `package.json engines.node is exactly ${releaseConfig.nodeMajor}.x`);
+check(lockRoot?.engines?.node === `${releaseConfig.nodeMajor}.x`, `package-lock root engines.node is exactly ${releaseConfig.nodeMajor}.x`);
 check(packageLock.lockfileVersion === 3, 'lockfileVersion remains 3');
 check(JSON.stringify(directDependencies) === JSON.stringify(expectedDependencies), 'production direct dependencies are unchanged');
 check(JSON.stringify(directDevDependencies) === JSON.stringify(expectedDevDependencies), 'no direct dev dependency was added or removed');
@@ -110,7 +99,7 @@ check(generatorVersions.length > 0 && generatorVersions.every((version) => versi
 check(packageLock.packages?.['node_modules/vite']?.dependencies?.esbuild === '^0.27.0 || ^0.28.0', 'Vite officially allows esbuild 0.28 without an override');
 
 const configSources = [JSON.stringify(packageJson.scripts ?? {}), JSON.stringify(packageJson.config ?? {})];
-for (const relativePath of ['.npmrc', join('.github', 'workflows', 'ci.yml'), join('.github', 'workflows', 'sync.yml')]) {
+for (const relativePath of ['.npmrc', join('.github', 'workflows', 'ci.yml'), join('.github', 'workflows', 'deployment-smoke.yml'), join('.github', 'workflows', 'sync.yml')]) {
   const absolutePath = join(root, relativePath);
   if (existsSync(absolutePath)) configSources.push(readFileSync(absolutePath, 'utf8'));
 }
@@ -121,7 +110,8 @@ check(!/--audit(?:=|\s+)false\b/i.test(configSource), 'scripts do not disable au
 check(!/npm\s+audit\s+fix[^\n;&|]*--force\b/i.test(configSource), 'scripts do not run npm audit fix --force');
 check(!/npm\s+install[^\n;&|]*(?:--force|--legacy-peer-deps)\b/i.test(configSource), 'scripts do not bypass dependency resolution safety');
 
-check(JSON.stringify(actualFunctions) === JSON.stringify(expectedFunctions), 'exactly 12 expected Serverless Function entrypoints remain');
+check(actualFunctions.length === releaseConfig.function.count, `exactly ${releaseConfig.function.count} Serverless Function entrypoints remain`);
+check(JSON.stringify(actualFunctions) === JSON.stringify(expectedFunctions), 'expected Serverless Function inventory remains');
 for (const advisory of ['GHSA-4x5r-pxfx-6jf8', 'GHSA-g7r4-m6w7-qqqr', 'GHSA-v6wh-96g9-6wx3', 'GHSA-fx2h-pf6j-xcff']) {
   check(auditDoc.includes(advisory), `${advisory} is documented`);
 }
