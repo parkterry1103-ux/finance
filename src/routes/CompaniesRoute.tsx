@@ -14,8 +14,8 @@ import {
 } from '../components/company-profiles/CompanyProfiles.js';
 import {
   buildCompanyResearchProfile,
-  companyResearchProfileList,
 } from '../content/company-profiles/selectors.js';
+import { companySearchIndex } from '../content/company-profiles/search.js';
 import { fetchOwnershipTrades } from '../services/trades.js';
 
 type CompanyProfilesRouteProps = {
@@ -23,6 +23,7 @@ type CompanyProfilesRouteProps = {
   marketPrices: MarketPrice[];
   navigation: ReactNode;
   onNavigate: (path: string) => void;
+  searchQuery?: string;
   slug?: string;
 };
 
@@ -40,7 +41,7 @@ type FinancialLearningRouteProps = {
 
 type CompaniesRouteProps = CompanyProfilesRouteProps | OwnershipRouteProps | FinancialLearningRouteProps;
 
-function CompanyProfilesRoute({ marketPrices, navigation, onNavigate, slug }: CompanyProfilesRouteProps) {
+function CompanyProfilesRoute({ marketPrices, navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {
   if (slug) {
     const profile = buildCompanyResearchProfile(slug, marketPrices);
     return profile
@@ -48,7 +49,7 @@ function CompanyProfilesRoute({ marketPrices, navigation, onNavigate, slug }: Co
       : <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;
   }
 
-  return <CompanyProfilesListPage profiles={companyResearchProfileList()} navigation={navigation} onNavigate={onNavigate} />;
+  return <CompanyProfilesListPage companies={companySearchIndex} initialQuery={searchQuery} navigation={navigation} onNavigate={onNavigate} />;
 }
 
 const prominentInstitutionFilters = [

@@ -3,6 +3,7 @@ import { companyProfileRelatedCompanies } from '../company-profile-relations/ent
 import { industryFlows } from '../industry-flows/entries.js';
 import { sourceRegistry } from '../sources/registry.js';
 import { companyProfiles } from './entries.js';
+import { companySearchIndex, companySearchRecordPath, normalizeCompanySearchTerm } from './search.js';
 import { buildCompanyResearchProfile, companyProfileByIdOrSlug } from './selectors.js';
 
 function duplicates(values: Array<string | number>) {
@@ -20,10 +21,25 @@ export function validateCompanyProfileRegistry(now = new Date()) {
   duplicates(companyProfiles.map((profile) => profile.slug)).forEach((slug) => errors.push(`duplicate profile slug: ${slug}`));
   duplicates(companyProfiles.map((profile) => profile.companyId)).forEach((companyId) => errors.push(`duplicate profile companyId: ${companyId}`));
   duplicates(companyProfiles.map((profile) => profile.order)).forEach((order) => errors.push(`duplicate profile order: ${order}`));
+  duplicates(companySearchIndex.map(({ company }) => normalizeCompanySearchTerm(company.ticker))).forEach((ticker) => errors.push(`duplicate search ticker: ${ticker}`));
+  duplicates(companyProfiles.flatMap((profile) => profile.stockCode ? [profile.stockCode] : [])).forEach((stockCode) => errors.push(`duplicate search stock code: ${stockCode}`));
+  if (companySearchIndex.length !== companyProfiles.length) errors.push(`search index count mismatch: ${companySearchIndex.length} / ${companyProfiles.length}`);
+
+  const aliasOwners = new Map<string, string>();
 
   companyProfiles.forEach((profile) => {
     if (!canonicalIds.has(profile.companyId)) errors.push(`invalid canonical companyId: ${profile.id} / ${profile.companyId}`);
     if (!profile.beginnerSummary.trim() || !profile.businessDescription.trim() || !profile.primaryRole.trim()) errors.push(`profile copy missing: ${profile.id}`);
+    if (!profile.englishName.trim() || !profile.exchange.trim() || !profile.industry.trim() || !profile.searchDescription.trim()) errors.push(`profile search metadata missing: ${profile.id}`);
+    if (profile.stockCode && !/^\d+$/.test(profile.stockCode)) errors.push(`profile stock code invalid: ${profile.id}`);
+    if (profile.aliases.some((alias) => !alias.trim())) errors.push(`profile alias empty: ${profile.id}`);
+    const normalizedAliases = profile.aliases.map(normalizeCompanySearchTerm);
+    if (new Set(normalizedAliases).size !== normalizedAliases.length) errors.push(`profile alias duplicate: ${profile.id}`);
+    normalizedAliases.forEach((alias) => {
+      const owner = aliasOwners.get(alias);
+      if (owner && owner !== profile.slug) errors.push(`profile alias collision: ${owner} / ${profile.slug} / ${alias}`);
+      aliasOwners.set(alias, profile.slug);
+    });
     if (!profile.keyQuestions.length || !profile.caution.trim()) errors.push(`profile questions or caution missing: ${profile.id}`);
     if (!profile.sourceRefs.length) errors.push(`profile source missing: ${profile.id}`);
     profile.sourceRefs.forEach((sourceRef) => { if (!sourceRegistry[sourceRef]) errors.push(`profile source invalid: ${profile.id} / ${sourceRef}`); });
@@ -31,6 +47,10 @@ export function validateCompanyProfileRegistry(now = new Date()) {
     if (Date.parse(`${profile.reviewedAt}T00:00:00Z`) > now.getTime() + 86_400_000) errors.push(`profile reviewedAt future: ${profile.id}`);
     if (/https?:\/\//.test(JSON.stringify(profile))) errors.push(`profile stores URL directly: ${profile.id}`);
     if (forbidden.test(JSON.stringify(profile))) errors.push(`profile forbidden recommendation copy: ${profile.id}`);
+    const searchRecord = companySearchIndex.find((record) => record.profile.slug === profile.slug);
+    if (!searchRecord) errors.push(`profile search record missing: ${profile.id}`);
+    if (searchRecord && companySearchRecordPath(searchRecord) !== `/ko/companies/${encodeURIComponent(profile.slug)}`) errors.push(`profile search route invalid: ${profile.id}`);
+    if (searchRecord && searchRecord.searchableTerms.some((term) => !normalizeCompanySearchTerm(term))) errors.push(`profile searchable term invalid: ${profile.id}`);
     const viewModel = buildCompanyResearchProfile(profile.companyId);
     if (!viewModel) {
       errors.push(`profile view model missing: ${profile.id}`);

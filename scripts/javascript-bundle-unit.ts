@@ -28,7 +28,7 @@ check(/role="status"/.test(boundarySource) && /aria-live="polite"/.test(boundary
 check(/페이지를 불러오는 중입니다\./.test(boundarySource), 'shared Korean loading copy remains');
 check(/페이지 파일을 불러오지 못했습니다\./.test(boundarySource), 'route import error UI remains');
 check((companiesSource.match(/import\(.*company/gi) ?? []).length === 0, 'company slugs do not create separate dynamic imports');
-check(/companyResearchProfileList/.test(companiesSource) && /buildCompanyResearchProfile/.test(companiesSource), 'company route selectors stay in the company route group');
+check(/companySearchIndex/.test(companiesSource) && /buildCompanyResearchProfile/.test(companiesSource), 'company search and detail selectors stay in the company route group');
 check(!/chunkSizeWarningLimit/.test(viteSource), 'chunkSizeWarningLimit is not raised');
 check(!/manualChunks/.test(viteSource), 'manualChunks are not used');
 check(!/onPointerEnter|onMouseEnter|touchstart|routeLoaders|preloadRoute/.test(appSource), 'initial or intent route preload is not added');
