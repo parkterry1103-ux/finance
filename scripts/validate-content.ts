@@ -2550,6 +2550,7 @@ function validateCompanyProfiles() {
   if (primaryNavigationItems.length !== 2) addError(`primary navigation must keep exactly 2 entries: ${primaryNavigationItems.length}`);
   if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
+  const stylesSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
   const listPageSource = componentSource.slice(
     componentSource.indexOf('export function CompanyProfilesListPage'),
     componentSource.indexOf('export function CompanyProfileNotFoundPage'),
@@ -2572,6 +2573,7 @@ function validateCompanyProfiles() {
   if (!/isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute/.test(appSource)) addError('company routes must skip market price request');
   if (!/<details className="company-dashboard-details">/.test(componentSource)) addError('company dashboard detail disclosure missing');
   if (!/role="img"/.test(componentSource) || !/<div className="sr-only"><table>/.test(componentSource)) addError('company dashboard chart accessibility missing');
+  if (!/\.company-dashboard-main \.company-profile-breadcrumb a,[\s\S]*?min-height: 44px;/.test(stylesSource) || !/\.company-dashboard-detail-content \.industry-flow-step__companies a {[\s\S]*?min-width: 44px;[\s\S]*?min-height: 44px;/.test(stylesSource)) addError('company dashboard touch targets must be at least 44px');
   const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as { rewrites?: Array<{ source?: string; destination?: string }> };
   if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/companies/:path*' && rewrite.destination === '/')) addError('company profile alias SPA rewrite missing');
 }

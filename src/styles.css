@@ -298,7 +298,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 9px 14px;
   border-radius: 11px;
   color: #fff;
@@ -418,7 +418,7 @@
 .company-profile-event-grid p > strong,
 .company-profile-demand-grid p > strong { display: block; margin-bottom: 4px; color: #26354c; font-size: 0.78rem; }
 .company-profile-event-grid details { margin: 13px 0; padding: 10px 12px; border-radius: 11px; background: #eef3f8; }
-.company-profile-event-grid summary { cursor: pointer; font-size: 0.82rem; font-weight: 850; }
+.company-profile-event-grid summary { display: flex; min-height: 44px; align-items: center; cursor: pointer; font-size: 0.82rem; font-weight: 850; }
 .company-profile-event-grid ul { margin: 9px 0 0; padding-left: 18px; color: #556279; font-size: 0.82rem; line-height: 1.6; }
 
 .company-profile-demand-grid article > small,
@@ -29974,7 +29974,7 @@ button.flow-stage-company-chip:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 13px;
   border-radius: 11px;
   background: #172033;
@@ -30621,6 +30621,15 @@ button.flow-stage-company-chip:focus-visible {
   font-weight: 780;
 }
 
+.company-dashboard-main .company-profile-breadcrumb a,
+.company-dashboard-metric-meta a,
+.company-dashboard-change-list a,
+.company-dashboard-macro-grid a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
 .company-dashboard-section {
   padding: 38px 0;
   border-bottom: 1px solid #e2e7ec;
@@ -31058,6 +31067,14 @@ button.flow-stage-company-chip:focus-visible {
 
 .company-dashboard-detail-content .company-profile-section {
   margin-top: 18px;
+}
+
+.company-dashboard-detail-content .industry-flow-step__companies a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 900px) {
