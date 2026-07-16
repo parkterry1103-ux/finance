@@ -4,7 +4,7 @@ import type {
   HomeFeatureLabel,
   HomeInsightReference,
   HomeMacroReference,
-  HomeNavigationGroup,
+  PrimaryNavigationItem,
   HomeReportReference,
 } from './types.js';
 
@@ -53,41 +53,9 @@ export const homeFeatureLabels: HomeFeatureLabel[] = [
   },
 ];
 
-export const homeNavigationGroups: HomeNavigationGroup[] = [
-  {
-    id: 'today',
-    label: '오늘',
-    items: [
-      { id: 'today-overview', label: '오늘 시장 한눈에', href: '/ko/', activeKey: 'today' },
-      { id: 'macro-dashboard', label: '돈의 흐름과 경기', href: '/ko/macro-dashboard', activeKey: 'macro' },
-      { id: 'market-relations', label: '함께 움직였나요?', href: '/ko/market-relations', activeKey: 'relations' },
-    ],
-  },
-  {
-    id: 'industry',
-    label: '산업',
-    items: [
-      { id: 'bottleneck-radar', label: '공급이 부족한 곳', href: '/ko/bottlenecks', activeKey: 'bottlenecks' },
-      { id: 'demand-supply', label: '수요와 공급을 함께 보기', href: '/ko/demand-supply', activeKey: 'demand-supply' },
-    ],
-  },
-  {
-    id: 'company',
-    label: '기업',
-    items: [
-      { id: 'company-profiles', label: '기업 한눈에 보기', href: '/ko/companies', activeKey: 'companies' },
-      { id: 'company-events', label: '기업이 실제로 밝힌 변화', href: '/ko/company-events', activeKey: 'company-events' },
-      { id: 'weekly-picks', label: '이번 주 기업', href: '/ko/picks', activeKey: 'picks' },
-    ],
-  },
-  {
-    id: 'resources',
-    label: '자료',
-    items: [
-      { id: 'reports', label: '산업을 이해하는 자료', href: '/ko/reports', activeKey: 'reports' },
-      { id: 'disclosures', label: '기업이 직접 밝힌 변화', href: '/ko/disclosures', activeKey: 'disclosures' },
-    ],
-  },
+export const primaryNavigationItems: PrimaryNavigationItem[] = [
+  { id: 'companies', label: '기업 분석', href: '/ko/companies', activeKey: 'companies' },
+  { id: 'macro', label: '거시경제', href: '/ko/macro-dashboard', activeKey: 'macro' },
 ];
 
 export const homeInsightReferences: HomeInsightReference[] = [

@@ -130,7 +130,7 @@ import {
   homeDeeperFeatureIds,
   homeFeatureLabels,
   homeInsightReferences,
-  homeNavigationGroups,
+  primaryNavigationItems,
   homeOfficialReportReferences,
   type DisclosureEventType,
 } from './content/home';
@@ -748,29 +748,22 @@ type PrimaryNavigationProps = {
   active: PrimaryNavKey;
   variant?: 'home' | 'compact';
   onHome: () => void;
-  onOpenPicks: () => void;
-  onOpenMarketMap: () => void;
-  onOpenDisclosures: () => void;
-  onOpenReports: (reportId?: string) => void;
+  onOpenPicks?: () => void;
+  onOpenMarketMap?: () => void;
+  onOpenDisclosures?: () => void;
+  onOpenReports?: (reportId?: string) => void;
 };
 
 function PrimaryNavigation({
   active,
   variant = 'compact',
   onHome,
-  onOpenPicks,
-  onOpenMarketMap,
-  onOpenDisclosures,
-  onOpenReports,
 }: PrimaryNavigationProps) {
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
-  const groupButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const closeNavigation = () => {
-    setOpenGroup(null);
     setMobileOpen(false);
   };
 
@@ -782,10 +775,9 @@ function PrimaryNavigation({
     };
     const closeEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      const groupToFocus = openGroup;
+      const shouldRestoreFocus = mobileOpen;
       closeNavigation();
-      if (mobileOpen) mobileButtonRef.current?.focus();
-      else if (groupToFocus) groupButtonRefs.current[groupToFocus]?.focus();
+      if (shouldRestoreFocus) mobileButtonRef.current?.focus();
     };
     document.addEventListener('pointerdown', closeOutside);
     document.addEventListener('keydown', closeEscape);
@@ -793,7 +785,7 @@ function PrimaryNavigation({
       document.removeEventListener('pointerdown', closeOutside);
       document.removeEventListener('keydown', closeEscape);
     };
-  }, [mobileOpen, openGroup]);
+  }, [mobileOpen]);
 
   useEffect(() => {
     const closeAfterLocationChange = () => closeNavigation();
@@ -805,18 +797,7 @@ function PrimaryNavigation({
     closeNavigation();
   }, [active]);
 
-  const activate = (key: PrimaryNavKey, href: string) => {
-    if (key === 'today') onHome();
-    else if (key === 'picks') onOpenPicks();
-    else if (key === 'market-map') onOpenMarketMap();
-    else if (key === 'disclosures') onOpenDisclosures();
-    else if (key === 'reports') onOpenReports();
-    else if (key === 'macro' || key === 'relations' || key === 'demand-supply' || key === 'bottlenecks' || key === 'companies' || key === 'company-events' || key === 'analysis') navigateWithinApp(href);
-    else return false;
-    return true;
-  };
-
-  const activeGroup = homeNavigationGroups.find((group) => group.items.some((item) => item.activeKey === active))?.id;
+  const activeItem = active === 'analysis' ? 'companies' : active;
 
   return (
     <header ref={rootRef} className={`${variant === 'home' ? 'home-nav' : 'pick-nav'} primary-navigation`}>
@@ -839,70 +820,31 @@ function PrimaryNavigation({
         type="button"
         ref={mobileButtonRef}
         aria-expanded={mobileOpen}
-        aria-controls="primary-navigation-groups"
+        aria-controls="primary-navigation-links"
+        aria-label={mobileOpen ? '주요 메뉴 닫기' : '주요 메뉴 열기'}
         onClick={() => {
           setMobileOpen((value) => !value);
-          setOpenGroup(null);
         }}
       >
         <span>메뉴</span>
         <ChevronDown size={17} aria-hidden="true" />
       </button>
-      <nav id="primary-navigation-groups" aria-label="주요 탐색" className={mobileOpen ? 'is-mobile-open' : ''}>
-        {homeNavigationGroups.map((group) => {
-          const expanded = openGroup === group.id;
-          const menuId = `primary-nav-${group.id}`;
-          return (
-            <div className={`primary-navigation__group${activeGroup === group.id ? ' is-active' : ''}`} key={group.id}>
-              <button
-                type="button"
-                ref={(node) => { groupButtonRefs.current[group.id] = node; }}
-                aria-expanded={expanded}
-                aria-controls={menuId}
-                aria-haspopup="menu"
-                onClick={() => setOpenGroup((current) => current === group.id ? null : group.id)}
-                onKeyDown={(event) => {
-                  if (event.key !== 'ArrowDown') return;
-                  event.preventDefault();
-                  setOpenGroup(group.id);
-                  window.requestAnimationFrame(() => {
-                    document.querySelector<HTMLAnchorElement>(`#${menuId} a`)?.focus();
-                  });
-                }}
-              >
-                {group.label}
-                <ChevronDown size={15} aria-hidden="true" />
-              </button>
-              <div className="primary-navigation__menu" id={menuId} role="menu" hidden={!expanded}>
-                {group.items.map((item, itemIndex) => (
-                  <a
-                    key={item.id}
-                    role="menuitem"
-                    href={item.href}
-                    className={active === item.activeKey ? 'active' : ''}
-                    aria-current={active === item.activeKey ? 'page' : undefined}
-                    onClick={(event) => {
-                      closeNavigation();
-                      const handled = activate(item.activeKey, item.href);
-                      if (handled) event.preventDefault();
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-                      event.preventDefault();
-                      const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(`#${menuId} a`));
-                      const nextIndex = event.key === 'ArrowDown'
-                        ? (itemIndex + 1) % links.length
-                        : (itemIndex - 1 + links.length) % links.length;
-                      links[nextIndex]?.focus();
-                    }}
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      <nav id="primary-navigation-links" aria-label="주요 탐색" className={mobileOpen ? 'is-mobile-open' : ''}>
+        {primaryNavigationItems.map((item) => (
+          <a
+            key={item.id}
+            href={item.href}
+            className={activeItem === item.activeKey ? 'active' : ''}
+            aria-current={activeItem === item.activeKey ? 'page' : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              closeNavigation();
+              navigateWithinApp(item.href);
+            }}
+          >
+            {item.label}
+          </a>
+        ))}
       </nav>
     </header>
   );
@@ -4340,8 +4282,95 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
   );
 }
 
-function LandingPage(props: LandingPageProps) {
-  return <BeginnerLandingPage {...props} />;
+type HomeEntry = {
+  id: 'companies' | 'macro';
+  title: string;
+  eyebrow: string;
+  description: string;
+  href: string;
+  cta: string;
+};
+
+const homeEntries: HomeEntry[] = [
+  {
+    id: 'companies',
+    title: '기업 분석',
+    eyebrow: 'Bottom-up',
+    description: '기업의 사업과 재무 흐름을 봅니다.',
+    href: '/ko/companies',
+    cta: '기업 분석 보기',
+  },
+  {
+    id: 'macro',
+    title: '거시경제',
+    eyebrow: 'Top-down',
+    description: '금리·환율·원자재의 흐름을 봅니다.',
+    href: '/ko/macro-dashboard',
+    cta: '거시경제 보기',
+  },
+];
+
+function HomeEntryCard({ entry }: { entry: HomeEntry }) {
+  return (
+    <article className="simplified-home-card">
+      <p>{entry.eyebrow}</p>
+      <h2>{entry.title}</h2>
+      <p>{entry.description}</p>
+      <a
+        href={entry.href}
+        onClick={(event) => {
+          event.preventDefault();
+          navigateWithinApp(entry.href);
+        }}
+      >
+        {entry.cta}
+        <ArrowRight size={17} aria-hidden="true" />
+      </a>
+    </article>
+  );
+}
+
+function SimplifiedHome({ onHome }: Pick<LandingPageProps, 'onHome'>) {
+  return (
+    <div className="home-shell simplified-home-shell" id="top">
+      <PrimaryNavigation
+        active="today"
+        variant="home"
+        onHome={onHome}
+      />
+      <main>
+        <section className="simplified-home-hero" aria-labelledby="simplified-home-title">
+          <div className="simplified-home-intro">
+            <h1 id="simplified-home-title">
+              <span>기업은 재무로,</span>
+              <span>시장은 거시로 봅니다.</span>
+            </h1>
+            <p>전문 용어는 그대로, 의미는 쉽게.</p>
+          </div>
+          <div className="simplified-home-grid" aria-label="분석 시작점">
+            {homeEntries.map((entry) => <HomeEntryCard entry={entry} key={entry.id} />)}
+          </div>
+        </section>
+      </main>
+      <footer className="simplified-home-footer">
+        <strong>주가해부실</strong>
+        <a
+          href="/ko/reports"
+          onClick={(event) => {
+            event.preventDefault();
+            navigateWithinApp('/ko/reports');
+          }}
+        >
+          데이터 기준 및 출처
+        </a>
+        <p>표시된 내용은 정보 제공을 위한 분석이며 투자 권유가 아닙니다.</p>
+      </footer>
+    </div>
+  );
+}
+
+function LandingPage({ onHome }: LandingPageProps) {
+  return <SimplifiedHome onHome={onHome} />;
 }
 
 type StockAutopsyPicksPageProps = {
@@ -6979,7 +7008,7 @@ function App() {
   const isDemandSupplyRoute = Boolean(routeDemandSupplyMatch);
   const isCompanyEventsRoute = Boolean(routeCompanyEventsMatch);
   const isCompaniesRoute = Boolean(routeCompaniesMatch || routeCompanyProfileMatch);
-  const needsDisclosureFeed = isHomeRoute || isPicksRoute || isDisclosuresRoute;
+  const needsDisclosureFeed = isPicksRoute || isDisclosuresRoute;
 
   useEffect(() => {
     const syncRoute = () => {
@@ -6991,7 +7020,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (routeCompanyProfileMatch) {
+    if (isHomeRoute) {
+      document.title = '주가해부실 | 기업 분석과 거시경제';
+    } else if (routeCompanyProfileMatch) {
       document.title = routeCompanyIdentity
         ? `${routeCompanyIdentity.name} 기업 한눈에 보기 | 주가해부실`
         : '기업을 찾을 수 없습니다 | 주가해부실';
@@ -7004,18 +7035,20 @@ function App() {
     }
     const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (description) {
-      description.content = routeCompanyIdentity
-        ? `${routeCompanyIdentity.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
-        : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 산업과 기업으로 이어지는지 확인합니다.';
+      description.content = isHomeRoute
+        ? '기업의 재무 흐름과 금리·환율·원자재의 거시경제 흐름을 연결해 설명합니다.'
+        : routeCompanyIdentity
+          ? `${routeCompanyIdentity.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
+          : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 산업과 기업으로 이어지는지 확인합니다.';
     }
-  }, [isDemandSupplyRoute, routeCompanyIdentity?.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
+  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
 
   useEffect(() => {
-    if (isDemandSupplyRoute || isCompanyEventsRoute) return;
+    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => { if (!cancelled) setMarketPrices(items); });
     return () => { cancelled = true; };
-  }, [isCompanyEventsRoute, isDemandSupplyRoute]);
+  }, [isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute]);
 
   useEffect(() => {
     if (!needsDisclosureFeed) return;

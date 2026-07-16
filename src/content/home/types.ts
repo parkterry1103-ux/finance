@@ -14,17 +14,11 @@ export type HomeFeatureLabel = {
   href: string;
 };
 
-export type HomeNavigationItem = {
-  id: string;
+export type PrimaryNavigationItem = {
+  id: 'companies' | 'macro';
   label: string;
   href: string;
-  activeKey: 'today' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'picks' | 'analysis' | 'company-events' | 'disclosures' | 'reports';
-};
-
-export type HomeNavigationGroup = {
-  id: 'today' | 'industry' | 'company' | 'resources';
-  label: string;
-  items: HomeNavigationItem[];
+  activeKey: 'companies' | 'macro';
 };
 
 export type HomeInsightReference = {

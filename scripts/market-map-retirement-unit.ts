@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { homeNavigationGroups } from '../src/content/home/index.js';
+import { primaryNavigationItems } from '../src/content/home/index.js';
 import { legacyMarketMapPaths, resolveLegacyMarketMapRoute } from '../src/lib/legacyMarketMapRoutes.js';
 
 let checks = 0;
@@ -20,8 +20,8 @@ legacyMarketMapPaths.forEach((path) => {
 check(resolveLegacyMarketMapRoute('/ko/market-map') === '/ko/demand-supply', 'Korean hub replacement');
 check(resolveLegacyMarketMapRoute('/market-map') === '/demand-supply', 'English hub replacement');
 check(resolveLegacyMarketMapRoute('/ko/category/not-a-retired-map') === null, 'unknown category untouched');
-check(homeNavigationGroups.length === 4, 'four navigation groups');
-check(homeNavigationGroups.flatMap((group) => group.items).every((item) => !item.href.includes('market-map')), 'no public market-map navigation');
+check(primaryNavigationItems.length === 2, 'two primary navigation items');
+check(primaryNavigationItems.every((item) => !item.href.includes('market-map')), 'no public market-map navigation');
 
 const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
 const profileSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
