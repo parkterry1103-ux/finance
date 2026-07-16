@@ -61,6 +61,7 @@ check(searchCompanyProfiles('NVDA')[0]?.company.ticker === 'NVDA', 'ticker exact
 check(searchCompanyProfiles('000660')[0]?.profile.stockCode === '000660', 'stock code exact ranked first');
 
 const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
+const stylesSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
 check(!componentSource.includes('현재 지원 기업 8개'), 'support count not hardcoded');
 check(/role="combobox"/.test(componentSource) && /role="listbox"/.test(componentSource) && /role="option"/.test(componentSource), 'combobox aria structure');
 check(/ArrowDown/.test(componentSource) && /ArrowUp/.test(componentSource) && /Enter/.test(componentSource) && /Escape/.test(componentSource), 'combobox keyboard controls');
@@ -97,6 +98,7 @@ check(profiles.every((profile) => profile.dashboard.assessments.length <= 5 && p
 check(profiles.every((profile) => !JSON.stringify(profile.dashboard).includes('undefined')), 'dashboard does not expose undefined');
 check(/<details className="company-dashboard-details">/.test(componentSource), 'dashboard details disclosure');
 check(/role="img"/.test(componentSource) && /<div className="sr-only"><table>/.test(componentSource), 'dashboard chart accessible name and table alternative');
+check(/\.company-dashboard-main \.company-profile-breadcrumb a,[\s\S]*?min-height: 44px;/.test(stylesSource) && /\.company-dashboard-detail-content \.industry-flow-step__companies a {[\s\S]*?min-width: 44px;[\s\S]*?min-height: 44px;/.test(stylesSource), 'dashboard touch targets at least 44px');
 check(buildCompanyResearchProfile('meta')!.companyRelations.length === 0, 'Meta related company empty state');
 check(buildCompanyResearchProfile('eaton')!.picks.length === 0, 'Eaton pick omitted');
 
