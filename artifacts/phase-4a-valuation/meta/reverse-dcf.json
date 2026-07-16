@@ -1,0 +1,15 @@
+{
+  "internalAnalysisOnly": true,
+  "currentPrice": 681.31,
+  "priceAsOf": "2026-07-15T20:00:01.000Z",
+  "result": {
+    "variable": "revenueCagr",
+    "solvedValue": 0.12967410087585451,
+    "targetEquityValue": 1753691.94,
+    "solvedEquityValue": 1753691.9756150807,
+    "absoluteError": 0.035615080734714866,
+    "relativeError": 2.030862999502345e-8,
+    "iterations": 23,
+    "converged": true
+  }
+}

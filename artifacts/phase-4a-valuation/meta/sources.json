@@ -1,0 +1,1312 @@
+[
+  {
+    "sourceId": "sec:0001326801:0001326801-21-000014:AccountsPayableCurrent:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-21-000014",
+    "filingType": "10-K",
+    "filedAt": "2021-01-28",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:AccountsPayableCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680121000014/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-22-000018:AccountsReceivableNetCurrent:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-22-000018",
+    "filingType": "10-K",
+    "filedAt": "2022-02-03",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000018/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:WeightedAverageNumberOfSharesOutstandingBasic:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:PaymentsToAcquirePropertyPlantAndEquipment:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:CashAndCashEquivalentsAtCarryingValue:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:CostOfRevenue:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-22-000018:AssetsCurrent:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-22-000018",
+    "filingType": "10-K",
+    "filedAt": "2022-02-03",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000018/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-22-000018:LiabilitiesCurrent:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-22-000018",
+    "filingType": "10-K",
+    "filedAt": "2022-02-03",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000018/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:DepreciationDepletionAndAmortization:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:EarningsPerShareDiluted:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:WeightedAverageNumberOfDilutedSharesOutstanding:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:OperatingIncomeLoss:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:IncomeTaxExpenseBenefit:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-21-000014:OperatingLeaseLiability:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-21-000014",
+    "filingType": "10-K",
+    "filedAt": "2021-01-28",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680121000014/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:NetIncomeLoss:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:NetCashProvidedByUsedInOperatingActivities:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:RevenueFromContractWithCustomerExcludingAssessedTax:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:ShareBasedCompensation:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-22-000018:Assets:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-22-000018",
+    "filingType": "10-K",
+    "filedAt": "2022-02-03",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000018/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:StockholdersEquity:2020-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2020-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:AccountsReceivableNetCurrent:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:WeightedAverageNumberOfSharesOutstandingBasic:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:PaymentsToAcquirePropertyPlantAndEquipment:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:CashAndCashEquivalentsAtCarryingValue:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:CostOfRevenue:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:AssetsCurrent:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:LiabilitiesCurrent:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:DepreciationDepletionAndAmortization:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:EarningsPerShareDiluted:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:WeightedAverageNumberOfDilutedSharesOutstanding:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:OperatingIncomeLoss:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:IncomeTaxExpenseBenefit:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-22-000018:OperatingLeaseLiability:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-22-000018",
+    "filingType": "10-K",
+    "filedAt": "2022-02-03",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000018/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:LongTermDebtNoncurrent:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:LongTermDebtNoncurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:NetIncomeLoss:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:NetCashProvidedByUsedInOperatingActivities:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:RevenueFromContractWithCustomerExcludingAssessedTax:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:MarketableSecuritiesCurrent:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:MarketableSecuritiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:ShareBasedCompensation:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:Assets:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:StockholdersEquity:2021-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2021-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:AccountsReceivableNetCurrent:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:WeightedAverageNumberOfSharesOutstandingBasic:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:PaymentsToAcquirePropertyPlantAndEquipment:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:CashAndCashEquivalentsAtCarryingValue:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:CostOfRevenue:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:AssetsCurrent:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:LiabilitiesCurrent:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:DepreciationDepletionAndAmortization:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:EarningsPerShareDiluted:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:WeightedAverageNumberOfDilutedSharesOutstanding:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:OperatingIncomeLoss:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:IncomeTaxExpenseBenefit:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-23-000013:OperatingLeaseLiability:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-23-000013",
+    "filingType": "10-K",
+    "filedAt": "2023-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:LongTermDebtNoncurrent:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:LongTermDebtNoncurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:NetIncomeLoss:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:NetCashProvidedByUsedInOperatingActivities:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:RevenueFromContractWithCustomerExcludingAssessedTax:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:MarketableSecuritiesCurrent:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:MarketableSecuritiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:ShareBasedCompensation:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:Assets:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:StockholdersEquity:2022-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2022-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:AccountsReceivableNetCurrent:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfSharesOutstandingBasic:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:PaymentsToAcquirePropertyPlantAndEquipment:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:CashAndCashEquivalentsAtCarryingValue:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:CostOfRevenue:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:AssetsCurrent:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:LiabilitiesCurrent:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:DepreciationDepletionAndAmortization:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:EarningsPerShareDiluted:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfDilutedSharesOutstanding:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:OperatingIncomeLoss:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeTaxExpenseBenefit:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-24-000012:OperatingLeaseLiability:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-24-000012",
+    "filingType": "10-K",
+    "filedAt": "2024-02-02",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:LongTermDebtNoncurrent:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:LongTermDebtNoncurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetIncomeLoss:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetCashProvidedByUsedInOperatingActivities:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:RevenueFromContractWithCustomerExcludingAssessedTax:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:MarketableSecuritiesCurrent:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:MarketableSecuritiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:ShareBasedCompensation:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:Assets:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:StockholdersEquity:2023-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2023-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:AccountsReceivableNetCurrent:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfSharesOutstandingBasic:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:PaymentsToAcquirePropertyPlantAndEquipment:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:CashAndCashEquivalentsAtCarryingValue:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:CostOfRevenue:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:AssetsCurrent:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:LiabilitiesCurrent:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:DepreciationDepletionAndAmortization:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:EarningsPerShareDiluted:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfDilutedSharesOutstanding:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:OperatingIncomeLoss:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeTaxExpenseBenefit:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001326801-25-000017:OperatingLeaseLiability:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001326801-25-000017",
+    "filingType": "10-K",
+    "filedAt": "2025-01-30",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000017/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:LongTermDebtNoncurrent:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:LongTermDebtNoncurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetIncomeLoss:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetCashProvidedByUsedInOperatingActivities:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:RevenueFromContractWithCustomerExcludingAssessedTax:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:MarketableSecuritiesCurrent:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:MarketableSecuritiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:ShareBasedCompensation:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:Assets:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:StockholdersEquity:2024-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2024-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:AccountsReceivableNetCurrent:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:AccountsReceivableNetCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfSharesOutstandingBasic:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfSharesOutstandingBasic",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:PaymentsToAcquirePropertyPlantAndEquipment:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:CashAndCashEquivalentsAtCarryingValue:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:CostOfRevenue:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:CostOfRevenue",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:AssetsCurrent:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:AssetsCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:LiabilitiesCurrent:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:LiabilitiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:DepreciationDepletionAndAmortization:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:DepreciationDepletionAndAmortization",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:EarningsPerShareDiluted:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:EarningsPerShareDiluted",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:WeightedAverageNumberOfDilutedSharesOutstanding:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:OperatingIncomeLoss:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:OperatingIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeTaxExpenseBenefit:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:IncomeTaxExpenseBenefit",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:OperatingLeaseLiability:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:OperatingLeaseLiability",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:LongTermDebtNoncurrent:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:LongTermDebtNoncurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetIncomeLoss:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:NetIncomeLoss",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:NetCashProvidedByUsedInOperatingActivities:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:RevenueFromContractWithCustomerExcludingAssessedTax:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:MarketableSecuritiesCurrent:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:MarketableSecuritiesCurrent",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-003942:ShareBasedCompensation:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-003942",
+    "filingType": "10-K",
+    "filedAt": "2026-01-29",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:ShareBasedCompensation",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:Assets:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:Assets",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  },
+  {
+    "sourceId": "sec:0001326801:0001628280-26-028526:StockholdersEquity:2025-12-31",
+    "sourceSystem": "sec",
+    "accessionOrReceiptNumber": "0001628280-26-028526",
+    "filingType": "10-Q",
+    "filedAt": "2026-04-30",
+    "periodEnd": "2025-12-31",
+    "taxonomyConcept": "us-gaap:StockholdersEquity",
+    "url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026028526/"
+  }
+]

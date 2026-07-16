@@ -1,0 +1,330 @@
+{
+  "valuationDate": "2026-07-15",
+  "retrievedAt": "2026-07-16T15:15:35.889Z",
+  "sourcePolicy": [
+    "company filings",
+    "company guidance",
+    "peer median when available",
+    "industry benchmark sanity check",
+    "explicit analyst assumptions"
+  ],
+  "companies": [
+    {
+      "companySlug": "sk-hynix",
+      "companyName": "SK하이닉스",
+      "country": "KR",
+      "identifier": "corp_code 00164779",
+      "sourceSystem": "OpenDART CFS via existing read-only API",
+      "annualRevenue": "제한적",
+      "annualOperatingIncome": "제한적",
+      "taxes": "제한적",
+      "depreciation": "자료 없음",
+      "capex": "제한적",
+      "operatingCashFlow": "제한적",
+      "workingCapital": "제한적",
+      "cash": "자료 없음",
+      "debt": "보조 가정 필요",
+      "leaseLiabilities": "자료 없음",
+      "minorityInterest": "자료 없음",
+      "dilutedShares": "자료 없음",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "제한적",
+      "dcfStatus": "제한적",
+      "primaryMethod": "사이클 정상화 FCFF DCF",
+      "secondaryMethods": [
+        "역산 DCF",
+        "EV/EBITDA",
+        "PBR·ROE"
+      ],
+      "unsuitableMethods": [
+        "단일 연도 PER"
+      ],
+      "blockers": [
+        "현재 read-only API가 최신 기간 요약만 반환해 5개 연간 시계열을 구성할 수 없음",
+        "감가상각 자료 없음",
+        "희석주식 수 자료 없음",
+        "연결 사업부·기업별 KPI 정규화 추가 필요"
+      ],
+      "availableAnnualPeriods": 0,
+      "filingCount": 1,
+      "amendmentSelections": 0,
+      "excludedContexts": 0
+    },
+    {
+      "companySlug": "lg-electronics",
+      "companyName": "LG전자",
+      "country": "KR",
+      "identifier": "corp_code 00401731",
+      "sourceSystem": "OpenDART CFS via existing read-only API",
+      "annualRevenue": "제한적",
+      "annualOperatingIncome": "제한적",
+      "taxes": "제한적",
+      "depreciation": "자료 없음",
+      "capex": "제한적",
+      "operatingCashFlow": "제한적",
+      "workingCapital": "제한적",
+      "cash": "자료 없음",
+      "debt": "보조 가정 필요",
+      "leaseLiabilities": "자료 없음",
+      "minorityInterest": "자료 없음",
+      "dilutedShares": "자료 없음",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "제한적",
+      "dcfStatus": "제한적",
+      "primaryMethod": "사업부 SOTP",
+      "secondaryMethods": [
+        "FCFF DCF",
+        "EV/EBITDA"
+      ],
+      "unsuitableMethods": [
+        "데이터센터 냉각 단일 사업 DCF"
+      ],
+      "blockers": [
+        "현재 read-only API가 최신 기간 요약만 반환해 5개 연간 시계열을 구성할 수 없음",
+        "감가상각 자료 없음",
+        "희석주식 수 자료 없음",
+        "연결 사업부·기업별 KPI 정규화 추가 필요"
+      ],
+      "availableAnnualPeriods": 0,
+      "filingCount": 1,
+      "amendmentSelections": 0,
+      "excludedContexts": 0
+    },
+    {
+      "companySlug": "nvidia",
+      "companyName": "NVIDIA",
+      "country": "US",
+      "identifier": "CIK 0001045810",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "제한적",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "Driver-based FCFF DCF",
+      "secondaryMethods": [
+        "역산 DCF",
+        "EV/Sales",
+        "EV/EBITDA"
+      ],
+      "unsuitableMethods": [
+        "PBR 단독 평가"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 68,
+      "amendmentSelections": 481,
+      "excludedContexts": 1289
+    },
+    {
+      "companySlug": "micron",
+      "companyName": "Micron Technology",
+      "country": "US",
+      "identifier": "CIK 0000723125",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "계산 가능",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "사이클 정상화 FCFF DCF",
+      "secondaryMethods": [
+        "역산 DCF",
+        "EV/EBITDA",
+        "PBR·ROE"
+      ],
+      "unsuitableMethods": [
+        "단일 연도 PER"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 64,
+      "amendmentSelections": 418,
+      "excludedContexts": 1126
+    },
+    {
+      "companySlug": "dell",
+      "companyName": "Dell Technologies",
+      "country": "US",
+      "identifier": "CIK 0001571996",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "계산 가능",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "FCFF DCF",
+      "secondaryMethods": [
+        "EV/EBITDA",
+        "운전자본 시나리오",
+        "SOTP"
+      ],
+      "unsuitableMethods": [
+        "매출 성장만 반영한 EV/Sales"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 41,
+      "amendmentSelections": 313,
+      "excludedContexts": 834
+    },
+    {
+      "companySlug": "eaton",
+      "companyName": "Eaton",
+      "country": "US",
+      "identifier": "CIK 0001551182",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "계산 가능",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "FCFF DCF",
+      "secondaryMethods": [
+        "EV/EBITDA",
+        "ROIC·WACC",
+        "수주잔고 전망"
+      ],
+      "unsuitableMethods": [
+        "PBR 단독 평가"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 55,
+      "amendmentSelections": 395,
+      "excludedContexts": 1110
+    },
+    {
+      "companySlug": "meta",
+      "companyName": "Meta Platforms",
+      "country": "US",
+      "identifier": "CIK 0001326801",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "제한적",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "Driver-based FCFF DCF",
+      "secondaryMethods": [
+        "역산 DCF",
+        "EV/EBITDA",
+        "FCF Yield"
+      ],
+      "unsuitableMethods": [
+        "장부가치 중심 PBR"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 56,
+      "amendmentSelections": 389,
+      "excludedContexts": 972
+    },
+    {
+      "companySlug": "supermicro",
+      "companyName": "Super Micro Computer",
+      "country": "US",
+      "identifier": "CIK 0001375365",
+      "sourceSystem": "SEC Companyfacts",
+      "annualRevenue": "충분",
+      "annualOperatingIncome": "충분",
+      "taxes": "충분",
+      "depreciation": "충분",
+      "capex": "충분",
+      "operatingCashFlow": "충분",
+      "workingCapital": "계산 가능",
+      "cash": "충분",
+      "debt": "계산 가능",
+      "leaseLiabilities": "계산 가능",
+      "minorityInterest": "계산 가능",
+      "dilutedShares": "충분",
+      "referencePrice": "충분",
+      "segmentData": "제한적",
+      "companyKpis": "보조 가정 필요",
+      "dcfStatus": "가능",
+      "primaryMethod": "FCFF DCF",
+      "secondaryMethods": [
+        "EV/Sales",
+        "EV/EBITDA",
+        "운전자본 시나리오"
+      ],
+      "unsuitableMethods": [
+        "매출 성장만 반영한 단일 배수"
+      ],
+      "blockers": [
+        "Companyfacts만으로 사업부·기업별 KPI를 완전하게 정규화할 수 없음"
+      ],
+      "availableAnnualPeriods": 7,
+      "filingCount": 54,
+      "amendmentSelections": 441,
+      "excludedContexts": 1196
+    }
+  ]
+}

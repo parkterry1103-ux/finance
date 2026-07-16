@@ -212,6 +212,16 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'vercel.json',
     '.github/workflows/ci.yml',
     '.github/workflows/deployment-smoke.yml',
+    'src/domain/valuation/index.ts',
+    'src/domain/valuation/validation.ts',
+    'scripts/valuation-unit.ts',
+    'docs/site-restructure-phase-4a.md',
+    'docs/valuation-readiness-inventory.md',
+    'docs/valuation-methodology.md',
+    'docs/valuation-data-normalization.md',
+    'artifacts/phase-4a-valuation/valuation-readiness.json',
+    'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
+    'artifacts/phase-4a-valuation/meta/valuation-result.json',
     ...activeConfig.lazyRoutes.map((route) => route.source),
   ].filter((file) => file !== 'dist-placeholder-not-required');
   requiredFiles.forEach((file) => assert(existsSync(join(root, file)), `required file missing: ${file}`));
@@ -228,6 +238,12 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
 
   const runtimeSource = collectRuntimeSources(join(root, 'src')).join('\n');
   assert(!/@xyflow\/react|\bReactFlow\b|전체 연결 보기|기업 연결 보기|시장지도 준비 중/.test(runtimeSource), 'forbidden market-map or ReactFlow runtime string remains');
+  const publicRouteSource = [
+    readFileSync(join(root, 'src', 'App.tsx'), 'utf8'),
+    ...collectRuntimeSources(join(root, 'src', 'routes')),
+    ...collectRuntimeSources(join(root, 'src', 'components')),
+  ].join('\n');
+  assert(!/domain\/valuation|content\/valuation/.test(publicRouteSource), 'valuation module imported by public runtime');
   return `${functions.length} Functions, ${Object.keys(activeConfig.content).length} content counts, forbidden runtime strings 0`;
 }
 
@@ -312,6 +328,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Company events unit', 'company-events-unit.js'],
   ['Demand-supply unit', 'demand-supply-unit.js'],
   ['Market relations unit', 'market-relations-unit.js'],
+  ['Valuation engine unit', 'valuation-unit.js'],
 ];
 compiledChecks.forEach(([name, file]) => runCommand(name, nodeCommand, [join('.sync-build', 'scripts', file)]));
 runCommand('Application TypeScript', './node_modules/.bin/tsc', ['--noEmit']);

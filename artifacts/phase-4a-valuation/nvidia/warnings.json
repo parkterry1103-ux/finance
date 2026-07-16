@@ -1,0 +1,14 @@
+[
+  {
+    "name": "conservative",
+    "warnings": []
+  },
+  {
+    "name": "base",
+    "warnings": []
+  },
+  {
+    "name": "optimistic",
+    "warnings": []
+  }
+]
