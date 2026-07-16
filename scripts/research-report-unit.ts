@@ -25,15 +25,29 @@ function closeTo(actual: number, expected: number, label: string, tolerance = 1e
 }
 
 function allClaims(report: ResearchReportModel) {
-  return Object.values(report.sections).flat();
+  return [
+    ...Object.values(report.sections).flat(),
+    ...report.executiveSummary.strengths,
+    ...report.executiveSummary.risks,
+    ...report.executiveSummary.nextChecks,
+  ];
 }
 
 function validateReport(report: ResearchReportModel, stored: typeof nvidiaValuation) {
   assert(report.scenarios.length === 3, `${report.slug}: scenario count`);
+  assert(report.glossary.length >= 4 && report.glossary.length <= 7, `${report.slug}: glossary count outside 4-7`);
+  report.glossary.forEach((item) => {
+    assert(Boolean(item.term && item.english && item.definition && item.easyExplanation && item.relevance), `${report.slug}: incomplete glossary item`);
+  });
+  Object.values(report.executiveSummary).forEach((items) => assert(items.length > 0 && items.length <= 3, `${report.slug}: executive summary count`));
   assert(report.waccGrowthSensitivity.cells.length === 25, `${report.slug}: WACC × g matrix must be 5x5`);
   assert(report.driverSensitivity.cells.length === 25, `${report.slug}: company driver matrix must be 5x5`);
   assert(report.charts.length >= 2 && report.charts.length <= 4, `${report.slug}: chart count outside 2-4`);
   assert(report.reverseDcf.converged, `${report.slug}: reverse DCF did not converge`);
+  report.scenarios.forEach((scenario) => {
+    assert(scenario.input.forecastAssumptions.years.length > 0, `${report.slug}: scenario forecast missing`);
+    closeTo(scenario.result.dilutedShares, scenario.input.capitalStructure.dilutedShares, `${report.slug}: scenario shares`);
+  });
   assert(report.reportDate !== report.priceAsOf.slice(0, 10), `${report.slug}: report and price dates must be explicit, not aliased`);
 
   closeTo(report.baseResult.estimatedValuePerShare, stored.result.estimatedValuePerShare, `${report.slug}: base per share`);
@@ -87,8 +101,12 @@ assert(appSource.includes('/^\\/ko\\/companies\\/([^/]+)\\/report\\/?$/'), 'cano
 assert(!profileSource.includes("content/research-reports"), 'dashboard bundle imports report content');
 assert(profileSource.includes("profile.slug === 'nvidia' || profile.slug === 'meta'"), 'dashboard CTA scope is not exactly NVIDIA and Meta');
 assert(routeSource.includes('window.print()'), 'print action missing');
+assert(routeSource.includes('모형 기반 가치 추정'), 'required valuation section title missing');
+assert(routeSource.includes('현재 가격이 반영한 기대'), 'required reverse DCF section title missing');
+assert(routeSource.includes('기준 가정'), 'sensitivity base-state text missing');
 assert(cssSource.includes('@page { size: A4; margin: 16mm 14mm 18mm; }'), 'A4 print margins missing');
 assert(cssSource.includes('.research-screen-navigation,') && cssSource.includes('display: none !important'), 'print navigation hiding missing');
+assert(cssSource.includes('.research-report-toc { display: none !important; }'), 'print table of contents hiding missing');
 
 const counts = reports.map((report) => {
   const evidenceCounts = report.evidence.reduce<Record<string, number>>((accumulator, item) => {

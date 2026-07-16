@@ -11,8 +11,23 @@ const config: ResearchReportCompanyConfig = {
   englishName: 'Meta Platforms, Inc.',
   ticker: 'META',
   industry: '디지털 광고·플랫폼·AI 인프라',
+  reportTitle: '광고 현금창출력과 AI 인프라 재투자의 균형',
   conclusion: '광고 플랫폼의 현금창출력이 대규모 AI 인프라 투자를 뒷받침하는 구조이며, 투자 증가가 사용자 경험과 광고 효율로 전환되는 속도가 핵심입니다.',
   watchStatement: '다음 분기에는 광고 수요, 추천 시스템 효율, 2026년 설비투자 집행 속도와 영업현금흐름의 균형을 우선 확인합니다.',
+  executiveSummary: {
+    strengths: [
+      { title: '광고 현금창출력', body: '광고 플랫폼의 현금흐름이 AI 인프라 재투자의 기반입니다.', evidenceIds: ['meta-historical-calculation', 'meta-business-interpretation'] },
+      { title: '추천·광고 결합', body: 'AI 투자는 사용자 경험과 광고 효율을 함께 바꾸는 경로를 가집니다.', evidenceIds: ['meta-q1-guidance-fact', 'meta-business-interpretation'] },
+    ],
+    risks: [
+      { title: '설비투자 부담', body: '투자 증가가 감가상각과 FCFF 전환율에 부담이 될 수 있습니다.', evidenceIds: ['meta-q1-guidance-fact', 'meta-historical-calculation'] },
+      { title: '장기 가치 의존', body: '높은 장기 자본수익률과 계속가치 가정에 결과가 민감합니다.', evidenceIds: ['meta-dcf-calculation', 'meta-roic-fade-calculation'] },
+    ],
+    nextChecks: [
+      { title: '광고 효율', body: '광고 수요와 추천 시스템 효율의 동행을 확인합니다.', evidenceIds: ['meta-q1-guidance-fact'] },
+      { title: '투자와 현금', body: '설비투자 집행·감가상각·영업현금흐름의 균형을 확인합니다.', evidenceIds: ['meta-q1-guidance-fact', 'meta-historical-calculation'] },
+    ],
+  },
   business: [
     {
       title: '광고 현금흐름이 AI 인프라를 지원',
@@ -71,6 +86,44 @@ const config: ResearchReportCompanyConfig = {
       title: '주요 위험',
       body: '설비투자 집행 지연 또는 과잉, 감가상각 증가, 광고 경기 둔화, 규제 비용, 신규 제품의 낮은 수익화가 핵심 점검 항목입니다.',
       evidenceIds: ['meta-q1-guidance-fact', 'meta-financial-conditions-fact', 'meta-model-interpretation'],
+    },
+  ],
+  glossary: [
+    {
+      term: 'FCFF', english: 'Free Cash Flow to Firm',
+      definition: '채권자와 주주에게 귀속되기 전 사업 전체가 창출한 잉여현금흐름입니다.',
+      easyExplanation: '영업으로 번 현금에서 사업 유지와 성장에 필요한 투자를 뺀 금액입니다.',
+      relevance: 'Meta의 광고 현금흐름이 대규모 AI 설비투자 뒤에도 얼마나 남는지 보여줍니다.',
+    },
+    {
+      term: 'WACC', english: 'Weighted Average Cost of Capital',
+      definition: '자기자본비용과 세후부채비용을 자본구조 비중으로 가중한 할인율입니다.',
+      easyExplanation: '미래 현금을 오늘의 가치로 바꿀 때 적용하는 사업 전체의 요구수익률입니다.',
+      relevance: '광고와 AI 투자가 만드는 장기 현금흐름의 현재가치를 결정하는 기준입니다.',
+    },
+    {
+      term: 'ROIC', english: 'Return on Invested Capital',
+      definition: '영업에 투입된 자본이 세후 영업이익을 만들어 내는 효율을 나타냅니다.',
+      easyExplanation: '사업에 넣은 돈 1원이 얼마나 효율적으로 이익을 만드는지 보는 지표입니다.',
+      relevance: 'AI 인프라 투자 확대 뒤에도 Meta가 장기 초과수익을 유지할 수 있는지 점검합니다.',
+    },
+    {
+      term: '재투자율', english: 'Reinvestment Rate',
+      definition: '세후 영업이익 가운데 미래 성장을 위해 다시 사업에 투입되는 비율입니다.',
+      easyExplanation: '번 돈 중 얼마를 서버·데이터센터와 운전자본에 다시 넣는지 나타냅니다.',
+      relevance: '큰 설비투자가 성장으로 연결되는 데 필요한 현금 부담을 설명합니다.',
+    },
+    {
+      term: 'Terminal Value', english: 'Terminal Value',
+      definition: '명시적 전망기간 이후의 현금흐름을 하나의 현재가치로 환산한 계속가치입니다.',
+      easyExplanation: '상세 예측이 끝난 뒤에도 사업이 이어진다고 보고 계산한 장기 가치입니다.',
+      relevance: 'Meta 모형에서 장기 성장률과 자본수익률 가정의 영향이 큰 이유를 보여줍니다.',
+    },
+    {
+      term: '역산 DCF', english: 'Reverse Discounted Cash Flow',
+      definition: '관측 가격에 맞도록 하나의 핵심 사업 가정을 역으로 푸는 진단입니다.',
+      easyExplanation: '현재 가격이 성립하려면 모형 안에서 어떤 성장 경로가 필요한지 거꾸로 계산합니다.',
+      relevance: '광고와 신규 수익원의 매출 성장 기대를 기준 조건과 비교합니다.',
     },
   ],
   officialSources: [
