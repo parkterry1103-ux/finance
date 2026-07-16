@@ -1,0 +1,21 @@
+[
+  {
+    "name": "conservative",
+    "warnings": []
+  },
+  {
+    "name": "base",
+    "warnings": []
+  },
+  {
+    "name": "optimistic",
+    "warnings": [
+      {
+        "code": "terminal-value-share-high",
+        "message": "Terminal Value 비중이 설정된 경고 기준을 초과합니다.",
+        "value": 0.8092204035015614,
+        "threshold": 0.8
+      }
+    ]
+  }
+]

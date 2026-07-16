@@ -15,5 +15,12 @@
     "strict": false,
     "target": "ES2022"
   },
-  "include": ["scripts/**/*.ts", "scripts/**/*.d.ts", "src/data.ts", "src/services/**/*.ts"]
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.d.ts",
+    "src/data.ts",
+    "src/domain/valuation/**/*.ts",
+    "src/content/valuation/**/*.ts",
+    "src/services/**/*.ts"
+  ]
 }
