@@ -10,6 +10,11 @@ export type ResearchSource = {
   url: string;
   publishedAt?: string;
   periodEnd?: string;
+  documentType?: string;
+  accessionNumber?: string;
+  xbrlConcepts?: string[];
+  metricIds?: string[];
+  contextIds?: string[];
   note?: string;
 };
 
@@ -60,6 +65,109 @@ export type ResearchScenario = {
   stableGrowthRate: number;
 };
 
+export type ResearchReportSnapshot = {
+  reportId: string;
+  version: string;
+  publishedAt: string;
+  updatedAt?: string;
+  newsCutoffAt: string;
+  marketDataAsOf: string;
+  priceAsOf: string;
+  financialDataAsOf: string;
+  valuationAsOf: string;
+  benchmarkAsOf: string;
+};
+
+export type MaterialNewsEvent = {
+  id: string;
+  companySlug: 'nvidia' | 'meta';
+  title: string;
+  publishedAt: string;
+  sourceId: string;
+  sourceType: 'company' | 'filing' | 'industry' | 'macro' | 'policy' | 'regulation';
+  category: 'companySpecific' | 'industry' | 'marketWide' | 'macro' | 'geopolitical' | 'regulatory';
+  materiality: 'medium' | 'high';
+  confidence: 'confirmed' | 'developing';
+  affectedAssumptionIds: string[];
+  affectedMetricIds: string[];
+  summary: string;
+  whyItMatters: string;
+  transmissionPath: string[];
+  durability: 'temporary' | 'uncertain' | 'structural';
+  thesisImpact: 'maintain' | 'partiallyRevise' | 'reassess';
+  watchItems: string[];
+};
+
+export type ResearchJudgment = {
+  label: string;
+  status: string;
+  reason: string;
+  changeCondition: string;
+  evidenceIds: string[];
+};
+
+export type ResearchMoatFactor = {
+  source: string;
+  evidence: string;
+  earningsPath: string;
+  weakeningCondition: string;
+  nextMetric: string;
+  evidenceIds: string[];
+};
+
+export type ResearchFinancialMetric = {
+  label: string;
+  value: number;
+  unit: 'USD million' | 'million shares';
+  meaning: string;
+  sourceIds: string[];
+  metricIds: string[];
+};
+
+export type ResearchCycleRole = {
+  role: string;
+  currentPosition: string;
+  growthConnection: string;
+  upcycleEffect: string;
+  downcycleEffect: string;
+  substitutionRisk: string;
+  durableAdvantage: string;
+  changeCondition: string;
+  evidenceIds: string[];
+};
+
+export type ResearchValuationMethod = {
+  name: string;
+  whyThisModel: string;
+  easyExplanation: string;
+  unusedMethods: Array<{ name: string; reason: string }>;
+};
+
+export type ResearchMarketContext = {
+  marketWide: string;
+  companySpecific: string;
+  attributionCaution: string;
+  evidenceIds: string[];
+};
+
+export type ResearchNewsValuationImpact = {
+  eventId: string;
+  affectedAssumption: string;
+  previousAssumption: string;
+  reviewRange: string;
+  valuePath: string[];
+  modelChange: string;
+};
+
+export type ResearchBenchmarkComparison = {
+  label: string;
+  companyValue: number;
+  benchmarkValue: number;
+  unit: 'percent' | 'multiple';
+  absoluteDifference: number;
+  relativeDifference: number;
+};
+
 export type ResearchReportModel = {
   slug: 'nvidia' | 'meta';
   companyName: string;
@@ -67,6 +175,7 @@ export type ResearchReportModel = {
   ticker: string;
   industry: string;
   reportTitle: string;
+  snapshot: ResearchReportSnapshot;
   reportDate: string;
   financialsAsOf: string;
   priceAsOf: string;
@@ -79,6 +188,30 @@ export type ResearchReportModel = {
   currentPrice: number;
   conclusion: string;
   watchStatement: string;
+  judgments: ResearchJudgment[];
+  materialNewsEvents: MaterialNewsEvent[];
+  marketContext: ResearchMarketContext;
+  moat: ResearchMoatFactor[];
+  financialHealth: {
+    status: string;
+    explanation: string;
+    downturnResponse: string;
+    changeCondition: string;
+    metrics: ResearchFinancialMetric[];
+  };
+  cycleRole: ResearchCycleRole;
+  valuationMethod: ResearchValuationMethod;
+  modelGapRate: number;
+  modelGapLabel: string;
+  benchmark: {
+    name: string;
+    sampleSize: number;
+    isDirectPeerMedian: false;
+    explanation: string;
+    comparisons: ResearchBenchmarkComparison[];
+  };
+  newsValuationImpacts: ResearchNewsValuationImpact[];
+  excludedNewsSummary: string;
   executiveSummary: {
     strengths: ResearchClaim[];
     risks: ResearchClaim[];
@@ -123,8 +256,19 @@ export type ResearchReportCompanyConfig = {
   ticker: string;
   industry: string;
   reportTitle: string;
+  snapshotVersion: string;
+  newsCutoffAt: string;
   conclusion: string;
   watchStatement: string;
+  judgments: ResearchJudgment[];
+  materialNewsEvents: MaterialNewsEvent[];
+  marketContext: ResearchMarketContext;
+  moat: ResearchMoatFactor[];
+  financialHealth: Omit<ResearchReportModel['financialHealth'], 'metrics'>;
+  cycleRole: ResearchCycleRole;
+  valuationMethod: ResearchValuationMethod;
+  newsValuationImpacts: ResearchNewsValuationImpact[];
+  excludedNewsSummary: string;
   executiveSummary: ResearchReportModel['executiveSummary'];
   business: ResearchClaim[];
   earnings: ResearchClaim[];
