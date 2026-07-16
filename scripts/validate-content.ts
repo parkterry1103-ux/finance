@@ -1133,7 +1133,7 @@ function validateHomeExperience() {
   if (/<input\b|검색\s*(입력|창)|시장 변곡점|중요한 사건이 없습니다|현재 시장 변곡점이 없습니다/.test(simplifiedHomeSource)) addError('SimplifiedHome contains a fake search or market turning-point placeholder');
   if (/(고객|투자 고객|초보자|경제 초보자|12살|누구나 쉽게|고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(simplifiedHomeSource)) addError('SimplifiedHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
-  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute\) return;/.test(appSource)) addError('home must not load market prices');
+  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| routeCompaniesMatch\) return;/.test(appSource)) addError('home and local-search routes must not load market prices');
   if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
   if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
   if (!/\.simplified-home-card > a:focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
@@ -1304,7 +1304,7 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, and company events routes must skip unrelated global API preloads');
+  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || routeCompaniesMatch) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, and company search routes must skip unrelated global API preloads');
 }
 
 function validateCompanyEventContent() {
@@ -2548,12 +2548,26 @@ function validateCompanyProfiles() {
   if (primaryNavigationItems.length !== 2) addError(`primary navigation must keep exactly 2 entries: ${primaryNavigationItems.length}`);
   if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
+  const listPageSource = componentSource.slice(
+    componentSource.indexOf('export function CompanyProfilesListPage'),
+    componentSource.indexOf('export function CompanyProfileNotFoundPage'),
+  );
   if (/\bfetch\s*\(|\/api\//.test(componentSource)) addError('company profile component must not issue page-specific requests');
+  if (!/<h1 id="company-profiles-title">기업 분석<\/h1>/.test(listPageSource)) addError('company search h1 missing');
+  if (!/기업명이나 종목코드를 검색하세요\./.test(listPageSource)) addError('company search description missing');
+  if (!/placeholder="기업명, 티커 또는 종목코드 검색"/.test(listPageSource)) addError('company search placeholder missing');
+  if (!/role="combobox"/.test(listPageSource) || !/role="listbox"/.test(listPageSource) || !/role="option"/.test(listPageSource)) addError('company search combobox aria missing');
+  if (!/aria-live="polite"/.test(listPageSource) || !/aria-activedescendant/.test(listPageSource)) addError('company search live or active option aria missing');
+  if (!/replaceState/.test(listPageSource) || !/searchParams\.set\('q'/.test(listPageSource)) addError('company search query URL restore missing');
+  if (/현재 지원 기업 8개/.test(listPageSource)) addError('company support count must come from registry length');
+  if (/dangerouslySetInnerHTML/.test(listPageSource)) addError('company search must not insert user html');
+  if (/(현재 주가|등락률|시가총액|PER|뉴스|공시 목록|추천 점수|매수·매도 의견|별점)/.test(listPageSource)) addError('company search exposes excluded market or recommendation data');
   const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
   const routeSource = readFileSync(join(process.cwd(), 'src', 'routes', 'CompaniesRoute.tsx'), 'utf8');
   if (!/routeCompanyProfileMatch/.test(appSource) || !/lazy\(\(\) => import\('\.\/routes\/CompaniesRoute'\)\)/.test(appSource) || !/CompanyProfileNotFoundPage/.test(routeSource)) {
     addError('company profile canonical and invalid routes missing');
   }
+  if (!/isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| routeCompaniesMatch/.test(appSource)) addError('company search page must skip market price request');
   const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as { rewrites?: Array<{ source?: string; destination?: string }> };
   if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/companies/:path*' && rewrite.destination === '/')) addError('company profile alias SPA rewrite missing');
 }

@@ -12,6 +12,12 @@ export type CompanyProfileEntry = {
   companyId: string;
   slug: string;
   order: number;
+  englishName: string;
+  stockCode?: string;
+  exchange: string;
+  industry: string;
+  searchDescription: string;
+  aliases: string[];
   beginnerSummary: string;
   businessDescription: string;
   primaryRole: string;
@@ -27,6 +33,12 @@ export type CanonicalCompanyProfileIdentity = {
   ticker: string;
   country: 'KR' | 'US';
   countryLabel: '한국' | '미국';
+};
+
+export type CompanySearchRecord = {
+  company: CanonicalCompanyProfileIdentity;
+  profile: CompanyProfileEntry;
+  searchableTerms: string[];
 };
 
 export type CompanyIndustryFlowConnection = {

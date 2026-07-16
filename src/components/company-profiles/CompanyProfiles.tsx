@@ -1,11 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { ArrowRight, ExternalLink, FileSearch, Network, ShieldAlert } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { ArrowRight, ExternalLink, FileSearch, Network, Search, ShieldAlert } from 'lucide-react';
 import {
   companyEventStageLabels,
   companyEventTypeLabels,
 } from '../../content/company-events/index.js';
 import { companyProfileRelationTypeLabels } from '../../content/company-profile-relations/index.js';
-import type { CompanyResearchProfileViewModel } from '../../content/company-profiles/types.js';
+import { companySearchRecordPath, searchCompanyProfiles } from '../../content/company-profiles/search.js';
+import type { CompanyResearchProfileViewModel, CompanySearchRecord } from '../../content/company-profiles/types.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { priceDirection, priceDisplay } from '../../services/prices.js';
@@ -34,54 +35,182 @@ function CompanyProfileMonogram({ profile }: { profile: CompanyResearchProfileVi
 }
 
 export function CompanyProfilesListPage({
-  profiles,
+  companies,
+  initialQuery,
   navigation,
   onNavigate,
-}: SharedProps & { profiles: CompanyResearchProfileViewModel[] }) {
-  const [country, setCountry] = useState<'all' | 'KR' | 'US'>('all');
-  const visible = profiles.filter((profile) => country === 'all' || profile.company.country === country);
+}: SharedProps & { companies: CompanySearchRecord[]; initialQuery: string }) {
+  const listboxId = useId();
+  const listboxRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState(initialQuery);
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const results = useMemo(() => searchCompanyProfiles(query), [query]);
+  const hasQuery = Boolean(query.trim());
+
+  useEffect(() => {
+    setQuery(initialQuery);
+    setAutocompleteOpen(false);
+    setActiveIndex(-1);
+  }, [initialQuery]);
+
+  useEffect(() => {
+    if (activeIndex >= results.length) setActiveIndex(-1);
+  }, [activeIndex, results.length]);
+
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    listboxRef.current
+      ?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
+
+  const updateQuery = (nextQuery: string) => {
+    setQuery(nextQuery);
+    setActiveIndex(-1);
+    setAutocompleteOpen(Boolean(nextQuery.trim()));
+    const url = new URL(window.location.href);
+    if (nextQuery.trim()) url.searchParams.set('q', nextQuery);
+    else url.searchParams.delete('q');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const openCompany = (record: CompanySearchRecord) => {
+    setAutocompleteOpen(false);
+    onNavigate(companySearchRecordPath(record));
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown' && results.length) {
+      event.preventDefault();
+      setAutocompleteOpen(true);
+      setActiveIndex((current) => current < results.length - 1 ? current + 1 : 0);
+    } else if (event.key === 'ArrowUp' && results.length) {
+      event.preventDefault();
+      setAutocompleteOpen(true);
+      setActiveIndex((current) => current > 0 ? current - 1 : results.length - 1);
+    } else if (event.key === 'Enter' && results.length) {
+      event.preventDefault();
+      openCompany(results[activeIndex >= 0 ? activeIndex : 0]);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setAutocompleteOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
   return (
     <div className="pick-shell company-profiles-shell">
       {navigation}
       <main className="company-profiles-main">
         <section className="company-profiles-hero" aria-labelledby="company-profiles-title">
-          <p>산업·공식 발표·공급망 연결 기업</p>
-          <h1 id="company-profiles-title">기업 한눈에 보기</h1>
-          <span>기업이 무엇을 하는지, 어떤 산업 흐름에 속하는지, 최근 어떤 변화를 공식 발표했는지 함께 살펴봅니다.</span>
+          <h1 id="company-profiles-title">기업 분석</h1>
+          <p>기업명이나 종목코드를 검색하세요.</p>
         </section>
 
-        <div className="company-profile-country-filter" aria-label="기업 국가 필터">
-          {([
-            ['all', '전체'],
-            ['KR', '한국'],
-            ['US', '미국'],
-          ] as const).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={country === value} onClick={() => setCountry(value)}>{label}</button>
-          ))}
-        </div>
-
-        <section className="company-profile-list-grid" aria-label={`기업 프로필 ${visible.length}개`}>
-          {visible.map((profile) => {
-            const recentEvent = profile.companyEvents[0];
-            const firstFlow = profile.industryFlows[0];
-            const path = `/ko/companies/${encodeURIComponent(profile.profile.slug)}`;
-            return (
-              <a className="company-profile-list-card" key={profile.profile.id} href={path} onClick={internalLink(path, onNavigate)}>
-                <div className="company-profile-list-identity">
-                  <CompanyProfileMonogram profile={profile} />
-                  <div><h2>{profile.company.name}</h2><span>{profile.company.countryLabel} · {profile.company.ticker}</span></div>
+        {companies.length ? (
+          <>
+            <form className="company-search-form" role="search" onSubmit={(event) => event.preventDefault()}>
+              <label htmlFor="company-search-input">기업 검색</label>
+              <div className="company-search-combobox">
+                <Search size={20} aria-hidden="true" />
+                <input
+                  id="company-search-input"
+                  type="search"
+                  value={query}
+                  placeholder="기업명, 티커 또는 종목코드 검색"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={autocompleteOpen && results.length > 0}
+                  aria-controls={listboxId}
+                  aria-activedescendant={autocompleteOpen && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+                  aria-describedby="company-search-help"
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(event) => updateQuery(event.target.value)}
+                  onFocus={() => { if (hasQuery && results.length) setAutocompleteOpen(true); }}
+                  onBlur={() => setAutocompleteOpen(false)}
+                  onKeyDown={handleKeyDown}
+                />
+                <div
+                  className="company-search-autocomplete"
+                  id={listboxId}
+                  ref={listboxRef}
+                  role="listbox"
+                  aria-label="기업 검색 제안"
+                  hidden={!autocompleteOpen || results.length === 0}
+                >
+                    {results.map((record, index) => {
+                      const path = companySearchRecordPath(record);
+                      const security = record.profile.stockCode ?? record.company.ticker;
+                      return (
+                        <a
+                          id={`${listboxId}-option-${index}`}
+                          key={record.profile.slug}
+                          data-option-index={index}
+                          href={path}
+                          role="option"
+                          tabIndex={-1}
+                          aria-selected={activeIndex === index}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={(event) => { event.preventDefault(); openCompany(record); }}
+                        >
+                          <span><strong>{record.company.name}</strong><small>{record.profile.englishName}</small></span>
+                          <span>{security} · {record.profile.exchange}<ArrowRight size={15} aria-hidden="true" /></span>
+                        </a>
+                      );
+                    })}
                 </div>
-                <p>{profile.profile.beginnerSummary}</p>
-                <dl>
-                  <div><dt>주요 산업 역할</dt><dd>{profile.profile.primaryRole}</dd></div>
-                  <div><dt>관련 산업 흐름</dt><dd>{firstFlow?.flow.title ?? '산업 역할 설명으로 확인'}</dd></div>
-                </dl>
-                {recentEvent ? <div className="company-profile-list-event"><span>최근 공식 변화</span><strong>{recentEvent.title}</strong><small>{formatDate(recentEvent.eventDate)}</small></div> : null}
-                <strong className="company-profile-list-cta">기업 자세히 보기 <ArrowRight size={15} aria-hidden="true" /></strong>
-              </a>
-            );
-          })}
-        </section>
+              </div>
+              <p id="company-search-help">한국어·영문 기업명, 티커, 종목코드와 일반적인 별칭으로 찾을 수 있습니다.</p>
+            </form>
+
+            <div className="company-search-status-row">
+              <strong>{hasQuery ? `검색 결과 ${results.length}개` : `현재 지원 기업 ${companies.length}개`}</strong>
+              {hasQuery ? <span>입력한 검색어와 일치하는 지원 기업입니다.</span> : <span>현재 분석 페이지를 제공하는 기업입니다.</span>}
+            </div>
+            <p className="company-search-live" role="status" aria-live="polite" aria-atomic="true">
+              {hasQuery
+                ? results.length ? `검색 결과 ${results.length}개가 있습니다.` : '검색 결과가 없습니다.'
+                : `현재 지원 기업 ${companies.length}개를 표시합니다.`}
+            </p>
+
+            {results.length ? (
+              <section className="company-profile-list-grid" aria-label={hasQuery ? `검색 결과 ${results.length}개` : `지원 기업 ${companies.length}개`}>
+                {results.map((record) => {
+                  const path = companySearchRecordPath(record);
+                  const security = record.profile.stockCode ?? record.company.ticker;
+                  return (
+                    <article className="company-profile-list-card" key={record.profile.id}>
+                      <div className="company-profile-list-identity">
+                        <div>
+                          <h2>{record.company.name}</h2>
+                          <p>{record.profile.englishName}</p>
+                        </div>
+                      </div>
+                      <p className="company-profile-list-security">{security} <span aria-hidden="true">·</span> {record.profile.exchange}</p>
+                      <p className="company-profile-list-industry">{record.profile.industry}</p>
+                      <p className="company-profile-list-description">{record.profile.searchDescription}</p>
+                      <a className="company-profile-list-cta" href={path} aria-label={`${record.company.name} 기업 분석 보기`} onClick={internalLink(path, onNavigate)}>
+                        기업 분석 보기 <ArrowRight size={15} aria-hidden="true" />
+                      </a>
+                    </article>
+                  );
+                })}
+              </section>
+            ) : (
+              <section className="company-search-empty" aria-labelledby="company-search-empty-title">
+                <h2 id="company-search-empty-title">검색 결과가 없습니다.</h2>
+                <p>현재 지원하는 기업명, 티커 또는 종목코드로 다시 검색해 주세요.</p>
+                <button type="button" onClick={() => updateQuery('')}>전체 기업 보기</button>
+              </section>
+            )}
+          </>
+        ) : (
+          <section className="company-search-empty" aria-labelledby="company-search-registry-empty-title">
+            <h2 id="company-search-registry-empty-title">현재 표시할 수 있는 기업이 없습니다.</h2>
+          </section>
+        )}
       </main>
     </div>
   );
@@ -95,7 +224,7 @@ export function CompanyProfileNotFoundPage({ navigation, onNavigate }: SharedPro
         <h1>해당 기업을 찾을 수 없습니다.</h1>
         <p>기업 목록에서 다시 선택해 주세요.</p>
         <div>
-          <a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 목록으로 이동</a>
+          <a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 분석으로 이동</a>
           <a href="/ko/demand-supply" onClick={internalLink('/ko/demand-supply', onNavigate)}>수요와 공급 보기</a>
         </div>
       </main>
@@ -118,7 +247,7 @@ export function CompanyResearchProfilePage({
       {navigation}
       <main className="company-profile-detail-main">
         <nav className="company-profile-breadcrumb" aria-label="현재 위치">
-          <a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 한눈에 보기</a><span aria-hidden="true">/</span><strong>{company.name}</strong>
+          <a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 분석</a><span aria-hidden="true">/</span><strong>{company.name}</strong>
         </nav>
 
         <section className="company-profile-identity-hero" aria-labelledby="company-profile-title">
