@@ -84,7 +84,7 @@ import {
   homeInsightReferences,
   homeMacroReferences,
   homeMarketAssetIds,
-  homeNavigationGroups,
+  primaryNavigationItems,
   homeOfficialReportReferences,
 } from '../src/content/home/index.js';
 import { relationDefinitions } from '../src/content/relations/index.js';
@@ -243,7 +243,7 @@ const macroValidation = {
 };
 const homeValidation = {
   featureCount: 0,
-  navigationGroupCount: 0,
+  navigationItemCount: 0,
   insightCount: 0,
   macroCardCount: 0,
   bottleneckCardCount: 0,
@@ -960,7 +960,7 @@ function validateHomeExperience() {
   const fakeScoreCopy = /(거시|경기|유동성|위험).{0,8}\d+\s*점/;
 
   homeValidation.featureCount = homeFeatureLabels.length;
-  homeValidation.navigationGroupCount = homeNavigationGroups.length;
+  homeValidation.navigationItemCount = primaryNavigationItems.length;
   homeValidation.insightCount = homeInsightReferences.length;
   homeValidation.macroCardCount = homeMacroReferences.length;
   homeValidation.bottleneckCardCount = homeContentLimits.bottlenecks;
@@ -978,14 +978,15 @@ function validateHomeExperience() {
     if (!allowedRoutes.has(feature.href)) addError(`invalid home feature route: ${feature.id} / ${feature.href}`);
   });
 
-  if (homeNavigationGroups.length !== 4) addError(`home navigation group count must be 4: ${homeNavigationGroups.length}`);
-  if (homeNavigationGroups.map((group) => group.label).join('|') !== '오늘|산업|기업|자료') {
-    addError(`home navigation labels must be 오늘|산업|기업|자료: ${homeNavigationGroups.map((group) => group.label).join('|')}`);
+  if (primaryNavigationItems.length !== 2) addError(`primary navigation item count must be 2: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.map((item) => item.label).join('|') !== '기업 분석|거시경제') {
+    addError(`primary navigation labels must be 기업 분석|거시경제: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
   }
-  duplicateValues(homeNavigationGroups.map((group) => group.id)).forEach((id) => addError(`duplicate home navigation group id: ${id}`));
-  const navigationItems = homeNavigationGroups.flatMap((group) => group.items);
-  duplicateValues(navigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate home navigation item id: ${id}`));
-  navigationItems.forEach((item) => {
+  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/companies|/ko/macro-dashboard') {
+    addError(`primary navigation routes mismatch: ${primaryNavigationItems.map((item) => item.href).join('|')}`);
+  }
+  duplicateValues(primaryNavigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate primary navigation item id: ${id}`));
+  primaryNavigationItems.forEach((item) => {
     if (!allowedRoutes.has(item.href)) addError(`invalid home navigation route: ${item.id} / ${item.href}`);
   });
 
@@ -1098,7 +1099,7 @@ function validateHomeExperience() {
   }
   const homeCopy = JSON.stringify({
     homeFeatureLabels,
-    homeNavigationGroups,
+    primaryNavigationItems,
     homeInsightReferences,
     homeFlowEntries,
     disclosureEventDefinitions,
@@ -1119,13 +1120,23 @@ function validateHomeExperience() {
   const macroComponentSource = readFileSync(join(process.cwd(), 'src/components/macro/MacroDashboard.tsx'), 'utf8');
   const termHelpSource = readFileSync(join(process.cwd(), 'src/components/common/TermHelp.tsx'), 'utf8');
   const stylesSource = readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
-  if (!/open=\{marketDetailOpen\}/.test(appSource) || !/onOpenDetail=\{openMarketDetail\}/.test(appSource)) {
-    addError('home market detail CTA must open the existing details content directly');
-  }
-  if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) {
-    addError('home macro request must be deferred until its section approaches the viewport');
-  }
-  if (!/navigateWithinApp\(href\)/.test(appSource)) addError('grouped navigation must preserve SPA transitions for internal detail routes');
+  const simplifiedHomeStart = appSource.indexOf('function SimplifiedHome');
+  const simplifiedHomeEnd = appSource.indexOf('function LandingPage', simplifiedHomeStart);
+  const simplifiedHomeSource = simplifiedHomeStart >= 0 && simplifiedHomeEnd > simplifiedHomeStart
+    ? appSource.slice(simplifiedHomeStart, simplifiedHomeEnd)
+    : '';
+  if (!simplifiedHomeSource) addError('SimplifiedHome component missing');
+  if ((simplifiedHomeSource.match(/<h1\b/g) ?? []).length !== 1) addError('SimplifiedHome must render exactly one h1');
+  if (!/기업은 재무로,/.test(simplifiedHomeSource) || !/시장은 거시로 봅니다\./.test(simplifiedHomeSource)) addError('SimplifiedHome h1 copy mismatch');
+  if (!/전문 용어는 그대로, 의미는 쉽게\./.test(simplifiedHomeSource)) addError('SimplifiedHome subtitle copy mismatch');
+  if (!/homeEntries\.map\(\(entry\) => <HomeEntryCard/.test(simplifiedHomeSource)) addError('SimplifiedHome must render the two configured entry cards');
+  if (/<input\b|검색\s*(입력|창)|시장 변곡점|중요한 사건이 없습니다|현재 시장 변곡점이 없습니다/.test(simplifiedHomeSource)) addError('SimplifiedHome contains a fake search or market turning-point placeholder');
+  if (/(고객|투자 고객|초보자|경제 초보자|12살|누구나 쉽게|고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(simplifiedHomeSource)) addError('SimplifiedHome contains forbidden positioning copy');
+  if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
+  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute\) return;/.test(appSource)) addError('home must not load market prices');
+  if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
+  if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
+  if (!/\.simplified-home-card > a:focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
   (['normal', 'watch', 'tight', 'critical'] as const).forEach((status) => {
     if (!stylesSource.includes(`article.status-${status}`)) addError(`missing home bottleneck status color rule: ${status}`);
   });
@@ -1293,7 +1304,7 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if (!appSource.includes('if (isDemandSupplyRoute || isCompanyEventsRoute) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('demand supply and company events routes must skip unrelated global API preloads');
+  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, and company events routes must skip unrelated global API preloads');
 }
 
 function validateCompanyEventContent() {
@@ -1420,10 +1431,9 @@ function validateCompanyEventContent() {
   if (/fetch\s*\(|\/api\//.test(componentSource)) addError('company event page must make zero page-specific API requests');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/window\.addEventListener\('popstate', closeAfterLocationChange\)/.test(appSource)) addError('navigation must close after pathname or history changes');
-  if (!/closeNavigation\(\);\s*const handled = activate/.test(appSource)) addError('navigation internal route click must close before activation');
+  if (!/closeNavigation\(\);\s*navigateWithinApp\(item\.href\)/.test(appSource)) addError('navigation internal route click must close before activation');
   if (/story-dark-shell demand-supply-shell/.test(appSource)) addError('demand-supply page must not retain the dark shell that resembled a backdrop');
-  if ((appSource.match(/className="beginner-home-section home-beginner-disclosures"/g) ?? []).length !== 1) addError('home reviewed events must reuse the existing company section');
-  if (!homeNavigationGroups.find((group) => group.id === 'company')?.items.some((item) => item.activeKey === 'company-events')) addError('company events navigation item missing from company group');
+  if (primaryNavigationItems.some((item) => item.href === '/ko/company-events')) addError('company events must not remain in primary navigation');
 }
 
 function validateCtaPolicy() {
@@ -2508,7 +2518,7 @@ function validateIndustryFlowsAndMarketMapRetirement() {
     if (!resolveLegacyMarketMapRoute(path)) addError(`legacy market-map route unresolved: ${path}`);
   });
   if (resolveLegacyMarketMapRoute('/ko/market-map?view=companies') !== null) addError('legacy resolver must receive pathname only');
-  marketMapRetirementValidation.publicNavigationLinkCount = homeNavigationGroups.flatMap((group) => group.items).filter((item) => item.href.includes('market-map')).length;
+  marketMapRetirementValidation.publicNavigationLinkCount = primaryNavigationItems.filter((item) => item.href.includes('market-map')).length;
   if (marketMapRetirementValidation.publicNavigationLinkCount) addError('public market-map navigation link remains');
   marketMapRetirementValidation.publicCtaCount = (publicSources.match(/시장지도/g) ?? []).length + (publicSources.match(/href=[^\n>]*market-map/g) ?? []).length;
   if (marketMapRetirementValidation.publicCtaCount) addError('public market-map copy or CTA remains');
@@ -2535,9 +2545,8 @@ function validateCompanyProfiles() {
   companyProfileValidation.invalidCount = profileErrors.length;
   profileErrors.forEach((message) => addError(`company profile: ${message}`));
   if (!existsSync(join(process.cwd(), 'docs', 'company-profile-inventory.md'))) addError('company profile pre-implementation inventory missing');
-  if (homeNavigationGroups.length !== 4) addError(`company profile navigation must keep 4 top groups: ${homeNavigationGroups.length}`);
-  const companyNavigationItems = homeNavigationGroups.find((group) => group.id === 'company')?.items ?? [];
-  if (companyNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
+  if (primaryNavigationItems.length !== 2) addError(`primary navigation must keep exactly 2 entries: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
   if (/\bfetch\s*\(|\/api\//.test(componentSource)) addError('company profile component must not issue page-specific requests');
   const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
@@ -2612,7 +2621,7 @@ console.log(`✓ 산업 흐름 검증 (flow ${industryFlowValidation.flowCount}�
 console.log(`✓ 기업 profile reference 검증 (관계 ${companyProfileRelationValidation.relationCount}개, 연결 profile ${companyProfileRelationValidation.profileWithRelationsCount}개, 잘못된 ref ${companyProfileRelationValidation.invalidRefCount}개)`);
 console.log(`✓ 시장지도 폐기 검증 (legacy route ${marketMapRetirementValidation.legacyRouteCount}개, navigation ${marketMapRetirementValidation.publicNavigationLinkCount}개, CTA ${marketMapRetirementValidation.publicCtaCount}개, relation consumer ${marketMapRetirementValidation.runtimeRelationConsumerCount}개, ReactFlow import ${marketMapRetirementValidation.reactFlowImportCount}개)`);
 console.log(`✓ 기업 한눈에 보기 검증 (profile ${companyProfileValidation.profileCount}개, 잘못된 ref·규칙 ${companyProfileValidation.invalidCount}개)`);
-console.log(`✓ 초보자용 홈 검증 (쉬운 기능명 ${homeValidation.featureCount}개, navigation ${homeValidation.navigationGroupCount}그룹, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
+console.log(`✓ 홈 진입 검증 (보존 기능 registry ${homeValidation.featureCount}개, primary navigation ${homeValidation.navigationItemCount}개, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');
 console.log(`✓ 회사명 중심 identity 검증 (Pick ${identityValidation.pickIdentityCount}개, 회사 ${identityValidation.companyRegistryIdentityCount}개, 앵커 ${identityValidation.anchorIdentityCount}개, 지도 ${identityValidation.mapIdentityCount}개, 공시 ${identityValidation.disclosureIdentityCount}개, 시장 카드 ${identityValidation.marketMoverIdentityCount}개)`);
