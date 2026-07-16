@@ -20,6 +20,7 @@
     "scripts/**/*.d.ts",
     "src/data.ts",
     "src/domain/valuation/**/*.ts",
+    "src/content/research-reports/**/*.ts",
     "src/content/valuation/**/*.ts",
     "src/services/**/*.ts"
   ]

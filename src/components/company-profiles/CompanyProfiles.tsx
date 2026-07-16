@@ -245,6 +245,7 @@ export function CompanyResearchProfilePage({
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
+  const hasResearchReport = profile.slug === 'nvidia' || profile.slug === 'meta';
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -262,6 +263,7 @@ export function CompanyResearchProfilePage({
             <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {profile.industry}</p>
             <p className="company-dashboard-description">{dashboard.summary[0]}</p>
             <p className="company-dashboard-asof">데이터 기준일 <time dateTime={dashboard.asOfDate ?? undefined}>{dashboard.asOfDate ? formatDate(dashboard.asOfDate) : '확인 필요'}</time></p>
+            {hasResearchReport ? <a className="company-dashboard-report-cta" href={`/ko/companies/${profile.slug}/report`} onClick={internalLink(`/ko/companies/${profile.slug}/report`, onNavigate)}>리서치 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
           </div>
         </header>
 
