@@ -1,0 +1,599 @@
+{
+  "generatedAt": "2026-07-16T16:32:50.558Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "browser": "Playwright Chromium 140",
+  "viewportCount": 7,
+  "reportCount": 2,
+  "checks": 14,
+  "failures": [],
+  "results": [
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 465,
+          "scrollWidth": 465,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 465,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 465,
+          "scrollWidth": 465,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 465,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 393,
+          "scrollWidth": 456,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 393,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 624,
+          "scrollWidth": 624,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 624,
+          "scrollWidth": 624,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 302,
+          "scrollWidth": 456,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 302,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 272,
+          "scrollWidth": 456,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 272,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "nvidia",
+      "viewport": {
+        "width": 320,
+        "height": 700
+      },
+      "title": "NVIDIA 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 232,
+          "scrollWidth": 456,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 232,
+          "scrollWidth": 468,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 11,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "nvidia-AXKRyhe6.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 465,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 465,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 465,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 465,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 393,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 393,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 624,
+          "scrollWidth": 624,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 624,
+          "scrollWidth": 624,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 302,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 302,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 272,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 272,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    },
+    {
+      "company": "meta",
+      "viewport": {
+        "width": 320,
+        "height": 700
+      },
+      "title": "Meta 리서치 리포트 | 주가해부실",
+      "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
+      "h1Count": 1,
+      "sectionCount": 8,
+      "headingJumps": [],
+      "chartCount": 3,
+      "tablesValid": true,
+      "documentOverflow": 0,
+      "sensitivityRegions": [
+        {
+          "clientWidth": 232,
+          "scrollWidth": 469,
+          "keyboardFocusable": true
+        },
+        {
+          "clientWidth": 232,
+          "scrollWidth": 500,
+          "keyboardFocusable": true
+        }
+      ],
+      "smallTouchTargets": [],
+      "forbiddenTerms": [],
+      "sourceCount": 25,
+      "evidenceCount": 10,
+      "loadedScripts": [
+        "index-PEw1JYK1.js"
+      ],
+      "loadedJsResources": [
+        "index-PEw1JYK1.js",
+        "ResearchReportRoute-BrVWbrCk.js",
+        "meta-sPHTOEin.js"
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "externalRequests": []
+    }
+  ]
+}

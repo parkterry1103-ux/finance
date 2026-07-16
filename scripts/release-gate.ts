@@ -32,6 +32,7 @@ type BundleResult = {
 
 type ManifestEntry = {
   file?: string;
+  name?: string;
   css?: string[];
   imports?: string[];
   dynamicImports?: string[];
@@ -215,10 +216,15 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'src/domain/valuation/index.ts',
     'src/domain/valuation/validation.ts',
     'scripts/valuation-unit.ts',
+    'scripts/research-report-unit.ts',
+    'src/routes/ResearchReportRoute.tsx',
     'docs/site-restructure-phase-4a.md',
     'docs/valuation-readiness-inventory.md',
     'docs/valuation-methodology.md',
     'docs/valuation-data-normalization.md',
+    'docs/site-restructure-phase-4b.md',
+    'docs/research-report-methodology.md',
+    'docs/research-report-content-inventory.md',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
     'artifacts/phase-4a-valuation/meta/valuation-result.json',
@@ -268,6 +274,17 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
     assert(routeManifest?.isDynamicEntry, `${route.source} is not a dynamic manifest entry`);
     assert(entryDefinition.dynamicImports?.includes(route.source), `${route.source} is not dynamically imported by the App entry`);
   });
+  const reportRouteEntry = Object.entries(manifest).find(([, definition]) => definition.name === 'ResearchReportRoute' && definition.isDynamicEntry);
+  assert(Boolean(reportRouteEntry), 'research report route is not a dynamic manifest entry');
+  const [reportRouteKey, reportRoute] = reportRouteEntry!;
+  const nvidiaReport = manifest['src/content/research-reports/nvidia.ts'];
+  const metaReport = manifest['src/content/research-reports/meta.ts'];
+  const companiesRoute = manifest['src/routes/CompaniesRoute.tsx'];
+  assert(nvidiaReport?.isDynamicEntry && metaReport?.isDynamicEntry, 'company report content is not split into company-specific dynamic entries');
+  assert(entryDefinition.dynamicImports?.includes(reportRouteKey), 'research report route is not dynamically imported by the App entry');
+  assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically imported by report route');
+  assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/meta.ts'), 'Meta report is not dynamically imported by report route');
+  assert(!companiesRoute?.dynamicImports?.some((source) => source.includes('research-reports')), 'company dashboard preloads report content');
 
   const appSource = readFileSync(join(root, 'src', 'App.tsx'), 'utf8');
   activeConfig.lazyRoutes.forEach((route) => {
@@ -277,6 +294,7 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   });
   assert(/function LandingPage\(/.test(appSource), 'Home is not eager');
   assert(/function PrimaryNavigation\(/.test(appSource), 'Header/Navigation is not eager');
+  assert(appSource.includes("lazy(() => import('./routes/ResearchReportRoute'))"), 'ResearchReportRoute source lazy import missing');
 
   const assetDirectory = join(root, 'dist', 'assets');
   const assetFiles = readdirSync(assetDirectory, { withFileTypes: true }).filter((entry) => !entry.isDirectory());
@@ -329,6 +347,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Demand-supply unit', 'demand-supply-unit.js'],
   ['Market relations unit', 'market-relations-unit.js'],
   ['Valuation engine unit', 'valuation-unit.js'],
+  ['Research report unit', 'research-report-unit.js'],
 ];
 compiledChecks.forEach(([name, file]) => runCommand(name, nodeCommand, [join('.sync-build', 'scripts', file)]));
 runCommand('Application TypeScript', './node_modules/.bin/tsc', ['--noEmit']);

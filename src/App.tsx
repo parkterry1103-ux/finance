@@ -163,6 +163,7 @@ const DemandSupplyRoute = lazy(() => import('./routes/DemandSupplyRoute'));
 const DisclosuresRoute = lazy(() => import('./routes/DisclosuresRoute'));
 const MacroDashboardRoute = lazy(() => import('./routes/MacroDashboardRoute'));
 const MarketRelationsRoute = lazy(() => import('./routes/MarketRelationsRoute'));
+const ResearchReportRoute = lazy(() => import('./routes/ResearchReportRoute'));
 
 type NewsItem = {
   title: string;
@@ -6980,6 +6981,7 @@ function App() {
   const routeDemandSupplyMatch = routePath.match(/^\/ko\/demand-supply\/?$/) ?? routePath.match(/^\/demand-supply\/?$/);
   const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
   const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
+  const routeResearchReportMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/report\/?$/);
   const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -6993,6 +6995,9 @@ function App() {
   const routeCompanyProfileSlug = routeCompanyProfileMatch?.[1] ? decodeURIComponent(routeCompanyProfileMatch[1]) : undefined;
   const routeCompanyProfileEntry = routeCompanyProfileSlug ? companyProfileByIdOrSlug(routeCompanyProfileSlug) : undefined;
   const routeCompanyIdentity = routeCompanyProfileEntry ? canonicalCompanyProfileIdentity(routeCompanyProfileEntry.companyId) : undefined;
+  const routeResearchReportSlug = routeResearchReportMatch?.[1] ? decodeURIComponent(routeResearchReportMatch[1]) : undefined;
+  const routeResearchReportEntry = routeResearchReportSlug ? companyProfileByIdOrSlug(routeResearchReportSlug) : undefined;
+  const routeResearchReportIdentity = routeResearchReportEntry ? canonicalCompanyProfileIdentity(routeResearchReportEntry.companyId) : undefined;
   const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
   const routeIndustryReport = routeReportSlug ? industryReports.find((report) => report.slug === routeReportSlug || report.id === routeReportSlug) : undefined;
   const routeBottleneckSlug = routeBottleneckDetailMatch?.[1] ? decodeURIComponent(routeBottleneckDetailMatch[1]) : undefined;
@@ -7022,6 +7027,10 @@ function App() {
   useEffect(() => {
     const title = isHomeRoute
       ? '주가해부실 | 기업 분석과 거시경제'
+      : routeResearchReportMatch
+        ? routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
+          ? `${routeResearchReportIdentity.name} 리서치 리포트 | 주가해부실`
+          : '리서치 리포트를 찾을 수 없습니다 | 주가해부실'
       : routeCompanyProfileMatch
         ? routeCompanyIdentity
           ? `${routeCompanyIdentity.name} 기업 분석 | 주가해부실`
@@ -7033,6 +7042,8 @@ function App() {
             : '주가해부실';
     const metaDescription = isHomeRoute
       ? '기업의 재무 흐름과 금리·환율·원자재의 거시경제 흐름을 연결해 설명합니다.'
+      : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
+        ? `${routeResearchReportIdentity.name}의 사업 구조, 실적, 현금흐름, 가치평가 가정과 확인 항목을 근거와 함께 정리한 리서치 리포트입니다.`
       : routeCompanyIdentity
         ? `${routeCompanyIdentity.name}의 사업 구조, 핵심 재무지표, 현금흐름과 주요 거시 변수를 살펴봅니다.`
         : routeCompaniesMatch
@@ -7045,7 +7056,16 @@ function App() {
     if (description) description.content = metaDescription;
     if (openGraphTitle) openGraphTitle.content = title;
     if (openGraphDescription) openGraphDescription.content = metaDescription;
-  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.append(canonical);
+    }
+    canonical.href = routeResearchReportMatch && routeResearchReportSlug
+      ? `${window.location.origin}/ko/companies/${encodeURIComponent(routeResearchReportSlug)}/report`
+      : `${window.location.origin}${routePath}`;
+  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch)]);
 
   useEffect(() => {
     if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
@@ -7161,6 +7181,17 @@ function App() {
       onOpenReports={openReports}
     />
   );
+
+  if (routeResearchReportMatch) {
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell research-report-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <ResearchReportRoute slug={routeResearchReportSlug ?? ''} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
 
   if (routeCompanyProfileMatch) {
     return (

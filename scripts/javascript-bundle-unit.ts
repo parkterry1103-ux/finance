@@ -17,9 +17,9 @@ const viteSource = readFileSync(join(root, 'vite.config.ts'), 'utf8');
 const releaseConfig = loadReleaseGateConfig();
 
 const routeLazyImports = [...appSource.matchAll(/lazy\(\(\) => import\('(\.\/routes\/[A-Za-z]+Route)'\)\)/g)].map((match) => match[1]);
-const expectedRouteImports = releaseConfig.lazyRoutes.map((route) => `./routes/${route.name}`);
+const expectedRouteImports = [...releaseConfig.lazyRoutes.map((route) => `./routes/${route.name}`), './routes/ResearchReportRoute'];
 
-check(JSON.stringify(routeLazyImports.sort()) === JSON.stringify(expectedRouteImports.sort()), 'exactly six selected route groups use React.lazy');
+check(JSON.stringify(routeLazyImports.sort()) === JSON.stringify(expectedRouteImports.sort()), 'exactly seven selected route groups use React.lazy');
 check(new Set(routeLazyImports).size === routeLazyImports.length, 'route lazy loader duplicates are zero');
 check(/function LandingPage\(/.test(appSource) && /<LandingPage/.test(appSource), 'home route remains eager');
 check(/function PrimaryNavigation\(/.test(appSource), 'header and primary navigation remain eager');
