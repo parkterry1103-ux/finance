@@ -13,6 +13,7 @@ import { industryFlowsForCompany } from '../industry-flows/selectors.js';
 import { industryReports } from '../reports/entries.js';
 import { sourceRegistry } from '../sources/registry.js';
 import { companyProfileCanonicalAliases, companyProfiles } from './entries.js';
+import { buildCompanyDashboardModel } from './dashboard.js';
 import {
   canonicalCompanyProfileIdentity,
   companyProfileByIdOrSlug,
@@ -138,7 +139,7 @@ export function buildCompanyResearchProfile(
     .slice(0, 3);
   const dataCompany = dataCompanyForProfile(profile);
   const price = marketPrices.length ? getPriceForTicker(company.ticker, profile.companyId, marketPrices) ?? undefined : undefined;
-  return {
+  const baseViewModel: Omit<CompanyResearchProfileViewModel, 'dashboard'> = {
     company,
     profile,
     products: dataCompany?.mainProducts?.slice(0, 3) ?? [],
@@ -152,6 +153,10 @@ export function buildCompanyResearchProfile(
     picks,
     verifiedMetrics: buildVerifiedMetrics(allEvents, industryReports.filter((report) => reportIds.has(report.id))),
     sources,
+  };
+  return {
+    ...baseViewModel,
+    dashboard: buildCompanyDashboardModel(baseViewModel),
   };
 }
 

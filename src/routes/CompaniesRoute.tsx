@@ -4,7 +4,6 @@ import {
   companies,
   smartMoneyMoves,
   type Company,
-  type MarketPrice,
   type SmartMoneyMove,
 } from '../data.js';
 import {
@@ -20,7 +19,6 @@ import { fetchOwnershipTrades } from '../services/trades.js';
 
 type CompanyProfilesRouteProps = {
   view?: 'profiles';
-  marketPrices: MarketPrice[];
   navigation: ReactNode;
   onNavigate: (path: string) => void;
   searchQuery?: string;
@@ -41,9 +39,9 @@ type FinancialLearningRouteProps = {
 
 type CompaniesRouteProps = CompanyProfilesRouteProps | OwnershipRouteProps | FinancialLearningRouteProps;
 
-function CompanyProfilesRoute({ marketPrices, navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {
+function CompanyProfilesRoute({ navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {
   if (slug) {
-    const profile = buildCompanyResearchProfile(slug, marketPrices);
+    const profile = buildCompanyResearchProfile(slug);
     return profile
       ? <CompanyResearchProfilePage viewModel={profile} navigation={navigation} onNavigate={onNavigate} />
       : <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;

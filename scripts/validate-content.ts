@@ -99,6 +99,7 @@ import { industryFlows, type IndustryFlowStepType } from '../src/content/industr
 import { legacyMarketMapPaths, resolveLegacyMarketMapRoute } from '../src/lib/legacyMarketMapRoutes.js';
 import {
   companyProfiles,
+  validateCompanyDashboardRegistry,
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
 import { loadReleaseGateConfig } from './release-gate-config.js';
@@ -1133,7 +1134,7 @@ function validateHomeExperience() {
   if (/<input\b|검색\s*(입력|창)|시장 변곡점|중요한 사건이 없습니다|현재 시장 변곡점이 없습니다/.test(simplifiedHomeSource)) addError('SimplifiedHome contains a fake search or market turning-point placeholder');
   if (/(고객|투자 고객|초보자|경제 초보자|12살|누구나 쉽게|고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(simplifiedHomeSource)) addError('SimplifiedHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
-  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| routeCompaniesMatch\) return;/.test(appSource)) addError('home and local-search routes must not load market prices');
+  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute\) return;/.test(appSource)) addError('home and company routes must not load market prices');
   if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
   if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
   if (!/\.simplified-home-card > a:focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
@@ -1304,7 +1305,7 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || routeCompaniesMatch) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, and company search routes must skip unrelated global API preloads');
+  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, and company routes must skip unrelated global API preloads');
 }
 
 function validateCompanyEventContent() {
@@ -2544,6 +2545,7 @@ function validateCompanyProfiles() {
   const profileErrors = validateCompanyProfileRegistry();
   companyProfileValidation.invalidCount = profileErrors.length;
   profileErrors.forEach((message) => addError(`company profile: ${message}`));
+  validateCompanyDashboardRegistry().forEach((message) => addError(`company dashboard: ${message}`));
   if (!existsSync(join(process.cwd(), 'docs', 'company-profile-inventory.md'))) addError('company profile pre-implementation inventory missing');
   if (primaryNavigationItems.length !== 2) addError(`primary navigation must keep exactly 2 entries: ${primaryNavigationItems.length}`);
   if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
@@ -2567,7 +2569,9 @@ function validateCompanyProfiles() {
   if (!/routeCompanyProfileMatch/.test(appSource) || !/lazy\(\(\) => import\('\.\/routes\/CompaniesRoute'\)\)/.test(appSource) || !/CompanyProfileNotFoundPage/.test(routeSource)) {
     addError('company profile canonical and invalid routes missing');
   }
-  if (!/isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| routeCompaniesMatch/.test(appSource)) addError('company search page must skip market price request');
+  if (!/isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute/.test(appSource)) addError('company routes must skip market price request');
+  if (!/<details className="company-dashboard-details">/.test(componentSource)) addError('company dashboard detail disclosure missing');
+  if (!/role="img"/.test(componentSource) || !/<div className="sr-only"><table>/.test(componentSource)) addError('company dashboard chart accessibility missing');
   const vercelConfig = JSON.parse(readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')) as { rewrites?: Array<{ source?: string; destination?: string }> };
   if (!vercelConfig.rewrites?.some((rewrite) => rewrite.source === '/companies/:path*' && rewrite.destination === '/')) addError('company profile alias SPA rewrite missing');
 }
