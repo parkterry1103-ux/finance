@@ -11,6 +11,7 @@ import benchmarkSnapshot from '../../../artifacts/phase-4a-valuation/benchmark-s
 import type {
   ResearchChart,
   ResearchEvidence,
+  ResearchFinancialMetric,
   ResearchReportArtifactSet,
   ResearchReportCompanyConfig,
   ResearchReportModel,
@@ -30,9 +31,88 @@ function sourceForMetric(period: NormalizedFinancialPeriod, metric: string) {
     ebit: ['OperatingIncomeLoss:'],
     operatingCashFlow: ['NetCashProvidedByUsedInOperatingActivities:'],
     capitalExpenditure: ['PaymentsToAcquireProductiveAssets:', 'PaymentsToAcquirePropertyPlantAndEquipment:'],
+    stockBasedCompensation: ['ShareBasedCompensation:'],
+    dilutedShares: ['WeightedAverageNumberOfDilutedSharesOutstanding:'],
   };
   return period.sourceIds.find((sourceId) => (tokens[metric] ?? []).some((token) => sourceId.includes(token)))
     ?? period.sourceIds[0];
+}
+
+export function calculateModelGapRate(marketPrice: number, modelValue: number) {
+  if (!Number.isFinite(marketPrice) || !Number.isFinite(modelValue) || modelValue <= 0) throw new Error('Market and model values must be finite positive numbers.');
+  return marketPrice / modelValue - 1;
+}
+
+export function describeModelGap(rate: number) {
+  const percentage = Math.abs(rate) * 100;
+  if (Math.abs(rate) < 0.005) return '시장가격과 기준모형이 유사한 수준입니다.';
+  return rate > 0
+    ? `시장가격은 기준모형보다 약 ${percentage.toFixed(1)}% 높은 수준으로, 모형 가치 대비 프리미엄입니다.`
+    : `시장가격은 기준모형보다 약 ${percentage.toFixed(1)}% 낮은 수준으로, 모형 가치 대비 할인된 수준입니다.`;
+}
+
+function artifactSourceIds(
+  artifacts: ResearchReportArtifactSet,
+  concepts: string[],
+  periodEnd?: string,
+) {
+  const conceptMatches = artifacts.sources.filter((source) => concepts.some((concept) => source.taxonomyConcept.endsWith(concept)));
+  const datedMatches = periodEnd ? conceptMatches.filter((source) => source.periodEnd === periodEnd) : conceptMatches;
+  const latestPeriod = conceptMatches.reduce((latest, source) => source.periodEnd > latest ? source.periodEnd : latest, '');
+  const matches = datedMatches.length ? datedMatches : conceptMatches.filter((source) => source.periodEnd === latestPeriod);
+  return [...new Set(matches.map((source) => source.sourceId))];
+}
+
+function financialMetrics(
+  artifacts: ResearchReportArtifactSet,
+  baseInput: ValuationModelInput,
+): ResearchFinancialMetric[] {
+  const orderedHistoricals = [...baseInput.historicals].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+  const latest = orderedHistoricals[orderedHistoricals.length - 1];
+  const metrics = latest.metrics;
+  const capital = baseInput.capitalStructure;
+  const annualSources = (metric: string) => [sourceForMetric(latest, metric)].filter(Boolean) as string[];
+  const capitalSources = (...concepts: string[]) => artifactSourceIds(
+    artifacts,
+    concepts,
+    artifacts.assumptions.companySpecific.capitalStructureAsOf,
+  );
+  const cashAndInvestments = capital.cash + (capital.nonOperatingAssets ?? 0);
+  const debtAndLeases = capital.debt + (capital.leaseLiabilities ?? 0);
+  return [
+    {
+      label: '현금·비영업 금융자산', value: cashAndInvestments, unit: 'USD million',
+      meaning: '매출 둔화가 와도 핵심 연구개발과 투자를 이어 갈 수 있는 완충 자원입니다.',
+      sourceIds: capitalSources('CashAndCashEquivalentsAtCarryingValue', 'MarketableSecuritiesCurrent'), metricIds: ['cash', 'nonOperatingAssets'],
+    },
+    {
+      label: '이자부 부채·리스', value: debtAndLeases, unit: 'USD million',
+      meaning: '현금흐름이 먼저 부담해야 하는 계약상 자금 의무를 합친 값입니다.',
+      sourceIds: capitalSources('LongTermDebt', 'LongTermDebtCurrent', 'LongTermDebtNoncurrent', 'OperatingLeaseLiability'), metricIds: ['debt', 'leaseLiabilities'],
+    },
+    {
+      label: cashAndInvestments >= debtAndLeases ? '순현금성 여력' : '순부채성 부담',
+      value: Math.abs(cashAndInvestments - debtAndLeases), unit: 'USD million',
+      meaning: '현금성 자원에서 부채와 리스를 뺀 단순 완충 폭이며, 만기 구조와 자금 용도는 별도로 확인해야 합니다.',
+      sourceIds: capitalSources('CashAndCashEquivalentsAtCarryingValue', 'MarketableSecuritiesCurrent', 'LongTermDebt', 'LongTermDebtNoncurrent', 'OperatingLeaseLiability'), metricIds: ['netCash'],
+    },
+    {
+      label: '연간 영업현금흐름', value: metrics.operatingCashFlow ?? 0, unit: 'USD million',
+      meaning: '본업이 실제 현금으로 전환되는 규모입니다.', sourceIds: annualSources('operatingCashFlow'), metricIds: ['operatingCashFlow'],
+    },
+    {
+      label: '연간 설비투자', value: metrics.capitalExpenditure ?? 0, unit: 'USD million',
+      meaning: '현재 사업을 유지하고 다음 성장을 준비하는 데 사용한 유형자산 투자입니다.', sourceIds: annualSources('capitalExpenditure'), metricIds: ['capitalExpenditure'],
+    },
+    {
+      label: '연간 주식보상', value: metrics.stockBasedCompensation ?? 0, unit: 'USD million',
+      meaning: '현금 유출과는 다르지만 희석과 인재 보상 비용을 함께 점검해야 하는 항목입니다.', sourceIds: annualSources('stockBasedCompensation'), metricIds: ['stockBasedCompensation'],
+    },
+    {
+      label: '희석주식 수', value: capital.dilutedShares, unit: 'million shares',
+      meaning: '기업가치를 주당 값으로 나눌 때 적용한 주식 수입니다.', sourceIds: annualSources('dilutedShares'), metricIds: ['dilutedShares'],
+    },
+  ];
 }
 
 function chartSeries(input: ValuationModelInput): ResearchChart[] {
@@ -91,6 +171,9 @@ function artifactSources(artifacts: ResearchReportArtifactSet, chartSourceIds: s
       url: source.url,
       publishedAt: source.filedAt,
       periodEnd: source.periodEnd,
+      documentType: source.filingType,
+      accessionNumber: source.accessionOrReceiptNumber,
+      xbrlConcepts: [source.taxonomyConcept],
       note: `접수번호 ${source.accessionOrReceiptNumber}`,
     }));
 }
@@ -167,6 +250,7 @@ export function buildResearchReport(
     };
   });
   const baseResult = scenarios.find((scenario) => scenario.name === 'base')!.result;
+  const modelGapRate = calculateModelGapRate(artifacts.assumptions.price.value, baseResult.estimatedValuePerShare);
   const waccValues = [-0.01, -0.005, 0, 0.005, 0.01].map((delta) => baseResult.wacc + delta);
   const growthValues = [-0.01, -0.005, 0, 0.005, 0.01].map((delta) => baseInput.terminalAssumptions.stableGrowthRate + delta);
   const firstYear = baseInput.forecastAssumptions.years[0];
@@ -174,11 +258,13 @@ export function buildResearchReport(
   const driverMargins = [-0.04, -0.02, 0, 0.02, 0.04].map((delta) => firstYear.operatingMargin + delta);
   const charts = chartSeries(baseInput);
   const chartSourceIds = charts.flatMap((chart) => chart.series.flatMap((series) => series.points.flatMap((point) => point.sourceIds)));
+  const healthMetrics = financialMetrics(artifacts, baseInput);
+  const financialSourceIds = healthMetrics.flatMap((metric) => metric.sourceIds);
   const fadeInput = structuredClone(baseInput);
   fadeInput.terminalAssumptions.stableRoic = baseResult.wacc + 0.01;
   const fadeResult = runScenario(fadeInput);
   const sources = [
-    ...artifactSources(artifacts, chartSourceIds),
+    ...artifactSources(artifacts, [...chartSourceIds, ...financialSourceIds]),
     ...config.officialSources,
     {
       id: `${config.slug}-market-price`, title: `${config.ticker} 시장가격 스냅샷`,
@@ -191,6 +277,16 @@ export function buildResearchReport(
       publishedAt: benchmarkSnapshot.sourceDate, note: '업종 범위 점검에만 사용했습니다.',
     },
   ];
+  const benchmark = benchmarkSnapshot.benchmarks.find((item) => item.id === artifacts.assumptions.companySpecific.benchmarkId);
+  if (!benchmark) throw new Error(`Missing valuation benchmark ${artifacts.assumptions.companySpecific.benchmarkId}`);
+  const comparisons = [
+    { label: 'WACC', companyValue: baseResult.wacc, benchmarkValue: benchmark.wacc, unit: 'percent' as const },
+    { label: 'ROIC', companyValue: baseInput.terminalAssumptions.stableRoic ?? 0, benchmarkValue: benchmark.roic, unit: 'percent' as const },
+  ].map((item) => ({
+    ...item,
+    absoluteDifference: item.companyValue - item.benchmarkValue,
+    relativeDifference: item.benchmarkValue === 0 ? 0 : item.companyValue / item.benchmarkValue - 1,
+  }));
   return {
     slug: config.slug,
     companyName: config.companyName,
@@ -198,6 +294,18 @@ export function buildResearchReport(
     ticker: config.ticker,
     industry: config.industry,
     reportTitle: config.reportTitle,
+    snapshot: {
+      reportId: `${config.slug}-research-${config.snapshotVersion}`,
+      version: config.snapshotVersion,
+      publishedAt: reportDate,
+      updatedAt: reportDate,
+      newsCutoffAt: config.newsCutoffAt,
+      marketDataAsOf: artifacts.assumptions.price.asOf,
+      priceAsOf: artifacts.assumptions.price.asOf,
+      financialDataAsOf: artifacts.assumptions.companySpecific.financialsAsOf,
+      valuationAsOf: artifacts.assumptions.valuationDate,
+      benchmarkAsOf: benchmarkSnapshot.sourceDate,
+    },
     reportDate,
     financialsAsOf: artifacts.assumptions.companySpecific.financialsAsOf,
     priceAsOf: artifacts.assumptions.price.asOf,
@@ -210,6 +318,24 @@ export function buildResearchReport(
     currentPrice: artifacts.assumptions.price.value,
     conclusion: config.conclusion,
     watchStatement: config.watchStatement,
+    judgments: config.judgments,
+    materialNewsEvents: config.materialNewsEvents,
+    marketContext: config.marketContext,
+    moat: config.moat,
+    financialHealth: { ...config.financialHealth, metrics: healthMetrics },
+    cycleRole: config.cycleRole,
+    valuationMethod: config.valuationMethod,
+    modelGapRate,
+    modelGapLabel: describeModelGap(modelGapRate),
+    benchmark: {
+      name: `${benchmark.sourceName} · ${benchmark.industry} (${benchmark.region})`,
+      sampleSize: benchmark.sampleSize,
+      isDirectPeerMedian: false,
+      explanation: '직접 선정한 동종기업 중앙값이 아니라 업종 전체 집계치입니다. 회사의 누락 값을 대체하지 않고 가정의 합리성을 확인하는 보조 기준으로만 사용했습니다.',
+      comparisons,
+    },
+    newsValuationImpacts: config.newsValuationImpacts,
+    excludedNewsSummary: config.excludedNewsSummary,
     executiveSummary: config.executiveSummary,
     sections: { business: config.business, earnings: config.earnings, financial: config.financial, industry: config.industryClaims, outlook: config.outlook },
     charts,

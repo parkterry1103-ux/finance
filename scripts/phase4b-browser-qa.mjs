@@ -3,7 +3,9 @@ import { join } from 'node:path';
 
 const playwrightEntry = process.env.PHASE4B_PLAYWRIGHT_ENTRY;
 if (!playwrightEntry) throw new Error('PHASE4B_PLAYWRIGHT_ENTRY is required.');
-const { chromium } = await import(playwrightEntry);
+const { chromium, webkit } = await import(playwrightEntry);
+const browserEngine = process.env.PHASE4B_BROWSER_ENGINE ?? 'chromium';
+const browserType = browserEngine === 'webkit' ? webkit : chromium;
 
 const baseUrl = process.env.PHASE4B_BASE_URL ?? 'http://127.0.0.1:5173';
 const outputRoot = join(process.cwd(), 'artifacts', 'phase-4b-research-report');
@@ -17,13 +19,13 @@ const viewports = [
   { width: 320, height: 700 },
 ];
 const companies = ['nvidia', 'meta'];
-const forbiddenTerms = ['BUY', 'HOLD', 'SELL', '목표주가', '적정주가', '적극 매수', '추천 종목', '유망주', '급등주', '수익 보장', '확실한 상승', '저평가 확정', '고평가 확정', '무조건'];
+const forbiddenTerms = ['BUY', 'HOLD', 'SELL', '목표주가', '적정주가', '상승여력', '하락여력', '적극 매수', '추천 종목', '유망주', '급등주', '수익 보장', '확실한 상승', '저평가 확정', '고평가 확정', '인쇄·PDF 저장', 'PDF 다운로드'];
 
-for (const directory of ['desktop', 'mobile', 'print-preview', 'nvidia-pages', 'meta-pages']) {
+for (const directory of ['desktop', 'mobile']) {
   await mkdir(join(outputRoot, directory), { recursive: true });
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await browserType.launch({ headless: true });
 const results = [];
 
 for (const company of companies) {
@@ -68,7 +70,19 @@ for (const company of companies) {
         smallTouchTargets: visibleTargets.filter((target) => target.width < 44 || target.height < 44),
         forbiddenTerms: blocked.filter((term) => document.body.innerText.includes(term)),
         sourceCount: document.querySelectorAll('.research-source-list li').length,
-        evidenceCount: document.querySelectorAll('.research-evidence-ledger article').length,
+        evidenceBadgeCount: document.querySelectorAll('.evidence-fact,.evidence-calculation,.evidence-interpretation,.research-evidence-ledger').length,
+        printActionCount: [...document.querySelectorAll('button,a')].filter((element) => /인쇄|PDF 저장|PDF 다운로드/.test(element.textContent ?? '')).length,
+        judgmentCount: document.querySelectorAll('.research-judgment-grid article').length,
+        newsCount: document.querySelectorAll('.research-news-list > article').length,
+        moatCount: document.querySelectorAll('.research-moat-list article').length,
+        financialMetricCount: document.querySelectorAll('.research-metric-grid article').length,
+        scenarioCount: document.querySelectorAll('.research-scenario-grid article').length,
+        baseCellCount: document.querySelectorAll('.research-sensitivity-base').length,
+        narrowParagraphs: [...document.querySelectorAll('.research-paragraph,.research-news-body dd,.research-moat-list dd')].filter((element) => {
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return rect.width < 120 || style.writingMode !== 'horizontal-tb';
+        }).length,
         loadedScripts: [...document.scripts].map((script) => script.src).filter(Boolean).map((url) => url.split('/').pop()),
         loadedJsResources: (window.performance?.getEntriesByType('resource') ?? [])
           .map((entry) => entry.name)
@@ -77,24 +91,11 @@ for (const company of companies) {
       };
     }, forbiddenTerms);
     const directory = viewport.width >= 1024 ? 'desktop' : 'mobile';
-    await page.screenshot({ path: join(outputRoot, directory, `${company}-${viewport.width}x${viewport.height}.png`), fullPage: false });
+    await page.screenshot({ path: join(outputRoot, directory, `${company}-${browserEngine}-${viewport.width}x${viewport.height}.png`), fullPage: false });
     results.push({ company, viewport, ...metrics, consoleErrors, pageErrors, externalRequests: [...new Set(externalRequests)] });
     await context.close();
   }
 
-  const printContext = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
-  const printPage = await printContext.newPage();
-  await printPage.goto(`${baseUrl}/ko/companies/${company}/report`, { waitUntil: 'networkidle' });
-  await printPage.emulateMedia({ media: 'print' });
-  await printPage.screenshot({ path: join(outputRoot, 'print-preview', `${company}-a4-first-page.png`), fullPage: false });
-  await printPage.pdf({
-    path: join(outputRoot, `${company}-report.pdf`),
-    format: 'A4',
-    printBackground: true,
-    preferCSSPageSize: true,
-    displayHeaderFooter: false,
-  });
-  await printContext.close();
 }
 
 await browser.close();
@@ -103,7 +104,7 @@ const failures = results.flatMap((result) => {
   const prefix = `${result.company} ${result.viewport.width}x${result.viewport.height}`;
   return [
     result.h1Count === 1 ? null : `${prefix}: H1 ${result.h1Count}`,
-    result.sectionCount === 8 ? null : `${prefix}: sections ${result.sectionCount}`,
+    result.sectionCount === 14 ? null : `${prefix}: sections ${result.sectionCount}`,
     result.headingJumps.length === 0 ? null : `${prefix}: heading jump`,
     result.chartCount === 3 ? null : `${prefix}: charts ${result.chartCount}`,
     result.tablesValid ? null : `${prefix}: invalid table semantics`,
@@ -111,6 +112,15 @@ const failures = results.flatMap((result) => {
     result.sensitivityRegions.every((region) => region.keyboardFocusable) ? null : `${prefix}: sensitivity keyboard access`,
     result.smallTouchTargets.length === 0 ? null : `${prefix}: ${result.smallTouchTargets.length} small touch targets`,
     result.forbiddenTerms.length === 0 ? null : `${prefix}: forbidden ${result.forbiddenTerms.join(', ')}`,
+    result.evidenceBadgeCount === 0 ? null : `${prefix}: evidence badges ${result.evidenceBadgeCount}`,
+    result.printActionCount === 0 ? null : `${prefix}: print actions ${result.printActionCount}`,
+    result.judgmentCount === 4 ? null : `${prefix}: judgments ${result.judgmentCount}`,
+    result.newsCount > 0 && result.newsCount <= 3 ? null : `${prefix}: news ${result.newsCount}`,
+    result.moatCount >= 3 ? null : `${prefix}: moat ${result.moatCount}`,
+    result.financialMetricCount >= 6 ? null : `${prefix}: financial metrics ${result.financialMetricCount}`,
+    result.scenarioCount === 3 ? null : `${prefix}: scenarios ${result.scenarioCount}`,
+    result.baseCellCount === 2 ? null : `${prefix}: base cells ${result.baseCellCount}`,
+    result.narrowParagraphs === 0 ? null : `${prefix}: narrow paragraphs ${result.narrowParagraphs}`,
     result.consoleErrors.length === 0 ? null : `${prefix}: console errors`,
     result.pageErrors.length === 0 ? null : `${prefix}: page errors`,
     result.externalRequests.length === 0 ? null : `${prefix}: external runtime requests`,
@@ -122,15 +132,15 @@ const failures = results.flatMap((result) => {
 const summary = {
   generatedAt: new Date().toISOString(),
   baseUrl,
-  browser: 'Playwright Chromium 140',
+  browser: `Playwright ${browserEngine}`,
   viewportCount: viewports.length,
   reportCount: companies.length,
   checks: results.length,
   failures,
   results,
 };
-await writeFile(join(outputRoot, 'browser-qa.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
-console.log(`Phase 4B browser QA: ${results.length} checks, ${failures.length} failures`);
+await writeFile(join(outputRoot, browserEngine === 'chromium' ? 'browser-qa.json' : `browser-qa-${browserEngine}.json`), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+console.log(`Phase 4B ${browserEngine} QA: ${results.length} checks, ${failures.length} failures`);
 if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exitCode = 1;

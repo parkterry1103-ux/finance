@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-16T17:04:22.272Z",
+  "generatedAt": "2026-07-16T18:19:12.444Z",
   "baseUrl": "http://127.0.0.1:4173",
-  "browser": "Playwright Chromium 140",
+  "browser": "Playwright chromium",
   "viewportCount": 7,
   "reportCount": 2,
   "checks": 14,
@@ -16,7 +16,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -35,15 +35,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -58,7 +66,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -77,15 +85,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -100,7 +116,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -119,15 +135,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -142,7 +166,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -161,15 +185,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -184,7 +216,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -203,15 +235,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -226,7 +266,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -245,15 +285,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -268,7 +316,7 @@
       "title": "NVIDIA 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/nvidia/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -287,15 +335,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 11,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "nvidia-DFwQeSqz.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "nvidia-Bpx3i93V.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -310,7 +366,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -329,15 +385,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -352,7 +416,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -371,15 +435,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -394,7 +466,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -413,15 +485,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -436,7 +516,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -455,15 +535,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -478,7 +566,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -497,15 +585,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -520,7 +616,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -539,15 +635,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -562,7 +666,7 @@
       "title": "Meta 리서치 리포트 | 주가해부실",
       "canonical": "http://127.0.0.1:4173/ko/companies/meta/report",
       "h1Count": 1,
-      "sectionCount": 8,
+      "sectionCount": 14,
       "headingJumps": [],
       "chartCount": 3,
       "tablesValid": true,
@@ -581,15 +685,23 @@
       ],
       "smallTouchTargets": [],
       "forbiddenTerms": [],
-      "sourceCount": 25,
-      "evidenceCount": 10,
+      "sourceCount": 33,
+      "evidenceBadgeCount": 0,
+      "printActionCount": 0,
+      "judgmentCount": 4,
+      "newsCount": 3,
+      "moatCount": 3,
+      "financialMetricCount": 7,
+      "scenarioCount": 3,
+      "baseCellCount": 2,
+      "narrowParagraphs": 0,
       "loadedScripts": [
-        "index-a2chuE-t.js"
+        "index-D25F2OHk.js"
       ],
       "loadedJsResources": [
-        "index-a2chuE-t.js",
-        "ResearchReportRoute-CX1d5QIW.js",
-        "meta-CoQkdRVn.js"
+        "index-D25F2OHk.js",
+        "ResearchReportRoute-BiHGP07D.js",
+        "meta-CnprXFkv.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
