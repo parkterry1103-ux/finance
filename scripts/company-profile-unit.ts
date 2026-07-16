@@ -9,6 +9,7 @@ import {
   companyResearchProfileList,
   normalizeCompanySearchTerm,
   searchCompanyProfiles,
+  validateCompanyDashboardRegistry,
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
 import { readFileSync } from 'node:fs';
@@ -82,6 +83,20 @@ check(profiles.every((profile) => profile.picks.length <= 1), 'pick maximum');
 check(profiles.every((profile) => profile.reports.length <= 2), 'report maximum');
 check(profiles.every((profile) => profile.sources.length <= 3), 'source maximum');
 check(profiles.every((profile) => profile.verifiedMetrics.length <= 3), 'verified metric maximum');
+check(validateCompanyDashboardRegistry().length === 0, 'dashboard registry validation');
+check(profiles.every((profile) => profile.dashboard.metrics.length <= 6), 'dashboard KPI maximum');
+check(profiles.every((profile) => profile.dashboard.charts.length <= 3), 'dashboard chart maximum');
+check(profiles.every((profile) => profile.dashboard.importantChanges.length <= 3), 'dashboard important change maximum');
+check(profiles.every((profile) => profile.dashboard.macroVariables.length >= 3 && profile.dashboard.macroVariables.length <= 5), 'dashboard macro variable range');
+check(profiles.every((profile) => new Set(profile.dashboard.metrics.map((item) => item.id)).size === profile.dashboard.metrics.length), 'dashboard KPI deduplicated');
+check(profiles.every((profile) => new Set(profile.dashboard.charts.map((item) => item.id)).size === profile.dashboard.charts.length), 'dashboard charts deduplicated');
+check(profiles.every((profile) => new Set(profile.dashboard.macroVariables.map((item) => item.id)).size === profile.dashboard.macroVariables.length), 'dashboard macro variables deduplicated');
+check(profiles.every((profile) => profile.dashboard.metrics.every((item) => item.value === null || Number.isFinite(item.value))), 'dashboard numbers finite');
+check(profiles.every((profile) => profile.dashboard.metrics.every((item) => item.unit && item.period && item.sourceIds.length)), 'dashboard KPI metadata complete');
+check(profiles.every((profile) => profile.dashboard.assessments.length <= 5 && profile.dashboard.assessments.every((item) => item.rationale && (item.evidenceMetricIds.length || item.sourceIds.length))), 'dashboard assessments evidenced');
+check(profiles.every((profile) => !JSON.stringify(profile.dashboard).includes('undefined')), 'dashboard does not expose undefined');
+check(/<details className="company-dashboard-details">/.test(componentSource), 'dashboard details disclosure');
+check(/role="img"/.test(componentSource) && /<div className="sr-only"><table>/.test(componentSource), 'dashboard chart accessible name and table alternative');
 check(buildCompanyResearchProfile('meta')!.companyRelations.length === 0, 'Meta related company empty state');
 check(buildCompanyResearchProfile('eaton')!.picks.length === 0, 'Eaton pick omitted');
 

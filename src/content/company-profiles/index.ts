@@ -1,3 +1,4 @@
+export * from './dashboard.js';
 export * from './entries.js';
 export * from './paths.js';
 export * from './search.js';

@@ -7024,7 +7024,7 @@ function App() {
       ? '주가해부실 | 기업 분석과 거시경제'
       : routeCompanyProfileMatch
         ? routeCompanyIdentity
-          ? `${routeCompanyIdentity.name} 기업 한눈에 보기 | 주가해부실`
+          ? `${routeCompanyIdentity.name} 기업 분석 | 주가해부실`
           : '기업을 찾을 수 없습니다 | 주가해부실'
         : routeCompaniesMatch
           ? '기업 분석 | 주가해부실'
@@ -7034,7 +7034,7 @@ function App() {
     const metaDescription = isHomeRoute
       ? '기업의 재무 흐름과 금리·환율·원자재의 거시경제 흐름을 연결해 설명합니다.'
       : routeCompanyIdentity
-        ? `${routeCompanyIdentity.name}의 사업 역할, 정적 산업 흐름, 최근 공식 발표와 공급망 배경을 확인합니다.`
+        ? `${routeCompanyIdentity.name}의 사업 구조, 핵심 재무지표, 현금흐름과 주요 거시 변수를 살펴봅니다.`
         : routeCompaniesMatch
           ? '기업명이나 종목코드를 검색하고 기업의 사업과 재무 흐름을 살펴봅니다.'
           : '어려운 시장 흐름을 쉽게. 오늘의 이슈가 어떤 산업과 기업으로 이어지는지 확인합니다.';
@@ -7048,11 +7048,11 @@ function App() {
   }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch)]);
 
   useEffect(() => {
-    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || routeCompaniesMatch) return;
+    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => { if (!cancelled) setMarketPrices(items); });
     return () => { cancelled = true; };
-  }, [isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute, Boolean(routeCompaniesMatch)]);
+  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute]);
 
   useEffect(() => {
     if (!needsDisclosureFeed) return;
@@ -7168,7 +7168,7 @@ function App() {
         fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
         resetKey={routePath}
       >
-        <CompaniesRoute slug={routeCompanyProfileSlug} marketPrices={marketPrices} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+        <CompaniesRoute slug={routeCompanyProfileSlug} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
       </DeferredRoute>
     );
   }
@@ -7179,7 +7179,7 @@ function App() {
         fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
         resetKey={routePath}
       >
-        <CompaniesRoute searchQuery={routeParams.get('q') ?? ''} marketPrices={marketPrices} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+        <CompaniesRoute searchQuery={routeParams.get('q') ?? ''} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
       </DeferredRoute>
     );
   }
