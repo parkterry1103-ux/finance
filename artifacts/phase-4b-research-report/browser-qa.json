@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T16:32:50.558Z",
+  "generatedAt": "2026-07-16T17:04:22.272Z",
   "baseUrl": "http://127.0.0.1:4173",
   "browser": "Playwright Chromium 140",
   "viewportCount": 7,
@@ -29,7 +29,7 @@
         },
         {
           "clientWidth": 465,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -38,12 +38,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -71,7 +71,7 @@
         },
         {
           "clientWidth": 465,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -80,12 +80,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -113,7 +113,7 @@
         },
         {
           "clientWidth": 393,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -122,12 +122,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -164,12 +164,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -197,7 +197,7 @@
         },
         {
           "clientWidth": 302,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -206,12 +206,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -239,7 +239,7 @@
         },
         {
           "clientWidth": 272,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -248,12 +248,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -281,7 +281,7 @@
         },
         {
           "clientWidth": 232,
-          "scrollWidth": 468,
+          "scrollWidth": 470,
           "keyboardFocusable": true
         }
       ],
@@ -290,12 +290,12 @@
       "sourceCount": 25,
       "evidenceCount": 11,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "nvidia-AXKRyhe6.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "nvidia-DFwQeSqz.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -332,12 +332,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -374,12 +374,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -416,12 +416,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -458,12 +458,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -500,12 +500,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -542,12 +542,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],
@@ -584,12 +584,12 @@
       "sourceCount": 25,
       "evidenceCount": 10,
       "loadedScripts": [
-        "index-PEw1JYK1.js"
+        "index-a2chuE-t.js"
       ],
       "loadedJsResources": [
-        "index-PEw1JYK1.js",
-        "ResearchReportRoute-BrVWbrCk.js",
-        "meta-sPHTOEin.js"
+        "index-a2chuE-t.js",
+        "ResearchReportRoute-CX1d5QIW.js",
+        "meta-CoQkdRVn.js"
       ],
       "consoleErrors": [],
       "pageErrors": [],

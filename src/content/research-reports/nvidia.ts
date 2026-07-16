@@ -11,8 +11,23 @@ const config: ResearchReportCompanyConfig = {
   englishName: 'NVIDIA Corporation',
   ticker: 'NVDA',
   industry: 'AI 가속 컴퓨팅·반도체',
+  reportTitle: 'AI 인프라 성장과 장기 초과수익 가정의 지속성',
   conclusion: '데이터센터 중심의 높은 성장과 현금창출력이 핵심이지만, 현재 가격이 요구하는 성장 경로와 장기 수익성 유지 여부를 함께 확인해야 합니다.',
   watchStatement: '다음 분기에는 데이터센터 성장률, 공급 제약 완화, 영업이익률과 운전자본의 동행 여부를 우선 확인합니다.',
+  executiveSummary: {
+    strengths: [
+      { title: '플랫폼 범위', body: '가속기·네트워킹·시스템·소프트웨어를 함께 공급합니다.', evidenceIds: ['nvidia-q1-platform-fact'] },
+      { title: '현금창출 기반', body: '최근 연간 영업이익과 영업현금흐름이 함께 확대됐습니다.', evidenceIds: ['nvidia-historical-calculation'] },
+    ],
+    risks: [
+      { title: '높은 장기 가정', body: '계속가치는 장기 자본수익률 유지 여부에 민감합니다.', evidenceIds: ['nvidia-dcf-calculation', 'nvidia-roic-fade-calculation'] },
+      { title: '인프라·규제 제약', body: '전력·냉각·공급과 수출 규제가 실제 인도 경로에 영향을 줄 수 있습니다.', evidenceIds: ['nvidia-macro-fact'] },
+    ],
+    nextChecks: [
+      { title: '핵심 사업 성장', body: '데이터센터 매출 성장률과 신제품 전환을 확인합니다.', evidenceIds: ['nvidia-q1-results-fact'] },
+      { title: '마진과 현금', body: '영업이익률·운전자본·설비투자의 동행을 확인합니다.', evidenceIds: ['nvidia-historical-calculation'] },
+    ],
+  },
   business: [
     {
       title: '가속기와 네트워킹을 묶은 데이터센터 플랫폼',
@@ -71,6 +86,38 @@ const config: ResearchReportCompanyConfig = {
       title: '주요 위험',
       body: '고객 투자 속도 둔화, 자체 가속기 확대, 수출 규제, 전력 인프라 지연, 높은 장기 수익성 가정의 훼손이 핵심 점검 항목입니다.',
       evidenceIds: ['nvidia-macro-fact', 'nvidia-model-interpretation'],
+    },
+  ],
+  glossary: [
+    {
+      term: 'FCFF', english: 'Free Cash Flow to Firm',
+      definition: '채권자와 주주에게 귀속되기 전 사업 전체가 창출한 잉여현금흐름입니다.',
+      easyExplanation: '영업으로 번 현금에서 사업 유지와 성장에 필요한 투자를 뺀 금액입니다.',
+      relevance: 'NVIDIA의 성장 과정에서 운전자본과 공급·설비 투자가 현금으로 얼마나 전환되는지 보여줍니다.',
+    },
+    {
+      term: 'WACC', english: 'Weighted Average Cost of Capital',
+      definition: '자기자본비용과 세후부채비용을 자본구조 비중으로 가중한 할인율입니다.',
+      easyExplanation: '미래 현금을 오늘의 가치로 바꿀 때 적용하는 사업 전체의 요구수익률입니다.',
+      relevance: 'AI 인프라 성장의 먼 미래 현금흐름을 현재가치로 환산하는 기준입니다.',
+    },
+    {
+      term: 'ROIC', english: 'Return on Invested Capital',
+      definition: '영업에 투입된 자본이 세후 영업이익을 만들어 내는 효율을 나타냅니다.',
+      easyExplanation: '사업에 넣은 돈 1원이 얼마나 효율적으로 이익을 만드는지 보는 지표입니다.',
+      relevance: '높은 장기 ROIC가 유지되는지가 NVIDIA 계속가치의 핵심 가정입니다.',
+    },
+    {
+      term: 'Terminal Value', english: 'Terminal Value',
+      definition: '명시적 전망기간 이후의 현금흐름을 하나의 현재가치로 환산한 계속가치입니다.',
+      easyExplanation: '상세 예측이 끝난 뒤에도 사업이 이어진다고 보고 계산한 장기 가치입니다.',
+      relevance: '장기 성장률과 자본수익률 가정에 결과가 얼마나 의존하는지 확인하게 합니다.',
+    },
+    {
+      term: '역산 DCF', english: 'Reverse Discounted Cash Flow',
+      definition: '관측 가격에 맞도록 하나의 핵심 사업 가정을 역으로 푸는 진단입니다.',
+      easyExplanation: '현재 가격이 성립하려면 모형 안에서 어떤 성장 경로가 필요한지 거꾸로 계산합니다.',
+      relevance: 'NVIDIA의 관측 가격과 기준 조건 사이의 매출 성장 가정 차이를 비교합니다.',
     },
   ],
   officialSources: [

@@ -35,6 +35,16 @@ function formatPercent(value: number, digits = 1) {
   return `${formatNumber(value * 100, digits)}%`;
 }
 
+function scenarioDescription(name: ResearchReportModel['scenarios'][number]['name']) {
+  if (name === 'conservative') return '성장률과 마진이 기준 조건보다 낮고 장기 수익성이 더 빠르게 정상화되는 경우입니다.';
+  if (name === 'optimistic') return '높은 성장과 자본수익률이 더 오래 유지되며 장기 구간 의존도가 커질 수 있는 경우입니다.';
+  return '현재 확인 가능한 사업 흐름과 공식 재무자료를 중심으로 구성한 기준 가정입니다.';
+}
+
+function isSameNumber(left: number, right: number) {
+  return Math.abs(left - right) < 1e-10;
+}
+
 function internalLink(path: string, onNavigate: (path: string) => void) {
   return (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -105,7 +115,7 @@ function Chart({ chart, sources }: { chart: ResearchChart; sources: ResearchSour
   </figure>;
 }
 
-function SensitivityTable({ matrix, title, rowLabel, columnLabel }: { matrix: SensitivityMatrix; title: string; rowLabel: string; columnLabel: string }) {
+function SensitivityTable({ matrix, title, rowLabel, columnLabel, baseRow, baseColumn }: { matrix: SensitivityMatrix; title: string; rowLabel: string; columnLabel: string; baseRow: number; baseColumn: number }) {
   const cell = (rowValue: number, columnValue: number) => matrix.cells.find((item) => item.rowValue === rowValue && item.columnValue === columnValue);
   return <figure className="research-sensitivity-card">
     <figcaption><strong>{title}</strong><span>셀 값: 주당 모형 결과(USD)</span></figcaption>
@@ -113,7 +123,9 @@ function SensitivityTable({ matrix, title, rowLabel, columnLabel }: { matrix: Se
       <table><caption>{rowLabel}과 {columnLabel} 변화에 따른 주당 모형 결과</caption><thead><tr><th scope="col">{rowLabel} \ {columnLabel}</th>{matrix.columnValues.map((value) => <th scope="col" key={value}>{formatPercent(value)}</th>)}</tr></thead>
         <tbody>{matrix.rowValues.map((rowValue) => <tr key={rowValue}><th scope="row">{formatPercent(rowValue)}</th>{matrix.columnValues.map((columnValue) => {
           const result = cell(rowValue, columnValue);
-          return <td key={columnValue}>{result?.estimatedValuePerShare === null || result?.estimatedValuePerShare === undefined ? '계산 제한' : formatCurrency(result.estimatedValuePerShare)}</td>;
+          const isBase = isSameNumber(rowValue, baseRow) && isSameNumber(columnValue, baseColumn);
+          const value = result?.estimatedValuePerShare === null || result?.estimatedValuePerShare === undefined ? '계산 제한' : formatCurrency(result.estimatedValuePerShare);
+          return <td key={columnValue} className={isBase ? 'research-sensitivity-base' : undefined} aria-label={isBase ? `${value}, 기준 가정` : value}>{value}{isBase ? <span>기준 가정</span> : null}</td>;
         })}</tr>)}</tbody>
       </table>
     </div>
@@ -134,6 +146,8 @@ function EvidenceLedger({ report }: { report: ResearchReportModel }) {
 function ResearchReport({ report, navigation, onNavigate }: { report: ResearchReportModel; navigation: ReactNode; onNavigate: (path: string) => void }) {
   const baseDifference = report.baseResult.estimatedValuePerShare - report.currentPrice;
   const reinvestment = terminalReinvestmentRate(report);
+  const baseForecastStart = report.baseInput.forecastAssumptions.years[0];
+  const baseForecastEnd = report.baseInput.forecastAssumptions.years[report.baseInput.forecastAssumptions.years.length - 1];
   return <div className="pick-shell research-report-shell">
     <div className="research-screen-navigation">{navigation}</div>
     <main className="research-report-main">
@@ -143,8 +157,8 @@ function ResearchReport({ report, navigation, onNavigate }: { report: ResearchRe
       </div>
 
       <section className="research-report-cover" id="report-conclusion" aria-labelledby="research-report-title">
-        <p className="research-report-brand">주가해부실 Research</p>
-        <div className="research-report-identity"><span>{report.ticker} · {report.industry}</span><h1 id="research-report-title">{report.companyName} 리서치 리포트</h1><p>{report.englishName}</p></div>
+        <p className="research-report-brand">주가해부실 Research <span>기업 분석 리포트</span></p>
+        <div className="research-report-identity"><span>{report.ticker} · {report.industry}</span><h1 id="research-report-title">{report.companyName} 리서치 리포트</h1><p>{report.englishName}</p><strong className="research-report-title">{report.reportTitle}</strong></div>
         <div className="research-report-conclusion"><span>한 문장 결론</span><strong>{report.conclusion}</strong><p>{report.watchStatement}</p></div>
         <dl className="research-report-dates">
           <div><dt>리포트 작성일</dt><dd>{report.reportDate}</dd></div>
@@ -152,6 +166,9 @@ function ResearchReport({ report, navigation, onNavigate }: { report: ResearchRe
           <div><dt>가격 기준일</dt><dd>{report.priceAsOf.slice(0, 10)}</dd></div>
           <div><dt>가치평가 기준일</dt><dd>{report.valuationDate}</dd></div>
         </dl>
+        <div className="research-executive-grid" aria-label="핵심 요약">
+          {([['강점', report.executiveSummary.strengths], ['위험', report.executiveSummary.risks], ['다음 확인', report.executiveSummary.nextChecks]] as const).map(([label, claims]) => <div key={label}><strong>{label}</strong><ul>{claims.map((claim) => <li key={claim.title}><span>{claim.title}</span><small>{claim.body}</small><EvidenceLinks evidenceIds={claim.evidenceIds} evidence={report.evidence} /></li>)}</ul></div>)}
+        </div>
       </section>
 
       <nav className="research-report-toc" aria-label="리포트 목차"><strong>목차</strong><ol>
@@ -166,12 +183,35 @@ function ResearchReport({ report, navigation, onNavigate }: { report: ResearchRe
 
       <section id="report-financial" className="research-report-section"><div className="research-section-heading"><span>04</span><div><p>Cash flow, balance sheet & ROIC</p><h2>현금흐름·재무·자본수익성</h2></div></div><ClaimList claims={report.sections.financial} evidence={report.evidence} /><Chart chart={report.charts[2]} sources={report.sources} /><div className="research-diagnostic-row"><article><span>기준 장기 ROIC</span><strong>{formatPercent(report.baseInput.terminalAssumptions.stableRoic ?? 0)}</strong><small>계속가치 가정</small></article><article><span>장기 재투자율</span><strong>{reinvestment === null ? '계산 제한' : formatPercent(reinvestment)}</strong><small>영구성장률 ÷ 장기 ROIC</small></article><article><span>자본구조 기준일</span><strong>{report.capitalStructureAsOf}</strong><small>가격 기준일과 분리</small></article></div></section>
 
-      <section id="report-model" className="research-report-section research-model-section"><div className="research-section-heading"><span>05</span><div><p>Model-based value</p><h2>모형 가치와 가정 민감도</h2></div></div>
+      <section id="report-model" className="research-report-section research-model-section"><div className="research-section-heading"><span>05</span><div><p>Model-based value</p><h2>모형 기반 가치 추정</h2></div></div>
         <p className="research-section-intro">현재 관측 가격은 비교 기준일 뿐입니다. 아래 값은 4A 가정과 FCFF 엔진이 만든 조건부 결과이며 행동 지시가 아닙니다. <EvidenceLinks evidenceIds={[`${report.slug}-model-interpretation`]} evidence={report.evidence} /></p>
+        <dl className="research-assumption-dates" aria-label="모형 입력 기준일">
+          <div><dt>희석주식 수</dt><dd>{report.dilutedSharesAsOf}</dd></div><div><dt>자본구조</dt><dd>{report.capitalStructureAsOf}</dd></div>
+          <div><dt>무위험금리</dt><dd>{report.riskFreeAsOf}</dd></div><div><dt>ERP</dt><dd>{report.erpAsOf}</dd></div><div><dt>업종 benchmark</dt><dd>{report.benchmarkAsOf}</dd></div>
+        </dl>
         <div className="research-price-compare"><div><span>관측 가격</span><strong>{formatCurrency(report.currentPrice)}</strong><small>{report.priceAsOf.slice(0, 10)}</small></div><div><span>기준 조건의 주당 결과</span><strong>{formatCurrency(report.baseResult.estimatedValuePerShare)}</strong><small>관측 가격과 차이 {baseDifference >= 0 ? '+' : ''}{formatCurrency(baseDifference)}</small></div><div><span>계속가치 비중</span><strong>{formatPercent(report.baseResult.terminalValueShareOfEnterpriseValue)}</strong><small>기업가치 기준</small></div></div>
-        <div className="research-scenario-grid">{report.scenarios.map((scenario) => <article key={scenario.name}><span>{scenario.label}</span><strong>{formatCurrency(scenario.result.estimatedValuePerShare)}</strong><dl><div><dt>WACC</dt><dd>{formatPercent(scenario.result.wacc)}</dd></div><div><dt>영구성장률</dt><dd>{formatPercent(scenario.stableGrowthRate)}</dd></div><div><dt>계속가치 비중</dt><dd>{formatPercent(scenario.result.terminalValueShareOfEnterpriseValue)}</dd></div></dl></article>)}</div>
-        <div className="research-sensitivity-grid"><SensitivityTable matrix={report.waccGrowthSensitivity} title="WACC × 영구성장률 5×5" rowLabel="WACC" columnLabel="영구성장률" /><SensitivityTable matrix={report.driverSensitivity} title="첫해 성장률 × 영업이익률 5×5" rowLabel="성장률" columnLabel="영업이익률" /></div>
-        <div className="research-model-diagnostics"><article><span>역산 DCF</span><h3>관측 가격이 전제하는 매출 성장률</h3><strong>{formatPercent(report.reverseDcf.solvedRevenueCagr)}</strong><p>명시적 전망 기간의 성장 경로를 같은 비율로 조정해 관측 가격과 일치시킨 진단입니다. 수렴 상태: {report.reverseDcf.converged ? '수렴' : '추가 확인'}, 상대 오차 {formatPercent(report.reverseDcf.relativeError, 4)}.</p><EvidenceLinks evidenceIds={[`${report.slug}-reverse-calculation`]} evidence={report.evidence} /></article><article><span>ROIC fade 진단</span><h3>{report.roicFade.label}</h3><strong>{formatCurrency(report.roicFade.estimatedValuePerShare)}</strong><p>장기 ROIC {formatPercent(report.roicFade.terminalRoic)} 적용 시 기준 조건과 차이 {report.roicFade.differenceFromBase >= 0 ? '+' : ''}{formatCurrency(report.roicFade.differenceFromBase)}. 확률을 부여한 조건이 아니라 가정 의존도를 보는 진단입니다.</p><EvidenceLinks evidenceIds={[`${report.slug}-roic-fade-calculation`]} evidence={report.evidence} /></article></div>
+        <div className="research-scenario-grid">{report.scenarios.map((scenario) => {
+          const first = scenario.input.forecastAssumptions.years[0];
+          const last = scenario.input.forecastAssumptions.years[scenario.input.forecastAssumptions.years.length - 1];
+          return <article key={scenario.name}><span>{scenario.label}</span><strong>{formatCurrency(scenario.result.estimatedValuePerShare)}</strong><p>{scenarioDescription(scenario.name)}</p><dl>
+            <div><dt>첫해 매출 성장</dt><dd>{formatPercent(first.revenueGrowthRate)}</dd></div><div><dt>정상 영업이익률</dt><dd>{formatPercent(last.operatingMargin)}</dd></div>
+            <div><dt>Capex / 매출</dt><dd>{formatPercent(last.capexAsPercentRevenue)}</dd></div><div><dt>운전자본 증가 / 매출</dt><dd>{formatPercent(last.changeInWorkingCapitalAsPercentRevenue)}</dd></div>
+            <div><dt>WACC</dt><dd>{formatPercent(scenario.result.wacc)}</dd></div><div><dt>영구성장률</dt><dd>{formatPercent(scenario.stableGrowthRate)}</dd></div>
+            <div><dt>Terminal ROIC</dt><dd>{formatPercent(scenario.input.terminalAssumptions.stableRoic ?? 0)}</dd></div><div><dt>기업가치</dt><dd>{formatNumber(scenario.result.enterpriseValue, 0)}백만</dd></div>
+            <div><dt>주주가치</dt><dd>{formatNumber(scenario.result.equityBridge.equityValue, 0)}백만</dd></div><div><dt>희석주식 수</dt><dd>{formatNumber(scenario.result.dilutedShares, 0)}백만</dd></div>
+            <div><dt>계속가치 비중</dt><dd>{formatPercent(scenario.result.terminalValueShareOfEnterpriseValue)}</dd></div>
+          </dl></article>;
+        })}</div>
+        <div className="research-terminal-diagnostics"><h3>Terminal Value 진단</h3><dl>
+          <div><dt>명시적 FCFF 현재가치</dt><dd>{formatNumber(report.baseResult.presentValueOfForecastFcff, 0)}백만 USD</dd></div><div><dt>Terminal Value 현재가치</dt><dd>{formatNumber(report.baseResult.presentValueOfTerminalValue, 0)}백만 USD</dd></div>
+          <div><dt>Terminal Value / 기업가치</dt><dd>{formatPercent(report.baseResult.terminalValueShareOfEnterpriseValue)}</dd></div><div><dt>영구성장률</dt><dd>{formatPercent(report.baseInput.terminalAssumptions.stableGrowthRate)}</dd></div>
+          <div><dt>Terminal ROIC</dt><dd>{formatPercent(report.baseInput.terminalAssumptions.stableRoic ?? 0)}</dd></div><div><dt>Terminal 재투자율</dt><dd>{reinvestment === null ? '계산 제한' : formatPercent(reinvestment)}</dd></div><div><dt>WACC</dt><dd>{formatPercent(report.baseResult.wacc)}</dd></div>
+        </dl></div>
+        <div className="research-sensitivity-grid"><SensitivityTable matrix={report.waccGrowthSensitivity} title="WACC × 영구성장률 5×5" rowLabel="WACC" columnLabel="영구성장률" baseRow={report.baseResult.wacc} baseColumn={report.baseInput.terminalAssumptions.stableGrowthRate} /><SensitivityTable matrix={report.driverSensitivity} title="첫해 성장률 × 영업이익률 5×5" rowLabel="성장률" columnLabel="영업이익률" baseRow={baseForecastStart.revenueGrowthRate} baseColumn={baseForecastStart.operatingMargin} /></div>
+        <div className="research-model-diagnostics"><article className="research-reverse-dcf"><span>역산 DCF</span><h3>현재 가격이 반영한 기대</h3><strong>{formatPercent(report.reverseDcf.solvedRevenueCagr)}</strong><p>기준 조건의 영업이익률, WACC, 재투자율과 영구성장률을 고정할 경우, 현재 가격에는 향후 {report.baseInput.forecastAssumptions.years.length}년 매출 CAGR 약 {formatPercent(report.reverseDcf.solvedRevenueCagr)}가 반영돼 있습니다. 실현 가능성은 향후 성장과 정상 마진을 함께 확인해야 합니다.</p><dl>
+          <div><dt>고정 영업이익률</dt><dd>{formatPercent(baseForecastEnd.operatingMargin)}</dd></div><div><dt>고정 WACC</dt><dd>{formatPercent(report.baseResult.wacc)}</dd></div><div><dt>고정 영구성장률</dt><dd>{formatPercent(report.baseInput.terminalAssumptions.stableGrowthRate)}</dd></div><div><dt>고정 Terminal ROIC</dt><dd>{formatPercent(report.baseInput.terminalAssumptions.stableRoic ?? 0)}</dd></div>
+          <div><dt>전망기간</dt><dd>{report.baseInput.forecastAssumptions.years.length}년</dd></div><div><dt>Capex 가정</dt><dd>매출의 {formatPercent(baseForecastEnd.capexAsPercentRevenue)}</dd></div><div><dt>운전자본 가정</dt><dd>매출의 {formatPercent(baseForecastEnd.changeInWorkingCapitalAsPercentRevenue)}</dd></div><div><dt>가격 기준일</dt><dd>{report.priceAsOf.slice(0, 10)}</dd></div>
+        </dl><small>수렴 상태 {report.reverseDcf.converged ? '수렴' : '추가 확인'} · 상대 오차 {formatPercent(report.reverseDcf.relativeError, 4)}</small><EvidenceLinks evidenceIds={[`${report.slug}-reverse-calculation`]} evidence={report.evidence} /></article><article><span>ROIC fade 진단</span><h3>{report.roicFade.label}</h3><strong>{formatCurrency(report.roicFade.estimatedValuePerShare)}</strong><p>장기 ROIC {formatPercent(report.roicFade.terminalRoic)} 적용 시 기준 조건과 차이 {report.roicFade.differenceFromBase >= 0 ? '+' : ''}{formatCurrency(report.roicFade.differenceFromBase)}. 확률을 부여한 조건이 아니라 가정 의존도를 보는 진단입니다.</p><EvidenceLinks evidenceIds={[`${report.slug}-roic-fade-calculation`]} evidence={report.evidence} /></article></div>
         {report.warnings.length ? <aside className="research-warning-box"><strong>모형 경고</strong><ul>{report.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></aside> : null}
       </section>
 
@@ -179,6 +219,7 @@ function ResearchReport({ report, navigation, onNavigate }: { report: ResearchRe
       <section id="report-outlook" className="research-report-section"><div className="research-section-heading"><span>07</span><div><p>Catalysts, risks & next checks</p><h2>확인 계기·위험·다음 점검</h2></div></div><ClaimList claims={report.sections.outlook} evidence={report.evidence} /></section>
 
       <section id="report-method" className="research-report-section research-method-section"><div className="research-section-heading"><span>08</span><div><p>Sources, methodology & limitations</p><h2>근거·방법론·한계</h2></div></div>
+        <h3>핵심 용어와 쉬운 해설</h3><div className="research-glossary">{report.glossary.map((item) => <article key={item.term}><h4>{item.term}<small>{item.english}</small></h4><dl><div><dt>정의</dt><dd>{item.definition}</dd></div><div><dt>쉽게 설명하면</dt><dd>{item.easyExplanation}</dd></div><div><dt>이 분석에서 중요한 이유</dt><dd>{item.relevance}</dd></div></dl></article>)}</div>
         <h3>사실·계산·해석 원장</h3><p>사실은 원문 출처, 계산은 산식과 입력 근거, 해석은 앞선 증거 연결을 표시합니다.</p><EvidenceLedger report={report} />
         <h3>출처 목록</h3><ol className="research-source-list">{report.sources.map((source, index) => <li key={source.id} id={`source-${index + 1}`}><span>[{index + 1}]</span><div><strong>{source.publisher} · {source.title}</strong><small>{[source.publishedAt, source.periodEnd ? `기간말 ${source.periodEnd}` : '', source.note].filter(Boolean).join(' · ')}</small></div><a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${source.title} 원문 열기`}>원문 <ExternalLink size={13} aria-hidden="true" /></a></li>)}</ol>
         <h3>방법론과 한계</h3><ul className="research-limitations">{report.limitations.map((item) => <li key={item}>{item}</li>)}</ul>

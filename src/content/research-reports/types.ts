@@ -30,6 +30,14 @@ export type ResearchClaim = {
   evidenceIds: string[];
 };
 
+export type ResearchGlossaryItem = {
+  term: string;
+  english: string;
+  definition: string;
+  easyExplanation: string;
+  relevance: string;
+};
+
 export type ResearchChartPoint = {
   label: string;
   value: number;
@@ -47,6 +55,7 @@ export type ResearchChart = {
 export type ResearchScenario = {
   name: 'conservative' | 'base' | 'optimistic';
   label: string;
+  input: ValuationModelInput;
   result: ValuationModelResult;
   stableGrowthRate: number;
 };
@@ -57,14 +66,24 @@ export type ResearchReportModel = {
   englishName: string;
   ticker: string;
   industry: string;
+  reportTitle: string;
   reportDate: string;
   financialsAsOf: string;
   priceAsOf: string;
   valuationDate: string;
+  dilutedSharesAsOf: string;
   capitalStructureAsOf: string;
+  riskFreeAsOf: string;
+  erpAsOf: string;
+  benchmarkAsOf: string;
   currentPrice: number;
   conclusion: string;
   watchStatement: string;
+  executiveSummary: {
+    strengths: ResearchClaim[];
+    risks: ResearchClaim[];
+    nextChecks: ResearchClaim[];
+  };
   sections: {
     business: ResearchClaim[];
     earnings: ResearchClaim[];
@@ -73,6 +92,7 @@ export type ResearchReportModel = {
     outlook: ResearchClaim[];
   };
   charts: ResearchChart[];
+  glossary: ResearchGlossaryItem[];
   evidence: ResearchEvidence[];
   sources: ResearchSource[];
   baseInput: ValuationModelInput;
@@ -102,13 +122,16 @@ export type ResearchReportCompanyConfig = {
   englishName: string;
   ticker: string;
   industry: string;
+  reportTitle: string;
   conclusion: string;
   watchStatement: string;
+  executiveSummary: ResearchReportModel['executiveSummary'];
   business: ResearchClaim[];
   earnings: ResearchClaim[];
   financial: ResearchClaim[];
   industryClaims: ResearchClaim[];
   outlook: ResearchClaim[];
+  glossary: ResearchGlossaryItem[];
   officialSources: ResearchSource[];
   factEvidence: ResearchEvidence[];
 };

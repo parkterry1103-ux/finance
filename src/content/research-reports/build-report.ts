@@ -7,6 +7,7 @@ import {
   type ScenarioName,
   type ValuationModelInput,
 } from '../../domain/valuation/index.js';
+import benchmarkSnapshot from '../../../artifacts/phase-4a-valuation/benchmark-snapshot.json' with { type: 'json' };
 import type {
   ResearchChart,
   ResearchEvidence,
@@ -20,7 +21,7 @@ const reportDate = '2026-07-17';
 const scenarioLabels: Record<ScenarioName, string> = {
   conservative: '보수 조건',
   base: '기준 조건',
-  optimistic: '확장 조건',
+  optimistic: '낙관 조건',
 };
 
 function sourceForMetric(period: NormalizedFinancialPeriod, metric: string) {
@@ -160,6 +161,7 @@ export function buildResearchReport(
     return {
       name: entry.name,
       label: scenarioLabels[entry.name],
+      input,
       result: runScenario(input),
       stableGrowthRate: input.terminalAssumptions.stableGrowthRate,
     };
@@ -186,7 +188,7 @@ export function buildResearchReport(
     {
       id: `${config.slug}-benchmark`, title: `NYU Stern 2026 미국 업종 benchmark · ${artifacts.assumptions.companySpecific.benchmarkId}`,
       publisher: 'NYU Stern', url: 'https://pages.stern.nyu.edu/~adamodar/New_Home_Page/data.html',
-      publishedAt: '2026-01-05', note: '업종 범위 점검에만 사용했습니다.',
+      publishedAt: benchmarkSnapshot.sourceDate, note: '업종 범위 점검에만 사용했습니다.',
     },
   ];
   return {
@@ -195,16 +197,23 @@ export function buildResearchReport(
     englishName: config.englishName,
     ticker: config.ticker,
     industry: config.industry,
+    reportTitle: config.reportTitle,
     reportDate,
     financialsAsOf: artifacts.assumptions.companySpecific.financialsAsOf,
     priceAsOf: artifacts.assumptions.price.asOf,
     valuationDate: artifacts.assumptions.valuationDate,
+    dilutedSharesAsOf: artifacts.assumptions.companySpecific.dilutedSharesAsOf,
     capitalStructureAsOf: artifacts.assumptions.companySpecific.capitalStructureAsOf,
+    riskFreeAsOf: artifacts.assumptions.companySpecific.riskFreeAsOf,
+    erpAsOf: benchmarkSnapshot.sourceDate,
+    benchmarkAsOf: benchmarkSnapshot.sourceDate,
     currentPrice: artifacts.assumptions.price.value,
     conclusion: config.conclusion,
     watchStatement: config.watchStatement,
+    executiveSummary: config.executiveSummary,
     sections: { business: config.business, earnings: config.earnings, financial: config.financial, industry: config.industryClaims, outlook: config.outlook },
     charts,
+    glossary: config.glossary,
     evidence: [...config.factEvidence, ...derivedEvidence(config, artifacts, chartSourceIds)],
     sources,
     baseInput,
