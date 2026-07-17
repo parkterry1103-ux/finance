@@ -231,7 +231,17 @@ function validateApiContract(contract: string, payloadValue: unknown) {
   if (contract === 'financials') {
     assert(stringField(payload, 'companyId') && stringField(payload, 'country'), 'financials companyId/country missing');
     assert(Boolean(payload.metrics) && typeof payload.metrics === 'object', 'financials metrics object missing');
-    return { schema: 'financials object', count: Array.isArray(payload.metrics) ? payload.metrics.length : Object.keys(payload.metrics as object).length, duplicates: 0 };
+    const series = objectValue(payload.series);
+    const periods = series.periods;
+    assert(series.periodType === 'annual', 'financials series must identify annual period type');
+    assert(Array.isArray(periods) && periods.length >= 2 && periods.length <= 5, 'financials annual periods must contain two to five comparable periods');
+    periods.forEach((value) => {
+      const period = objectValue(value);
+      assert(stringField(period, 'periodEnd') && stringField(period, 'currency') && period.unit === 'million', 'financial period basis missing');
+      assert(Boolean(period.metrics) && typeof period.metrics === 'object' && !Array.isArray(period.metrics), 'financial period metrics missing');
+      Object.values(period.metrics as object).forEach((metric) => assert(typeof metric === 'number' && Number.isFinite(metric), 'financial period contains non-finite metric'));
+    });
+    return { schema: 'financials series', count: periods.length, duplicates: duplicateCount(periods.map((value) => String(objectValue(value).periodEnd))) };
   }
 
   if (contract === 'ownership') {
