@@ -165,6 +165,7 @@ const DisclosuresRoute = lazy(() => import('./routes/DisclosuresRoute'));
 const MacroDashboardRoute = lazy(() => import('./routes/MacroDashboardRoute'));
 const MarketRelationsRoute = lazy(() => import('./routes/MarketRelationsRoute'));
 const ResearchReportRoute = lazy(() => import('./routes/ResearchReportRoute'));
+const FinancialPivotRoute = lazy(() => import('./routes/FinancialPivotRoute'));
 const InsightsRoute = lazy(() => import('./routes/InsightsRoute'));
 const StockDissectionRoute = lazy(() => import('./routes/StockDissectionRoute'));
 const ThreeReadsRoute = lazy(() => import('./routes/ThreeReadsRoute'));
@@ -6951,6 +6952,7 @@ function App() {
   const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
   const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
   const routeResearchReportMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/report\/?$/);
+  const routeFinancialPivotMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/financials\/?$/);
   const routeStockDissectionMatch = routePath.match(/^\/ko\/insights\/stock\/([^/]+)\/?$/);
   const routeThreeReadsMatch = routePath.match(/^\/ko\/insights\/3reads\/([^/]+)\/?$/);
   const routeInsightsMatch = routePath.match(/^\/ko\/insights\/?$/);
@@ -6968,6 +6970,7 @@ function App() {
   const routeCompanyProfileEntry = routeCompanyProfileSlug ? companyProfileByIdOrSlug(routeCompanyProfileSlug) : undefined;
   const routeCompanyIdentity = routeCompanyProfileEntry ? canonicalCompanyProfileIdentity(routeCompanyProfileEntry.companyId) : undefined;
   const routeResearchReportSlug = routeResearchReportMatch?.[1] ? decodeURIComponent(routeResearchReportMatch[1]) : undefined;
+  const routeFinancialPivotSlug = routeFinancialPivotMatch?.[1] ? decodeURIComponent(routeFinancialPivotMatch[1]) : undefined;
   const routeStockDissectionSlug = routeStockDissectionMatch?.[1] ? decodeURIComponent(routeStockDissectionMatch[1]) : undefined;
   const routeThreeReadsSlug = routeThreeReadsMatch?.[1] ? decodeURIComponent(routeThreeReadsMatch[1]) : undefined;
   const routeResearchReportEntry = routeResearchReportSlug ? companyProfileByIdOrSlug(routeResearchReportSlug) : undefined;
@@ -7011,6 +7014,8 @@ function App() {
         ? routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
           ? `${routeResearchReportIdentity.name} 리서치 리포트 | 주가해부실`
           : '리서치 리포트를 찾을 수 없습니다 | 주가해부실'
+      : routeFinancialPivotMatch
+        ? `${companyProfileByIdOrSlug(routeFinancialPivotSlug)?.englishName ?? '기업'} 숫자와 비교 | 주가해부실`
       : routeCompanyProfileMatch
         ? routeCompanyIdentity
           ? `${routeCompanyIdentity.name} 기업 분석 | 주가해부실`
@@ -7199,6 +7204,17 @@ function App() {
         resetKey={routePath}
       >
         <ResearchReportRoute slug={routeResearchReportSlug ?? ''} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
+
+  if (routeFinancialPivotMatch) {
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <FinancialPivotRoute slug={routeFinancialPivotSlug ?? ''} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
       </DeferredRoute>
     );
   }

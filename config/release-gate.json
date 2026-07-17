@@ -42,6 +42,7 @@
     { "name": "DisclosuresRoute", "source": "src/routes/DisclosuresRoute.tsx" },
     { "name": "MacroDashboardRoute", "source": "src/routes/MacroDashboardRoute.tsx" },
     { "name": "MarketRelationsRoute", "source": "src/routes/MarketRelationsRoute.tsx" },
+    { "name": "FinancialPivotRoute", "source": "src/routes/FinancialPivotRoute.tsx" },
     { "name": "InsightsRoute", "source": "src/routes/InsightsRoute.tsx" },
     { "name": "StockDissectionRoute", "source": "src/routes/StockDissectionRoute.tsx" },
     { "name": "ThreeReadsRoute", "source": "src/routes/ThreeReadsRoute.tsx" }
@@ -71,6 +72,14 @@
       "/ko/companies/nvidia/report",
       "/ko/companies/meta/report",
       "/ko/companies/supermicro",
+      "/ko/companies/sk-hynix/financials",
+      "/ko/companies/lg-electronics/financials",
+      "/ko/companies/nvidia/financials",
+      "/ko/companies/micron/financials",
+      "/ko/companies/dell/financials",
+      "/ko/companies/eaton/financials",
+      "/ko/companies/meta/financials",
+      "/ko/companies/supermicro/financials",
       "/ko/company-events",
       "/ko/bottlenecks",
       "/ko/reports",
@@ -90,7 +99,8 @@
       { "id": "wall-street-edition", "all": ["오늘의 월스트리트", "먼저 고정한 표준이 가격을 정한다"] },
       { "id": "wsj-non-affiliation", "all": ["The Wall Street Journal", "제휴·후원 관계가 없습니다"] },
       { "id": "company-brief-five-questions", "all": ["돈을 버는 구조", "최근 변화", "왜 중요한가", "가장 큰 위험", "다음 확인"] },
-      { "id": "company-brief-actions", "all": ["숫자와 비교 보기", "심층 리포트 읽기", "직접 비교 자료 없음"] }
+      { "id": "company-brief-actions", "all": ["숫자와 비교 보기", "심층 리포트 읽기", "직접 비교 자료 없음"] },
+      { "id": "financial-pivot", "all": ["숫자와 비교", "기간 추세", "비교기업", "산업 집계", "출처와 계산 기준", "자료 미수집"] }
     ],
     "apis": [
       { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },
@@ -99,7 +109,7 @@
       { "id": "market-relations", "path": "/api/market-relations", "contract": "relations" },
       { "id": "opendart", "path": "/api/market-disclosures?limit=20", "contract": "disclosures" },
       { "id": "sec", "path": "/api/market-sec-filings?limit=20", "contract": "sec" },
-      { "id": "financials", "path": "/api/financials?country=US&companyId=us-semiconductors-nvidia", "contract": "financials" },
+      { "id": "financials", "path": "/api/financials?country=US&companyId=us-semiconductors-nvidia&cik=1045810&period=annual", "contract": "financials" },
       { "id": "ownership", "path": "/api/ownership-trades?limit=20", "contract": "ownership" },
       { "id": "news", "path": "/api/news?country=US&sector=us-semiconductors&anchor=us-semiconductors-nvidia&company=NVIDIA", "contract": "news" }
     ],

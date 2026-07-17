@@ -2,6 +2,12 @@ declare const process: {
   env: Record<string, string | undefined>;
 };
 
+import {
+  factsToAnnualPeriods,
+  normalizeSecCompanyFacts,
+  type SecCompanyFactsPayload,
+} from '../src/domain/valuation/normalize.js';
+
 type QueryValue = string | string[] | undefined;
 
 type ApiRequest = {
@@ -16,6 +22,7 @@ type ApiResponse = {
 };
 
 type SecFact = {
+  accn?: string;
   start?: string;
   end?: string;
   fy?: number;
@@ -78,6 +85,20 @@ type FinancialComparison = {
   revenue?: ComparisonMetric;
   operatingIncome?: ComparisonMetric;
   operatingCashFlow?: ComparisonMetric;
+};
+
+type FinancialSeriesPeriod = {
+  label: string;
+  periodEnd: string;
+  fiscalYear: number | null;
+  fiscalPeriod: string;
+  currency: string;
+  unit: 'million';
+  metrics: Record<string, number>;
+  sourceIds: string[];
+  filingType: string;
+  filedAt: string | null;
+  accessionOrReceiptNumber: string | null;
 };
 
 const SEC_TIMEOUT_MS = 8000;
@@ -437,6 +458,20 @@ function secCurrencyFromSelected(metrics: SecSelectedMetrics) {
   return currencies.length === 1 ? currencies[0] : null;
 }
 
+function secFiledAtForAccession(payload: CompanyFactsPayload, accession: string | null) {
+  if (!accession) return null;
+  const taxonomies = [payload.facts?.['us-gaap'], payload.facts?.['ifrs-full']];
+  for (const taxonomy of taxonomies) {
+    for (const concept of Object.values(taxonomy ?? {})) {
+      for (const facts of Object.values(concept?.units ?? {})) {
+        const match = facts?.find((fact) => fact.accn === accession && fact.filed);
+        if (match?.filed) return match.filed;
+      }
+    }
+  }
+  return null;
+}
+
 function selectSecMetrics(facts: SecFacts | undefined): SecSelectedMetrics {
   return {
     revenue: selectMetric(facts, SEC_CONCEPTS.revenue),
@@ -733,6 +768,11 @@ function recentDartYears() {
   return [currentYear, currentYear - 1, currentYear - 2].map(String);
 }
 
+function annualDartYears() {
+  const currentYear = new Date().getFullYear();
+  return [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5].map(String);
+}
+
 function buildDartMetrics(rows: DartAccountRow[]) {
   const selections = {
     revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
@@ -782,6 +822,72 @@ function buildDartMetrics(rows: DartAccountRow[]) {
 
 type DartMetrics = ReturnType<typeof buildDartMetrics>;
 
+function finiteMillion(value: number | null) {
+  return typeof value === 'number' && Number.isFinite(value) ? value / 1_000_000 : undefined;
+}
+
+function buildDartSeriesPeriod(year: string, fsDiv: string, rows: DartAccountRow[], metrics: DartMetrics): FinancialSeriesPeriod {
+  const values: Record<string, number | undefined> = {
+    revenue: finiteMillion(metrics.revenue),
+    operatingIncome: finiteMillion(metrics.operatingIncome),
+    netIncome: finiteMillion(metrics.netIncome),
+    operatingCashFlow: finiteMillion(metrics.operatingCashFlow),
+    totalLiabilities: finiteMillion(metrics.totalLiabilities),
+    totalEquity: finiteMillion(metrics.stockholdersEquity),
+    currentAssets: finiteMillion(metrics.assetsCurrent),
+    currentLiabilities: finiteMillion(metrics.liabilitiesCurrent),
+    interestExpense: finiteMillion(metrics.interestExpense),
+    capitalExpenditure: finiteMillion(metrics.capitalExpenditures),
+    depreciationAndAmortization: finiteMillion(metrics.depreciationAndAmortization),
+    freeCashFlow: finiteMillion(metrics.freeCashFlow),
+  };
+  const receiptNumber = rows.find((row) => row.rcept_no)?.rcept_no ?? null;
+  return {
+    label: `${year}년`,
+    periodEnd: `${year}-12-31`,
+    fiscalYear: Number(year),
+    fiscalPeriod: 'FY',
+    currency: metrics.currency ?? 'KRW',
+    unit: 'million',
+    metrics: Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
+    sourceIds: receiptNumber ? [`opendart:${corpReceiptId(receiptNumber)}`] : [],
+    filingType: `OpenDART 사업보고서 ${fsDiv}`,
+    filedAt: dartReceiptDate(rows),
+    accessionOrReceiptNumber: receiptNumber,
+  };
+}
+
+function corpReceiptId(receiptNumber: string) {
+  return receiptNumber.replace(/[^0-9]/g, '');
+}
+
+async function fetchKoreanAnnualSeries(apiKey: string, corpCode: string) {
+  const report = DART_REPORTS.find((item) => item.fiscalPeriod === 'FY')!;
+  const candidates = await Promise.all(annualDartYears().map(async (year) => {
+    for (const fsDiv of DART_FS_DIVS) {
+      const result = await fetchOpenDartRows({ apiKey, corpCode, year, reportCode: report.code, fsDiv });
+      if (result.status !== 'ok') continue;
+      const metrics = buildDartMetrics(result.rows);
+      if (dartSourceStatusFor({
+        revenue: metrics.revenue,
+        operatingIncome: metrics.operatingIncome,
+        netIncome: metrics.netIncome,
+        operatingCashFlow: metrics.operatingCashFlow,
+        totalLiabilities: metrics.totalLiabilities,
+        stockholdersEquity: metrics.stockholdersEquity,
+        assetsCurrent: metrics.assetsCurrent,
+        liabilitiesCurrent: metrics.liabilitiesCurrent,
+        interestExpense: metrics.interestExpense,
+        capitalExpenditures: metrics.capitalExpenditures,
+        depreciationAndAmortization: metrics.depreciationAndAmortization,
+      }) === 'not-found') continue;
+      return { period: buildDartSeriesPeriod(year, fsDiv, result.rows, metrics), metrics, rows: result.rows };
+    }
+    return null;
+  }));
+  return candidates.filter((item): item is NonNullable<typeof item> => Boolean(item)).sort((a, b) => a.period.periodEnd.localeCompare(b.period.periodEnd)).slice(-5);
+}
+
 async function fetchOpenDartMetrics({
   apiKey,
   corpCode,
@@ -826,7 +932,7 @@ function dartComparison(current: DartMetrics, priorYear: DartMetrics | null): Fi
   return comparison;
 }
 
-async function buildKoreanFinancialsResponse(country: string, companyId: string, corpCode: string, cik: string) {
+async function buildKoreanFinancialsResponse(country: string, companyId: string, corpCode: string, cik: string, period: string) {
   const openDartApiKey = process.env.OPENDART_API_KEY;
   if (!openDartApiKey) {
     return {
@@ -872,6 +978,50 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
         openDartApiKey: 'present',
       },
     };
+  }
+
+  if (period === 'annual') {
+    const annualSeries = await fetchKoreanAnnualSeries(openDartApiKey, corpCode);
+    const latest = annualSeries.at(-1);
+    if (latest) {
+      const { currency, amountBasis, ...metrics } = latest.metrics;
+      const values = {
+        revenue: metrics.revenue,
+        operatingIncome: metrics.operatingIncome,
+        netIncome: metrics.netIncome,
+        operatingCashFlow: metrics.operatingCashFlow,
+        totalLiabilities: metrics.totalLiabilities,
+        stockholdersEquity: metrics.stockholdersEquity,
+        assetsCurrent: metrics.assetsCurrent,
+        liabilitiesCurrent: metrics.liabilitiesCurrent,
+        interestExpense: metrics.interestExpense,
+        capitalExpenditures: metrics.capitalExpenditures,
+        depreciationAndAmortization: metrics.depreciationAndAmortization,
+      };
+      const prior = annualSeries.length > 1 ? annualSeries.at(-2)?.metrics ?? null : null;
+      return {
+        ok: true,
+        country,
+        companyId,
+        cik,
+        corpCode,
+        source: 'OpenDART',
+        sourceStatus: dartSourceStatusFor(values),
+        reportType: latest.period.filingType,
+        fiscalYear: latest.period.fiscalYear,
+        fiscalPeriod: 'FY',
+        asOf: latest.period.filedAt,
+        currency,
+        amountBasis,
+        periodBasis: 'OpenDART annual business reports; consolidated statements preferred',
+        metrics,
+        comparison: dartComparison(latest.metrics, prior),
+        rawAvailable: rawAvailableFromValues(values),
+        series: { periodType: 'annual', periods: annualSeries.map((item) => item.period), requestedLimit: 5, complete: annualSeries.length >= 2 },
+        message: 'OpenDART annual series loaded. Amounts in series are normalized to currency millions; missing years and metrics remain missing.',
+        env: { secUserAgent: hasEnv('SEC_USER_AGENT') ? 'present' : 'missing', openDartApiKey: 'present' },
+      };
+    }
   }
 
   let lastApiError = '';
@@ -969,7 +1119,7 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
   };
 }
 
-async function buildUsFinancialsResponse(country: string, companyId: string, cik: string, corpCode: string) {
+async function buildUsFinancialsResponse(country: string, companyId: string, cik: string, corpCode: string, period: string) {
   const secUserAgent = process.env.SEC_USER_AGENT;
   if (!secUserAgent) {
     return {
@@ -1099,6 +1249,57 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       ? operatingCashFlow - Math.abs(capitalExpenditures)
       : null;
 
+  const annualPeriods = period === 'annual' && !foreign20FConfig
+    ? factsToAnnualPeriods(
+        normalizeSecCompanyFacts(secResult.payload as unknown as SecCompanyFactsPayload, companyId).facts,
+        2,
+      ).slice(-5).map<FinancialSeriesPeriod>((item) => {
+        const sourceIds = item.sourceIds;
+        const accession = sourceIds.map((sourceId) => sourceId.split(':')[2]).find(Boolean) ?? null;
+        return {
+          label: item.fiscalYear ? `FY ${item.fiscalYear}` : item.periodEnd,
+          periodEnd: item.periodEnd,
+          fiscalYear: item.fiscalYear ?? null,
+          fiscalPeriod: 'FY',
+          currency: item.currency,
+          unit: 'million',
+          metrics: Object.fromEntries(Object.entries(item.metrics).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
+          sourceIds,
+          filingType: 'SEC 10-K',
+          filedAt: secFiledAtForAccession(secResult.payload, accession),
+          accessionOrReceiptNumber: accession,
+        };
+      })
+    : [];
+
+  const currentSeries: FinancialSeriesPeriod[] = period === 'quarterly' && reportFact
+    ? [{
+        label: [reportFact.fy ? `FY ${reportFact.fy}` : '', reportFact.fp ?? '최근 분기'].filter(Boolean).join(' '),
+        periodEnd: reportFact.end ?? reportFact.filed ?? '',
+        fiscalYear: reportFact.fy ?? null,
+        fiscalPeriod: reportFact.fp ?? '최근 분기',
+        currency,
+        unit: 'million',
+        metrics: Object.fromEntries(Object.entries({
+          revenue: selected.revenue?.value !== undefined ? selected.revenue.value / 1_000_000 : undefined,
+          operatingIncome: selected.operatingIncome?.value !== undefined ? selected.operatingIncome.value / 1_000_000 : undefined,
+          netIncome: selected.netIncome?.value !== undefined ? selected.netIncome.value / 1_000_000 : undefined,
+          operatingCashFlow: operatingCashFlow !== null ? operatingCashFlow / 1_000_000 : undefined,
+          capitalExpenditure: capitalExpenditures !== null ? capitalExpenditures / 1_000_000 : undefined,
+          freeCashFlow: freeCashFlow !== null ? freeCashFlow / 1_000_000 : undefined,
+          totalLiabilities: selected.totalLiabilities?.value !== undefined ? selected.totalLiabilities.value / 1_000_000 : undefined,
+          totalEquity: selected.stockholdersEquity?.value !== undefined ? selected.stockholdersEquity.value / 1_000_000 : undefined,
+          currentAssets: selected.assetsCurrent?.value !== undefined ? selected.assetsCurrent.value / 1_000_000 : undefined,
+          currentLiabilities: selected.liabilitiesCurrent?.value !== undefined ? selected.liabilitiesCurrent.value / 1_000_000 : undefined,
+          dilutedEps: selected.eps?.value,
+        }).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
+        sourceIds: [`sec:${paddedCik(cik)}:${reportFact.filed ?? reportFact.end ?? 'latest'}`],
+        filingType: reportFact.form ?? 'SEC filing',
+        filedAt: reportFact.filed ?? null,
+        accessionOrReceiptNumber: null,
+      }]
+    : [];
+
   return {
     ok: true,
     country,
@@ -1139,6 +1340,12 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
     },
     rawAvailable: rawAvailability(selected),
     comparison: foreign20FConfig ? undefined : secComparison(facts, selected),
+    series: {
+      periodType: period === 'quarterly' ? 'quarterly' : 'annual',
+      periods: period === 'quarterly' ? currentSeries : annualPeriods,
+      requestedLimit: period === 'quarterly' ? 8 : 5,
+      complete: period === 'annual' ? annualPeriods.length >= 2 : false,
+    },
     message: sourceStatus === 'not-found'
       ? 'No usable SEC CompanyFacts metrics found.'
       : foreign20FConfig
@@ -1162,15 +1369,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const companyId = firstQueryValue(req.query?.companyId);
   const cik = firstQueryValue(req.query?.cik);
   const corpCode = firstQueryValue(req.query?.corpCode);
+  const requestedPeriod = firstQueryValue(req.query?.period);
+  const period = requestedPeriod === 'quarterly' ? 'quarterly' : 'annual';
   const normalizedCountry = country.trim().toUpperCase();
 
   if (normalizedCountry === 'US' && cik) {
-    res.status(200).json(await buildUsFinancialsResponse(normalizedCountry, companyId, cik, corpCode));
+    res.status(200).json(await buildUsFinancialsResponse(normalizedCountry, companyId, cik, corpCode, period));
     return;
   }
 
   if (normalizedCountry === 'KR') {
-    res.status(corpCode ? 200 : 400).json(await buildKoreanFinancialsResponse(normalizedCountry, companyId, corpCode, cik));
+    res.status(corpCode ? 200 : 400).json(await buildKoreanFinancialsResponse(normalizedCountry, companyId, corpCode, cik, period));
     return;
   }
 

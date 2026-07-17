@@ -39,6 +39,10 @@ CompanyBriefConfig
 
 `scripts/company-brief-unit.ts`가 registry, build, lazy import와 UI 조건을 함께 검사하고 Release Gate에 포함된다.
 
+## Phase 5C 연결
+
+8개 Company Brief의 `숫자와 비교 보기`는 같은 페이지의 기존 숫자 anchor가 아니라 `/ko/companies/{companySlug}/financials`로 이동한다. 재무 route는 별도 lazy chunk이며 선택 기업 데이터만 불러온다. 기존 핵심 숫자, 상세 데이터, 차트와 NVIDIA·Meta 리포트 CTA는 그대로 유지한다.
+
 ## 현재 inventory
 
 지원 기업은 SK하이닉스, LG전자, NVIDIA, Micron, Dell, Eaton, Meta, Supermicro 8개다. 리포트 CTA는 기존 route가 있는 NVIDIA와 Meta에만 표시한다. Phase 5B 시점에는 기업에 연결된 Published editorial이 없으므로 관련 리서치 섹션을 렌더링하지 않는다.

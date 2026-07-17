@@ -359,7 +359,7 @@ export function CompanyResearchProfilePage({
         </section> : null}
 
         <nav className="company-brief-actions" aria-label={`${company.name} 상세 분석 이동`}>
-          <a href="#company-dashboard-metrics-title">숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
+          <a href={`/ko/companies/${profile.slug}/financials`} onClick={internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)}>숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
           {brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)}>심층 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
         </nav>
 

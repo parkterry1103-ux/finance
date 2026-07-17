@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5C · 비교 중심 재무 피벗 분석판</title>
+  <style>
+    :root { color-scheme:dark; --bg:#07111f; --panel:#0d1b2d; --card:#12243a; --line:#29415d; --text:#f5f7fb; --muted:#b6c4d6; --accent:#e3c66f; --ok:#7ee0b5; --progress:#8ec5ff; --warn:#f1c18e; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:linear-gradient(145deg,#07111f,#0a1728 48%,#07111f); color:var(--text); font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; word-break:keep-all; }
+    a { color:inherit; text-underline-offset:3px; }
+    a:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); outline-offset:4px; border-radius:7px; }
+    .skip { position:fixed; left:16px; top:-90px; z-index:10; padding:10px 14px; border-radius:8px; color:#07111f; background:#fff; }
+    .skip:focus { top:16px; }
+    .page { width:calc(100% - 32px); max-width:1180px; min-width:0; margin:0 auto; padding:32px 0 72px; }
+    .hero,.panel { min-width:0; border:1px solid var(--line); background:var(--panel); }
+    .hero { padding:clamp(26px,5vw,58px); border-radius:28px; background:radial-gradient(circle at 90% 0%,#234363 0%,transparent 42%),var(--panel); box-shadow:0 24px 70px #0005; }
+    .hero-top,.panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+    .eyebrow { margin:0 0 8px; color:var(--accent); font-size:.78rem; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:0; max-width:820px; font-size:clamp(2rem,6vw,4.5rem); line-height:1.04; letter-spacing:-.055em; }
+    h2,h3,p { margin-top:0; }
+    h2 { font-size:clamp(1.35rem,3vw,2rem); line-height:1.25; letter-spacing:-.025em; }
+    h3 { font-size:1rem; }
+    .hero-copy { max-width:800px; margin:22px 0 0; color:#dbe6f3; font-size:clamp(1rem,2vw,1.17rem); }
+    .status,.tag { display:inline-flex; align-items:center; min-height:32px; padding:5px 11px; border:1px solid currentColor; border-radius:999px; font-size:.78rem; font-weight:850; white-space:nowrap; }
+    .status,.progress { color:var(--progress); background:#112d48; }
+    .done { color:var(--ok); background:#10352d; }
+    .hold { color:var(--warn); background:#3b2816; }
+    .meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:30px 0 0; }
+    .meta div { min-width:0; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:#081522bb; }
+    dt { color:var(--muted); font-size:.74rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+    dd { margin:3px 0 0; font-weight:750; overflow-wrap:anywhere; }
+    .toc { display:flex; gap:8px; overflow-x:auto; margin:18px 0; padding:10px; border:1px solid var(--line); border-radius:16px; background:#07111fe6; position:sticky; top:8px; z-index:5; }
+    .toc a { flex:0 0 auto; min-height:44px; display:inline-flex; align-items:center; padding:0 13px; border-radius:10px; background:#13243a; text-decoration:none; font-size:.84rem; font-weight:750; }
+    main { display:grid; gap:16px; }
+    .panel { padding:clamp(20px,4vw,34px); border-radius:22px; }
+    .grid-2,.grid-3,.task-list,.flow { display:grid; gap:12px; }
+    .grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .grid-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .card { min-width:0; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); }
+    .card p,.card li,.muted { color:var(--muted); }
+    ul,ol { padding-left:1.2rem; }
+    li + li { margin-top:7px; }
+    .flow { grid-template-columns:repeat(5,minmax(0,1fr)); margin:0; padding:0; list-style:none; counter-reset:step; }
+    .flow li { min-width:0; padding:16px; border:1px solid var(--line); border-radius:14px; background:#101f33; }
+    .flow li::before { counter-increment:step; content:"0" counter(step); display:block; color:var(--accent); font-weight:900; }
+    .flow strong { display:block; margin:5px 0; }
+    .table-wrap { min-width:0; max-width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:14px; }
+    table { width:100%; min-width:760px; border-collapse:collapse; }
+    caption { padding:12px; text-align:left; color:var(--muted); }
+    th,td { padding:12px 14px; border-top:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:#eaf1f9; }
+    code { color:#f8dfa0; }
+    .task-list { margin:0; padding:0; list-style:none; }
+    .task-list li { display:grid; grid-template-columns:38px minmax(0,1fr) auto; align-items:center; gap:12px; padding:13px; border:1px solid var(--line); border-radius:13px; background:#101f33; }
+    .task-list b { color:var(--accent); }
+    details { margin-top:12px; border:1px solid var(--line); border-radius:14px; background:#0a1727; }
+    summary { min-height:48px; display:flex; align-items:center; padding:12px 15px; font-weight:800; cursor:pointer; }
+    details div { padding:0 15px 15px; color:var(--muted); }
+    footer { padding:28px 4px; color:var(--muted); font-size:.85rem; }
+    @media (max-width:800px) { .meta,.grid-3 { grid-template-columns:1fr 1fr; } .grid-2,.flow { grid-template-columns:1fr; } .hero-top,.panel-head { flex-direction:column; } }
+    @media (max-width:520px) { .page { width:calc(100% - 20px); padding-top:10px; } .hero,.panel { border-radius:17px; } .meta,.grid-3 { grid-template-columns:1fr; } .task-list li { grid-template-columns:32px minmax(0,1fr); } .task-list .tag { grid-column:2; justify-self:start; } body { word-break:normal; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">계획 본문으로 이동</a>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-top"><div><p class="eyebrow">Stock Autopsy · Financial Pivot</p><h1>Phase 5C<br>숫자는 비교로 읽는다</h1><p class="hero-copy">기존 공식 재무 데이터를 기간·추세·비교기업·업종 기준과 함께 읽는 피벗 분석판으로 재구성합니다. 없는 기간과 비교값은 만들지 않고 데이터 한계를 화면에 남깁니다.</p></div><span class="status">Review</span></div>
+      <dl class="meta">
+        <div><dt>시작 SHA</dt><dd>3562fd75452aa269b7b2a1bc95db5c7a189319e8</dd></div>
+        <div><dt>Feature branch</dt><dd>feat/financial-pivot-phase-5c</dd></div>
+        <div><dt>Pull Request</dt><dd>구현 검증 완료 · 생성 대기</dd></div>
+        <div><dt>최종 main SHA</dt><dd>검토 후 기록</dd></div>
+        <div><dt>Production deployment</dt><dd>기준점 dpl_CMYZt7eUor8weP5VBZjacN8JFb1g · Ready</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-17 · Review</dd></div>
+      </dl>
+    </header>
+
+    <nav class="toc" aria-label="Phase 5C 목차"><a href="#goal">목적</a><a href="#baseline">5B</a><a href="#audit">감사</a><a href="#coverage">커버리지</a><a href="#flow">흐름</a><a href="#structure">구조</a><a href="#calculation">계산</a><a href="#comparison">비교</a><a href="#mobile">모바일</a><a href="#quality">검증</a><a href="#work">진행</a><a href="#actual">실제 결과</a></nav>
+
+    <main id="main">
+      <section class="panel" id="goal"><div class="panel-head"><div><p class="eyebrow">01 · Goal</p><h2>이번 단계의 목적</h2></div><span class="tag done">구현 완료</span></div><div class="grid-2"><article class="card"><h3>제품 목표</h3><p>재무 숫자를 단독 값으로 보여주지 않고 기간 변화, 과거 추세, 비교기업과 업종 기준을 함께 제시합니다.</p></article><article class="card"><h3>판단 원칙</h3><p>증가·감소를 일괄적으로 좋고 나쁨으로 칠하지 않습니다. 변화의 방향, 부호 전환, 지표의 의미와 추가 확인 항목을 텍스트로 설명합니다.</p></article></div></section>
+
+      <section class="panel" id="baseline"><div class="panel-head"><div><p class="eyebrow">02 · Phase 5B</p><h2>완료된 기반과 보호 범위</h2></div><span class="tag done">기준점 확인</span></div><div class="grid-3"><article class="card"><h3>기업 Brief</h3><p>8개 기업, 핵심 질문 40개, 핵심 숫자 19개와 NVIDIA·Meta 조건부 리포트 CTA를 유지합니다.</p></article><article class="card"><h3>공개 콘텐츠</h3><p>오늘의 월스트리트, Owner Verified, 주가해부 3파일 게시 계약을 변경하지 않습니다.</p></article><article class="card"><h3>시스템</h3><p>Serverless Function 12개, 공개 API, DB, dependency와 valuation 계산은 늘리거나 변경하지 않습니다.</p></article></div></section>
+
+      <section class="panel" id="audit"><div class="panel-head"><div><p class="eyebrow">03 · Audit</p><h2>현재 재무 화면 감사 결과</h2></div><span class="tag done">코드 변경 전 완료</span></div><div class="grid-2"><article class="card"><h3>현재 경로</h3><p>Company Brief의 <code>숫자와 비교 보기</code>는 같은 상세 페이지의 <code>#company-dashboard-metrics-title</code>로 이동합니다. 독립 재무 route는 없고 기존 상세에는 최신 metric 카드·차트와 별도의 legacy 분석 route가 있습니다.</p></article><article class="card"><h3>현재 데이터</h3><p>정적 dashboard는 기업별 최신 지표 1~5개입니다. 기존 <code>/api/financials</code>는 SEC CompanyFacts 또는 OpenDART의 최신 기간과 일부 YoY·QoQ를 반환하지만 연속 피벗 시계열을 공개 모델로 제공하지 않습니다.</p></article></div><details><summary>기존 계산·원문·재작성 처리</summary><div>SEC normalization은 최신 적용 가능한 filing/context를 선택하고 amended filing을 restated로 기록합니다. 기존 API는 FCF, 부채비율, 유동비율, 이자보상배율을 계산합니다. TTM은 현재 공개 화면에 없으며 안전한 연속 4분기가 없으면 새로 표시하지 않습니다.</div></details></section>
+
+      <section class="panel" id="coverage"><div class="panel-head"><div><p class="eyebrow">04 · Coverage</p><h2>지원 기업별 가용 범위</h2></div><span class="tag hold">제약을 숨기지 않음</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="지원 기업별 재무 데이터 커버리지"><table><caption>2026-07-17 저장소·Production 기준 감사</caption><thead><tr><th scope="col">기업</th><th scope="col">통화</th><th scope="col">회계연도</th><th scope="col">연간</th><th scope="col">분기</th><th scope="col">출처</th></tr></thead><tbody><tr><th scope="row">SK하이닉스</th><td>KRW</td><td>12월</td><td>최신 요약, 연속 시계열 없음</td><td>2026 Q1, YoY 일부</td><td>OpenDART CFS</td></tr><tr><th scope="row">LG전자</th><td>KRW</td><td>12월</td><td>최신 요약, 연속 시계열 없음</td><td>2026 Q1, 비교 없음</td><td>OpenDART CFS</td></tr><tr><th scope="row">NVIDIA</th><td>USD</td><td>1월</td><td>정규화 7개</td><td>2027 Q1, YoY·QoQ</td><td>SEC CompanyFacts</td></tr><tr><th scope="row">Micron</th><td>USD</td><td>8월</td><td>정규화 7개</td><td>2026 Q3, YoY·QoQ</td><td>SEC CompanyFacts</td></tr><tr><th scope="row">Dell</th><td>USD</td><td>1월</td><td>정규화 7개</td><td>2027 Q1, YoY·QoQ</td><td>SEC CompanyFacts</td></tr><tr><th scope="row">Eaton</th><td>USD</td><td>12월</td><td>정규화 7개</td><td>2026 Q1, 일부 비교</td><td>SEC CompanyFacts</td></tr><tr><th scope="row">Meta</th><td>USD</td><td>12월</td><td>정규화 7개</td><td>2026 Q1, YoY·QoQ</td><td>SEC CompanyFacts</td></tr><tr><th scope="row">Super Micro</th><td>USD</td><td>6월</td><td>정규화 7개</td><td>2026 Q3, YoY·QoQ</td><td>SEC CompanyFacts</td></tr></tbody></table></div><p class="muted">미국 6개 기업의 평균 연간 기간은 7개, 한국 2개는 현재 0개 연속 기간입니다. 8개 모두 최신 분기 1개는 존재하지만 8개 연속 standalone 분기는 없습니다. 통화는 USD·KRW 두 종류이며 TTM은 0개입니다.</p></section>
+
+      <section class="panel" id="flow"><div class="panel-head"><div><p class="eyebrow">05 · User Flow</p><h2>기업 Brief에서 비교 분석까지</h2></div><span class="tag progress">설계 확정</span></div><ol class="flow"><li><strong>기업 Brief</strong>사업·변화·위험을 먼저 읽습니다.</li><li><strong>숫자와 비교</strong>새 재무 route로 이동합니다.</li><li><strong>기간 선택</strong>연간 또는 가능한 분기를 선택합니다.</li><li><strong>비교 선택</strong>자체 추세·peer·업종을 전환합니다.</li><li><strong>근거 확인</strong>행 해석과 계산·원문 기준을 확인합니다.</li></ol></section>
+
+      <section class="panel" id="structure"><div class="panel-head"><div><p class="eyebrow">06 · Information Architecture</p><h2>피벗 분석판과 데이터 모델</h2></div><span class="tag done">구현 완료</span></div><div class="grid-3"><article class="card"><h3>Route</h3><p><code>/ko/companies/:slug/financials</code>를 사용합니다. 기존 중복 route가 없으며 Company Brief CTA와 직접 URL을 연결합니다.</p></article><article class="card"><h3>행·열</h3><p>성장·수익성·현금흐름·자본효율·재무건전성·주당 지표를 행으로, 실제 기간과 변화·중기 추세·선택 비교값을 열로 둡니다.</p></article><article class="card"><h3>지연 로딩</h3><p>피벗 UI와 기업별 식별 config를 재무 route에서만 불러옵니다. peer 데이터는 peer 모드를 선택할 때 필요한 기업만 요청합니다.</p></article></div><div class="table-wrap" tabindex="0" role="region" aria-label="재무 피벗 모델"><table><caption>핵심 typed metadata</caption><thead><tr><th scope="col">영역</th><th scope="col">필드</th><th scope="col">규칙</th></tr></thead><tbody><tr><th scope="row">Metric</th><td>id, group, valueType, changeType</td><td>중복 ID·단위 누락 금지</td></tr><tr><th scope="row">Period</th><td>end, fiscalYear, quarter, currency, source</td><td>중복·역순·혼합 기간 금지</td></tr><tr><th scope="row">Change</th><td>percent, percentagePoint, statusTransition</td><td>0분모·부호 전환에 일반 성장률 금지</td></tr><tr><th scope="row">Comparison</th><td>historical, peerMedian, industryAggregate</td><td>통화·기간·정의가 비교 가능한 경우만</td></tr></tbody></table></div></section>
+
+      <section class="panel" id="calculation"><div class="panel-head"><div><p class="eyebrow">07 · Calculation</p><h2>계산 규칙과 결측치</h2></div><span class="tag done">32개 단위 검증</span></div><div class="grid-3"><article class="card"><h3>YoY·QoQ</h3><p>양수 분모와 동일 부호일 때만 변화율을 계산합니다. 적자→흑자는 흑자전환, 흑자→적자는 적자전환, 음수끼리는 적자확대·축소로 표시합니다.</p></article><article class="card"><h3>마진·CAGR</h3><p>마진과 비율 차이는 %p입니다. CAGR은 시작·종료가 양수이고 실제 연속 간격이 최소 3개일 때만 표시합니다.</p></article><article class="card"><h3>누락</h3><p>null·undefined·미수집·해당 없음은 0으로 바꾸지 않습니다. 자료 없음·비교 불가·기간 부족을 구분합니다.</p></article></div></section>
+
+      <section class="panel" id="comparison"><div class="panel-head"><div><p class="eyebrow">08 · Comparison</p><h2>peer와 업종 기준</h2></div><span class="tag hold">가능한 범위만</span></div><div class="grid-2"><article class="card"><h3>직접 비교기업</h3><ul><li>메모리·AI 반도체: SK하이닉스·NVIDIA·Micron 중 정의가 같은 비율만</li><li>AI 서버: Dell·Super Micro</li><li>LG전자·Eaton·Meta는 지원 기업 안에 충분한 직접 peer가 없어 안전한 빈 상태</li></ul></article><article class="card"><h3>업종 기준</h3><p>기존 2026-01 NYU Stern versioned benchmark의 Semiconductor, Advertising, Computers/Peripherals, Electrical Equipment, Electronics 데이터를 재사용합니다. 직접 연결 가능한 ROIC 등 같은 정의만 보여줍니다.</p></article></div><p class="muted">다른 통화의 절대 금액은 비교하지 않으며, 회계연도 말이 다르면 ‘각 기업 최근 완료 회계연도’라고 표시합니다.</p></section>
+
+      <section class="panel" id="mobile"><div class="panel-head"><div><p class="eyebrow">09 · Accessibility & Performance</p><h2>모바일 표·키보드·bundle 결과</h2></div><span class="tag done">검증 완료</span></div><div class="grid-3"><article class="card"><h3>실제 table</h3><p>table·thead·tbody·scope와 sticky 첫 열, aria-pressed·tab semantics, 선택 표식과 44px target을 적용했습니다.</p></article><article class="card"><h3>모바일</h3><p>320·360·390px에서 페이지 overflow 0이며 표 내부만 horizontal scroll합니다. 단위·%·%p 잘림도 0입니다.</p></article><article class="card"><h3>성능</h3><p>entry는 765,047→765,679B raw, 207,252→207,425B gzip으로 예산 안입니다. 피벗 UI는 약 27.3kB raw / 9.0kB gzip 동적 chunk이며 기업·peer 데이터는 runtime 요청 경계로 분리했습니다.</p></article></div></section>
+
+      <section class="panel" id="quality"><div class="panel-head"><div><p class="eyebrow">10 · Validation</p><h2>테스트와 완료 기준</h2></div><span class="tag done">Release Gate PASS</span></div><div class="grid-2"><article class="card"><h3>계산·데이터</h3><p>YoY·QoQ, %p, 흑자전환·적자전환·적자축소·적자확대, CAGR, median, 합산 업종 margin, 통화·기간 불일치와 결측치를 32개 단위 검사로 검증했습니다.</p></article><article class="card"><h3>UI·회귀</h3><p>8개 route와 Chromium·WebKit 14개 viewport에서 h1, 표, 탭, 행 확장, peer·industry, 44px target, overflow와 console error를 확인했습니다. 실제 Safari 데스크톱 렌더링도 확인했습니다.</p></article></div><details><summary>브라우저 검증 결과</summary><div>1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×800, 320×700에서 페이지 overflow 0, console error 0입니다. 320·390px 표는 표 영역 안에서만 가로 스크롤합니다.</div></details></section>
+
+      <section class="panel" id="work"><div class="panel-head"><div><p class="eyebrow">11 · Work Order</p><h2>작업 진행</h2></div><span class="tag progress">6 / 7</span></div><ol class="task-list"><li><b>1</b><span>Git·Production 기준점과 저장소 지침</span><span class="tag done">완료</span></li><li><b>2</b><span>8개 기업 데이터·화면·CTA·peer·industry 감사</span><span class="tag done">완료</span></li><li><b>3</b><span>Plan HTML 작성과 초기 반응형 확인</span><span class="tag done">완료</span></li><li><b>4</b><span>모델·계산·route·동적 로딩·UI 구현</span><span class="tag done">완료</span></li><li><b>5</b><span>Validation·단위 테스트·문서·smoke</span><span class="tag done">완료</span></li><li><b>6</b><span>성능·Chromium·WebKit·Safari QA</span><span class="tag done">완료</span></li><li><b>7</b><span>PR·main 병합·Production·완료 기록</span><span class="tag progress">진행 중</span></li></ol></section>
+
+      <section class="panel" id="actual"><div class="panel-head"><div><p class="eyebrow">12 · Plan vs Actual</p><h2>계획 대비 실제 결과</h2></div><span class="tag progress">배포 기록 대기</span></div><div class="grid-2"><article class="card"><h3>계획대로 완료</h3><p>8개 Company Brief CTA, lazy 재무 route, 6개 지표 그룹, 연간·분기, 기간·peer·industry 비교, 시맨틱 표, 원문과 계산 기준, 안전한 결측 상태를 구현했습니다. 미국 6개 기업은 실제 SEC 응답으로 각 연간 5개 기간을 확인했습니다.</p></article><article class="card"><h3>계획에서 달라진 점</h3><p>안전한 독립 분기 연속값이 없어 분기 화면은 직접 확인된 최신 기간만 표시합니다. 업종 비교는 산식이 같은 자본 대비 차입금만 직접 붙이고 ROIC는 산업 참고값으로만 설명합니다. peer 절대금액은 통화 불일치 때문에 비교하지 않습니다.</p></article></div><details><summary>남은 단계와 다음 단계</summary><div>구현 미완료는 없으며 PR·main 병합·Production smoke와 배포 ID 기록만 남았습니다. 완료 후 Phase 5D — 현재 시장가격과 모형 가치 사이의 프리미엄 설명 UX로 진행합니다.</div></details></section>
+    </main>
+    <footer>이 문서는 공개 서비스 페이지가 아니라 계획 → 구현 → 검증 → 배포의 과정을 기록하는 저장소 내 정적 프로젝트 대시보드입니다.</footer>
+  </div>
+</body>
+</html>
