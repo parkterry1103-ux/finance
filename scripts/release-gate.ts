@@ -223,9 +223,11 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'scripts/editorial-unit.ts',
     'scripts/company-brief-unit.ts',
     'scripts/financial-pivot-unit.ts',
+    'scripts/valuation-expectations-unit.ts',
     'src/content/company-briefs/validation.ts',
     'src/content/financial-pivots/validation.ts',
     'src/routes/FinancialPivotRoute.tsx',
+    'src/routes/ValuationExpectationsRoute.tsx',
     'src/routes/ResearchReportRoute.tsx',
     'src/routes/InsightsRoute.tsx',
     'src/routes/StockDissectionRoute.tsx',
@@ -252,8 +254,13 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/financial-pivot-model.md',
     'docs/financial-comparison-methodology.md',
     'docs/financial-data-validation.md',
+    'docs/site-restructure-phase-5d.md',
+    'docs/valuation-expectation-model.md',
+    'docs/reverse-dcf-methodology.md',
+    'docs/valuation-validation.md',
     'docs/plans/phase-5b-company-brief-plan.html',
     'docs/plans/phase-5c-financial-pivot-plan.html',
+    'docs/plans/phase-5d-valuation-expectations-plan.html',
     'docs/plans/phase-5a-editorial-newsroom-plan.html',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
@@ -276,12 +283,11 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
 
   const runtimeSource = collectRuntimeSources(join(root, 'src')).join('\n');
   assert(!/@xyflow\/react|\bReactFlow\b|전체 연결 보기|기업 연결 보기|시장지도 준비 중/.test(runtimeSource), 'forbidden market-map or ReactFlow runtime string remains');
-  const publicRouteSource = [
+  const eagerPublicSource = [
     readFileSync(join(root, 'src', 'App.tsx'), 'utf8'),
-    ...collectRuntimeSources(join(root, 'src', 'routes')),
     ...collectRuntimeSources(join(root, 'src', 'components')),
   ].join('\n');
-  assert(!/domain\/valuation|content\/valuation/.test(publicRouteSource), 'valuation module imported by public runtime');
+  assert(!/domain\/valuation|content\/valuation\/expectations/.test(eagerPublicSource), 'valuation calculation module imported by eager public runtime');
   return `${functions.length} Functions, ${Object.keys(activeConfig.content).length} content counts, forbidden runtime strings 0`;
 }
 
@@ -290,6 +296,20 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   assert(existsSync(join(root, 'dist', 'index.html')), 'dist/index.html missing');
   assert(existsSync(manifestPath), 'Vite manifest missing');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, ManifestEntry>;
+  const reachableDynamicImports = (start: string) => {
+    const pending = [start];
+    const seen = new Set<string>();
+    const dynamic = new Set<string>();
+    while (pending.length) {
+      const key = pending.pop()!;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const definition = manifest[key];
+      definition?.dynamicImports?.forEach((item) => dynamic.add(item));
+      definition?.imports?.forEach((item) => pending.push(item));
+    }
+    return dynamic;
+  };
   const entries = Object.entries(manifest).filter(([, value]) => value.isEntry);
   assert(entries.length === 1, `expected one entry manifest record, received ${entries.length}`);
   const [entrySource, entryDefinition] = entries[0];
@@ -307,8 +327,11 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
     assert(entryDefinition.dynamicImports?.includes(route.source), `${route.source} is not dynamically imported by the App entry`);
   });
   const reportRouteEntry = Object.entries(manifest).find(([, definition]) => definition.name === 'ResearchReportRoute' && definition.isDynamicEntry);
+  const valuationRouteEntry = Object.entries(manifest).find(([, definition]) => definition.name === 'ValuationExpectationsRoute' && definition.isDynamicEntry);
   assert(Boolean(reportRouteEntry), 'research report route is not a dynamic manifest entry');
+  assert(Boolean(valuationRouteEntry), 'valuation expectations route is not a dynamic manifest entry');
   const [reportRouteKey, reportRoute] = reportRouteEntry!;
+  const [valuationRouteKey] = valuationRouteEntry!;
   const nvidiaReport = manifest['src/content/research-reports/nvidia.ts'];
   const metaReport = manifest['src/content/research-reports/meta.ts'];
   const nvidiaMonteCarlo = manifest['src/content/monte-carlo/nvidia.ts'];
@@ -316,14 +339,20 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   const companiesRoute = manifest['src/routes/CompaniesRoute.tsx'];
   assert(nvidiaReport?.isDynamicEntry && metaReport?.isDynamicEntry, 'company report content is not split into company-specific dynamic entries');
   assert(entryDefinition.dynamicImports?.includes(reportRouteKey), 'research report route is not dynamically imported by the App entry');
-  assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically imported by report route');
-  assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/meta.ts'), 'Meta report is not dynamically imported by report route');
+  const reportReachableDynamic = reachableDynamicImports(reportRouteKey);
+  const valuationReachableDynamic = reachableDynamicImports(valuationRouteKey);
+  assert(reportReachableDynamic.has('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically reachable from report route');
+  assert(reportReachableDynamic.has('src/content/research-reports/meta.ts'), 'Meta report is not dynamically reachable from report route');
+  assert(entryDefinition.dynamicImports?.includes(valuationRouteKey), 'valuation expectations route is not dynamically imported by the App entry');
+  assert(valuationReachableDynamic.has('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically reachable from valuation route');
+  assert(valuationReachableDynamic.has('src/content/research-reports/meta.ts'), 'Meta report is not dynamically reachable from valuation route');
   assert(nvidiaMonteCarlo?.isDynamicEntry && metaMonteCarlo?.isDynamicEntry, 'Monte Carlo results are not split into company-specific dynamic entries');
   assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/nvidia.ts'), 'NVIDIA Monte Carlo result is not dynamically imported by report route');
   assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically imported by report route');
   assert(!nvidiaMonteCarlo?.dynamicImports?.some((source) => source.includes('/meta.')), 'NVIDIA Monte Carlo chunk preloads Meta data');
   assert(!metaMonteCarlo?.dynamicImports?.some((source) => source.includes('/nvidia.')), 'Meta Monte Carlo chunk preloads NVIDIA data');
   assert(!companiesRoute?.dynamicImports?.some((source) => source.includes('research-reports')), 'company dashboard preloads report content');
+  assert(!entryDefinition.dynamicImports?.some((source) => source.includes('content/research-reports/')), 'App entry directly preloads company report content');
 
   const appSource = readFileSync(join(root, 'src', 'App.tsx'), 'utf8');
   activeConfig.lazyRoutes.forEach((route) => {
@@ -384,6 +413,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Company profile unit', 'company-profile-unit.js'],
   ['Company Brief unit', 'company-brief-unit.js'],
   ['Financial Pivot unit', 'financial-pivot-unit.js'],
+  ['Valuation expectations unit', 'valuation-expectations-unit.js'],
   ['Company events unit', 'company-events-unit.js'],
   ['Demand-supply unit', 'demand-supply-unit.js'],
   ['Market relations unit', 'market-relations-unit.js'],

@@ -13,6 +13,7 @@ export type ValuationReadinessCompany = {
   unsuitableMethods: string[];
   methodRationale: string;
   keyDrivers: string[];
+  publicValuationStatus: 'full' | 'partial' | 'unavailable';
 };
 
 export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
@@ -30,6 +31,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['단일 연도 PER'],
     methodRationale: '메모리 가격과 재고 사이클이 크므로 최근 최고 마진보다 중간 사이클 FCFF와 정상 마진이 중요합니다.',
     keyDrivers: ['HBM 비중', '메모리 ASP', '출하량', '재고', 'Capex', '감가상각'],
+    publicValuationStatus: 'unavailable',
   },
   {
     companySlug: 'lg-electronics',
@@ -45,6 +47,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['데이터센터 냉각 단일 사업 DCF'],
     methodRationale: '가전·전장·HVAC 등 사업부 경제성이 달라 전사 단일 배수보다 SOTP가 적합하며 공개된 냉각 매출만으로 별도 DCF를 만들 수 없습니다.',
     keyDrivers: ['가전 수요', 'HVAC 수주', '전장 성장', '원재료', '운전자본', 'Capex'],
+    publicValuationStatus: 'unavailable',
   },
   {
     companySlug: 'nvidia',
@@ -60,6 +63,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['PBR 단독 평가'],
     methodRationale: '높은 성장과 자산 경량 설계 모델을 매출 성장·정상 마진·재투자로 분해한 DCF와 가격 내재 기대의 교차검증이 적합합니다.',
     keyDrivers: ['데이터센터 매출', 'GPU 출하', 'ASP', '제품 구성', '영업이익률', '공급 제약'],
+    publicValuationStatus: 'full',
   },
   {
     companySlug: 'micron',
@@ -75,6 +79,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['단일 연도 PER'],
     methodRationale: '메모리 ASP·재고·Capex 사이클이 이익을 크게 흔들어 정상화 FCFF와 중간 사이클 배수가 필요합니다.',
     keyDrivers: ['HBM 비중', 'DRAM·NAND ASP', '출하량', '재고', 'Capex', '감가상각'],
+    publicValuationStatus: 'unavailable',
   },
   {
     companySlug: 'dell',
@@ -90,6 +95,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['매출 성장만 반영한 EV/Sales'],
     methodRationale: 'AI 서버 매출의 낮은 마진과 큰 운전자본 변동을 함께 반영해야 하므로 FCFF와 사업부 보조 평가가 적합합니다.',
     keyDrivers: ['AI 서버 주문', '출하량', '매출총이익률', '재고', '매출채권', '매입채무'],
+    publicValuationStatus: 'unavailable',
   },
   {
     companySlug: 'eaton',
@@ -105,6 +111,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['PBR 단독 평가'],
     methodRationale: '수주잔고의 매출 전환과 가격·물량·운전자본을 FCFF로 연결하고 산업재 정상 배수로 교차검증하는 방식이 적합합니다.',
     keyDrivers: ['수주잔고', 'book-to-bill', '가격', '물량', '원재료', '운전자본'],
+    publicValuationStatus: 'unavailable',
   },
   {
     companySlug: 'meta',
@@ -120,6 +127,7 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['장부가치 중심 PBR'],
     methodRationale: '광고 사용자·ARPU 성장과 AI 인프라 Capex를 명시적으로 분리할 수 있어 driver-based FCFF와 역산 DCF가 적합합니다.',
     keyDrivers: ['사용자 수', 'ARPU', '광고 단가', '노출량', '영업이익률', 'AI Capex'],
+    publicValuationStatus: 'full',
   },
   {
     companySlug: 'supermicro',
@@ -135,5 +143,10 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     unsuitableMethods: ['매출 성장만 반영한 단일 배수'],
     methodRationale: '빠른 매출 성장과 조달·재고·매출채권 부담을 함께 평가해야 하므로 운전자본 중심 FCFF가 필요합니다.',
     keyDrivers: ['AI 서버 출하', 'ASP', '매출총이익률', '재고일수', '매출채권', '자금조달'],
+    publicValuationStatus: 'unavailable',
   },
 ];
+
+export function valuationReadinessCompany(slug: string) {
+  return valuationReadinessCompanies.find((company) => company.companySlug === slug);
+}
