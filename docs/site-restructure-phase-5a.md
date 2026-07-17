@@ -57,4 +57,19 @@ DB, CMS, API, Function, 외부 뉴스 호출, 런타임 AI, 자동 분류, crawl
 
 ## 검증과 배포
 
-정적 모델 검증은 `npm run validate:editorial`, 전체 배포 전 검증은 `npm run release:gate`, 배포 후 read-only smoke는 `npm run release:smoke -- --base-url=https://finance1-flax.vercel.app`로 실행한다. 실제 결과는 Plan HTML과 이 문서의 완료 기록에 갱신한다.
+정적 모델 검증은 `npm run validate:editorial`, 전체 배포 전 검증은 `npm run release:gate`, 배포 후 read-only smoke는 `npm run release:smoke -- --base-url=https://finance1-flax.vercel.app`로 실행한다.
+
+완료 결과:
+
+- 구현 commit: `0b16fb02d9c232aab383ee78fd41d7204b2ef98c`
+- PR: [#10 Add editorial registry and newsroom homepage](https://github.com/parkterry1103-ux/finance/pull/10) · Merged
+- 구현 main SHA: `b26347ff2e72559cf79ec28aa1ef3b2903a09b11`
+- Production: `3sEN7ofhMWsZCYA42AvMqDzkmu2o` · Ready
+- Release Gate: 22개 검사 통과, Serverless Function 12개 유지
+- 운영 브라우저: Chromium 70개 + WebKit 70개 검사 통과, 7개 viewport·9개 route·검색 흐름, 실패 0
+- 실제 Safari: canonical 홈과 insights 확인 통과
+- Production smoke: routes 30, assets 14, APIs 9, sync 인증 6, 실패 0
+- 공개 콘텐츠: 0건. 두 예시 fixture는 draft로만 유지하고 직접 route에서도 본문을 노출하지 않음
+- 계획 대비 완료율: 100%. 코드·검증·배포 미완료 항목 없음
+
+초기 Safari 확인에서 Hero 제목이 배경과 충분히 대비되지 않는 문제를 발견해 글자색을 명시적으로 고정했다. 그 외 계획 범위 변경은 실제 예시 원고를 게시하지 않고 검증 가능한 빈 상태로 남긴 결정뿐이다.

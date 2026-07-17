@@ -115,15 +115,15 @@
           <h1>Phase 5A<br>Editorial Newsroom</h1>
           <p class="hero-copy">인스타그램 원고를 검증 가능한 정적 편집 콘텐츠로 구조화하고, 오늘의 시장 사건에서 기업의 사업·재무·가치평가로 이어지는 뉴스룸형 홈페이지를 만듭니다.</p>
         </div>
-        <span class="status">In Progress</span>
+        <span class="status">Completed</span>
       </div>
       <dl class="meta-grid">
         <div><dt>시작 SHA</dt><dd>0e50e348e9ba6a3f13e69507fdb03a3e838a8c64</dd></div>
         <div><dt>Feature branch</dt><dd>feat/editorial-newsroom-phase-5a</dd></div>
-        <div><dt>Pull Request</dt><dd>예정 · Add editorial registry and newsroom homepage</dd></div>
-        <div><dt>최종 main SHA</dt><dd>진행 전</dd></div>
-        <div><dt>Production deployment</dt><dd>기준점 HEBzzLnJhHXfWyabWJL6X5qHCBJs · Ready</dd></div>
-        <div><dt>최종 수정일</dt><dd>2026-07-17 · 구현·검증 진행 중</dd></div>
+        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/10">#10 · Merged</a></dd></div>
+        <div><dt>구현 main SHA</dt><dd>b26347ff2e72559cf79ec28aa1ef3b2903a09b11</dd></div>
+        <div><dt>Production deployment</dt><dd>3sEN7ofhMWsZCYA42AvMqDzkmu2o · Ready</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-17 · 구현·검증·배포 완료</dd></div>
       </dl>
     </header>
 
@@ -133,13 +133,13 @@
 
     <main id="main">
       <section class="panel" id="goal" aria-labelledby="goal-title">
-        <div class="panel-head"><div><p class="eyebrow">01 · Purpose</p><h2 id="goal-title">단계명과 프로젝트 목표</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">01 · Purpose</p><h2 id="goal-title">단계명과 프로젝트 목표</h2></div><span class="tag done">완료</span></div>
         <p><strong>사이트 재개편 5A — 편집 콘텐츠 레지스트리와 뉴스룸형 홈페이지.</strong> 하나의 자연어 원고를 홈페이지 요약, 전체 상세, 관련 기업, 상호 연결 콘텐츠와 향후 기업 리포트의 작성 시점 이슈에 재사용할 수 있게 합니다.</p>
         <div class="notice">제품 문장: “오늘 주가가 움직인 이유와 다음에 확인할 것을 해부합니다.” 보조 문장: “뉴스를 기업의 사업·재무·가치평가로 연결합니다.”</div>
       </section>
 
       <section class="panel" id="problem" aria-labelledby="problem-title">
-        <div class="panel-head"><div><p class="eyebrow">02 · Problem</p><h2 id="problem-title">사이트에서 해결하려는 문제</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">02 · Problem</p><h2 id="problem-title">사이트에서 해결하려는 문제</h2></div><span class="tag done">완료</span></div>
         <div class="problem-grid">
           <article class="card"><strong>진입점이 데이터베이스 중심</strong><p>현재 홈은 기업 분석과 거시경제 두 카드로 끝나며, 사용자가 오늘 무엇을 읽어야 하는지 보여주지 못합니다.</p></article>
           <article class="card"><strong>원고의 재사용 구조 부재</strong><p>3Reads와 주가 해부 원고를 홈·상세·기업 페이지에 일관되게 연결하는 typed registry가 없습니다.</p></article>
@@ -149,12 +149,12 @@
       </section>
 
       <section class="panel" id="flow" aria-labelledby="flow-title">
-        <div class="panel-head"><div><p class="eyebrow">03 · User Flow</p><h2 id="flow-title">핵심 사용자 흐름</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">03 · User Flow</p><h2 id="flow-title">핵심 사용자 흐름</h2></div><span class="tag done">완료</span></div>
         <ol class="flow"><li>자연어 원고와 출처를 전달받습니다.</li><li>사실·숫자·기준일을 검토하고 typed 콘텐츠로 변환합니다.</li><li>검증을 통과한 published 요약만 홈과 목록에 노출합니다.</li><li>상세에서 확인·미확인·출처·다음 확인을 읽습니다.</li><li>지원 기업과 관련 콘텐츠로 이동해 장기 맥락을 확인합니다.</li></ol>
       </section>
 
       <section class="panel" id="scope" aria-labelledby="scope-title">
-        <div class="panel-head"><div><p class="eyebrow">04 · Scope</p><h2 id="scope-title">구현 범위와 제외 범위</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">04 · Scope</p><h2 id="scope-title">구현 범위와 제외 범위</h2></div><span class="tag done">완료</span></div>
         <div class="scope-grid">
           <article class="card"><strong>이번 단계 구현</strong><ul><li>서로 다른 3Reads·주가 해부 typed 모델</li><li>게시 상태·출처·기준일·관계 validator</li><li>홈 검색과 최신 요약 index</li><li>insights 목록·두 상세 route</li><li>지원 기업의 최근 관련 해부</li><li>접근성·반응형·Production QA</li></ul></article>
           <article class="card"><strong>이번 단계 제외</strong><ul><li>재무 피벗과 기업 상세 5문항 개편</li><li>DCF·Monte Carlo 재설계</li><li>실시간 수집·크롤링·런타임 AI</li><li>관리자·CMS·DB·API·Function</li><li>기업 프로필 추가와 투자 추천</li><li>PayPal·ASML 예시의 Production 게시</li></ul></article>
@@ -162,7 +162,7 @@
       </section>
 
       <section class="panel" id="structure" aria-labelledby="structure-title">
-        <div class="panel-head"><div><p class="eyebrow">05 · Information Architecture</p><h2 id="structure-title">화면 정보 구조</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">05 · Information Architecture</p><h2 id="structure-title">화면 정보 구조</h2></div><span class="tag done">완료</span></div>
         <div class="architecture">
           <article><h3>뉴스룸형 홈</h3><ul><li>Header</li><li>Hero + 기업 검색</li><li>오늘의 주가 해부</li><li>오늘의 3Reads</li><li>기업 찾기 CTA</li><li>방법론·시장 환경 Footer</li></ul></article><span aria-hidden="true">→</span>
           <article><h3>Insights</h3><ul><li>최근 주가 해부</li><li>최근 3Reads</li><li>날짜별 콘텐츠</li><li>관련 기업</li></ul></article><span aria-hidden="true">→</span>
@@ -171,7 +171,7 @@
       </section>
 
       <section class="panel" id="data" aria-labelledby="data-title">
-        <div class="panel-head"><div><p class="eyebrow">06 · Data Model</p><h2 id="data-title">데이터 구조와 노출 규칙</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">06 · Data Model</p><h2 id="data-title">데이터 구조와 노출 규칙</h2></div><span class="tag done">완료</span></div>
         <div class="result-grid">
           <article class="card"><strong>ThreeReadsEdition</strong><p>정확히 세 read, 공통 질문, 공통 맥락, 투자자 질문, 한 줄 정리, 출처와 관련 콘텐츠를 저장합니다.</p><div class="code">draft | verified | published | archived</div></article>
           <article class="card"><strong>DailyStockDissection</strong><p>주가 기준일, 직접 계기, 확인·미확인, 움직임의 성격, 비교 수치, 시장·기업 요인과 다음 확인을 저장합니다.</p><div class="code">relative return = company return − benchmark return (%p)</div></article>
@@ -180,30 +180,30 @@
       </section>
 
       <section class="panel" id="files" aria-labelledby="files-title">
-        <div class="panel-head"><div><p class="eyebrow">07 · Components & Files</p><h2 id="files-title">주요 컴포넌트와 파일 변경 계획</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">07 · Components & Files</p><h2 id="files-title">주요 컴포넌트와 파일 변경 계획</h2></div><span class="tag done">완료</span></div>
         <div class="file-grid">
           <article class="card"><strong>콘텐츠 도메인</strong><p><a href="../../src/content/editorial/types.ts">../../src/content/editorial/types.ts</a><br><a href="../../src/content/editorial/registry.ts">../../src/content/editorial/registry.ts</a><br><a href="../../src/content/editorial/selectors.ts">../../src/content/editorial/selectors.ts</a><br><a href="../../src/content/editorial/validation.ts">../../src/content/editorial/validation.ts</a></p></article>
-          <article class="card"><strong>화면과 route</strong><p><a href="../../src/routes/InsightsRoute.tsx">../../src/routes/InsightsRoute.tsx</a><br><a href="../../src/App.tsx">../../src/App.tsx</a><br><a href="../../src/components/company-profiles/CompanyProfiles.tsx">../../src/components/company-profiles/CompanyProfiles.tsx</a><br><a href="../../src/styles.css">../../src/styles.css</a></p></article>
+          <article class="card"><strong>화면과 route</strong><p><a href="../../src/components/editorial/NewsroomHome.tsx">../../src/components/editorial/NewsroomHome.tsx</a><br><a href="../../src/routes/InsightsRoute.tsx">../../src/routes/InsightsRoute.tsx</a><br><a href="../../src/App.tsx">../../src/App.tsx</a><br><a href="../../src/components/company-profiles/CompanyProfiles.tsx">../../src/components/company-profiles/CompanyProfiles.tsx</a><br><a href="../../src/styles.css">../../src/styles.css</a></p></article>
           <article class="card"><strong>검증</strong><p><a href="../../scripts/editorial-unit.ts">../../scripts/editorial-unit.ts</a><br><a href="../../scripts/release-gate.ts">../../scripts/release-gate.ts</a><br><a href="../../config/release-gate.json">../../config/release-gate.json</a></p></article>
           <article class="card"><strong>운영 문서</strong><p><a href="../site-restructure-phase-5a.md">../site-restructure-phase-5a.md</a><br><a href="../editorial-content-model.md">../editorial-content-model.md</a><br><a href="../editorial-publishing-workflow.md">../editorial-publishing-workflow.md</a><br><a href="../editorial-validation.md">../editorial-validation.md</a></p></article>
         </div>
       </section>
 
       <section class="panel" id="work" aria-labelledby="work-title">
-        <div class="panel-head"><div><p class="eyebrow">08 · Work Order</p><h2 id="work-title">작업 순서와 현재 상태</h2></div><span class="tag progress">65% · In Progress</span></div>
+        <div class="panel-head"><div><p class="eyebrow">08 · Work Order</p><h2 id="work-title">작업 순서와 현재 상태</h2></div><span class="tag done">100% · Completed</span></div>
         <ol class="task-list">
           <li><b>1</b><span>Git·Production 기준점과 기존 홈·라우팅·검색 구조 조사</span><span class="tag done">완료</span></li>
           <li><b>2</b><span>브라우저용 정적 HTML 계획 대시보드 작성·초기 검증</span><span class="tag done">완료</span></li>
           <li><b>3</b><span>typed 모델·registry·selector·validation과 안전 fixture 구현</span><span class="tag done">완료</span></li>
           <li><b>4</b><span>뉴스룸형 홈·insights 목록·두 상세 route 구현</span><span class="tag done">완료</span></li>
           <li><b>5</b><span>지원 기업 최근 관련 해부와 공통 내비게이션 연결</span><span class="tag done">완료</span></li>
-          <li><b>6</b><span>단위·회귀·브라우저·접근성·성능 검증</span><span class="tag progress">진행 중</span></li>
-          <li><b>7</b><span>문서·Plan HTML 실제 결과 갱신, PR·Production 배포</span><span class="tag plan">계획</span></li>
+          <li><b>6</b><span>단위·회귀·브라우저·접근성·성능 검증</span><span class="tag done">완료</span></li>
+          <li><b>7</b><span>문서·Plan HTML 실제 결과 갱신, PR·Production 배포</span><span class="tag done">완료</span></li>
         </ol>
       </section>
 
       <section class="panel" id="test" aria-labelledby="test-title">
-        <div class="panel-head"><div><p class="eyebrow">09 · Quality Gate</p><h2 id="test-title">테스트 계획과 완료 기준</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">09 · Quality Gate</p><h2 id="test-title">테스트 계획과 완료 기준</h2></div><span class="tag done">통과</span></div>
         <div class="table-scroll" tabindex="0" role="region" aria-label="Phase 5A 테스트 표">
           <table><caption>기능·안전·회귀·배포 검증 계획</caption><thead><tr><th scope="col">영역</th><th scope="col">핵심 검사</th><th scope="col">완료 기준</th></tr></thead><tbody>
             <tr><th scope="row">콘텐츠</th><td>게시 상태, 3Reads 3개, 출처·날짜, 미래 콘텐츠, 관계 ID, NaN/Infinity</td><td>오류 0</td></tr>
@@ -214,10 +214,11 @@
             <tr><th scope="row">회귀</th><td>8개 기업, NVIDIA·Meta report, 거시, API·sync 인증, Release Gate</td><td>기존 검증 전부 통과</td></tr>
           </tbody></table>
         </div>
+        <div class="notice"><strong>완료 결과:</strong> Release Gate 22개 통과, 함수 12개 유지, Chromium 70개·WebKit 70개 운영 검사 통과, 실제 Safari 데스크톱 확인 통과, Production smoke 30 routes·14 assets·9 APIs·6 sync 인증 검사 통과. 실패 0건입니다.</div>
       </section>
 
       <section class="panel" id="risk" aria-labelledby="risk-title">
-        <div class="panel-head"><div><p class="eyebrow">10 · Risk</p><h2 id="risk-title">위험 요소와 대응</h2></div><span class="tag plan">계획</span></div>
+        <div class="panel-head"><div><p class="eyebrow">10 · Risk</p><h2 id="risk-title">위험 요소와 대응</h2></div><span class="tag done">대응 완료</span></div>
         <div class="risk-grid">
           <article class="card"><strong>게시할 실제 원고가 없음</strong><p>PayPal·ASML 예시는 draft fixture로만 저장하고 Production은 검증 가능한 빈 상태를 사용합니다.</p></article>
           <article class="card"><strong>홈 bundle 팽창</strong><p>summary index와 상세 lazy module을 분리하고 entry·Companies·insights 청크를 기준 build와 비교합니다.</p></article>
@@ -227,26 +228,26 @@
       </section>
 
       <section class="panel" id="delivery" aria-labelledby="delivery-title">
-        <div class="panel-head"><div><p class="eyebrow">11 · Delivery</p><h2 id="delivery-title">Git·PR·배포 상태</h2></div><span class="tag progress">In Progress</span></div>
+        <div class="panel-head"><div><p class="eyebrow">11 · Delivery</p><h2 id="delivery-title">Git·PR·배포 상태</h2></div><span class="tag done">Completed</span></div>
         <div class="table-scroll" tabindex="0" role="region" aria-label="Git과 배포 상태 표">
           <table><caption>작업 진행에 따라 같은 문서를 갱신합니다.</caption><tbody>
             <tr><th scope="row">Feature branch</th><td>feat/editorial-newsroom-phase-5a</td><td><span class="tag done">생성</span></td></tr>
-            <tr><th scope="row">Commit</th><td>Add editorial newsroom experience</td><td><span class="tag plan">예정</span></td></tr>
-            <tr><th scope="row">Pull Request</th><td>Add editorial registry and newsroom homepage</td><td><span class="tag plan">예정</span></td></tr>
-            <tr><th scope="row">Production</th><td><a href="https://finance1-flax.vercel.app">finance1-flax.vercel.app</a></td><td><span class="tag plan">배포 후 확인</span></td></tr>
+            <tr><th scope="row">Commit</th><td>0b16fb02 · Add editorial newsroom experience</td><td><span class="tag done">완료</span></td></tr>
+            <tr><th scope="row">Pull Request</th><td><a href="https://github.com/parkterry1103-ux/finance/pull/10">#10 · Add editorial registry and newsroom homepage</a></td><td><span class="tag done">Merged</span></td></tr>
+            <tr><th scope="row">Production</th><td><a href="https://finance1-flax.vercel.app">finance1-flax.vercel.app</a> · 3sEN7ofhMWsZCYA42AvMqDzkmu2o</td><td><span class="tag done">Ready·검증 완료</span></td></tr>
           </tbody></table>
         </div>
       </section>
 
       <section class="panel" id="actual" aria-labelledby="actual-title">
-        <div class="panel-head"><div><p class="eyebrow">12 · Plan vs Actual</p><h2 id="actual-title">계획 대비 실제 변경 사항과 검증 결과</h2></div><span class="tag progress">중간 기록</span></div>
+        <div class="panel-head"><div><p class="eyebrow">12 · Plan vs Actual</p><h2 id="actual-title">계획 대비 실제 변경 사항과 검증 결과</h2></div><span class="tag done">완료 기록</span></div>
         <div class="result-grid">
           <article class="card"><strong>계획대로 구현된 항목</strong><p>두 typed 모델, 상태 selector, 상세 lazy registry, 홈·목록·두 상세 route, 기존 8개 기업 검색, 선택적 기업 연결과 editorial validator를 구현했습니다.</p></article>
           <article class="card"><strong>계획에서 변경된 항목</strong><p>실제 published 원고를 만들지 않고 summary index를 0건으로 유지했습니다. 제공된 예시에는 원문 URL과 기준일이 없어 공개 안전 기준을 만족하지 않기 때문입니다.</p></article>
-          <article class="card"><strong>추가·보류·제외 항목</strong><p>PayPal·ASML·커넥티드카 예시는 출처와 기준일이 없어 공개하지 않는 원칙을 유지합니다.</p></article>
-          <article class="card"><strong>검증·Production 결과</strong><p>초기 Plan HTML 브라우저 렌더, application TypeScript와 editorial fixture 검증을 통과했습니다. build, Release Gate, viewport, Production 결과는 다음 갱신에 기록합니다.</p></article>
+          <article class="card"><strong>추가·보류·제외 항목</strong><p>두 브라우저 엔진을 같은 7개 viewport·9개 route로 검사하는 QA 스크립트를 추가했습니다. PayPal·ASML·커넥티드카 예시는 출처와 기준일이 없어 공개하지 않았고, 제외 범위의 DB·API·Function·외부 호출은 추가하지 않았습니다.</p></article>
+          <article class="card"><strong>검증·Production 결과</strong><p>Release Gate 22개, 운영 Chromium·WebKit 140개, 실제 Safari, canonical 검색·빈 상태·draft 비공개 경계, read-only smoke 59개 항목을 모두 통과했습니다. 초기 Safari QA에서 발견한 Hero 제목 명암 문제는 명시적 글자색을 적용해 재검증했습니다.</p></article>
         </div>
-        <details><summary>남은 위험</summary><div>실제 published 편집 콘텐츠는 사용자가 원고·원문 URL·기준일을 제공하고 편집 검토가 끝난 뒤에만 추가할 수 있습니다.</div></details>
+        <details><summary>미완료 항목과 남은 위험</summary><div>코드·검증·배포 미완료 항목은 없습니다. 다만 실제 published 편집 콘텐츠는 0건이며, 원고·원문 URL·기준일을 제공받고 편집 검토가 끝난 뒤에만 추가할 수 있습니다.</div></details>
         <details><summary>다음 단계</summary><div>Phase 5B — 기업 상세 첫 화면을 다섯 가지 핵심 질문 중심으로 축소합니다.</div></details>
       </section>
     </main>
