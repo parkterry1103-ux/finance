@@ -4902,3 +4902,11 @@ PayPal·ASML·커넥티드카 예시는 draft fixture로 계속 유지해 홈·�
 NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격과 기준시각, 보수·기준·낙관 가치 범위, 범위 안 가격 위치, Reverse DCF의 7년 내재 매출 CAGR, 근거 상태가 붙은 기대 후보, WACC×영구성장률 민감도와 다음 확인 항목을 순서대로 설명합니다. 나머지 6개 기업은 검증 모형 부재를 0이나 빈 그래프로 대체하지 않습니다.
 
 기업 상세·재무 피벗·심층 리포트는 실제 full 기업만 가치평가로 연결합니다. 기업별 report data는 route 진입 뒤 하나만 dynamic import하며 뉴스·편집 콘텐츠는 사업 가정을 자동 변경하지 않습니다. 신규 API·Function·DB·dependency는 없고 Function은 12개입니다. 모델과 운영 기준은 `docs/valuation-expectation-model.md`, `docs/reverse-dcf-methodology.md`, `docs/valuation-validation.md`, 실행 기록은 `docs/plans/phase-5d-valuation-expectations-plan.html`을 참고하세요.
+
+## Phase 5E · 사건에서 가치평가 가정까지
+
+검증된 사건을 `확인된 사실 / 아직 확인되지 않음 → 사업 동인 → Phase 5C 재무지표 → Phase 5D 가치평가 가정 → 검토 단계 → 실제 결정`으로 연결합니다. 검토 단계는 monitoring, scenario, base case, thesis 네 단계이고, 검토 완료와 실제 모형 변경은 별도 상태와 change record로 관리합니다.
+
+현재 Production record는 공식 실적에 근거한 NVIDIA와 Meta 2건입니다. 두 Phase 5D 모형은 해당 사건 뒤 작성돼 같은 model version을 유지하며 실제 가정 변경은 0건입니다. Company Brief와 Financial Pivot, 가치평가 화면은 현재 기업 module만 dynamic import하고 연결이 없는 6개 기업과 Published 3Reads에는 빈 section을 표시하지 않습니다.
+
+편집물 게시나 가격 변화로 DCF·Reverse DCF·Company Brief·핵심 판단을 자동 수정하지 않습니다. 신규 API·Function·DB·dependency·전용 route는 없고 Function은 12개를 유지합니다. 모델, 연결 방법론, validation과 실행 계획은 `docs/event-impact-model.md`, `docs/event-to-assumption-methodology.md`, `docs/event-impact-validation.md`, `docs/plans/phase-5e-event-assumption-linkage-plan.html`을 참고하세요.

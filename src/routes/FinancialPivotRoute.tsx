@@ -22,6 +22,8 @@ import {
 } from '../content/financial-pivots/index.js';
 import { fetchFinancialSeries } from '../services/financial-pivots.js';
 import { valuationReadinessCompany } from '../content/valuation/companies.js';
+import { loadEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
+import { FinancialMetricImpactRecords } from '../components/event-impacts/EventImpactUi.js';
 
 type Props = {
   slug: string;
@@ -78,12 +80,13 @@ function SummaryCards({ periods, currency }: { periods: FinancialSeriesPeriod[];
   </section>;
 }
 
-function HistoricalTable({ periods, currency, group, expandedMetric, setExpandedMetric }: {
+function HistoricalTable({ periods, currency, group, expandedMetric, setExpandedMetric, eventImpacts }: {
   periods: FinancialSeriesPeriod[];
   currency: string;
   group: FinancialMetricGroupId;
   expandedMetric: string | null;
   setExpandedMetric: (metric: string | null) => void;
+  eventImpacts: EventImpactRecord[];
 }) {
   const rows = financialMetricDefinitions.filter((metric) => metric.group === group && periods.some((period) => finiteMetric(period, metric.id) !== null));
   const latest = periods[periods.length - 1];
@@ -99,7 +102,7 @@ function HistoricalTable({ periods, currency, group, expandedMetric, setExpanded
         const change = calculateChange(currentValue ?? undefined, previousValue ?? undefined, metric.change);
         const expanded = expandedMetric === metric.id;
         return <tr key={metric.id} className={expanded ? 'is-expanded' : undefined}>
-          <th scope="row"><button type="button" aria-expanded={expanded} onClick={() => setExpandedMetric(expanded ? null : metric.id)}><span>{metric.label}</span><ChevronDown size={15} aria-hidden="true" /></button>{expanded ? <span className="financial-pivot-row-detail"><b>{metric.description}</b>{metric.calculation ? ` 계산: ${metric.calculation}.` : ''} 공시 원문 단위를 통화 백만 단위로 정규화했습니다.</span> : null}</th>
+          <th scope="row"><button type="button" aria-expanded={expanded} onClick={() => setExpandedMetric(expanded ? null : metric.id)}><span>{metric.label}</span><ChevronDown size={15} aria-hidden="true" /></button>{expanded ? <span className="financial-pivot-row-detail"><b>{metric.description}</b>{metric.calculation ? ` 계산: ${metric.calculation}.` : ''} 공시 원문 단위를 통화 백만 단위로 정규화했습니다.</span> : null}<FinancialMetricImpactRecords impacts={eventImpacts} metricId={metric.id} /></th>
           {periods.map((period) => <td key={period.periodEnd}>{formatMetricValue(finiteMetric(period, metric.id), metric, currency)}</td>)}
           <td><strong>{previous ? change.label : '비교 자료 없음'}</strong></td>
         </tr>;
@@ -147,6 +150,7 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
   const [dataState, setDataState] = useState<DataState>({ status: 'loading', payload: null });
   const [peerPayloads, setPeerPayloads] = useState<Map<string, FinancialSeriesResponse> | null>(null);
+  const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +164,18 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
     });
     return () => { cancelled = true; };
   }, [company?.companySlug, periodType]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!company) return () => { cancelled = true; };
+    setEventImpacts([]);
+    loadEventImpacts(company.companySlug).then((impacts) => {
+      if (!cancelled) setEventImpacts(impacts);
+    }).catch(() => {
+      if (!cancelled) setEventImpacts([]);
+    });
+    return () => { cancelled = true; };
+  }, [company?.companySlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,7 +217,7 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
         {comparisonMode === 'history' ? <section className="financial-pivot-analysis" aria-labelledby="financial-pivot-analysis-title">
           <header><div><span>기간 추세</span><h2 id="financial-pivot-analysis-title">무엇이 얼마나 달라졌나요?</h2><p>{periods.length < 2 ? '현재 확인 가능한 한 기간만 표시합니다. 비교값은 만들지 않았습니다.' : `${periods[0].label}부터 ${periods[periods.length - 1].label}까지 같은 공시 기준으로 비교합니다.`}</p></div><small>{dataState.payload?.source} · {dataState.payload?.sourceStatus === 'direct' ? '직접 확인' : '일부 자료'}</small></header>
           <div className="financial-pivot-group-tabs" role="tablist" aria-label="재무 지표 묶음">{metricGroupOrder.map((group) => <button type="button" role="tab" aria-selected={metricGroup === group} key={group} onClick={() => { setMetricGroup(group); setExpandedMetric(null); }}>{financialMetricGroupLabels[group]}</button>)}</div>
-          <HistoricalTable periods={periods} currency={company.currency} group={metricGroup} expandedMetric={expandedMetric} setExpandedMetric={setExpandedMetric} />
+          <HistoricalTable periods={periods} currency={company.currency} group={metricGroup} expandedMetric={expandedMetric} setExpandedMetric={setExpandedMetric} eventImpacts={eventImpacts} />
         </section> : null}
         {comparisonMode === 'peer' ? <section className="financial-pivot-analysis" aria-labelledby="peer-title"><header><div><span>비교기업</span><h2 id="peer-title">같은 사업 흐름의 기업과 비율 비교</h2><p>비교 버튼을 누른 뒤에만 필요한 기업 데이터를 추가 요청합니다.</p></div></header><PeerComparison company={company} peerPayloads={peerPayloads} /></section> : null}
         {comparisonMode === 'industry' ? <IndustryPanel company={company} latest={periods[periods.length - 1]} /> : null}

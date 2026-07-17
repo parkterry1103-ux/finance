@@ -17,6 +17,7 @@ import {
 } from '../content/company-profiles/selectors.js';
 import { loadCompanyBrief } from '../content/company-briefs/registry.js';
 import type { CompanyBrief } from '../content/company-briefs/types.js';
+import { loadEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
 import { companySearchIndex } from '../content/company-profiles/search.js';
 import { fetchOwnershipTrades } from '../services/trades.js';
 
@@ -44,23 +45,23 @@ type CompaniesRouteProps = CompanyProfilesRouteProps | OwnershipRouteProps | Fin
 
 function CompanyProfileDetailRoute({ navigation, onNavigate, slug }: Omit<CompanyProfilesRouteProps, 'slug'> & { slug: string }) {
   const profile = buildCompanyResearchProfile(slug);
-  const [briefState, setBriefState] = useState<{ slug: string; brief: CompanyBrief | null; failed: boolean }>({ slug: '', brief: null, failed: false });
+  const [briefState, setBriefState] = useState<{ slug: string; brief: CompanyBrief | null; impacts: EventImpactRecord[]; failed: boolean }>({ slug: '', brief: null, impacts: [], failed: false });
 
   useEffect(() => {
     let cancelled = false;
     if (!profile) return () => { cancelled = true; };
-    setBriefState({ slug, brief: null, failed: false });
-    loadCompanyBrief(slug, profile).then((brief) => {
-      if (!cancelled) setBriefState({ slug, brief, failed: !brief });
+    setBriefState({ slug, brief: null, impacts: [], failed: false });
+    Promise.all([loadCompanyBrief(slug, profile), loadEventImpacts(slug)]).then(([brief, impacts]) => {
+      if (!cancelled) setBriefState({ slug, brief, impacts, failed: !brief });
     }).catch(() => {
-      if (!cancelled) setBriefState({ slug, brief: null, failed: true });
+      if (!cancelled) setBriefState({ slug, brief: null, impacts: [], failed: true });
     });
     return () => { cancelled = true; };
   }, [slug]);
 
   if (!profile) return <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;
   if (briefState.slug !== slug || !briefState.brief) return <CompanyBriefLoadingPage viewModel={profile} navigation={navigation} onNavigate={onNavigate} failed={briefState.slug === slug && briefState.failed} />;
-  return <CompanyResearchProfilePage viewModel={profile} brief={briefState.brief} navigation={navigation} onNavigate={onNavigate} />;
+  return <CompanyResearchProfilePage viewModel={profile} brief={briefState.brief} eventImpacts={briefState.impacts} navigation={navigation} onNavigate={onNavigate} />;
 }
 
 function CompanyProfilesRoute({ navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {

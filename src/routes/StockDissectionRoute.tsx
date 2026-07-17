@@ -5,15 +5,25 @@ import { dateIsNotFuture, formatRelativeReturn, formatSignedPercent, isDetailVis
 import { publishedEditorialSummaryIndex } from '../content/editorial/summaries.js';
 import type { DailyStockDissection, ThreeReadsSummary } from '../content/editorial/types.js';
 import { editorialDate, editorialInternalLink, editorialPath, type EditorialNavigate } from '../components/editorial/EditorialUi.js';
+import { loadEditorialEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
+import { EditorialEventImpactSection } from '../components/event-impacts/EventImpactUi.js';
 
 export default function StockDissectionRoute({ slug, navigation, onNavigate }: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const [item, setItem] = useState<DailyStockDissection | null | undefined>(undefined);
+  const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
   useEffect(() => {
     let active = true;
     setItem(undefined);
     loadStockDissection(slug).then((loaded) => { if (active) setItem(loaded ?? null); }).catch(() => { if (active) setItem(null); });
     return () => { active = false; };
   }, [slug]);
+  useEffect(() => {
+    let active = true;
+    setEventImpacts([]);
+    if (!item?.id) return () => { active = false; };
+    loadEditorialEventImpacts(item.id).then((impacts) => { if (active) setEventImpacts(impacts); }).catch(() => { if (active) setEventImpacts([]); });
+    return () => { active = false; };
+  }, [item?.id]);
 
   const today = new Date().toISOString().slice(0, 10);
   const publicItem = item && isDetailVisible(item.status) && dateIsNotFuture(item.publishedAt, today) ? item : null;
@@ -45,7 +55,8 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
         <section className="editorial-detail-section" aria-labelledby="stock-conclusion-title"><div className="editorial-detail-heading"><span>08</span><h2 id="stock-conclusion-title">주가해부실의 해석</h2></div><p className="editorial-conclusion">{publicItem.editorialConclusion ?? publicItem.marketInterpretation}</p></section>
         {visibleEvidence.length ? <section className="editorial-detail-section" aria-labelledby="stock-evidence-title"><div className="editorial-detail-heading"><span>09</span><h2 id="stock-evidence-title">분석에 사용한 자료</h2></div><div className="editorial-evidence-grid">{visibleEvidence.map((evidence) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} />)}</div>{remainingEvidence.length ? <details className="editorial-evidence-details"><summary>전체 근거와 검증 기록 보기</summary><div className="editorial-evidence-grid">{remainingEvidence.map((evidence) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} />)}</div></details> : null}</section> : null}
         {publicItem.verification ? <section className="editorial-detail-section" aria-labelledby="stock-verification-title"><div className="editorial-detail-heading"><span>10</span><h2 id="stock-verification-title">작성·검증 정보</h2></div><dl className="editorial-verification"><div><dt>작성·분석</dt><dd>주가해부실</dd></div><div><dt>편집 검증</dt><dd>Owner Verified</dd></div><div><dt>검증 시각</dt><dd><time dateTime={publicItem.verification.verifiedAt}>{publicItem.verification.verifiedAt.replace('T', ' ').replace('+09:00', ' KST')}</time></dd></div>{publicItem.verification.note ? <div><dt>기록</dt><dd>{publicItem.verification.note}</dd></div> : null}</dl><p className="editorial-verification-note">Owner Verified는 사실과 숫자를 확인했다는 편집 기록이며, 사건의 미래 결과를 보증하지 않습니다. 가격·실적·공시의 원천 출처는 위 근거 자료에서 별도로 확인합니다.</p></section> : null}
-        {relatedThreeReads.length || publicItem.company.companySlug ? <section className="editorial-detail-section" aria-labelledby="stock-related-title"><div className="editorial-detail-heading"><span>11</span><h2 id="stock-related-title">관련 기업</h2></div><div className="editorial-related-links">{relatedThreeReads.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={editorialInternalLink(path, onNavigate)}>{related.title}<ArrowRight size={14} aria-hidden="true" /></a>; })}{publicItem.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`, onNavigate)}>{publicItem.company.name} 분석 보기<ArrowRight size={14} aria-hidden="true" /></a> : null}</div></section> : null}
+        <EditorialEventImpactSection impacts={eventImpacts} headingNumber="11" />
+        {relatedThreeReads.length || publicItem.company.companySlug ? <section className="editorial-detail-section" aria-labelledby="stock-related-title"><div className="editorial-detail-heading"><span>{eventImpacts.length ? '12' : '11'}</span><h2 id="stock-related-title">관련 기업</h2></div><div className="editorial-related-links">{relatedThreeReads.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={editorialInternalLink(path, onNavigate)}>{related.title}<ArrowRight size={14} aria-hidden="true" /></a>; })}{publicItem.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`, onNavigate)}>{publicItem.company.name} 분석 보기<ArrowRight size={14} aria-hidden="true" /></a> : null}</div></section> : null}
         <aside className="editorial-disclaimer"><strong>면책</strong><p>{publicItem.disclaimer}</p></aside>
       </main>
     </div>
