@@ -21,6 +21,7 @@
     "src/data.ts",
     "src/domain/valuation/**/*.ts",
     "src/content/research-reports/**/*.ts",
+    "src/content/monte-carlo/**/*.ts",
     "src/content/valuation/**/*.ts",
     "src/services/**/*.ts"
   ]

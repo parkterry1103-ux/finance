@@ -3,6 +3,7 @@ export * from './fcff.js';
 export * from './normalize.js';
 export * from './reverse-dcf.js';
 export * from './scenarios.js';
+export * from './monte-carlo.js';
 export * from './sensitivity.js';
 export * from './terminal-value.js';
 export * from './types.js';

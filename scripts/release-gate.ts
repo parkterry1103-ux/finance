@@ -217,6 +217,7 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'src/domain/valuation/validation.ts',
     'scripts/valuation-unit.ts',
     'scripts/research-report-unit.ts',
+    'scripts/monte-carlo-unit.ts',
     'src/routes/ResearchReportRoute.tsx',
     'docs/site-restructure-phase-4a.md',
     'docs/valuation-readiness-inventory.md',
@@ -225,9 +226,15 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/site-restructure-phase-4b.md',
     'docs/research-report-methodology.md',
     'docs/research-report-content-inventory.md',
+    'docs/site-restructure-phase-4c.md',
+    'docs/monte-carlo-valuation-methodology.md',
+    'docs/monte-carlo-assumption-inventory.md',
+    'docs/monte-carlo-validation.md',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
     'artifacts/phase-4a-valuation/meta/valuation-result.json',
+    'artifacts/phase-4c-monte-carlo/nvidia/result-summary.json',
+    'artifacts/phase-4c-monte-carlo/meta/result-summary.json',
     ...activeConfig.lazyRoutes.map((route) => route.source),
   ].filter((file) => file !== 'dist-placeholder-not-required');
   requiredFiles.forEach((file) => assert(existsSync(join(root, file)), `required file missing: ${file}`));
@@ -279,11 +286,18 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   const [reportRouteKey, reportRoute] = reportRouteEntry!;
   const nvidiaReport = manifest['src/content/research-reports/nvidia.ts'];
   const metaReport = manifest['src/content/research-reports/meta.ts'];
+  const nvidiaMonteCarlo = manifest['src/content/monte-carlo/nvidia.ts'];
+  const metaMonteCarlo = manifest['src/content/monte-carlo/meta.ts'];
   const companiesRoute = manifest['src/routes/CompaniesRoute.tsx'];
   assert(nvidiaReport?.isDynamicEntry && metaReport?.isDynamicEntry, 'company report content is not split into company-specific dynamic entries');
   assert(entryDefinition.dynamicImports?.includes(reportRouteKey), 'research report route is not dynamically imported by the App entry');
   assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically imported by report route');
   assert(reportRoute?.dynamicImports?.includes('src/content/research-reports/meta.ts'), 'Meta report is not dynamically imported by report route');
+  assert(nvidiaMonteCarlo?.isDynamicEntry && metaMonteCarlo?.isDynamicEntry, 'Monte Carlo results are not split into company-specific dynamic entries');
+  assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/nvidia.ts'), 'NVIDIA Monte Carlo result is not dynamically imported by report route');
+  assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically imported by report route');
+  assert(!nvidiaMonteCarlo?.dynamicImports?.some((source) => source.includes('/meta.')), 'NVIDIA Monte Carlo chunk preloads Meta data');
+  assert(!metaMonteCarlo?.dynamicImports?.some((source) => source.includes('/nvidia.')), 'Meta Monte Carlo chunk preloads NVIDIA data');
   assert(!companiesRoute?.dynamicImports?.some((source) => source.includes('research-reports')), 'company dashboard preloads report content');
 
   const appSource = readFileSync(join(root, 'src', 'App.tsx'), 'utf8');
@@ -348,6 +362,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Market relations unit', 'market-relations-unit.js'],
   ['Valuation engine unit', 'valuation-unit.js'],
   ['Research report unit', 'research-report-unit.js'],
+  ['Monte Carlo valuation unit', 'monte-carlo-unit.js'],
 ];
 compiledChecks.forEach(([name, file]) => runCommand(name, nodeCommand, [join('.sync-build', 'scripts', file)]));
 runCommand('Application TypeScript', './node_modules/.bin/tsc', ['--noEmit']);
