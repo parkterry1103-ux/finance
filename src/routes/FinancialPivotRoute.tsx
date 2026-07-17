@@ -21,6 +21,7 @@ import {
   type FinancialSeriesResponse,
 } from '../content/financial-pivots/index.js';
 import { fetchFinancialSeries } from '../services/financial-pivots.js';
+import { valuationReadinessCompany } from '../content/valuation/companies.js';
 
 type Props = {
   slug: string;
@@ -176,6 +177,7 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
 
   const periods = useMemo(() => (dataState.payload?.series?.periods ?? []).map(withDerivedMetrics).sort((a, b) => a.periodEnd.localeCompare(b.periodEnd)), [dataState.payload]);
   const backPath = company ? `/ko/companies/${company.companySlug}` : '/ko/companies';
+  const valuationStatus = company ? valuationReadinessCompany(company.companySlug)?.publicValuationStatus : 'unavailable';
 
   if (!company) return <div className="company-profiles-shell financial-pivot-shell">{navigation}<main className="financial-pivot-main"><section className="financial-pivot-empty"><h1>기업 재무 분석판을 찾을 수 없습니다.</h1><a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 목록으로 돌아가기</a></section></main></div>;
 
@@ -205,6 +207,7 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
         {comparisonMode === 'industry' ? <IndustryPanel company={company} latest={periods[periods.length - 1]} /> : null}
 
         <section className="financial-pivot-sources" aria-labelledby="financial-source-title"><div><span>자료와 계산</span><h2 id="financial-source-title">출처와 계산 기준</h2><p>기간별 실제 공시를 사용하며 수정 공시는 기존 정규화 규칙으로 우선 선택합니다.</p></div><details><summary>공시 원문과 기준 보기</summary><ul>{periods.map((period) => { const url = sourceUrl(company, period); return <li key={period.periodEnd}><div><strong>{period.label} · {period.filingType}</strong><span>기간 말 {period.periodEnd}{period.filedAt ? ` · 제출 ${period.filedAt}` : ''} · {period.currency} 백만 단위</span></div>{url ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`${company.companyName} ${period.label} 공시 원문`}>원문 보기 <ExternalLink size={13} aria-hidden="true" /></a> : <span>원문 링크 확인 필요</span>}</li>; })}</ul><p>YoY는 직전 같은 연간 기간, 분기 비교는 동일한 기간 정의가 확인될 때만 계산합니다. 이전 값이 0이거나 부호가 바뀌면 백분율을 표시하지 않습니다. 마진 변화는 %p를 사용합니다.</p></details></section>
+        {valuationStatus === 'full' ? <nav className="financial-pivot-next-actions" aria-label="재무 추세와 가치평가 연결"><a href={`/ko/companies/${company.companySlug}/valuation`} onClick={internalLink(`/ko/companies/${company.companySlug}/valuation`, onNavigate)}>이 재무 추세가 가치평가에 미치는 영향</a></nav> : null}
       </> : null}
     </main>
   </div>;

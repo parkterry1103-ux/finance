@@ -43,6 +43,7 @@
     { "name": "MacroDashboardRoute", "source": "src/routes/MacroDashboardRoute.tsx" },
     { "name": "MarketRelationsRoute", "source": "src/routes/MarketRelationsRoute.tsx" },
     { "name": "FinancialPivotRoute", "source": "src/routes/FinancialPivotRoute.tsx" },
+    { "name": "ValuationExpectationsRoute", "source": "src/routes/ValuationExpectationsRoute.tsx" },
     { "name": "InsightsRoute", "source": "src/routes/InsightsRoute.tsx" },
     { "name": "StockDissectionRoute", "source": "src/routes/StockDissectionRoute.tsx" },
     { "name": "ThreeReadsRoute", "source": "src/routes/ThreeReadsRoute.tsx" }
@@ -71,6 +72,14 @@
       "/ko/companies/meta",
       "/ko/companies/nvidia/report",
       "/ko/companies/meta/report",
+      "/ko/companies/nvidia/valuation",
+      "/ko/companies/meta/valuation",
+      "/ko/companies/sk-hynix/valuation",
+      "/ko/companies/lg-electronics/valuation",
+      "/ko/companies/micron/valuation",
+      "/ko/companies/dell/valuation",
+      "/ko/companies/eaton/valuation",
+      "/ko/companies/supermicro/valuation",
       "/ko/companies/supermicro",
       "/ko/companies/sk-hynix/financials",
       "/ko/companies/lg-electronics/financials",
@@ -100,7 +109,9 @@
       { "id": "wsj-non-affiliation", "all": ["The Wall Street Journal", "제휴·후원 관계가 없습니다"] },
       { "id": "company-brief-five-questions", "all": ["돈을 버는 구조", "최근 변화", "왜 중요한가", "가장 큰 위험", "다음 확인"] },
       { "id": "company-brief-actions", "all": ["숫자와 비교 보기", "심층 리포트 읽기", "직접 비교 자료 없음"] },
-      { "id": "financial-pivot", "all": ["숫자와 비교", "기간 추세", "비교기업", "산업 집계", "출처와 계산 기준", "자료 미수집"] }
+      { "id": "financial-pivot", "all": ["숫자와 비교", "기간 추세", "비교기업", "산업 집계", "출처와 계산 기준", "자료 미수집"] },
+      { "id": "valuation-expectations", "all": ["현재 가격은 모형 범위의 어디에 있나요?", "현재 가격을 설명하려면 어떤 성과가 필요한가요?", "모형이 포착하지 못한 기대 후보", "투자 권유가 아닙니다"] },
+      { "id": "valuation-unavailable", "all": ["검증된 가치평가 모형이 아직 없습니다", "0 또는 빈 그래프로 대신하지 않습니다"] }
     ],
     "apis": [
       { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },

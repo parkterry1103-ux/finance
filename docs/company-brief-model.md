@@ -46,3 +46,7 @@ CompanyBriefConfig
 ## 현재 inventory
 
 지원 기업은 SK하이닉스, LG전자, NVIDIA, Micron, Dell, Eaton, Meta, Supermicro 8개다. 리포트 CTA는 기존 route가 있는 NVIDIA와 Meta에만 표시한다. Phase 5B 시점에는 기업에 연결된 Published editorial이 없으므로 관련 리서치 섹션을 렌더링하지 않는다.
+
+## Phase 5D 가치평가 연결
+
+Company Brief는 기존 report route가 있고 공개 가치평가 상태가 `full`인 NVIDIA와 Meta에만 `시장가격에 반영된 기대 보기`를 표시한다. 다른 6개 기업은 direct valuation URL에서 안전한 unavailable 상태를 제공하지만 첫 화면에 지원되지 않는 CTA를 노출하지 않는다. valuation UI와 기업별 report data는 CTA 진입 뒤 lazy load되므로 8개 Brief 전체나 가치 엔진을 기업 상세 첫 진입에 추가하지 않는다.

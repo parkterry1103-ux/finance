@@ -166,6 +166,7 @@ const MacroDashboardRoute = lazy(() => import('./routes/MacroDashboardRoute'));
 const MarketRelationsRoute = lazy(() => import('./routes/MarketRelationsRoute'));
 const ResearchReportRoute = lazy(() => import('./routes/ResearchReportRoute'));
 const FinancialPivotRoute = lazy(() => import('./routes/FinancialPivotRoute'));
+const ValuationExpectationsRoute = lazy(() => import('./routes/ValuationExpectationsRoute'));
 const InsightsRoute = lazy(() => import('./routes/InsightsRoute'));
 const StockDissectionRoute = lazy(() => import('./routes/StockDissectionRoute'));
 const ThreeReadsRoute = lazy(() => import('./routes/ThreeReadsRoute'));
@@ -6953,6 +6954,7 @@ function App() {
   const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
   const routeResearchReportMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/report\/?$/);
   const routeFinancialPivotMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/financials\/?$/);
+  const routeValuationExpectationsMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/valuation\/?$/);
   const routeStockDissectionMatch = routePath.match(/^\/ko\/insights\/stock\/([^/]+)\/?$/);
   const routeThreeReadsMatch = routePath.match(/^\/ko\/insights\/3reads\/([^/]+)\/?$/);
   const routeInsightsMatch = routePath.match(/^\/ko\/insights\/?$/);
@@ -6971,6 +6973,7 @@ function App() {
   const routeCompanyIdentity = routeCompanyProfileEntry ? canonicalCompanyProfileIdentity(routeCompanyProfileEntry.companyId) : undefined;
   const routeResearchReportSlug = routeResearchReportMatch?.[1] ? decodeURIComponent(routeResearchReportMatch[1]) : undefined;
   const routeFinancialPivotSlug = routeFinancialPivotMatch?.[1] ? decodeURIComponent(routeFinancialPivotMatch[1]) : undefined;
+  const routeValuationExpectationsSlug = routeValuationExpectationsMatch?.[1] ? decodeURIComponent(routeValuationExpectationsMatch[1]) : undefined;
   const routeStockDissectionSlug = routeStockDissectionMatch?.[1] ? decodeURIComponent(routeStockDissectionMatch[1]) : undefined;
   const routeThreeReadsSlug = routeThreeReadsMatch?.[1] ? decodeURIComponent(routeThreeReadsMatch[1]) : undefined;
   const routeResearchReportEntry = routeResearchReportSlug ? companyProfileByIdOrSlug(routeResearchReportSlug) : undefined;
@@ -7016,6 +7019,8 @@ function App() {
           : '리서치 리포트를 찾을 수 없습니다 | 주가해부실'
       : routeFinancialPivotMatch
         ? `${companyProfileByIdOrSlug(routeFinancialPivotSlug)?.englishName ?? '기업'} 숫자와 비교 | 주가해부실`
+      : routeValuationExpectationsMatch
+        ? `${companyProfileByIdOrSlug(routeValuationExpectationsSlug)?.englishName ?? '기업'} 시장가격에 반영된 기대 | 주가해부실`
       : routeCompanyProfileMatch
         ? routeCompanyIdentity
           ? `${routeCompanyIdentity.name} 기업 분석 | 주가해부실`
@@ -7035,6 +7040,8 @@ function App() {
         ? '최근 주가 해부와 오늘의 월스트리트를 확인합니다.'
       : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
         ? `${routeResearchReportIdentity.name}의 사업 구조, 실적, 현금흐름, 가치평가 가정과 확인 항목을 근거와 함께 정리한 리서치 리포트입니다.`
+      : routeValuationExpectationsMatch
+        ? '현재 시장가격과 모형 가치 범위의 위치, 시장이 요구하는 성장과 앞으로 확인할 지표를 설명합니다.'
       : routeCompanyIdentity
         ? `${routeCompanyIdentity.name}의 사업 구조, 핵심 재무지표, 현금흐름과 주요 거시 변수를 살펴봅니다.`
         : routeCompaniesMatch
@@ -7215,6 +7222,17 @@ function App() {
         resetKey={routePath}
       >
         <FinancialPivotRoute slug={routeFinancialPivotSlug ?? ''} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
+
+  if (routeValuationExpectationsMatch) {
+    return (
+      <DeferredRoute
+        fallback={<div className="pick-shell company-profiles-shell">{navigation('companies')}<RouteLoadingFallback /></div>}
+        resetKey={routePath}
+      >
+        <ValuationExpectationsRoute slug={routeValuationExpectationsSlug ?? ''} marketPrices={marketPrices} navigation={navigation('companies')} onNavigate={navigateWithinApp} />
       </DeferredRoute>
     );
   }
