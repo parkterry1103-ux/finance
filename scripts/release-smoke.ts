@@ -38,6 +38,7 @@ const routeResults: SmokeResult[] = [];
 const apiResults: SmokeResult[] = [];
 const syncResults: SmokeResult[] = [];
 const assetResults: SmokeResult[] = [];
+const contentResults: SmokeResult[] = [];
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -297,28 +298,43 @@ async function main() {
       }
     }
 
-    for (const assetUrl of [...entryReferences, ...cssReferences]) {
+    const pendingAssetUrls = [...entryReferences, ...cssReferences];
+    const fetchedAssetUrls = new Set<string>();
+    const deployedAssetBodies: string[] = [];
+    while (pendingAssetUrls.length) {
+      const assetUrl = pendingAssetUrls.shift()!;
+      if (fetchedAssetUrls.has(assetUrl)) continue;
+      fetchedAssetUrls.add(assetUrl);
       try {
         const response = await requestWithPolicy(assetUrl);
         assert(response.status === 200, `asset returned HTTP ${response.status}`);
         assert(response.body.length > 0, 'asset body is empty');
-        assetResults.push({ id: new URL(assetUrl).pathname, url: assetUrl, status: response.status, result: 'passed', durationMs: response.durationMs, redirects: response.redirects, retries: response.retries, detail: `${response.body.length} decoded bytes` });
+        deployedAssetBodies.push(response.body);
+        assetResults.push({ id: new URL(assetUrl).pathname, url: assetUrl, status: response.status, result: 'passed', durationMs: response.durationMs, redirects: response.redirects, retries: response.retries, detail: `${response.body.length} decoded bytes${entryReferences.has(assetUrl) || cssReferences.has(assetUrl) ? '' : '; dynamic'}` });
 
         if (assetUrl.endsWith('.js')) {
-          const dynamicFiles = new Set(response.body.match(/(?:[A-Za-z]+Route|entries|trades)-[A-Za-z0-9_-]+\.js/g) ?? []);
-          for (const route of config.lazyRoutes) {
-            assert([...dynamicFiles].some((file) => file.startsWith(`${route.name}-`)), `${route.name} deployed lazy asset reference missing`);
+          const dynamicFiles = new Set(response.body.match(/[A-Za-z0-9][A-Za-z0-9._-]*-[A-Za-z0-9_-]+\.js/g) ?? []);
+          if (entryReferences.has(assetUrl)) {
+            for (const route of config.lazyRoutes) {
+              assert([...dynamicFiles].some((file) => file.startsWith(`${route.name}-`)), `${route.name} deployed lazy asset reference missing`);
+            }
           }
           for (const file of dynamicFiles) {
             const dynamicUrl = joinBase(baseUrl, `/assets/${file}`);
-            const dynamicResponse = await requestWithPolicy(dynamicUrl);
-            assert(dynamicResponse.status === 200 && dynamicResponse.body.length > 0, `${file} returned HTTP ${dynamicResponse.status} or an empty body`);
-            assetResults.push({ id: `/assets/${file}`, url: dynamicUrl, status: dynamicResponse.status, result: 'passed', durationMs: dynamicResponse.durationMs, redirects: dynamicResponse.redirects, retries: dynamicResponse.retries, detail: `${dynamicResponse.body.length} decoded bytes; dynamic` });
+            if (!fetchedAssetUrls.has(dynamicUrl)) pendingAssetUrls.push(dynamicUrl);
           }
         }
       } catch (error) {
         assetResults.push(failedResult(new URL(assetUrl).pathname, assetUrl, error));
       }
+    }
+
+    const deployedAssetText = deployedAssetBodies.join('\n');
+    for (const check of config.smoke.assetContentChecks) {
+      const missing = check.all.filter((fragment) => !deployedAssetText.includes(fragment));
+      contentResults.push(missing.length
+        ? failedResult(check.id, baseUrl, new Error(`deployed assets are missing: ${missing.join(', ')}`))
+        : { id: check.id, url: baseUrl, status: 200, result: 'passed', durationMs: 0, redirects: 0, retries: 0, detail: `${check.all.length} required fragments found in deployed lazy assets` });
     }
 
     for (const api of config.smoke.apis) {
@@ -360,7 +376,7 @@ async function main() {
 
   if (baseError) routeResults.push(failedResult('url-validation', deploymentValue || baseValue, new Error(baseError)));
 
-  const allResults = [...routeResults, ...assetResults, ...apiResults, ...syncResults];
+  const allResults = [...routeResults, ...assetResults, ...contentResults, ...apiResults, ...syncResults];
   const failures = allResults.filter((result) => result.result === 'failed');
   const commitResult = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
   const summary = {
@@ -379,6 +395,7 @@ async function main() {
     },
     routeCount: routeResults.length,
     assetCount: assetResults.length,
+    contentCheckCount: contentResults.length,
     apiCount: apiResults.length,
     syncCount: syncResults.length,
     durationMs: Date.now() - startedAt,
@@ -386,6 +403,7 @@ async function main() {
     failures: failures.map((result) => `${result.id}: ${result.detail}`),
     routes: routeResults,
     assets: assetResults,
+    contentChecks: contentResults,
     apis: apiResults,
     sync: syncResults,
   };
@@ -394,10 +412,10 @@ async function main() {
   writeFileSync(join(root, 'artifacts', 'release-smoke-summary.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
   const row = (result: SmokeResult) => `| ${result.id} | ${result.status ?? '-'} | ${result.result.toUpperCase()} | ${result.count ?? '-'} | ${result.duplicates ?? '-'} | ${result.redirects} | ${result.retries} | ${result.durationMs}ms | ${result.detail.replaceAll('|', '\\|')} |`;
   const table = (items: SmokeResult[]) => `| Check | HTTP | Result | Count | Duplicates | Redirects | Retries | Duration | Detail |\n| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |\n${items.map(row).join('\n')}`;
-  const markdown = `## Deployment Smoke Gate\n\n- Commit: \`${summary.commit}\`\n- Base URL: \`${summary.baseUrl}\`\n- Deployment metadata URL: ${summary.deploymentUrl ? `\`${summary.deploymentUrl}\`` : 'not supplied'}\n- Final status: **${summary.status.toUpperCase()}**\n- Duration: **${summary.durationMs}ms**\n- Policy: HTTPS allowlist, ${config.smoke.timeoutMs}ms timeout, ${config.smoke.retries} retries, ${config.smoke.maxRedirects} redirects\n- Write operations: **0**; authenticated sync calls: **0**\n\n### Routes\n\n${table(routeResults)}\n\n### Deployment assets\n\n${table(assetResults)}\n\n### Public APIs\n\n${table(apiResults)}\n\n### Sync authentication\n\n${table(syncResults)}\n${failures.length ? `\n### Failures\n\n${failures.map((result) => `- ${result.id}: ${result.detail}`).join('\n')}\n` : ''}`;
+  const markdown = `## Deployment Smoke Gate\n\n- Commit: \`${summary.commit}\`\n- Base URL: \`${summary.baseUrl}\`\n- Deployment metadata URL: ${summary.deploymentUrl ? `\`${summary.deploymentUrl}\`` : 'not supplied'}\n- Final status: **${summary.status.toUpperCase()}**\n- Duration: **${summary.durationMs}ms**\n- Policy: HTTPS allowlist, ${config.smoke.timeoutMs}ms timeout, ${config.smoke.retries} retries, ${config.smoke.maxRedirects} redirects\n- Write operations: **0**; authenticated sync calls: **0**\n\n### Routes\n\n${table(routeResults)}\n\n### Deployment assets\n\n${table(assetResults)}\n\n### Published content\n\n${table(contentResults)}\n\n### Public APIs\n\n${table(apiResults)}\n\n### Sync authentication\n\n${table(syncResults)}\n${failures.length ? `\n### Failures\n\n${failures.map((result) => `- ${result.id}: ${result.detail}`).join('\n')}\n` : ''}`;
   writeFileSync(join(root, 'artifacts', 'release-smoke-summary.md'), markdown, 'utf8');
 
-  console.log(`Deployment smoke ${summary.status}: routes=${routeResults.length}, assets=${assetResults.length}, APIs=${apiResults.length}, sync=${syncResults.length}, duration=${summary.durationMs}ms`);
+  console.log(`Deployment smoke ${summary.status}: routes=${routeResults.length}, assets=${assetResults.length}, content=${contentResults.length}, APIs=${apiResults.length}, sync=${syncResults.length}, duration=${summary.durationMs}ms`);
   allResults.forEach((result) => console.log(`${result.result === 'passed' ? '✓' : '✗'} ${result.id}: ${result.detail}`));
   if (failures.length) process.exit?.(1);
 }

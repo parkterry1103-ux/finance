@@ -23,6 +23,7 @@ export type ReleaseGateConfig = {
     industryFlows: number;
     macroSeries: number;
     marketRelations: number;
+    editorialPublished: number;
   };
   lazyRoutes: Array<{ name: string; source: string }>;
   smoke: {
@@ -30,6 +31,7 @@ export type ReleaseGateConfig = {
     maxRedirects: number;
     retries: number;
     routes: string[];
+    assetContentChecks: Array<{ id: string; all: string[] }>;
     apis: Array<{ id: string; path: string; contract: string }>;
     syncEndpoints: string[];
   };

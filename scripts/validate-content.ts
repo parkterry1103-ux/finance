@@ -1136,7 +1136,7 @@ function validateHomeExperience() {
   if (!/뉴스를 기업의 사업·재무·가치평가로 연결합니다\./.test(newsroomHomeSource)) addError('NewsroomHome subtitle copy mismatch');
   if (!/placeholder="기업명이나 종목코드를 검색하세요"/.test(newsroomHomeSource) || !/role="combobox"/.test(newsroomHomeSource)) addError('NewsroomHome company search missing');
   if (!/publishedEditorialSummaryIndex/.test(newsroomHomeSource)) addError('NewsroomHome must use the static editorial summary index');
-  if (!/오늘의 해부를 준비하고 있습니다\./.test(newsroomHomeSource) || !/오늘의 3Reads를 준비하고 있습니다\./.test(newsroomHomeSource)) addError('NewsroomHome verified empty states missing');
+  if (!/오늘의 해부를 준비하고 있습니다\./.test(newsroomHomeSource) || !/오늘의 월스트리트를 준비하고 있습니다\./.test(newsroomHomeSource)) addError('NewsroomHome verified empty states missing');
   if (/(고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(newsroomHomeSource)) addError('NewsroomHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
   if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute\) return;/.test(appSource)) addError('home and company routes must not load market prices');

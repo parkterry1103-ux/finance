@@ -4884,8 +4884,10 @@ Vercel이 생성하는 성공 Production `deployment_status`와 필수 `environm
 
 ## 사이트 재개편 5A — 편집 레지스트리와 뉴스룸형 홈페이지
 
-홈을 두 개의 메뉴 카드에서 `오늘의 주가 해부`와 `오늘의 3Reads` 중심 뉴스룸으로 바꿨습니다. 기존 8개 기업 검색 index를 그대로 재사용하며 거시경제 URL은 유지하고 Footer의 `시장 환경`으로 이동했습니다. `/ko/insights`, `/ko/insights/stock/:slug`, `/ko/insights/3reads/:slug`는 각각 lazy route입니다.
+홈을 두 개의 메뉴 카드에서 `오늘의 주가 해부`와 `오늘의 월스트리트` 중심 뉴스룸으로 바꿨습니다. 내부 `ThreeReadsEdition` 이름과 `/ko/insights/3reads/:slug` route는 호환성을 위해 유지합니다. 기존 8개 기업 검색 index를 그대로 재사용하며 거시경제 URL은 유지하고 Footer의 `시장 환경`으로 이동했습니다. `/ko/insights`, `/ko/insights/stock/:slug`, `/ko/insights/3reads/:slug`는 각각 lazy route입니다.
 
-편집 원고는 `src/content/editorial`의 `ThreeReadsEdition`과 `DailyStockDissection`으로 분리합니다. 홈은 짧은 published summary index만 포함하고 긴 상세 object는 route 진입 뒤 dynamic import합니다. 출처 URL·발행일·기준일·지원 기업·관련 ID·유한 숫자·상대수익률 기준을 `npm run validate:editorial`로 검증합니다.
+편집 원고는 `src/content/editorial`의 `ThreeReadsEdition`과 `DailyStockDissection`으로 분리합니다. 홈은 짧은 published summary index만 포함하고 긴 상세 object는 route 진입 뒤 dynamic import합니다. `ownerVerified`는 작성자가 숫자와 사실을 확인했다는 편집 기록이며 미래 결과를 보증하지 않습니다. 주가 해부는 가격·시장·업종·수급 등 URL 선택형 복수 근거를 사용하고, 오늘의 월스트리트는 정확히 세 원문과 공식 교차검증 자료를 요구합니다. 날짜·지원 기업·관련 ID·유한 숫자·상대수익률·근거 무결성을 `npm run validate:editorial`로 검증합니다.
 
-제공된 PayPal·ASML·커넥티드카 예시는 출처와 기준일이 없어 draft fixture로만 저장했습니다. 검증 가능한 published 콘텐츠가 0건인 현재 화면은 정해진 빈 상태를 표시하며 예시 수치나 사실 미확인 내용을 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스 호출과 자동 생성은 없습니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`에 기록했습니다.
+Phase 5A.1에서 SK하이닉스 주가 해부와 2026-07-17 오늘의 월스트리트 두 건을 처음 Published로 등록했습니다. SK하이닉스 `-15.37%`와 같은 거래일 삼성전자 `-10.70%`는 `-4.67%p`로 표시하며 기존 `sk-hynix` 기업 페이지에 연결합니다. 오늘의 월스트리트는 희토류·Burberry·Kimi K3 원고를 보존하고 The Wall Street Journal·Dow Jones 비제휴 고지를 표시합니다. 지원되지 않는 기업의 가짜 프로필은 만들지 않았습니다.
+
+PayPal·ASML·커넥티드카 예시는 draft fixture로 계속 유지해 홈·목록·직접 route에서 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스·WSJ·AI 요청과 자동 생성은 없습니다. Function은 12개입니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`, `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록했습니다. 다음 편집 단계는 Phase 5B입니다.

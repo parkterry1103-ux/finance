@@ -7004,7 +7004,7 @@ function App() {
       : routeStockDissectionMatch
         ? '주가 해부 | 주가해부실'
       : routeThreeReadsMatch
-        ? '오늘의 3Reads | 주가해부실'
+        ? '오늘의 월스트리트 | 주가해부실'
       : routeInsightsMatch
         ? '리서치 | 주가해부실'
       : routeResearchReportMatch
@@ -7027,7 +7027,7 @@ function App() {
       : routeThreeReadsMatch
         ? '서로 다른 세 뉴스를 하나의 구조적 질문으로 연결합니다.'
       : routeInsightsMatch
-        ? '최근 주가 해부와 오늘의 3Reads를 확인합니다.'
+        ? '최근 주가 해부와 오늘의 월스트리트를 확인합니다.'
       : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
         ? `${routeResearchReportIdentity.name}의 사업 구조, 실적, 현금흐름, 가치평가 가정과 확인 항목을 근거와 함께 정리한 리서치 리포트입니다.`
       : routeCompanyIdentity
