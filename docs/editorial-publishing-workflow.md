@@ -31,4 +31,8 @@
 
 ## Phase 5A.1 첫 게시
 
-`2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-price`를 `published`로 등록했다. 홈에는 정적 summary만 포함하고 상세 원고는 route 진입 뒤 불러온다. PayPal과 ASML이 포함된 기존 fixture는 draft 상태를 유지한다. 다음 단계 5B에서도 같은 검증·근거·원고 보존 원칙을 유지한다.
+Phase 5A.1에서는 `2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-price`를 최초 Published로 등록했다. Phase 5B에서는 게시 흐름 검증용이던 SK하이닉스 콘텐츠를 제거하고 오늘의 월스트리트만 유지한다. 홈에는 정적 summary만 포함하고 상세 원고는 route 진입 뒤 불러온다. PayPal과 ASML이 포함된 기존 fixture는 draft 상태를 유지한다.
+
+## Phase 5B 주가해부 등록
+
+새 주가해부는 `01_verified-research.md`, `04_website-article.md`, `05_website-handoff.yaml` 세 파일을 모두 review한 뒤 등록한다. typed Published 객체에는 `stock_dissection`, `owner_verified`, 세션, 세 source file 경로와 `keyFiguresConsistent: true`를 기록한다. 가격·사실의 자료 제공처는 주가해부실의 작성·분석 표시와 분리한다. 전체 계약과 정정 순서는 [stock-dissection-intake.md](stock-dissection-intake.md)를 따른다.

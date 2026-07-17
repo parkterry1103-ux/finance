@@ -13,10 +13,11 @@ import type {
   DashboardChart,
   DashboardMetric,
 } from '../../content/company-profiles/types.js';
+import type { CompanyBrief, CompanyBriefQuestionKey } from '../../content/company-briefs/types.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
-import { moveCharacterLabels, summariesForCompany } from '../../content/editorial/selectors.js';
+import { moveCharacterLabels } from '../../content/editorial/selectors.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
 
 type Navigate = (path: string) => void;
@@ -36,6 +37,24 @@ function internalLink(path: string, onNavigate: Navigate) {
 function formatDate(value: string) {
   return value ? value.replace(/-/g, '.') : '확인 제한';
 }
+
+const companyBriefQuestionKeys: CompanyBriefQuestionKey[] = ['revenueEngine', 'recentChange', 'whyItMatters', 'keyRisk', 'watchNext'];
+
+const companyBriefQuestionLabels: Record<CompanyBriefQuestionKey, string> = {
+  revenueEngine: '돈을 버는 구조',
+  recentChange: '최근 변화',
+  whyItMatters: '왜 중요한가',
+  keyRisk: '가장 큰 위험',
+  watchNext: '다음 확인',
+};
+
+const companyBriefQuestionNumbers: Record<CompanyBriefQuestionKey, string> = {
+  revenueEngine: '01',
+  recentChange: '02',
+  whyItMatters: '03',
+  keyRisk: '04',
+  watchNext: '05',
+};
 
 function CompanyProfileMonogram({ profile }: { profile: CompanyResearchProfileViewModel }) {
   return <span className="company-profile-monogram" aria-hidden="true">{profile.company.name.replace(/[^A-Za-z0-9가-힣]/g, '').slice(0, 2).toUpperCase()}</span>;
@@ -239,16 +258,37 @@ export function CompanyProfileNotFoundPage({ navigation, onNavigate }: SharedPro
   );
 }
 
-export function CompanyResearchProfilePage({
+export function CompanyBriefLoadingPage({
   viewModel,
   navigation,
   onNavigate,
-}: SharedProps & { viewModel: CompanyResearchProfileViewModel }) {
+  failed = false,
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; failed?: boolean }) {
+  const { company, profile } = viewModel;
+  const security = profile.stockCode ?? company.ticker;
+  return <div className="pick-shell company-profiles-shell company-profile-detail-shell">
+    {navigation}
+    <main className="company-profile-detail-main company-dashboard-main">
+      <nav className="company-profile-breadcrumb" aria-label="현재 위치"><a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 분석</a><span aria-hidden="true">/</span><strong>{company.name}</strong></nav>
+      <header className="company-dashboard-header" aria-labelledby="company-profile-loading-title">
+        <CompanyProfileMonogram profile={viewModel} />
+        <div><span className="company-dashboard-kicker">{company.countryLabel} 기업 분석</span><h1 id="company-profile-loading-title">{company.name}</h1><p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange}</p><p role="status">{failed ? '검증된 핵심 판단을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.' : '검증된 핵심 판단을 불러오는 중입니다.'}</p></div>
+      </header>
+    </main>
+  </div>;
+}
+
+export function CompanyResearchProfilePage({
+  viewModel,
+  brief,
+  navigation,
+  onNavigate,
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief }) {
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
-  const hasResearchReport = profile.slug === 'nvidia' || profile.slug === 'meta';
-  const recentEditorial = summariesForCompany(publishedEditorialSummaryIndex, profile.slug, 2);
+  const relatedEditorialIds = new Set(brief.relatedEditorialIds);
+  const recentEditorial = publishedEditorialSummaryIndex.filter((item) => relatedEditorialIds.has(item.id)).slice(0, 2);
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -264,11 +304,51 @@ export function CompanyResearchProfilePage({
             <h1 id="company-profile-title">{company.name}</h1>
             <p className="company-dashboard-english-name">{profile.englishName}</p>
             <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {profile.industry}</p>
-            <p className="company-dashboard-description">{dashboard.summary[0]}</p>
-            <p className="company-dashboard-asof">데이터 기준일 <time dateTime={dashboard.asOfDate ?? undefined}>{dashboard.asOfDate ? formatDate(dashboard.asOfDate) : '확인 필요'}</time></p>
-            {hasResearchReport ? <a className="company-dashboard-report-cta" href={`/ko/companies/${profile.slug}/report`} onClick={internalLink(`/ko/companies/${profile.slug}/report`, onNavigate)}>리서치 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
+            <p className="company-dashboard-description">{brief.oneLineBusiness}</p>
+            <p className="company-dashboard-asof">분석 기준 <time dateTime={brief.asOf}>{formatDate(brief.asOf)}</time></p>
           </div>
         </header>
+
+        <section className="company-brief-section" aria-labelledby="company-brief-title">
+          <div className="company-dashboard-section-heading"><span>1분 핵심 판단</span><h2 id="company-brief-title">기업을 이해하는 다섯 질문</h2><p>공식 자료에 근거한 현재 판단이며, 다음 공시에서 달라질 수 있습니다.</p></div>
+          <div className="company-brief-grid">
+            {companyBriefQuestionKeys.map((key) => {
+              const answer = brief.questions[key];
+              const source = sourceRegistry[answer.sourceIds[0]];
+              const headingId = `company-brief-${key}`;
+              return <article className={key === 'revenueEngine' ? 'company-brief-card company-brief-card--lead' : 'company-brief-card'} key={key} aria-labelledby={headingId}>
+                <span>{companyBriefQuestionNumbers[key]}</span>
+                <h3 id={headingId}>{companyBriefQuestionLabels[key]}</h3>
+                <p>{answer.summary}</p>
+                <footer>
+                  {answer.asOf ? <time dateTime={answer.asOf}>기준 {formatDate(answer.asOf)}</time> : <span>분석 기준 {formatDate(brief.asOf)}</span>}
+                  {source ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${companyBriefQuestionLabels[key]} 근거 · ${source.publisher} 원문`}>{source.publisher} 근거 <ExternalLink size={12} aria-hidden="true" /></a> : null}
+                </footer>
+              </article>;
+            })}
+          </div>
+        </section>
+
+        <section className="company-brief-metrics" aria-labelledby="company-brief-metrics-title">
+          <div className="company-dashboard-section-heading"><span>핵심 숫자</span><h2 id="company-brief-metrics-title">비교와 함께 보는 숫자</h2><p>첫 화면에는 사업 구조에 중요한 공식 수치만 최대 3개 표시합니다.</p></div>
+          <div className="company-brief-metric-grid">
+            {brief.keyMetrics.map((item) => {
+              const source = sourceRegistry[item.sourceId];
+              return <article key={item.id}>
+                <span>{item.label}</span>
+                <strong>{item.formattedValue}</strong>
+                <small>{item.period} <span aria-hidden="true">·</span> {item.unit}</small>
+                {item.comparison ? <dl className="company-brief-comparison">
+                  {item.comparison.formattedReferenceValue ? <div><dt>{item.comparison.label}</dt><dd>{item.comparison.formattedReferenceValue}</dd></div> : null}
+                  {item.comparison.formattedDifference ? <div><dt>변화</dt><dd>{item.comparison.formattedDifference}</dd></div> : null}
+                  {item.comparison.referencePeriod ? <div><dt>비교 기간</dt><dd>{item.comparison.referencePeriod}</dd></div> : null}
+                </dl> : <p className="company-brief-no-comparison">직접 비교 자료 없음</p>}
+                <p>{item.interpretation}</p>
+                {source ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${item.label} 자료 출처 · ${source.publisher} 원문`}>{source.publisher} 원문 <ExternalLink size={12} aria-hidden="true" /></a> : null}
+              </article>;
+            })}
+          </div>
+        </section>
 
         {recentEditorial.length ? <section className="company-dashboard-section company-dashboard-editorial" aria-labelledby="company-editorial-title">
           <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
@@ -278,7 +358,12 @@ export function CompanyResearchProfilePage({
           })}</div>
         </section> : null}
 
-        <section className="company-dashboard-section" aria-labelledby="company-assessments-title">
+        <nav className="company-brief-actions" aria-label={`${company.name} 상세 분석 이동`}>
+          <a href="#company-dashboard-metrics-title">숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
+          {brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)}>심층 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
+        </nav>
+
+        <section className="company-dashboard-section company-dashboard-secondary-start" id="company-detailed-data" aria-labelledby="company-assessments-title">
           <div className="company-dashboard-section-heading"><span>핵심 판단</span><h2 id="company-assessments-title">현재 상태를 먼저 봅니다</h2><p>점수 대신 확인된 근거와 데이터 한계를 함께 표시합니다.</p></div>
           <div className="company-dashboard-assessment-grid">
             {dashboard.assessments.map((item) => <article key={item.dimension}>
