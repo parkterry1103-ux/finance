@@ -9,6 +9,7 @@
     "build:app": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "validate:content": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/validate-content.js",
+    "validate:editorial": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/editorial-unit.js",
     "check:types": "tsc --noEmit",
     "check:ci": "npm run validate:content && npm run check:types",
     "test:industry-flows": "npm run sync:compile && node .sync-build/scripts/industry-flow-unit.js",

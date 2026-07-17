@@ -54,8 +54,9 @@ export const homeFeatureLabels: HomeFeatureLabel[] = [
 ];
 
 export const primaryNavigationItems: PrimaryNavigationItem[] = [
-  { id: 'companies', label: '기업 분석', href: '/ko/companies', activeKey: 'companies' },
-  { id: 'macro', label: '거시경제', href: '/ko/macro-dashboard', activeKey: 'macro' },
+  { id: 'today', label: '오늘의 해부', href: '/ko/#today-dissections', activeKey: 'today' },
+  { id: 'companies', label: '기업 찾기', href: '/ko/companies', activeKey: 'companies' },
+  { id: 'insights', label: '리서치', href: '/ko/insights', activeKey: 'insights' },
 ];
 
 export const homeInsightReferences: HomeInsightReference[] = [

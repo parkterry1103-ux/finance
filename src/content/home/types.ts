@@ -15,10 +15,10 @@ export type HomeFeatureLabel = {
 };
 
 export type PrimaryNavigationItem = {
-  id: 'companies' | 'macro';
+  id: 'today' | 'companies' | 'insights';
   label: string;
   href: string;
-  activeKey: 'companies' | 'macro';
+  activeKey: 'today' | 'companies' | 'insights';
 };
 
 export type HomeInsightReference = {

@@ -942,6 +942,8 @@ function validateHomeExperience() {
     '/ko/demand-supply',
     '/ko/company-events',
     '/ko/companies',
+    '/ko/#today-dissections',
+    '/ko/insights',
     '/ko/bottlenecks',
     '/ko/picks',
     '/analysis',
@@ -979,11 +981,11 @@ function validateHomeExperience() {
     if (!allowedRoutes.has(feature.href)) addError(`invalid home feature route: ${feature.id} / ${feature.href}`);
   });
 
-  if (primaryNavigationItems.length !== 2) addError(`primary navigation item count must be 2: ${primaryNavigationItems.length}`);
-  if (primaryNavigationItems.map((item) => item.label).join('|') !== '기업 분석|거시경제') {
-    addError(`primary navigation labels must be 기업 분석|거시경제: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
+  if (primaryNavigationItems.length !== 3) addError(`primary navigation item count must be 3: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.map((item) => item.label).join('|') !== '오늘의 해부|기업 찾기|리서치') {
+    addError(`primary navigation labels must be 오늘의 해부|기업 찾기|리서치: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
   }
-  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/companies|/ko/macro-dashboard') {
+  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/#today-dissections|/ko/companies|/ko/insights') {
     addError(`primary navigation routes mismatch: ${primaryNavigationItems.map((item) => item.href).join('|')}`);
   }
   duplicateValues(primaryNavigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate primary navigation item id: ${id}`));
@@ -1118,6 +1120,7 @@ function validateHomeExperience() {
   if (/VITE_[A-Z0-9_]*(KEY|SECRET|TOKEN)|import\.meta\.env|process\.env/i.test(homeSource)) addError('client secret or environment reference in home content');
 
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
+  const newsroomHomeSource = readFileSync(join(process.cwd(), 'src/components/editorial/NewsroomHome.tsx'), 'utf8');
   const macroComponentSource = readFileSync(join(process.cwd(), 'src/components/macro/MacroDashboard.tsx'), 'utf8');
   const termHelpSource = readFileSync(join(process.cwd(), 'src/components/common/TermHelp.tsx'), 'utf8');
   const stylesSource = readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
@@ -1127,17 +1130,19 @@ function validateHomeExperience() {
     ? appSource.slice(simplifiedHomeStart, simplifiedHomeEnd)
     : '';
   if (!simplifiedHomeSource) addError('SimplifiedHome component missing');
-  if ((simplifiedHomeSource.match(/<h1\b/g) ?? []).length !== 1) addError('SimplifiedHome must render exactly one h1');
-  if (!/기업은 재무로,/.test(simplifiedHomeSource) || !/시장은 거시로 봅니다\./.test(simplifiedHomeSource)) addError('SimplifiedHome h1 copy mismatch');
-  if (!/전문 용어는 그대로, 의미는 쉽게\./.test(simplifiedHomeSource)) addError('SimplifiedHome subtitle copy mismatch');
-  if (!/homeEntries\.map\(\(entry\) => <HomeEntryCard/.test(simplifiedHomeSource)) addError('SimplifiedHome must render the two configured entry cards');
-  if (/<input\b|검색\s*(입력|창)|시장 변곡점|중요한 사건이 없습니다|현재 시장 변곡점이 없습니다/.test(simplifiedHomeSource)) addError('SimplifiedHome contains a fake search or market turning-point placeholder');
-  if (/(고객|투자 고객|초보자|경제 초보자|12살|누구나 쉽게|고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(simplifiedHomeSource)) addError('SimplifiedHome contains forbidden positioning copy');
+  if (!/NewsroomHome/.test(simplifiedHomeSource)) addError('SimplifiedHome must render NewsroomHome');
+  if ((newsroomHomeSource.match(/<h1\b/g) ?? []).length !== 1) addError('NewsroomHome must render exactly one h1');
+  if (!/오늘 주가가 움직인 이유와/.test(newsroomHomeSource) || !/다음에 확인할 것을 해부합니다\./.test(newsroomHomeSource)) addError('NewsroomHome h1 copy mismatch');
+  if (!/뉴스를 기업의 사업·재무·가치평가로 연결합니다\./.test(newsroomHomeSource)) addError('NewsroomHome subtitle copy mismatch');
+  if (!/placeholder="기업명이나 종목코드를 검색하세요"/.test(newsroomHomeSource) || !/role="combobox"/.test(newsroomHomeSource)) addError('NewsroomHome company search missing');
+  if (!/publishedEditorialSummaryIndex/.test(newsroomHomeSource)) addError('NewsroomHome must use the static editorial summary index');
+  if (!/오늘의 해부를 준비하고 있습니다\./.test(newsroomHomeSource) || !/오늘의 3Reads를 준비하고 있습니다\./.test(newsroomHomeSource)) addError('NewsroomHome verified empty states missing');
+  if (/(고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(newsroomHomeSource)) addError('NewsroomHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
   if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute\) return;/.test(appSource)) addError('home and company routes must not load market prices');
   if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
   if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
-  if (!/\.simplified-home-card > a:focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
+  if (!/\.editorial-home :is\(a, input\):focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
   (['normal', 'watch', 'tight', 'critical'] as const).forEach((status) => {
     if (!stylesSource.includes(`article.status-${status}`)) addError(`missing home bottleneck status color rule: ${status}`);
   });
@@ -2547,7 +2552,7 @@ function validateCompanyProfiles() {
   profileErrors.forEach((message) => addError(`company profile: ${message}`));
   validateCompanyDashboardRegistry().forEach((message) => addError(`company dashboard: ${message}`));
   if (!existsSync(join(process.cwd(), 'docs', 'company-profile-inventory.md'))) addError('company profile pre-implementation inventory missing');
-  if (primaryNavigationItems.length !== 2) addError(`primary navigation must keep exactly 2 entries: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.length !== 3) addError(`primary navigation must keep exactly 3 entries: ${primaryNavigationItems.length}`);
   if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
   const stylesSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');

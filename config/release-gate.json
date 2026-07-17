@@ -32,7 +32,8 @@
     "reports": 15,
     "industryFlows": 4,
     "macroSeries": 9,
-    "marketRelations": 3
+    "marketRelations": 3,
+    "editorialPublished": 0
   },
   "lazyRoutes": [
     { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },
@@ -40,7 +41,10 @@
     { "name": "DemandSupplyRoute", "source": "src/routes/DemandSupplyRoute.tsx" },
     { "name": "DisclosuresRoute", "source": "src/routes/DisclosuresRoute.tsx" },
     { "name": "MacroDashboardRoute", "source": "src/routes/MacroDashboardRoute.tsx" },
-    { "name": "MarketRelationsRoute", "source": "src/routes/MarketRelationsRoute.tsx" }
+    { "name": "MarketRelationsRoute", "source": "src/routes/MarketRelationsRoute.tsx" },
+    { "name": "InsightsRoute", "source": "src/routes/InsightsRoute.tsx" },
+    { "name": "StockDissectionRoute", "source": "src/routes/StockDissectionRoute.tsx" },
+    { "name": "ThreeReadsRoute", "source": "src/routes/ThreeReadsRoute.tsx" }
   ],
   "smoke": {
     "timeoutMs": 20000,
@@ -48,6 +52,9 @@
     "retries": 2,
     "routes": [
       "/ko",
+      "/ko/insights",
+      "/ko/insights/stock/paypal-control-premium-draft",
+      "/ko/insights/3reads/switching-power-draft",
       "/ko/demand-supply",
       "/ko/companies",
       "/ko/companies?q=nvda",
