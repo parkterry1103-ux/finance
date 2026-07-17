@@ -1,5 +1,25 @@
 export type EditorialStatus = 'draft' | 'verified' | 'published' | 'archived';
 
+export type EditorialVerification = {
+  authoredBy: 'owner';
+  verifiedBy: 'owner';
+  verifiedAt: string;
+  status: 'ownerVerified';
+  note?: string;
+};
+
+export type EditorialEvidence = {
+  id: string;
+  type: 'price' | 'news' | 'company' | 'filing' | 'regulatory' | 'market' | 'sector' | 'flow';
+  factStatus: 'official' | 'mediaReported' | 'marketData' | 'editorialInterpretation';
+  publisher?: string;
+  title?: string;
+  publishedAt?: string;
+  asOf?: string;
+  url?: string;
+  note?: string;
+};
+
 export type EditorialSource = {
   id: string;
   name: string;
@@ -8,17 +28,38 @@ export type EditorialSource = {
   accessedAt: string;
 };
 
+export type EditorialArticleSource = {
+  name: string;
+  url?: string;
+  articleIdentifier?: string;
+  publishedAt: string;
+  accessedAt: string;
+};
+
 export type ThreeReadsItem = {
   id: string;
   order: 1 | 2 | 3;
   headline: string;
-  source: Omit<EditorialSource, 'id'>;
+  source: EditorialArticleSource;
   relatedCompanies: string[];
   relatedCompanySlugs: string[];
   relatedIndustries: string[];
   whatHappened: string;
   whyItMatters: string;
   structuralMeaning: string;
+  confirmedFacts?: string[];
+  companyOrInstitutionOutlook?: string[];
+  keyNumbers?: string[];
+  marketReaction?: string;
+  priceBasis?: string;
+  currentStage?: string;
+  correctedWording?: string[];
+  interpretation?: string;
+  notYetFinal?: string[];
+  cashFlowTransmission?: string;
+  counterScenario?: string;
+  officialSources?: EditorialSource[];
+  factCheckStatus?: 'checked' | 'partiallyChecked';
   investorCaution?: string;
   watchItems?: string[];
 };
@@ -33,8 +74,22 @@ export type ThreeReadsEdition = {
   title: string;
   centralQuestion: string;
   introduction?: string;
+  verification?: EditorialVerification;
+  authoringTime?: string;
+  factCheckedAt?: string;
+  independentDisclosure?: string;
+  methodology?: {
+    newsWindow: string;
+    duplicateCheck: string;
+    candidateSelection: string;
+    factCheckSummary: string[];
+    correctedExpressions: string[];
+    notYetFinal: string[];
+    priceBasis: string[];
+  };
   reads: [ThreeReadsItem, ThreeReadsItem, ThreeReadsItem];
   commonThread: string;
+  cashFlowTransmission?: string[];
   investorQuestions: string[];
   oneLineTakeaway: string;
   relatedCompanySlugs: string[];
@@ -48,6 +103,7 @@ export type ComparableReturn = {
   value: number;
   asOf: string;
   sourceId: string;
+  precision?: number;
 };
 
 export type DailyStockDissection = {
@@ -69,6 +125,7 @@ export type DailyStockDissection = {
     unit: 'percent';
     periodLabel: string;
     sourceId: string;
+    precision?: number;
   };
   directCatalyst: string;
   marketInterpretation: string;
@@ -84,9 +141,14 @@ export type DailyStockDissection = {
     | 'marketWide'
     | 'liquidity'
     | 'mixed';
+  cardCharacter?: string;
   confirmedItems: string[];
   unconfirmedItems: string[];
   reasons: Array<{ title: string; explanation: string }>;
+  verification?: EditorialVerification;
+  evidence?: EditorialEvidence[];
+  fullArticle?: string[];
+  editorialConclusion?: string;
   comparison?: {
     market?: ComparableReturn;
     sector?: ComparableReturn;
@@ -102,7 +164,7 @@ export type DailyStockDissection = {
 
 export type StockDissectionSummary = Pick<
   DailyStockDissection,
-  'id' | 'slug' | 'status' | 'publishedAt' | 'eventAsOf' | 'priceAsOf' | 'company' | 'headline' | 'priceMove' | 'directCatalyst' | 'moveCharacter' | 'confirmedItems' | 'unconfirmedItems' | 'watchItems' | 'comparison'
+  'id' | 'slug' | 'status' | 'publishedAt' | 'eventAsOf' | 'priceAsOf' | 'company' | 'headline' | 'priceMove' | 'directCatalyst' | 'moveCharacter' | 'cardCharacter' | 'confirmedItems' | 'unconfirmedItems' | 'watchItems' | 'comparison'
 > & { kind: 'stock' };
 
 export type ThreeReadsSummary = Pick<
@@ -111,6 +173,7 @@ export type ThreeReadsSummary = Pick<
 > & {
   kind: 'threeReads';
   readHeadlines: [string, string, string];
+  readSummaries: [string, string, string];
 };
 
 export type EditorialSummary = StockDissectionSummary | ThreeReadsSummary;

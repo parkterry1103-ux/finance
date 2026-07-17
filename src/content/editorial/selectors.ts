@@ -44,12 +44,12 @@ export function relativeReturn(companyReturn: number, comparableReturn: number) 
   return companyReturn - comparableReturn;
 }
 
-export function formatSignedPercent(value: number) {
-  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+export function formatSignedPercent(value: number, precision = 1) {
+  return `${value > 0 ? '+' : ''}${value.toFixed(precision)}%`;
 }
 
-export function formatRelativeReturn(value: number) {
-  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%p`;
+export function formatRelativeReturn(value: number, precision = 1) {
+  return `${value > 0 ? '+' : ''}${value.toFixed(precision)}%p`;
 }
 
 export function summarizeStockDissection(item: DailyStockDissection): StockDissectionSummary {
@@ -66,6 +66,7 @@ export function summarizeStockDissection(item: DailyStockDissection): StockDisse
     priceMove: item.priceMove,
     directCatalyst: item.directCatalyst,
     moveCharacter: item.moveCharacter,
+    cardCharacter: item.cardCharacter,
     confirmedItems: item.confirmedItems,
     unconfirmedItems: item.unconfirmedItems,
     watchItems: item.watchItems,
@@ -87,6 +88,7 @@ export function summarizeThreeReads(item: ThreeReadsEdition): ThreeReadsSummary 
     oneLineTakeaway: item.oneLineTakeaway,
     relatedCompanySlugs: item.relatedCompanySlugs,
     readHeadlines: item.reads.map((read) => read.headline) as [string, string, string],
+    readSummaries: item.reads.map((read) => read.whyItMatters) as [string, string, string],
   };
 }
 

@@ -73,3 +73,22 @@ DB, CMS, API, Function, 외부 뉴스 호출, 런타임 AI, 자동 분류, crawl
 - 계획 대비 완료율: 100%. 코드·검증·배포 미완료 항목 없음
 
 초기 Safari 확인에서 Hero 제목이 배경과 충분히 대비되지 않는 문제를 발견해 글자색을 명시적으로 고정했다. 그 외 계획 범위 변경은 실제 예시 원고를 게시하지 않고 검증 가능한 빈 상태로 남긴 결정뿐이다.
+
+## Phase 5A.1 — 편집자 검증 정책 보정과 첫 공개
+
+시작 main SHA는 `5da20badf2f1040ef5c7b3f78e61a73fca023323`, 시작 Production deployment는 `DASupHC6xXPTJBe61qyTdPTwcST5`였다. 작업 브랜치는 `feat/editorial-go-live-phase-5a1`이다.
+
+사용자 화면의 `오늘의 3Reads` 명칭을 `오늘의 월스트리트`로 바꾸되 내부 `ThreeReadsEdition` 타입, 폴더와 `/ko/insights/3reads/:slug` route는 유지했다. 상세 상단과 하단에는 주가해부실의 독자적 해설이며 The Wall Street Journal 또는 Dow Jones와 제휴·후원 관계가 없다는 고지를 표시한다. WSJ 로고, 기사 이미지와 기사 전문은 저장하거나 표시하지 않는다.
+
+`EditorialVerification`의 `ownerVerified`는 사용자가 직접 작성하고 숫자·사실을 확인했다는 편집 기록이다. 주가 해부는 특정 기사 한 편의 요약이 아니므로 대표 기사 URL을 필수로 요구하지 않고 가격·시장·업종·수급 등 `EditorialEvidence`를 조합한다. URL은 선택 사항이지만 가격·사건 기준일, 검증 시각, 수치 성격, 공식 확인·언론 보도·시장 수치·편집자 해석 구분은 추적 가능해야 한다. 오늘의 월스트리트는 정확히 세 원문의 매체·제목·발행 시각·URL, 공식 교차검증 자료와 팩트체크 상태를 계속 요구한다.
+
+첫 Published 콘텐츠는 두 건이다.
+
+- SK하이닉스 `2026-07-13-sk-hynix-selloff`: `-15.37%`, 같은 거래일 삼성전자 `-10.70%`, 차이 `-4.67%p`, 기존 `sk-hynix` 기업 프로필 연결.
+- 오늘의 월스트리트 `2026-07-17-standards-set-price`: 희토류 공급망, Burberry, Kimi K3를 `먼저 고정한 표준이 가격을 정한다`는 통합 질문으로 연결하고 원문 3개·공식·시장 교차검증 자료 11개를 보존.
+
+홈과 `/ko/insights`는 짧은 summary index만 정적으로 포함한다. 두 완성 원고는 registry dynamic import로 상세 route 진입 뒤 로드한다. Burberry, Moonshot AI, USA Rare Earth, Pensana, Serra Verde 프로필은 추가하지 않았고 PayPal·ASML fixture는 draft로 유지한다.
+
+validation은 owner verification, evidence 무결성, 완성 원고, 세 기사·공식 자료, 동일 비교일과 `-4.67%p`, draft 미노출, SK하이닉스 연결과 가짜 기업 부재를 blocking test로 검사한다. Release Gate의 공개 editorial count는 2건이며 Production smoke는 두 상세 route와 배포 asset의 핵심 문구·비제휴 고지를 검사한다. Serverless Function은 12개, 신규 API·DB·dependency·런타임 뉴스·WSJ·AI 요청은 모두 0개다.
+
+구현 계획과 최종 결과는 `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록한다. 다음 단계는 Phase 5B이며 이번 단계에서는 재무·가치평가 엔진과 기업 대시보드 본문을 개편하지 않는다.

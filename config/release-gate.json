@@ -33,7 +33,7 @@
     "industryFlows": 4,
     "macroSeries": 9,
     "marketRelations": 3,
-    "editorialPublished": 0
+    "editorialPublished": 2
   },
   "lazyRoutes": [
     { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },
@@ -53,6 +53,8 @@
     "routes": [
       "/ko",
       "/ko/insights",
+      "/ko/insights/stock/2026-07-13-sk-hynix-selloff",
+      "/ko/insights/3reads/2026-07-17-standards-set-price",
       "/ko/insights/stock/paypal-control-premium-draft",
       "/ko/insights/3reads/switching-power-draft",
       "/ko/demand-supply",
@@ -81,6 +83,13 @@
       "/ko/market-map",
       "/market-map",
       "/ko/category/semiconductors"
+    ],
+    "assetContentChecks": [
+      { "id": "home-sk-hynix-move", "all": ["SK하이닉스", "-15.37"] },
+      { "id": "stock-samsung-comparison", "all": ["삼성전자", "-10.7", "퍼센트포인트 차이"] },
+      { "id": "wall-street-edition", "all": ["오늘의 월스트리트", "먼저 고정한 표준이 가격을 정한다"] },
+      { "id": "wsj-non-affiliation", "all": ["The Wall Street Journal", "제휴·후원 관계가 없습니다"] },
+      { "id": "sk-hynix-company-cta", "all": ["SK하이닉스", "분석 보기"] }
     ],
     "apis": [
       { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },

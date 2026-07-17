@@ -104,8 +104,8 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
         </section>
 
         <section className="editorial-home-section editorial-home-three" aria-labelledby="today-three-title">
-          <div className="editorial-section-heading"><p>One Question · Three Cases</p><h2 id="today-three-title">오늘의 3Reads</h2></div>
-          {threeReadsItems.length ? threeReadsItems.map((item) => <ThreeReadsSummaryCard item={item} onNavigate={onNavigate} key={item.id} />) : <div className="editorial-empty-state"><h3>오늘의 3Reads를 준비하고 있습니다.</h3><p>서로 다른 세 뉴스를 하나의 투자 질문으로 연결합니다.</p></div>}
+          <div className="editorial-section-heading"><p>One Question · Three Cases</p><h2 id="today-three-title">오늘의 월스트리트</h2></div>
+          {threeReadsItems.length ? threeReadsItems.map((item) => <ThreeReadsSummaryCard item={item} onNavigate={onNavigate} key={item.id} />) : <div className="editorial-empty-state"><h3>오늘의 월스트리트를 준비하고 있습니다.</h3><p>세 개의 뉴스, 하나의 투자 질문으로 연결합니다.</p></div>}
         </section>
 
         <section className="editorial-company-cta" aria-labelledby="editorial-company-cta-title">

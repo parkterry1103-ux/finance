@@ -4,6 +4,11 @@ export const editorialSources: EditorialSource[] = [];
 
 export const stockDissectionRegistry = [
   {
+    id: 'stock-2026-07-13-sk-hynix-selloff',
+    slug: '2026-07-13-sk-hynix-selloff',
+    load: () => import('./stock-dissections/2026-07-13-sk-hynix-selloff.js').then((module) => module.skHynixSelloff),
+  },
+  {
     id: 'paypal-control-premium-draft',
     slug: 'paypal-control-premium-draft',
     load: () => import('./stock-dissections/2026-07-17-paypal-control-premium-draft.js').then((module) => module.paypalControlPremiumDraft),
@@ -11,6 +16,11 @@ export const stockDissectionRegistry = [
 ] as const;
 
 export const threeReadsRegistry = [
+  {
+    id: 'three-reads-2026-07-17-standards-set-price',
+    slug: '2026-07-17-standards-set-price',
+    load: () => import('./three-reads/2026-07-17-standards-set-price.js').then((module) => module.standardsSetPriceEdition),
+  },
   {
     id: 'three-reads-switching-power-draft',
     slug: 'switching-power-draft',

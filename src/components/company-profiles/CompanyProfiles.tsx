@@ -274,7 +274,7 @@ export function CompanyResearchProfilePage({
           <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
           <div className="company-dashboard-editorial-grid">{recentEditorial.map((item) => {
             const path = item.kind === 'stock' ? `/ko/insights/stock/${encodeURIComponent(item.slug)}` : `/ko/insights/3reads/${encodeURIComponent(item.slug)}`;
-            return <article key={item.id}><time dateTime={item.publishedAt}>{formatDate(item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p><a href={path} onClick={internalLink(path, onNavigate)}>리서치 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
+            return <article key={item.id}><time dateTime={item.kind === 'stock' ? item.eventAsOf : item.publishedAt}>{formatDate(item.kind === 'stock' ? item.eventAsOf : item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? item.cardCharacter ?? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p>{item.kind === 'stock' && item.unconfirmedItems[0] ? <div className="company-dashboard-editorial-unconfirmed"><strong>현재까지 공식 확인되지 않은 것</strong><span>{item.unconfirmedItems.slice(0, 3).join(' · ')}</span></div> : null}<a href={path} onClick={internalLink(path, onNavigate)}>전체 해부 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
           })}</div>
         </section> : null}
 
