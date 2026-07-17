@@ -80,7 +80,7 @@ DB, CMS, API, Function, 외부 뉴스 호출, 런타임 AI, 자동 분류, crawl
 
 사용자 화면의 `오늘의 3Reads` 명칭을 `오늘의 월스트리트`로 바꾸되 내부 `ThreeReadsEdition` 타입, 폴더와 `/ko/insights/3reads/:slug` route는 유지했다. 상세 상단과 하단에는 주가해부실의 독자적 해설이며 The Wall Street Journal 또는 Dow Jones와 제휴·후원 관계가 없다는 고지를 표시한다. WSJ 로고, 기사 이미지와 기사 전문은 저장하거나 표시하지 않는다.
 
-`EditorialVerification`의 `ownerVerified`는 사용자가 직접 작성하고 숫자·사실을 확인했다는 편집 기록이다. 주가 해부는 특정 기사 한 편의 요약이 아니므로 대표 기사 URL을 필수로 요구하지 않고 가격·시장·업종·수급 등 `EditorialEvidence`를 조합한다. URL은 선택 사항이지만 가격·사건 기준일, 검증 시각, 수치 성격, 공식 확인·언론 보도·시장 수치·편집자 해석 구분은 추적 가능해야 한다. 오늘의 월스트리트는 정확히 세 원문의 매체·제목·발행 시각·URL, 공식 교차검증 자료와 팩트체크 상태를 계속 요구한다.
+`EditorialVerification`의 `ownerVerified`는 사용자가 직접 작성하고 숫자·사실을 확인했다는 편집 기록이다. 주가 해부는 특정 기사 한 편의 요약이 아니므로 대표 기사 URL을 필수로 요구하지 않고 가격·시장·업종·수급 등 `EditorialEvidence`를 조합한다. URL은 선택 사항이지만 가격·사건 기준일, 검증 시각, 수치 성격, 공식 확인·언론 보도·시장 수치·편집자 해석 구분은 추적 가능해야 한다. 오늘의 월스트리트는 정확히 세 원문의 매체·제목·발행 시각과 URL 또는 원문 식별자, 공식 교차검증 자료와 팩트체크 상태를 계속 요구한다.
 
 첫 Published 콘텐츠는 두 건이다.
 
@@ -92,3 +92,5 @@ DB, CMS, API, Function, 외부 뉴스 호출, 런타임 AI, 자동 분류, crawl
 validation은 owner verification, evidence 무결성, 완성 원고, 세 기사·공식 자료, 동일 비교일과 `-4.67%p`, draft 미노출, SK하이닉스 연결과 가짜 기업 부재를 blocking test로 검사한다. Release Gate의 공개 editorial count는 2건이며 Production smoke는 두 상세 route와 배포 asset의 핵심 문구·비제휴 고지를 검사한다. Serverless Function은 12개, 신규 API·DB·dependency·런타임 뉴스·WSJ·AI 요청은 모두 0개다.
 
 구현 계획과 최종 결과는 `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록한다. 다음 단계는 Phase 5B이며 이번 단계에서는 재무·가치평가 엔진과 기업 대시보드 본문을 개편하지 않는다.
+
+Phase 5A.1은 commit `228be60`과 PR [#11 Publish first stock dissection and Wall Street edition](https://github.com/parkterry1103-ux/finance/pull/11)로 merge commit `2d16cb959ff152bca5682792b3539c4e477413d3`에 병합했다. Production deployment `dpl_7iFc8J9o1YxjTx4dcEaJ9aUE63rb`은 `finance1`의 `Ready · Current`로 확인했고, canonical과 고유 배포 URL smoke는 32 routes, 25 assets, 콘텐츠 검사 5개, API 9개와 sync 인증 차단 6개를 실패 없이 통과했다. Chromium 320·360·390·768·1024·1280·1440px와 실제 Safari(WebKit)에서도 가로 overflow와 console 오류가 없었다.
