@@ -1,0 +1,131 @@
+[
+  {
+    "assumptionId": "futureRevenueCagr",
+    "label": "전망 매출 CAGR",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.12757214959251617,
+    "mode": 0.16940878897542677,
+    "maximum": 0.20267072957061028,
+    "scenarioAnchors": {
+      "conservative": 0.12757214959251617,
+      "base": 0.16940878897542677,
+      "optimistic": 0.20267072957061028
+    },
+    "rationale": "4A의 보수·기준·낙관 연도별 매출 성장 경로가 만드는 전망기간 CAGR을 삼각분포의 세 꼭짓점으로 사용했습니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].revenueGrowthRate"
+    ]
+  },
+  {
+    "assumptionId": "normalizedOperatingMargin",
+    "label": "정상 영업이익률",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.5738168363141272,
+    "mode": 0.6038168363141272,
+    "maximum": 0.6238168363141272,
+    "scenarioAnchors": {
+      "conservative": 0.5738168363141272,
+      "base": 0.6038168363141272,
+      "optimistic": 0.6238168363141272
+    },
+    "rationale": "4A 세 시나리오의 정상 영업이익률을 그대로 사용하며 회사별 과거 실적과 공식 사업 snapshot에 묶었습니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].operatingMargin"
+    ]
+  },
+  {
+    "assumptionId": "capexAsPercentRevenue",
+    "label": "Capex/매출",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.01979750492348483,
+    "mode": 0.024797504923484832,
+    "maximum": 0.03479750492348483,
+    "scenarioAnchors": {
+      "conservative": 0.03479750492348483,
+      "base": 0.024797504923484832,
+      "optimistic": 0.01979750492348483
+    },
+    "rationale": "4A 세 시나리오의 Capex/매출 범위를 사용합니다. 낮은 비율을 자동 호재로 해석하지 않고 매출 경로와 함께 FCFF에 반영합니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].capexAsPercentRevenue"
+    ]
+  },
+  {
+    "assumptionId": "workingCapitalAsPercentRevenue",
+    "label": "운전자본 재투자/매출",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.07245354639892668,
+    "mode": 0.07495354639892668,
+    "maximum": 0.07995354639892668,
+    "scenarioAnchors": {
+      "conservative": 0.07995354639892668,
+      "base": 0.07495354639892668,
+      "optimistic": 0.07245354639892668
+    },
+    "rationale": "4A의 보수·기준·낙관 운전자본 경로를 사용해 성장 과정의 현금 흡수 또는 환입 범위를 반영했습니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].changeInWorkingCapitalAsPercentRevenue"
+    ]
+  },
+  {
+    "assumptionId": "wacc",
+    "label": "WACC",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.10539442706471297,
+    "mode": 0.11289442706471296,
+    "maximum": 0.12289442706471297,
+    "scenarioAnchors": {
+      "conservative": 0.12289442706471297,
+      "base": 0.11289442706471296,
+      "optimistic": 0.10539442706471297
+    },
+    "rationale": "4A 세 시나리오에서 재계산된 WACC를 사용하며, 각 표본에서는 기존 자본구조와 ERP를 유지한 채 beta를 역산해 같은 4A WACC 공식을 통과합니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions",
+      "nvidia-benchmark"
+    ],
+    "affectedModelPaths": [
+      "discountRateAssumptions.leveredBeta",
+      "valuationResult.wacc"
+    ]
+  },
+  {
+    "assumptionId": "terminalGrowth",
+    "label": "영구성장률",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.024999999999999998,
+    "mode": 0.03,
+    "maximum": 0.034999999999999996,
+    "scenarioAnchors": {
+      "conservative": 0.024999999999999998,
+      "base": 0.03,
+      "optimistic": 0.034999999999999996
+    },
+    "rationale": "4A의 보수·기준·낙관 영구성장률을 사용하고 모든 표본에서 WACC보다 낮은지 다시 검사합니다.",
+    "sourceIds": [
+      "phase-4a:nvidia:assumptions",
+      "nvidia-benchmark"
+    ],
+    "affectedModelPaths": [
+      "terminalAssumptions.stableGrowthRate"
+    ]
+  }
+]

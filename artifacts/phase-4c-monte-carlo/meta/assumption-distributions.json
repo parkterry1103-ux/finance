@@ -1,0 +1,131 @@
+[
+  {
+    "assumptionId": "futureRevenueCagr",
+    "label": "전망 매출 CAGR",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.0985036136182007,
+    "mode": 0.13099517034644892,
+    "maximum": 0.15688126709950811,
+    "scenarioAnchors": {
+      "conservative": 0.0985036136182007,
+      "base": 0.13099517034644892,
+      "optimistic": 0.15688126709950811
+    },
+    "rationale": "4A의 보수·기준·낙관 연도별 매출 성장 경로가 만드는 전망기간 CAGR을 삼각분포의 세 꼭짓점으로 사용했습니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].revenueGrowthRate"
+    ]
+  },
+  {
+    "assumptionId": "normalizedOperatingMargin",
+    "label": "정상 영업이익률",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.3843785515957924,
+    "mode": 0.41437855159579234,
+    "maximum": 0.43437855159579236,
+    "scenarioAnchors": {
+      "conservative": 0.3843785515957924,
+      "base": 0.41437855159579234,
+      "optimistic": 0.43437855159579236
+    },
+    "rationale": "4A 세 시나리오의 정상 영업이익률을 그대로 사용하며 회사별 과거 실적과 공식 사업 snapshot에 묶었습니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].operatingMargin"
+    ]
+  },
+  {
+    "assumptionId": "capexAsPercentRevenue",
+    "label": "Capex/매출",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.22147886638986997,
+    "mode": 0.22647886638986997,
+    "maximum": 0.23647886638986998,
+    "scenarioAnchors": {
+      "conservative": 0.23647886638986998,
+      "base": 0.22647886638986997,
+      "optimistic": 0.22147886638986997
+    },
+    "rationale": "4A 세 시나리오의 Capex/매출 범위를 사용합니다. 낮은 비율을 자동 호재로 해석하지 않고 매출 경로와 함께 FCFF에 반영합니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].capexAsPercentRevenue"
+    ]
+  },
+  {
+    "assumptionId": "workingCapitalAsPercentRevenue",
+    "label": "운전자본 재투자/매출",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": -0.024831152888666243,
+    "mode": -0.022331152888666245,
+    "maximum": -0.017331152888666244,
+    "scenarioAnchors": {
+      "conservative": -0.017331152888666244,
+      "base": -0.022331152888666245,
+      "optimistic": -0.024831152888666243
+    },
+    "rationale": "4A의 보수·기준·낙관 운전자본 경로를 사용해 성장 과정의 현금 흡수 또는 환입 범위를 반영했습니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions"
+    ],
+    "affectedModelPaths": [
+      "forecastAssumptions.years[*].changeInWorkingCapitalAsPercentRevenue"
+    ]
+  },
+  {
+    "assumptionId": "wacc",
+    "label": "WACC",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.08279717160647007,
+    "mode": 0.09029717160647006,
+    "maximum": 0.10029717160647006,
+    "scenarioAnchors": {
+      "conservative": 0.10029717160647006,
+      "base": 0.09029717160647006,
+      "optimistic": 0.08279717160647007
+    },
+    "rationale": "4A 세 시나리오에서 재계산된 WACC를 사용하며, 각 표본에서는 기존 자본구조와 ERP를 유지한 채 beta를 역산해 같은 4A WACC 공식을 통과합니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions",
+      "meta-benchmark"
+    ],
+    "affectedModelPaths": [
+      "discountRateAssumptions.leveredBeta",
+      "valuationResult.wacc"
+    ]
+  },
+  {
+    "assumptionId": "terminalGrowth",
+    "label": "영구성장률",
+    "unit": "decimal",
+    "distribution": "triangular",
+    "minimum": 0.024999999999999998,
+    "mode": 0.03,
+    "maximum": 0.034999999999999996,
+    "scenarioAnchors": {
+      "conservative": 0.024999999999999998,
+      "base": 0.03,
+      "optimistic": 0.034999999999999996
+    },
+    "rationale": "4A의 보수·기준·낙관 영구성장률을 사용하고 모든 표본에서 WACC보다 낮은지 다시 검사합니다.",
+    "sourceIds": [
+      "phase-4a:meta:assumptions",
+      "meta-benchmark"
+    ],
+    "affectedModelPaths": [
+      "terminalAssumptions.stableGrowthRate"
+    ]
+  }
+]

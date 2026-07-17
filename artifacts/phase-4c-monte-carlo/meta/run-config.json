@@ -1,0 +1,14 @@
+{
+  "companySlug": "meta",
+  "valuationDate": "2026-07-15",
+  "currency": "USD",
+  "seed": 2026071702,
+  "iterations": 50000,
+  "engineVersion": "4a-fcff-dcf/1.0.0",
+  "reportVersion": "phase-4c-2026.07.17",
+  "generatedAt": "2026-07-17T03:00:00.000Z",
+  "validIterations": 50000,
+  "rejectedIterations": 0,
+  "rejectionRate": 0,
+  "rejectionReasons": {}
+}

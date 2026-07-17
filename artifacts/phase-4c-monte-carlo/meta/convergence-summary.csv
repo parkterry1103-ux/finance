@@ -1,0 +1,4 @@
+iterations,validIterations,rejectedIterations,p10,p50,p90,mean,standardDeviation,topDriverIds
+10000,10000,0,589.77095757,675.6379721,771.72095583,678.99112521,69.91729075,futureRevenueCagr|wacc|normalizedOperatingMargin
+25000,25000,0,590.94680617,675.59763629,771.28149107,679.15348155,69.37041666,futureRevenueCagr|wacc|normalizedOperatingMargin
+50000,50000,0,591.65211246,676.02428972,770.95390987,679.3845163,69.26961592,futureRevenueCagr|wacc|normalizedOperatingMargin

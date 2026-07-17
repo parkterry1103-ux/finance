@@ -1,0 +1,401 @@
+{
+  "companySlug": "meta",
+  "run": {
+    "seed": 2026071702,
+    "iterations": 50000,
+    "engineVersion": "4a-fcff-dcf/1.0.0",
+    "reportVersion": "phase-4c-2026.07.17",
+    "generatedAt": "2026-07-17T03:00:00.000Z",
+    "validIterations": 50000,
+    "rejectedIterations": 0,
+    "rejectionRate": 0,
+    "rejectionReasons": {}
+  },
+  "valuationDate": "2026-07-15",
+  "currency": "USD",
+  "distributions": [
+    {
+      "assumptionId": "futureRevenueCagr",
+      "label": "전망 매출 CAGR",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": 0.0985036136182007,
+      "mode": 0.13099517034644892,
+      "maximum": 0.15688126709950811,
+      "scenarioAnchors": {
+        "conservative": 0.0985036136182007,
+        "base": 0.13099517034644892,
+        "optimistic": 0.15688126709950811
+      },
+      "rationale": "4A의 보수·기준·낙관 연도별 매출 성장 경로가 만드는 전망기간 CAGR을 삼각분포의 세 꼭짓점으로 사용했습니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions"
+      ],
+      "affectedModelPaths": [
+        "forecastAssumptions.years[*].revenueGrowthRate"
+      ]
+    },
+    {
+      "assumptionId": "normalizedOperatingMargin",
+      "label": "정상 영업이익률",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": 0.3843785515957924,
+      "mode": 0.41437855159579234,
+      "maximum": 0.43437855159579236,
+      "scenarioAnchors": {
+        "conservative": 0.3843785515957924,
+        "base": 0.41437855159579234,
+        "optimistic": 0.43437855159579236
+      },
+      "rationale": "4A 세 시나리오의 정상 영업이익률을 그대로 사용하며 회사별 과거 실적과 공식 사업 snapshot에 묶었습니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions"
+      ],
+      "affectedModelPaths": [
+        "forecastAssumptions.years[*].operatingMargin"
+      ]
+    },
+    {
+      "assumptionId": "capexAsPercentRevenue",
+      "label": "Capex/매출",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": 0.22147886638986997,
+      "mode": 0.22647886638986997,
+      "maximum": 0.23647886638986998,
+      "scenarioAnchors": {
+        "conservative": 0.23647886638986998,
+        "base": 0.22647886638986997,
+        "optimistic": 0.22147886638986997
+      },
+      "rationale": "4A 세 시나리오의 Capex/매출 범위를 사용합니다. 낮은 비율을 자동 호재로 해석하지 않고 매출 경로와 함께 FCFF에 반영합니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions"
+      ],
+      "affectedModelPaths": [
+        "forecastAssumptions.years[*].capexAsPercentRevenue"
+      ]
+    },
+    {
+      "assumptionId": "workingCapitalAsPercentRevenue",
+      "label": "운전자본 재투자/매출",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": -0.024831152888666243,
+      "mode": -0.022331152888666245,
+      "maximum": -0.017331152888666244,
+      "scenarioAnchors": {
+        "conservative": -0.017331152888666244,
+        "base": -0.022331152888666245,
+        "optimistic": -0.024831152888666243
+      },
+      "rationale": "4A의 보수·기준·낙관 운전자본 경로를 사용해 성장 과정의 현금 흡수 또는 환입 범위를 반영했습니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions"
+      ],
+      "affectedModelPaths": [
+        "forecastAssumptions.years[*].changeInWorkingCapitalAsPercentRevenue"
+      ]
+    },
+    {
+      "assumptionId": "wacc",
+      "label": "WACC",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": 0.08279717160647007,
+      "mode": 0.09029717160647006,
+      "maximum": 0.10029717160647006,
+      "scenarioAnchors": {
+        "conservative": 0.10029717160647006,
+        "base": 0.09029717160647006,
+        "optimistic": 0.08279717160647007
+      },
+      "rationale": "4A 세 시나리오에서 재계산된 WACC를 사용하며, 각 표본에서는 기존 자본구조와 ERP를 유지한 채 beta를 역산해 같은 4A WACC 공식을 통과합니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions",
+        "meta-benchmark"
+      ],
+      "affectedModelPaths": [
+        "discountRateAssumptions.leveredBeta",
+        "valuationResult.wacc"
+      ]
+    },
+    {
+      "assumptionId": "terminalGrowth",
+      "label": "영구성장률",
+      "unit": "decimal",
+      "distribution": "triangular",
+      "minimum": 0.024999999999999998,
+      "mode": 0.03,
+      "maximum": 0.034999999999999996,
+      "scenarioAnchors": {
+        "conservative": 0.024999999999999998,
+        "base": 0.03,
+        "optimistic": 0.034999999999999996
+      },
+      "rationale": "4A의 보수·기준·낙관 영구성장률을 사용하고 모든 표본에서 WACC보다 낮은지 다시 검사합니다.",
+      "sourceIds": [
+        "phase-4a:meta:assumptions",
+        "meta-benchmark"
+      ],
+      "affectedModelPaths": [
+        "terminalAssumptions.stableGrowthRate"
+      ]
+    }
+  ],
+  "percentiles": {
+    "p5": 570.1506158152611,
+    "p10": 591.6521124593315,
+    "p25": 629.7300836361502,
+    "p50": 676.0242897239586,
+    "p75": 725.4841354986139,
+    "p90": 770.953909873604,
+    "p95": 798.0943656991241
+  },
+  "mean": 679.3845162992346,
+  "standardDeviation": 69.2696159166299,
+  "min": 463.42683167533005,
+  "max": 982.8507355513589,
+  "currentMarketPrice": {
+    "value": 681.31,
+    "asOfDate": "2026-07-15",
+    "modelDistributionPercentile": 52.846000000000004
+  },
+  "deterministicComparison": {
+    "conservative": 421.6141321374357,
+    "base": 702.2079363873495,
+    "optimistic": 1076.4066347279716
+  },
+  "driverImportance": [
+    {
+      "assumptionId": "futureRevenueCagr",
+      "label": "전망 매출 CAGR",
+      "spearmanCorrelation": 0.6641472513884429,
+      "rank": 1
+    },
+    {
+      "assumptionId": "wacc",
+      "label": "WACC",
+      "spearmanCorrelation": -0.6359765686249826,
+      "rank": 2
+    },
+    {
+      "assumptionId": "normalizedOperatingMargin",
+      "label": "정상 영업이익률",
+      "spearmanCorrelation": 0.25215604931541247,
+      "rank": 3
+    },
+    {
+      "assumptionId": "terminalGrowth",
+      "label": "영구성장률",
+      "spearmanCorrelation": 0.20817838750535136,
+      "rank": 4
+    },
+    {
+      "assumptionId": "capexAsPercentRevenue",
+      "label": "Capex/매출",
+      "spearmanCorrelation": -0.027835315293502794,
+      "rank": 5
+    },
+    {
+      "assumptionId": "workingCapitalAsPercentRevenue",
+      "label": "운전자본 재투자/매출",
+      "spearmanCorrelation": -0.013215603735846241,
+      "rank": 6
+    }
+  ],
+  "terminalValueDiagnostics": {
+    "medianShare": 0.7694321367953014,
+    "p90Share": 0.7876594147596646,
+    "overEightyPercentShare": 0.01058
+  },
+  "convergence": [
+    {
+      "iterations": 10000,
+      "validIterations": 10000,
+      "rejectedIterations": 0,
+      "p10": 589.7709575650276,
+      "p50": 675.6379720980799,
+      "p90": 771.7209558301188,
+      "mean": 678.9911252117224,
+      "standardDeviation": 69.91729074629956,
+      "topDriverIds": [
+        "futureRevenueCagr",
+        "wacc",
+        "normalizedOperatingMargin"
+      ]
+    },
+    {
+      "iterations": 25000,
+      "validIterations": 25000,
+      "rejectedIterations": 0,
+      "p10": 590.946806174306,
+      "p50": 675.5976362897682,
+      "p90": 771.281491070273,
+      "mean": 679.1534815533702,
+      "standardDeviation": 69.37041666467528,
+      "topDriverIds": [
+        "futureRevenueCagr",
+        "wacc",
+        "normalizedOperatingMargin"
+      ]
+    },
+    {
+      "iterations": 50000,
+      "validIterations": 50000,
+      "rejectedIterations": 0,
+      "p10": 591.6521124593315,
+      "p50": 676.0242897239586,
+      "p90": 770.953909873604,
+      "mean": 679.3845162992346,
+      "standardDeviation": 69.2696159166299,
+      "topDriverIds": [
+        "futureRevenueCagr",
+        "wacc",
+        "normalizedOperatingMargin"
+      ]
+    }
+  ],
+  "convergencePassed": true,
+  "convergenceRelativeDifferences": {
+    "p10": 0.0011920962845781546,
+    "p50": 0.0006311214562493014,
+    "p90": 0.00042490373610367446
+  },
+  "histogram": [
+    {
+      "lower": 535.6952062348685,
+      "upper": 548.817047512898,
+      "count": 491
+    },
+    {
+      "lower": 548.817047512898,
+      "upper": 561.9388887909275,
+      "count": 773
+    },
+    {
+      "lower": 561.9388887909275,
+      "upper": 575.060730068957,
+      "count": 1210
+    },
+    {
+      "lower": 575.060730068957,
+      "upper": 588.1825713469865,
+      "count": 1531
+    },
+    {
+      "lower": 588.1825713469865,
+      "upper": 601.3044126250161,
+      "count": 1984
+    },
+    {
+      "lower": 601.3044126250161,
+      "upper": 614.4262539030456,
+      "count": 2496
+    },
+    {
+      "lower": 614.4262539030456,
+      "upper": 627.548095181075,
+      "count": 2989
+    },
+    {
+      "lower": 627.548095181075,
+      "upper": 640.6699364591046,
+      "count": 3239
+    },
+    {
+      "lower": 640.6699364591046,
+      "upper": 653.7917777371341,
+      "count": 3538
+    },
+    {
+      "lower": 653.7917777371341,
+      "upper": 666.9136190151636,
+      "count": 3625
+    },
+    {
+      "lower": 666.9136190151636,
+      "upper": 680.0354602931932,
+      "count": 3722
+    },
+    {
+      "lower": 680.0354602931932,
+      "upper": 693.1573015712227,
+      "count": 3506
+    },
+    {
+      "lower": 693.1573015712227,
+      "upper": 706.2791428492521,
+      "count": 3376
+    },
+    {
+      "lower": 706.2791428492521,
+      "upper": 719.4009841272816,
+      "count": 3130
+    },
+    {
+      "lower": 719.4009841272816,
+      "upper": 732.5228254053112,
+      "count": 2815
+    },
+    {
+      "lower": 732.5228254053112,
+      "upper": 745.6446666833407,
+      "count": 2384
+    },
+    {
+      "lower": 745.6446666833407,
+      "upper": 758.7665079613703,
+      "count": 2072
+    },
+    {
+      "lower": 758.7665079613703,
+      "upper": 771.8883492393998,
+      "count": 1724
+    },
+    {
+      "lower": 771.8883492393998,
+      "upper": 785.0101905174292,
+      "count": 1357
+    },
+    {
+      "lower": 785.0101905174292,
+      "upper": 798.1320317954587,
+      "count": 1039
+    },
+    {
+      "lower": 798.1320317954587,
+      "upper": 811.2538730734883,
+      "count": 767
+    },
+    {
+      "lower": 811.2538730734883,
+      "upper": 824.3757143515178,
+      "count": 559
+    },
+    {
+      "lower": 824.3757143515178,
+      "upper": 837.4975556295474,
+      "count": 408
+    },
+    {
+      "lower": 837.4975556295474,
+      "upper": 850.6193969075769,
+      "count": 265
+    }
+  ],
+  "distributionAdjustments": [],
+  "warnings": [],
+  "limitations": [
+    "이 분포는 미래 주가 확률이 아니라 선택한 DCF 입력 범위가 만드는 모형 결과의 분포입니다.",
+    "입력 범위는 4A 보수·기준·낙관 시나리오에 묶여 있으며 범위 밖 사건은 표현하지 않습니다.",
+    "Terminal ROIC와 감가상각률은 세 시나리오가 동일해 임의 변동을 만들지 않았습니다.",
+    "입력 간 완전한 현실 상관구조를 추정할 표본이 없어 각 분포를 독립 추출하되 4A의 연도별 경로를 보간했습니다.",
+    "Spearman 순위상관은 모형 내부 영향도이며 실제 사업이나 시장가격의 인과관계를 뜻하지 않습니다."
+  ],
+  "sourceIds": [
+    "phase-4a:meta:assumptions",
+    "meta-benchmark"
+  ]
+}

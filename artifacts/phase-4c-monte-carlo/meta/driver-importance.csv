@@ -1,0 +1,7 @@
+rank,assumptionId,label,spearmanCorrelation
+1,futureRevenueCagr,전망 매출 CAGR,0.6641472514
+2,wacc,WACC,-0.6359765686
+3,normalizedOperatingMargin,정상 영업이익률,0.2521560493
+4,terminalGrowth,영구성장률,0.2081783875
+5,capexAsPercentRevenue,Capex/매출,-0.0278353153
+6,workingCapitalAsPercentRevenue,운전자본 재투자/매출,-0.0132156037
