@@ -14,6 +14,7 @@
     "validate:company-briefs": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/company-brief-unit.js",
     "validate:valuation": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/valuation-unit.js",
     "validate:valuation-expectations": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/valuation-expectations-unit.js",
+    "validate:event-impacts": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/event-impact-unit.js",
     "validate:research-reports": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/research-report-unit.js",
     "check:types": "tsc --noEmit",
     "typecheck": "tsc --noEmit",

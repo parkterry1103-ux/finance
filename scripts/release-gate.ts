@@ -224,10 +224,15 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'scripts/company-brief-unit.ts',
     'scripts/financial-pivot-unit.ts',
     'scripts/valuation-expectations-unit.ts',
+    'scripts/event-impact-unit.ts',
+    'scripts/event-impact-browser-qa.mjs',
     'src/content/company-briefs/validation.ts',
     'src/content/financial-pivots/validation.ts',
     'src/routes/FinancialPivotRoute.tsx',
     'src/routes/ValuationExpectationsRoute.tsx',
+    'src/content/event-impacts/validation.ts',
+    'src/content/event-impacts/registry.ts',
+    'src/components/event-impacts/EventImpactUi.tsx',
     'src/routes/ResearchReportRoute.tsx',
     'src/routes/InsightsRoute.tsx',
     'src/routes/StockDissectionRoute.tsx',
@@ -258,9 +263,14 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/valuation-expectation-model.md',
     'docs/reverse-dcf-methodology.md',
     'docs/valuation-validation.md',
+    'docs/site-restructure-phase-5e.md',
+    'docs/event-impact-model.md',
+    'docs/event-to-assumption-methodology.md',
+    'docs/event-impact-validation.md',
     'docs/plans/phase-5b-company-brief-plan.html',
     'docs/plans/phase-5c-financial-pivot-plan.html',
     'docs/plans/phase-5d-valuation-expectations-plan.html',
+    'docs/plans/phase-5e-event-assumption-linkage-plan.html',
     'docs/plans/phase-5a-editorial-newsroom-plan.html',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
@@ -336,6 +346,8 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   const metaReport = manifest['src/content/research-reports/meta.ts'];
   const nvidiaMonteCarlo = manifest['src/content/monte-carlo/nvidia.ts'];
   const metaMonteCarlo = manifest['src/content/monte-carlo/meta.ts'];
+  const nvidiaEventImpacts = manifest['src/content/event-impacts/entries/nvidia.ts'];
+  const metaEventImpacts = manifest['src/content/event-impacts/entries/meta.ts'];
   const companiesRoute = manifest['src/routes/CompaniesRoute.tsx'];
   assert(nvidiaReport?.isDynamicEntry && metaReport?.isDynamicEntry, 'company report content is not split into company-specific dynamic entries');
   assert(entryDefinition.dynamicImports?.includes(reportRouteKey), 'research report route is not dynamically imported by the App entry');
@@ -351,6 +363,10 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically imported by report route');
   assert(!nvidiaMonteCarlo?.dynamicImports?.some((source) => source.includes('/meta.')), 'NVIDIA Monte Carlo chunk preloads Meta data');
   assert(!metaMonteCarlo?.dynamicImports?.some((source) => source.includes('/nvidia.')), 'Meta Monte Carlo chunk preloads NVIDIA data');
+  assert(nvidiaEventImpacts?.isDynamicEntry && metaEventImpacts?.isDynamicEntry, 'event impacts are not split into company-specific dynamic entries');
+  assert(!nvidiaEventImpacts?.imports?.some((source) => source.includes('entries/meta')), 'NVIDIA event impact chunk preloads Meta data');
+  assert(!metaEventImpacts?.imports?.some((source) => source.includes('entries/nvidia')), 'Meta event impact chunk preloads NVIDIA data');
+  assert(!entryDefinition.dynamicImports?.some((source) => source.includes('event-impacts/entries/')), 'App entry directly preloads company event impacts');
   assert(!companiesRoute?.dynamicImports?.some((source) => source.includes('research-reports')), 'company dashboard preloads report content');
   assert(!entryDefinition.dynamicImports?.some((source) => source.includes('content/research-reports/')), 'App entry directly preloads company report content');
 
@@ -414,6 +430,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Company Brief unit', 'company-brief-unit.js'],
   ['Financial Pivot unit', 'financial-pivot-unit.js'],
   ['Valuation expectations unit', 'valuation-expectations-unit.js'],
+  ['Event impact unit', 'event-impact-unit.js'],
   ['Company events unit', 'company-events-unit.js'],
   ['Demand-supply unit', 'demand-supply-unit.js'],
   ['Market relations unit', 'market-relations-unit.js'],

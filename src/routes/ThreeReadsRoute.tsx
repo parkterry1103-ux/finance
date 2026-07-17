@@ -5,6 +5,8 @@ import { dateIsNotFuture, isDetailVisible } from '../content/editorial/selectors
 import { publishedEditorialSummaryIndex } from '../content/editorial/summaries.js';
 import type { EditorialArticleSource, EditorialSource, StockDissectionSummary, ThreeReadsEdition } from '../content/editorial/types.js';
 import { editorialDate, editorialInternalLink, editorialPath, type EditorialNavigate } from '../components/editorial/EditorialUi.js';
+import { loadEditorialEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
+import { EditorialEventImpactSection } from '../components/event-impacts/EventImpactUi.js';
 
 function SourceRow({ source, label }: { source: EditorialSource | EditorialArticleSource; label: string }) {
   return <li><div><strong>{label}</strong><span>발행 {editorialDate(source.publishedAt.slice(0, 10))} · 접근 {editorialDate(source.accessedAt.slice(0, 10))}{'articleIdentifier' in source && source.articleIdentifier ? ` · 기사 식별자 ${source.articleIdentifier}` : ''}</span></div>{source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${label} 새 창에서 열기`}>원문 <ExternalLink size={13} aria-hidden="true" /></a> : <span>기사 식별 정보 확인</span>}</li>;
@@ -12,12 +14,20 @@ function SourceRow({ source, label }: { source: EditorialSource | EditorialArtic
 
 export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const [item, setItem] = useState<ThreeReadsEdition | null | undefined>(undefined);
+  const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
   useEffect(() => {
     let active = true;
     setItem(undefined);
     loadThreeReadsEdition(slug).then((loaded) => { if (active) setItem(loaded ?? null); }).catch(() => { if (active) setItem(null); });
     return () => { active = false; };
   }, [slug]);
+  useEffect(() => {
+    let active = true;
+    setEventImpacts([]);
+    if (!item?.id) return () => { active = false; };
+    loadEditorialEventImpacts(item.id).then((impacts) => { if (active) setEventImpacts(impacts); }).catch(() => { if (active) setEventImpacts([]); });
+    return () => { active = false; };
+  }, [item?.id]);
 
   const today = new Date().toISOString().slice(0, 10);
   const publicItem = item && isDetailVisible(item.status) && dateIsNotFuture(item.publishedAt, today) ? item : null;
@@ -55,9 +65,11 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
         <section className="editorial-detail-section" aria-labelledby="three-questions-title"><div className="editorial-detail-heading"><span>06</span><h2 id="three-questions-title">투자자가 확인할 변수</h2></div><ol className="editorial-watch-list">{publicItem.investorQuestions.map((question) => <li key={question}>{question}</li>)}</ol></section>
         <section className="editorial-takeaway editorial-detail-takeaway" aria-labelledby="three-takeaway-title"><span>오늘의 한 줄</span><h2 id="three-takeaway-title">{publicItem.oneLineTakeaway}</h2></section>
 
-        {relatedStocks.length || relatedCompanySlugs.length ? <section className="editorial-detail-section" aria-labelledby="three-related-title"><div className="editorial-detail-heading"><span>07</span><h2 id="three-related-title">관련 해부와 기업</h2></div><div className="editorial-related-links">{relatedStocks.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={editorialInternalLink(path, onNavigate)}>{related.headline}<ArrowRight size={14} aria-hidden="true" /></a>; })}{relatedCompanySlugs.map((companySlug) => <a key={companySlug} href={`/ko/companies/${encodeURIComponent(companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(companySlug)}`, onNavigate)}>{companySlug} 기업 분석 보기<ArrowRight size={14} aria-hidden="true" /></a>)}</div></section> : null}
+        <EditorialEventImpactSection impacts={eventImpacts} headingNumber="07" />
 
-        <section className="editorial-detail-section" aria-labelledby="three-sources-title"><div className="editorial-detail-heading"><span>08</span><h2 id="three-sources-title">주요 출처</h2></div><ol className="editorial-source-list">{publicItem.reads.map((read) => <SourceRow key={read.id} source={read.source} label={`${read.source.name} · ${read.headline}`} />)}</ol></section>
+        {relatedStocks.length || relatedCompanySlugs.length ? <section className="editorial-detail-section" aria-labelledby="three-related-title"><div className="editorial-detail-heading"><span>{eventImpacts.length ? '08' : '07'}</span><h2 id="three-related-title">관련 해부와 기업</h2></div><div className="editorial-related-links">{relatedStocks.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={editorialInternalLink(path, onNavigate)}>{related.headline}<ArrowRight size={14} aria-hidden="true" /></a>; })}{relatedCompanySlugs.map((companySlug) => <a key={companySlug} href={`/ko/companies/${encodeURIComponent(companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(companySlug)}`, onNavigate)}>{companySlug} 기업 분석 보기<ArrowRight size={14} aria-hidden="true" /></a>)}</div></section> : null}
+
+        <section className="editorial-detail-section" aria-labelledby="three-sources-title"><div className="editorial-detail-heading"><span>{eventImpacts.length ? '09' : '08'}</span><h2 id="three-sources-title">주요 출처</h2></div><ol className="editorial-source-list">{publicItem.reads.map((read) => <SourceRow key={read.id} source={read.source} label={`${read.source.name} · ${read.headline}`} />)}</ol></section>
 
         {publicItem.methodology ? <details className="editorial-methodology"><summary>선정·검증 방법 보기</summary><div><section><h2>뉴스 탐색 범위</h2><p>{publicItem.methodology.newsWindow}</p></section><section><h2>최근 14일 중복 검사</h2><p>{publicItem.methodology.duplicateCheck}</p></section><section><h2>후보 기사 선정 점수</h2><p>{publicItem.methodology.candidateSelection}</p></section><section><h2>기사별 팩트체크 요약</h2><ul>{publicItem.methodology.factCheckSummary.map((entry) => <li key={entry}>{entry}</li>)}</ul></section><section><h2>수정한 표현</h2><ul>{publicItem.methodology.correctedExpressions.map((entry) => <li key={entry}>{entry}</li>)}</ul></section><section><h2>Not Yet Final</h2><ul>{publicItem.methodology.notYetFinal.map((entry) => <li key={entry}>{entry}</li>)}</ul></section><section><h2>가격 기준일·시각</h2><ul>{publicItem.methodology.priceBasis.map((entry) => <li key={entry}>{entry}</li>)}</ul></section><section><h2>원문 및 공식 교차검증 자료</h2>{publicItem.reads.map((read) => <div key={read.id} className="editorial-method-sources"><h3>{read.headline}</h3><ol className="editorial-source-list"><SourceRow source={read.source} label={`${read.source.name} 원문`} />{read.officialSources?.map((source) => <SourceRow key={source.id} source={source} label={source.name} />)}</ol></div>)}</section></div></details> : null}
 

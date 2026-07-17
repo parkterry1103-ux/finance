@@ -19,6 +19,8 @@ import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bot
 import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
 import { moveCharacterLabels } from '../../content/editorial/selectors.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
+import type { EventImpactRecord } from '../../content/event-impacts/index.js';
+import { CompanyEventImpactSection } from '../event-impacts/EventImpactUi.js';
 
 type Navigate = (path: string) => void;
 
@@ -281,9 +283,10 @@ export function CompanyBriefLoadingPage({
 export function CompanyResearchProfilePage({
   viewModel,
   brief,
+  eventImpacts,
   navigation,
   onNavigate,
-}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief }) {
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; eventImpacts: EventImpactRecord[] }) {
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
@@ -349,6 +352,8 @@ export function CompanyResearchProfilePage({
             })}
           </div>
         </section>
+
+        <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} />
 
         {recentEditorial.length ? <section className="company-dashboard-section company-dashboard-editorial" aria-labelledby="company-editorial-title">
           <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
