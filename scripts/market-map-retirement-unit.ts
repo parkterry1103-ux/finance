@@ -20,7 +20,7 @@ legacyMarketMapPaths.forEach((path) => {
 check(resolveLegacyMarketMapRoute('/ko/market-map') === '/ko/demand-supply', 'Korean hub replacement');
 check(resolveLegacyMarketMapRoute('/market-map') === '/demand-supply', 'English hub replacement');
 check(resolveLegacyMarketMapRoute('/ko/category/not-a-retired-map') === null, 'unknown category untouched');
-check(primaryNavigationItems.length === 2, 'two primary navigation items');
+check(primaryNavigationItems.length === 3, 'three primary navigation items');
 check(primaryNavigationItems.every((item) => !item.href.includes('market-map')), 'no public market-map navigation');
 
 const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');

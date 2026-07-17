@@ -4881,3 +4881,11 @@ base URL은 HTTPS Vercel host allowlist를 통과해야 합니다. route·영문
 Vercel이 생성하는 성공 Production `deployment_status`와 필수 `environment_url`을 확인해 `Deployment Smoke Gate` workflow에 연결했고, `workflow_dispatch`의 `base_url` 재실행도 지원합니다. 보호된 immutable URL은 Vercel 인증 화면으로 이동하므로 event URL은 HTTPS allowlist metadata로 검증하고 실제 자동 smoke는 같은 Current deployment의 공개 canonical alias에서 수행합니다. 보호된 Preview는 설정을 해제하지 않고 프로젝트 인증이 적용되는 `vercel curl`로 검증합니다. 권한은 `contents: read`, `deployments: read`뿐입니다. 결과는 GitHub Step Summary와 14일 artifact에 남고 로컬에서는 `artifacts/release-*-summary.{json,md}`에서 확인합니다. 실패 시 summary의 command, exit code, duration과 오류 요약을 확인합니다. 상세 inventory와 동적 데이터·쓰기 위험 기준은 `docs/release-gate-inventory.md`에 기록했습니다.
 
 이번 gate는 신규 API·Serverless Function·DB·migration·cron·sync·dependency·UI 기능·API 계약을 추가하지 않습니다. Production secret, Vercel 배포·alias 변경, 인증된 sync, Production 데이터 쓰기도 수행하지 않습니다.
+
+## 사이트 재개편 5A — 편집 레지스트리와 뉴스룸형 홈페이지
+
+홈을 두 개의 메뉴 카드에서 `오늘의 주가 해부`와 `오늘의 3Reads` 중심 뉴스룸으로 바꿨습니다. 기존 8개 기업 검색 index를 그대로 재사용하며 거시경제 URL은 유지하고 Footer의 `시장 환경`으로 이동했습니다. `/ko/insights`, `/ko/insights/stock/:slug`, `/ko/insights/3reads/:slug`는 각각 lazy route입니다.
+
+편집 원고는 `src/content/editorial`의 `ThreeReadsEdition`과 `DailyStockDissection`으로 분리합니다. 홈은 짧은 published summary index만 포함하고 긴 상세 object는 route 진입 뒤 dynamic import합니다. 출처 URL·발행일·기준일·지원 기업·관련 ID·유한 숫자·상대수익률 기준을 `npm run validate:editorial`로 검증합니다.
+
+제공된 PayPal·ASML·커넥티드카 예시는 출처와 기준일이 없어 draft fixture로만 저장했습니다. 검증 가능한 published 콘텐츠가 0건인 현재 화면은 정해진 빈 상태를 표시하며 예시 수치나 사실 미확인 내용을 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스 호출과 자동 생성은 없습니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`에 기록했습니다.

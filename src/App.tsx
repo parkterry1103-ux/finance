@@ -156,6 +156,7 @@ import {
 import { industryFlows } from './content/industry-flows';
 import { replaceLegacyMarketMapLocation, resolveLegacyMarketMapRoute } from './lib/legacyMarketMapRoutes';
 import { DeferredRoute, RouteLoadingFallback } from './routes/RouteBoundary';
+import { NewsroomHome } from './components/editorial/NewsroomHome';
 
 const CompaniesRoute = lazy(() => import('./routes/CompaniesRoute'));
 const CompanyEventsRoute = lazy(() => import('./routes/CompanyEventsRoute'));
@@ -164,6 +165,9 @@ const DisclosuresRoute = lazy(() => import('./routes/DisclosuresRoute'));
 const MacroDashboardRoute = lazy(() => import('./routes/MacroDashboardRoute'));
 const MarketRelationsRoute = lazy(() => import('./routes/MarketRelationsRoute'));
 const ResearchReportRoute = lazy(() => import('./routes/ResearchReportRoute'));
+const InsightsRoute = lazy(() => import('./routes/InsightsRoute'));
+const StockDissectionRoute = lazy(() => import('./routes/StockDissectionRoute'));
+const ThreeReadsRoute = lazy(() => import('./routes/ThreeReadsRoute'));
 
 type NewsItem = {
   title: string;
@@ -743,7 +747,7 @@ function navigateWithinApp(href: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'insights' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -4332,42 +4336,7 @@ function HomeEntryCard({ entry }: { entry: HomeEntry }) {
 }
 
 function SimplifiedHome({ onHome }: Pick<LandingPageProps, 'onHome'>) {
-  return (
-    <div className="home-shell simplified-home-shell" id="top">
-      <PrimaryNavigation
-        active="today"
-        variant="home"
-        onHome={onHome}
-      />
-      <main>
-        <section className="simplified-home-hero" aria-labelledby="simplified-home-title">
-          <div className="simplified-home-intro">
-            <h1 id="simplified-home-title">
-              <span>기업은 재무로,</span>
-              <span>시장은 거시로 봅니다.</span>
-            </h1>
-            <p>전문 용어는 그대로, 의미는 쉽게.</p>
-          </div>
-          <div className="simplified-home-grid" aria-label="분석 시작점">
-            {homeEntries.map((entry) => <HomeEntryCard entry={entry} key={entry.id} />)}
-          </div>
-        </section>
-      </main>
-      <footer className="simplified-home-footer">
-        <strong>주가해부실</strong>
-        <a
-          href="/ko/reports"
-          onClick={(event) => {
-            event.preventDefault();
-            navigateWithinApp('/ko/reports');
-          }}
-        >
-          데이터 기준 및 출처
-        </a>
-        <p>표시된 내용은 정보 제공을 위한 분석이며 투자 권유가 아닙니다.</p>
-      </footer>
-    </div>
-  );
+  return <NewsroomHome navigation={<PrimaryNavigation active="today" variant="home" onHome={onHome} />} onNavigate={navigateWithinApp} />;
 }
 
 function LandingPage({ onHome }: LandingPageProps) {
@@ -6982,6 +6951,9 @@ function App() {
   const routeCompanyEventsMatch = routePath.match(/^\/ko\/company-events\/?$/) ?? routePath.match(/^\/company-events\/?$/);
   const routeCompaniesMatch = routePath.match(/^\/ko\/companies\/?$/) ?? routePath.match(/^\/companies\/?$/);
   const routeResearchReportMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/report\/?$/);
+  const routeStockDissectionMatch = routePath.match(/^\/ko\/insights\/stock\/([^/]+)\/?$/);
+  const routeThreeReadsMatch = routePath.match(/^\/ko\/insights\/3reads\/([^/]+)\/?$/);
+  const routeInsightsMatch = routePath.match(/^\/ko\/insights\/?$/);
   const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
   const routePickMatch =
@@ -6996,6 +6968,8 @@ function App() {
   const routeCompanyProfileEntry = routeCompanyProfileSlug ? companyProfileByIdOrSlug(routeCompanyProfileSlug) : undefined;
   const routeCompanyIdentity = routeCompanyProfileEntry ? canonicalCompanyProfileIdentity(routeCompanyProfileEntry.companyId) : undefined;
   const routeResearchReportSlug = routeResearchReportMatch?.[1] ? decodeURIComponent(routeResearchReportMatch[1]) : undefined;
+  const routeStockDissectionSlug = routeStockDissectionMatch?.[1] ? decodeURIComponent(routeStockDissectionMatch[1]) : undefined;
+  const routeThreeReadsSlug = routeThreeReadsMatch?.[1] ? decodeURIComponent(routeThreeReadsMatch[1]) : undefined;
   const routeResearchReportEntry = routeResearchReportSlug ? companyProfileByIdOrSlug(routeResearchReportSlug) : undefined;
   const routeResearchReportIdentity = routeResearchReportEntry ? canonicalCompanyProfileIdentity(routeResearchReportEntry.companyId) : undefined;
   const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
@@ -7026,7 +7000,13 @@ function App() {
 
   useEffect(() => {
     const title = isHomeRoute
-      ? '주가해부실 | 기업 분석과 거시경제'
+      ? '주가해부실 | 오늘의 주가 해부와 기업 리서치'
+      : routeStockDissectionMatch
+        ? '주가 해부 | 주가해부실'
+      : routeThreeReadsMatch
+        ? '오늘의 3Reads | 주가해부실'
+      : routeInsightsMatch
+        ? '리서치 | 주가해부실'
       : routeResearchReportMatch
         ? routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
           ? `${routeResearchReportIdentity.name} 리서치 리포트 | 주가해부실`
@@ -7041,7 +7021,13 @@ function App() {
             ? '수요와 공급을 함께 보기 | 주가해부실'
             : '주가해부실';
     const metaDescription = isHomeRoute
-      ? '기업의 재무 흐름과 금리·환율·원자재의 거시경제 흐름을 연결해 설명합니다.'
+      ? '오늘 주가가 움직인 이유와 다음 확인 항목을 기업의 사업·재무·가치평가로 연결합니다.'
+      : routeStockDissectionMatch
+        ? '확인된 사실과 아직 확인되지 않은 내용을 구분해 주가 움직임과 다음 확인 항목을 설명합니다.'
+      : routeThreeReadsMatch
+        ? '서로 다른 세 뉴스를 하나의 구조적 질문으로 연결합니다.'
+      : routeInsightsMatch
+        ? '최근 주가 해부와 오늘의 3Reads를 확인합니다.'
       : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
         ? `${routeResearchReportIdentity.name}의 사업 구조, 실적, 현금흐름, 가치평가 가정과 확인 항목을 근거와 함께 정리한 리서치 리포트입니다.`
       : routeCompanyIdentity
@@ -7065,7 +7051,7 @@ function App() {
     canonical.href = routeResearchReportMatch && routeResearchReportSlug
       ? `${window.location.origin}/ko/companies/${encodeURIComponent(routeResearchReportSlug)}/report`
       : `${window.location.origin}${routePath}`;
-  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch)]);
+  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch), Boolean(routeInsightsMatch), Boolean(routeStockDissectionMatch), Boolean(routeThreeReadsMatch)]);
 
   useEffect(() => {
     if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
@@ -7181,6 +7167,30 @@ function App() {
       onOpenReports={openReports}
     />
   );
+
+  if (routeStockDissectionMatch) {
+    return (
+      <DeferredRoute fallback={<div className="pick-shell editorial-shell">{navigation('insights')}<RouteLoadingFallback /></div>} resetKey={routePath}>
+        <StockDissectionRoute slug={routeStockDissectionSlug ?? ''} navigation={navigation('insights')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
+
+  if (routeThreeReadsMatch) {
+    return (
+      <DeferredRoute fallback={<div className="pick-shell editorial-shell">{navigation('insights')}<RouteLoadingFallback /></div>} resetKey={routePath}>
+        <ThreeReadsRoute slug={routeThreeReadsSlug ?? ''} navigation={navigation('insights')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
+
+  if (routeInsightsMatch) {
+    return (
+      <DeferredRoute fallback={<div className="pick-shell editorial-shell">{navigation('insights')}<RouteLoadingFallback /></div>} resetKey={routePath}>
+        <InsightsRoute navigation={navigation('insights')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
 
   if (routeResearchReportMatch) {
     return (

@@ -10,6 +10,7 @@ import { industryFlows } from '../src/content/industry-flows/index.js';
 import { macroIndicatorDefinitions } from '../src/content/macro/index.js';
 import { relationDefinitions } from '../src/content/relations/index.js';
 import { industryReports } from '../src/content/reports/index.js';
+import { publishedEditorialSummaryIndex } from '../src/content/editorial/summaries.js';
 import { loadReleaseGateConfig, type ReleaseGateConfig } from './release-gate-config.js';
 
 type CheckResult = {
@@ -66,6 +67,7 @@ const actualContent = {
   industryFlows: industryFlows.length,
   macroSeries: macroIndicatorDefinitions.length,
   marketRelations: relationDefinitions.length,
+  editorialPublished: publishedEditorialSummaryIndex.length,
 };
 
 function durationSince(start: number) {
@@ -218,7 +220,11 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'scripts/valuation-unit.ts',
     'scripts/research-report-unit.ts',
     'scripts/monte-carlo-unit.ts',
+    'scripts/editorial-unit.ts',
     'src/routes/ResearchReportRoute.tsx',
+    'src/routes/InsightsRoute.tsx',
+    'src/routes/StockDissectionRoute.tsx',
+    'src/routes/ThreeReadsRoute.tsx',
     'docs/site-restructure-phase-4a.md',
     'docs/valuation-readiness-inventory.md',
     'docs/valuation-methodology.md',
@@ -230,6 +236,11 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/monte-carlo-valuation-methodology.md',
     'docs/monte-carlo-assumption-inventory.md',
     'docs/monte-carlo-validation.md',
+    'docs/site-restructure-phase-5a.md',
+    'docs/editorial-content-model.md',
+    'docs/editorial-publishing-workflow.md',
+    'docs/editorial-validation.md',
+    'docs/plans/phase-5a-editorial-newsroom-plan.html',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
     'artifacts/phase-4a-valuation/meta/valuation-result.json',
@@ -363,6 +374,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Valuation engine unit', 'valuation-unit.js'],
   ['Research report unit', 'research-report-unit.js'],
   ['Monte Carlo valuation unit', 'monte-carlo-unit.js'],
+  ['Editorial registry unit', 'editorial-unit.js'],
 ];
 compiledChecks.forEach(([name, file]) => runCommand(name, nodeCommand, [join('.sync-build', 'scripts', file)]));
 runCommand('Application TypeScript', './node_modules/.bin/tsc', ['--noEmit']);

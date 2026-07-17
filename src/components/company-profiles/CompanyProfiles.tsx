@@ -16,6 +16,8 @@ import type {
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
+import { moveCharacterLabels, summariesForCompany } from '../../content/editorial/selectors.js';
+import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
 
 type Navigate = (path: string) => void;
 
@@ -246,6 +248,7 @@ export function CompanyResearchProfilePage({
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
   const hasResearchReport = profile.slug === 'nvidia' || profile.slug === 'meta';
+  const recentEditorial = summariesForCompany(publishedEditorialSummaryIndex, profile.slug, 2);
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -266,6 +269,14 @@ export function CompanyResearchProfilePage({
             {hasResearchReport ? <a className="company-dashboard-report-cta" href={`/ko/companies/${profile.slug}/report`} onClick={internalLink(`/ko/companies/${profile.slug}/report`, onNavigate)}>리서치 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
           </div>
         </header>
+
+        {recentEditorial.length ? <section className="company-dashboard-section company-dashboard-editorial" aria-labelledby="company-editorial-title">
+          <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
+          <div className="company-dashboard-editorial-grid">{recentEditorial.map((item) => {
+            const path = item.kind === 'stock' ? `/ko/insights/stock/${encodeURIComponent(item.slug)}` : `/ko/insights/3reads/${encodeURIComponent(item.slug)}`;
+            return <article key={item.id}><time dateTime={item.publishedAt}>{formatDate(item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p><a href={path} onClick={internalLink(path, onNavigate)}>리서치 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
+          })}</div>
+        </section> : null}
 
         <section className="company-dashboard-section" aria-labelledby="company-assessments-title">
           <div className="company-dashboard-section-heading"><span>핵심 판단</span><h2 id="company-assessments-title">현재 상태를 먼저 봅니다</h2><p>점수 대신 확인된 근거와 데이터 한계를 함께 표시합니다.</p></div>
