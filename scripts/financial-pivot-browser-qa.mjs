@@ -8,6 +8,7 @@ if (!modules) throw new Error('CODEX_NODE_MODULES is required');
 const { chromium, webkit } = require(join(modules, 'playwright'));
 
 const baseUrl = process.env.PHASE5C_BASE_URL ?? 'http://127.0.0.1:8788';
+const useLiveApi = process.env.PHASE5C_LIVE_API === '1';
 const root = process.cwd();
 const artifactDir = join(root, 'artifacts', 'phase-5c-financial-pivot');
 mkdirSync(artifactDir, { recursive: true });
@@ -86,13 +87,15 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     const consoleErrors = [];
     page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
     page.on('pageerror', (error) => consoleErrors.push(error.message));
-    await page.route('**/api/financials?**', async (route) => {
-      const url = new URL(route.request().url());
-      const companyId = url.searchParams.get('companyId') ?? 'nvidia';
-      const slug = companies.find((item) => companyId.includes(item)) ?? (companyId.includes('platforms') ? 'meta' : 'nvidia');
-      const period = url.searchParams.get('period') === 'quarterly' ? 'quarterly' : 'annual';
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture(slug, period)) });
-    });
+    if (!useLiveApi) {
+      await page.route('**/api/financials?**', async (route) => {
+        const url = new URL(route.request().url());
+        const companyId = url.searchParams.get('companyId') ?? 'nvidia';
+        const slug = companies.find((item) => companyId.includes(item)) ?? (companyId.includes('platforms') ? 'meta' : 'nvidia');
+        const period = url.searchParams.get('period') === 'quarterly' ? 'quarterly' : 'annual';
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture(slug, period)) });
+      });
+    }
     const url = `${baseUrl}/ko/companies/nvidia/financials`;
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.getByRole('heading', { name: /NVIDIA 숫자와 비교/ }).waitFor();
@@ -126,11 +129,13 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     for (const slug of companies) {
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();
-      await page.route('**/api/financials?**', async (route) => {
-        const url = new URL(route.request().url());
-        const period = url.searchParams.get('period') === 'quarterly' ? 'quarterly' : 'annual';
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture(slug, period)) });
-      });
+      if (!useLiveApi) {
+        await page.route('**/api/financials?**', async (route) => {
+          const url = new URL(route.request().url());
+          const period = url.searchParams.get('period') === 'quarterly' ? 'quarterly' : 'annual';
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture(slug, period)) });
+        });
+      }
       await page.goto(`${baseUrl}/ko/companies/${slug}/financials`, { waitUntil: 'networkidle' });
       const routeAudit = await page.evaluate(() => ({
         h1: document.querySelectorAll('h1').length,
@@ -147,5 +152,5 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
   await browser.close();
 }
 
-writeFileSync(join(artifactDir, 'browser-qa.json'), `${JSON.stringify({ baseUrl, results, routeResults }, null, 2)}\n`);
-console.log(`✓ Financial Pivot browser QA ${results.length}개 viewport · 기업 route ${routeResults.length}개 · Chromium/WebKit · overflow 0 · console error 0`);
+writeFileSync(join(artifactDir, 'browser-qa.json'), `${JSON.stringify({ baseUrl, useLiveApi, results, routeResults }, null, 2)}\n`);
+console.log(`✓ Financial Pivot browser QA ${results.length}개 viewport · 기업 route ${routeResults.length}개 · ${useLiveApi ? 'live API' : 'fixture'} · Chromium/WebKit · overflow 0 · console error 0`);
