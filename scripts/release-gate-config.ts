@@ -31,7 +31,7 @@ export type ReleaseGateConfig = {
     maxRedirects: number;
     retries: number;
     routes: string[];
-    assetContentChecks: Array<{ id: string; all: string[] }>;
+    assetContentChecks: Array<{ id: string; all?: string[]; none?: string[] }>;
     apis: Array<{ id: string; path: string; contract: string }>;
     syncEndpoints: string[];
   };

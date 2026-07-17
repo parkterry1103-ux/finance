@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5B · 기업 상세 핵심 판단 개편</title>
+  <style>
+    :root { color-scheme: dark; --bg:#07111f; --panel:#0d1b2d; --card:#12243a; --line:#29415d; --text:#f5f7fb; --muted:#b6c4d6; --accent:#e3c66f; --ok:#7ee0b5; --plan:#8ec5ff; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:linear-gradient(145deg,#07111f 0%,#0a1728 48%,#07111f 100%); color:var(--text); font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; word-break:keep-all; }
+    a { color:inherit; text-underline-offset:3px; }
+    a:focus-visible, summary:focus-visible { outline:3px solid var(--accent); outline-offset:4px; border-radius:6px; }
+    .skip { position:fixed; left:16px; top:-80px; z-index:10; padding:10px 14px; background:#fff; color:#07111f; border-radius:8px; }
+    .skip:focus { top:16px; }
+    .page { width:calc(100% - 32px); max-width:1180px; min-width:0; margin:0 auto; padding:32px 0 72px; }
+    .hero { padding:clamp(26px,5vw,58px); border:1px solid var(--line); border-radius:28px; background:radial-gradient(circle at 90% 0%,#234363 0%,transparent 42%),var(--panel); box-shadow:0 24px 70px #0005; }
+    .hero-top,.panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+    .eyebrow { margin:0 0 8px; color:var(--accent); font-size:.78rem; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:0; max-width:780px; font-size:clamp(2rem,6vw,4.6rem); line-height:1.04; letter-spacing:-.055em; }
+    h2,h3,p { margin-top:0; }
+    h2 { font-size:clamp(1.35rem,3vw,2rem); line-height:1.25; letter-spacing:-.025em; }
+    h3 { font-size:1rem; }
+    .hero-copy { max-width:760px; margin:22px 0 0; color:#dbe6f3; font-size:clamp(1rem,2vw,1.17rem); }
+    .status,.tag { display:inline-flex; align-items:center; min-height:32px; padding:5px 11px; border:1px solid currentColor; border-radius:999px; font-size:.78rem; font-weight:850; white-space:nowrap; }
+    .status { color:var(--plan); background:#122a45; }
+    .done { color:var(--ok); background:#10352d; }
+    .progress { color:var(--plan); background:#112d48; }
+    .hold { color:#f1c18e; background:#3b2816; }
+    .meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:30px 0 0; }
+    .meta div { min-width:0; padding:13px 14px; border:1px solid var(--line); border-radius:14px; background:#081522bb; }
+    dt { color:var(--muted); font-size:.74rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+    dd { margin:3px 0 0; font-weight:750; overflow-wrap:anywhere; }
+    .toc { display:flex; gap:8px; overflow-x:auto; margin:18px 0; padding:10px; border:1px solid var(--line); border-radius:16px; background:#07111fe6; position:sticky; top:8px; z-index:5; }
+    .toc a { flex:0 0 auto; min-height:44px; display:inline-flex; align-items:center; padding:0 13px; border-radius:10px; background:#13243a; text-decoration:none; font-size:.84rem; font-weight:750; }
+    main { display:grid; gap:16px; }
+    .panel { min-width:0; padding:clamp(20px,4vw,34px); border:1px solid var(--line); border-radius:22px; background:var(--panel); }
+    .grid-2,.grid-3,.flow,.task-list { display:grid; gap:12px; }
+    .grid-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .grid-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .card { min-width:0; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); }
+    .card p,.card li,.muted { color:var(--muted); }
+    ul,ol { padding-left:1.2rem; }
+    li + li { margin-top:7px; }
+    .flow { grid-template-columns:repeat(5,minmax(0,1fr)); margin:0; padding:0; list-style:none; counter-reset:step; }
+    .flow li { min-width:0; padding:16px; border:1px solid var(--line); border-radius:14px; background:#101f33; }
+    .flow li::before { counter-increment:step; content:"0" counter(step); display:block; color:var(--accent); font-weight:900; }
+    .question { display:block; margin:5px 0; font-weight:850; }
+    .table-wrap { min-width:0; max-width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:14px; }
+    table { width:100%; border-collapse:collapse; min-width:680px; }
+    caption { padding:12px; text-align:left; color:var(--muted); }
+    th,td { padding:12px 14px; border-top:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:#eaf1f9; }
+    code { color:#f8dfa0; }
+    .task-list { margin:0; padding:0; list-style:none; }
+    .task-list li { display:grid; grid-template-columns:38px 1fr auto; align-items:center; gap:12px; padding:13px; border:1px solid var(--line); border-radius:13px; background:#101f33; }
+    .task-list b { color:var(--accent); }
+    details { margin-top:12px; border:1px solid var(--line); border-radius:14px; background:#0a1727; }
+    summary { min-height:48px; display:flex; align-items:center; padding:12px 15px; font-weight:800; cursor:pointer; }
+    details div { padding:0 15px 15px; color:var(--muted); }
+    footer { padding:28px 4px; color:var(--muted); font-size:.85rem; }
+    @media (max-width:800px) { .meta,.grid-3 { grid-template-columns:1fr 1fr; } .grid-2,.flow { grid-template-columns:1fr; } .hero-top,.panel-head { flex-direction:column; } }
+    @media (max-width:520px) { .page { width:calc(100% - 20px); padding-top:10px; } .hero,.panel { border-radius:17px; } .meta,.grid-3 { grid-template-columns:1fr; } .task-list li { grid-template-columns:32px 1fr; } .task-list .tag { grid-column:2; justify-self:start; } body { word-break:normal; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">계획 본문으로 이동</a>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-top"><div><p class="eyebrow">Stock Autopsy · Company Brief</p><h1>Phase 5B<br>핵심 판단을 먼저</h1><p class="hero-copy">임시 주가 해부를 정리하고, 뉴스룸에서 기업 페이지로 이동한 사용자가 사업·변화·가치·위험·다음 확인을 1분 안에 이해하도록 8개 기업 상세의 첫 화면을 재구성합니다.</p></div><span class="status">Review</span></div>
+      <dl class="meta">
+        <div><dt>시작 SHA</dt><dd>e1de0860b72e0f415fd23544ad4708617f0d2633</dd></div>
+        <div><dt>Feature branch</dt><dd>feat/company-brief-phase-5b</dd></div>
+        <div><dt>Pull Request</dt><dd>구현 후 기록</dd></div>
+        <div><dt>최종 main SHA</dt><dd>배포 후 기록</dd></div>
+        <div><dt>Production deployment</dt><dd>기준점 dpl_4MmPqhfEGUMfkE3ie9KUq4Vv1Ra6 · Ready · Current</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-17 · 로컬 구현·검증 완료, 배포 검토</dd></div>
+      </dl>
+    </header>
+
+    <nav class="toc" aria-label="Phase 5B 목차"><a href="#goal">목적</a><a href="#audit">현재 문제</a><a href="#remove">콘텐츠 정리</a><a href="#intake">3파일 계약</a><a href="#questions">다섯 질문</a><a href="#model">데이터 모델</a><a href="#screen">화면</a><a href="#protect">보호 범위</a><a href="#quality">QA</a><a href="#work">진행</a><a href="#delivery">배포</a><a href="#actual">실제 결과</a></nav>
+
+    <main id="main">
+      <section class="panel" id="goal"><div class="panel-head"><div><p class="eyebrow">01 · Goal</p><h2>이번 단계가 해결하는 문제</h2></div><span class="tag progress">계획</span></div><div class="grid-2"><article class="card"><h3>제품 목표</h3><p>뉴스룸에서 기업으로 이동한 사용자가 무엇으로 돈을 벌고, 무엇이 달라졌으며, 왜 중요하고, 위험과 다음 확인이 무엇인지 1분 안에 이해합니다.</p></article><article class="card"><h3>공개 정체성</h3><p>오늘 주가가 움직인 이유와 그 변화가 기업의 장기 가치에 어떤 의미가 있는지 설명합니다. 매수·매도·목표주가 표현은 사용하지 않습니다.</p></article></div></section>
+
+      <section class="panel" id="audit"><div class="panel-head"><div><p class="eyebrow">02 · Baseline</p><h2>Phase 5A.1 완료 상태와 기업 상세 감사</h2></div><span class="tag done">감사 완료</span></div><div class="grid-3"><article class="card"><h3>완료 기반</h3><p>편집 registry, 뉴스룸 홈, Owner Verified와 첫 오늘의 월스트리트는 유지합니다.</p></article><article class="card"><h3>현재 첫 화면</h3><p>SK하이닉스는 헤더 다음에 임시 해부가 먼저 보여 다섯 판단 질문에 도달하지 못합니다. 1440px 본문 높이 4,142px, 숫자 토큰 58개입니다.</p></article><article class="card"><h3>모바일 길이</h3><p>본문 높이는 390px에서 5,600px, 320px에서 5,995px입니다. 기존 데이터는 지우지 않고 결론 뒤로 재배치합니다.</p></article></div></section>
+
+      <section class="panel" id="remove"><div class="panel-head"><div><p class="eyebrow">03 · Editorial Reset</p><h2>SK하이닉스 임시 주가 해부 제거</h2></div><span class="tag progress">예정</span></div><div class="grid-2"><article class="card"><h3>제거</h3><ul><li>typed content와 registry loader</li><li>홈 summary와 기업 relation</li><li>Published 가정 unit·smoke</li><li>기존 상세 route 공개 처리</li></ul></article><article class="card"><h3>유지</h3><ul><li><code>/ko/companies/sk-hynix</code></li><li>재무·공시·시장·산업·거시 데이터</li><li>지원 기업 8개</li><li>오늘의 월스트리트</li></ul></article></div><details><summary>삭제 이유 기록 원칙</summary><div>Phase 5A.1의 게시 흐름 검증을 위한 최초 콘텐츠였으며, 향후 검증 리서치·웹 본문·구조화 handoff를 함께 받는 표준 입력 방식으로 운영하므로 새 콘텐츠부터 정식 운영을 시작합니다. 오류나 거짓 콘텐츠였다고 표현하지 않습니다.</div></details></section>
+
+      <section class="panel" id="intake"><div class="panel-head"><div><p class="eyebrow">04 · Intake Contract</p><h2>향후 주가해부 3파일 게시 기준</h2></div><span class="tag progress">문서화 예정</span></div><div class="grid-3"><article class="card"><h3>01_verified-research.md</h3><p>세션·가격·거래량·시장 비교·직접 촉매·미해결 원인·Claim-level Source Pack과 검증 시각을 보존합니다.</p></article><article class="card"><h3>04_website-article.md</h3><p>확인된 움직임, 시장·기업 요인, 미확인 내용, 판단 영향과 다음 확인을 웹 문단으로 구성합니다.</p></article><article class="card"><h3>05_website-handoff.yaml</h3><p>홈 카드와 typed content에 옮길 회사·세션·수치·분류·경로·evidence를 구조화합니다.</p></article></div><p class="muted">세 파일 중 하나라도 없거나 핵심 수치·경로가 서로 다르면 Published로 등록하지 않습니다. 자동 parser나 업로드 도구는 만들지 않습니다.</p></section>
+
+      <section class="panel" id="questions"><div class="panel-head"><div><p class="eyebrow">05 · Core Questions</p><h2>기업 상세 핵심 다섯 질문</h2></div><span class="tag progress">8개 기업 적용 예정</span></div><ol class="flow"><li><span class="question">돈을 버는 구조</span>누구에게 무엇을 제공하고 어떤 방식으로 수익을 내는가?</li><li><span class="question">최근 변화</span>공식 실적·가이던스·Published 편집 콘텐츠에서 무엇이 달라졌는가?</li><li><span class="question">왜 중요한가</span>그 변화가 매출·마진·현금흐름·자본비용에 어떻게 연결되는가?</li><li><span class="question">가장 큰 위험</span>핵심 사업가정이 약해지는 조건은 무엇인가?</li><li><span class="question">다음 확인</span>다음 공시와 실적에서 무엇을 확인해야 하는가?</li></ol></section>
+
+      <section class="panel" id="model"><div class="panel-head"><div><p class="eyebrow">06 · Model</p><h2>Company Brief 데이터와 lazy loading</h2></div><span class="tag progress">설계</span></div><div class="grid-2"><article class="card"><h3>재사용</h3><p>기존 company profile, dashboard metric, company event, source registry와 research report route를 우선 사용합니다. 새 숫자를 입력하지 않습니다.</p></article><article class="card"><h3>분리</h3><p>기업별 Brief config를 dynamic import해 회사 하나를 열 때 8개 Brief 전체와 NVIDIA·Meta 리포트 원문이 함께 로드되지 않게 합니다.</p></article></div><div class="table-wrap" tabindex="0" role="region" aria-label="Company Brief 필드 계획"><table><caption>검증 가능한 핵심 필드</caption><thead><tr><th>영역</th><th>필드</th><th>규칙</th></tr></thead><tbody><tr><th>식별</th><td>companySlug, asOf, oneLineBusiness</td><td>지원 기업·기준일·빈 문장 금지</td></tr><tr><th>판단</th><td>5개 BriefAnswer</td><td>summary와 sourceIds 필수</td></tr><tr><th>지표</th><td>metricId 최대 3개</td><td>기존 dashboard value·period·source 재사용</td></tr><tr><th>비교</th><td>percent, percentagePoint, absolute, multiple</td><td>마진·수익률 차이는 %p, 누락값은 0으로 대체 금지</td></tr><tr><th>연결</th><td>relatedEditorialIds, report route</td><td>실재하는 Published·리포트만 표시</td></tr></tbody></table></div></section>
+
+      <section class="panel" id="screen"><div class="panel-head"><div><p class="eyebrow">07 · Information Architecture</p><h2>첫 화면과 사용자 흐름</h2></div><span class="tag progress">설계</span></div><ol class="task-list"><li><b>1</b><span>기업명·ticker·시장과 2줄 이내 한 문장 사업 정의</span><span class="tag progress">첫 화면</span></li><li><b>2</b><span>분석 기준일과 다섯 질문 grid</span><span class="tag progress">결론</span></li><li><b>3</b><span>비교가 붙은 핵심 숫자 최대 3개</span><span class="tag progress">근거</span></li><li><b>4</b><span>Published가 있을 때만 최근 관련 리서치 최대 2개</span><span class="tag progress">조건부</span></li><li><b>5</b><span>숫자와 비교 보기, 실제 route가 있을 때만 심층 리포트 읽기</span><span class="tag progress">CTA</span></li><li><b>6</b><span>기존 차트·공시·산업·거시·출처는 아래 상세 데이터에서 보호</span><span class="tag progress">보존</span></li></ol></section>
+
+      <section class="panel" id="protect"><div class="panel-head"><div><p class="eyebrow">08 · Guardrails</p><h2>기존 데이터 보호와 출처 분리</h2></div><span class="tag progress">필수</span></div><div class="grid-2"><article class="card"><h3>보호</h3><p>재무·공시·시장·산업·거시, 기존 차트·표, NVIDIA·Meta 리포트와 모든 기업 route를 삭제하지 않습니다.</p></article><article class="card"><h3>표시</h3><p><b>작성·분석</b> 주가해부실, <b>편집 검증</b> Owner Verified, <b>분석 기준</b> 사건·가격·세션, <b>근거 자료</b> 기업·공시·시장 데이터·주요 보도로 분리합니다.</p></article></div></section>
+
+      <section class="panel" id="quality"><div class="panel-head"><div><p class="eyebrow">09 · Test & QA</p><h2>접근성·검증·성능·Production 완료 기준</h2></div><span class="tag progress">대기</span></div><div class="grid-3"><article class="card"><h3>Validator</h3><p>8 Brief, 질문 40개, metric 최대 3, finite·unit·period·source, comparison unit, editorial/report reference를 blocking 검사합니다.</p></article><article class="card"><h3>접근성</h3><p>h1 하나, heading 순서, 44px CTA, focus ring, 단위·부호, source accessible name과 320px overflow 0을 확인합니다.</p></article><article class="card"><h3>성능</h3><p>home entry, CompaniesRoute, 기업별 Brief chunk, ResearchReportRoute와 초기 request를 전후 비교합니다.</p></article></div><details><summary>Production route 검사</summary><div>홈·insights·삭제된 stock route, 8개 기업 상세, NVIDIA·Meta report, 오늘의 월스트리트와 macro dashboard를 canonical 및 고유 배포 URL에서 확인합니다.</div></details></section>
+
+      <section class="panel" id="work"><div class="panel-head"><div><p class="eyebrow">10 · Work Order</p><h2>작업 순서와 현재 상태</h2></div><span class="tag progress">70% · In Progress</span></div><ol class="task-list"><li><b>1</b><span>Git·Production·registry·기존 상세·bundle 감사</span><span class="tag done">완료</span></li><li><b>2</b><span>Plan HTML 작성과 초기 320·390·1440px 검증</span><span class="tag done">완료</span></li><li><b>3</b><span>SK하이닉스 콘텐츠 제거와 3파일 계약</span><span class="tag done">완료</span></li><li><b>4</b><span>8개 Company Brief·첫 화면·validator</span><span class="tag done">완료</span></li><li><b>5</b><span>단위·회귀·성능·브라우저 QA</span><span class="tag progress">진행 중</span></li><li><b>6</b><span>PR·main 병합·Production·완료 기록</span><span class="tag hold">대기</span></li></ol></section>
+
+      <section class="panel" id="delivery"><div class="panel-head"><div><p class="eyebrow">11 · Git & Production</p><h2>배포 상태</h2></div><span class="tag hold">진행 전</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="Git과 배포 상태"><table><caption>구현 과정에서 갱신합니다.</caption><tbody><tr><th>Branch</th><td>feat/company-brief-phase-5b</td><td>생성</td></tr><tr><th>Commit</th><td>Reframe company details around core investor questions</td><td>예정</td></tr><tr><th>PR</th><td>Add company briefs and reset stock dissection publishing</td><td>예정</td></tr><tr><th>Production</th><td><a href="https://finance1-flax.vercel.app/ko/">finance1-flax.vercel.app/ko/</a></td><td>배포 후 확인</td></tr></tbody></table></div></section>
+
+      <section class="panel" id="actual"><div class="panel-head"><div><p class="eyebrow">12 · Plan vs Actual</p><h2>계획 대비 실제 결과</h2></div><span class="tag hold">구현 후 기록</span></div><div class="grid-2"><article class="card"><h3>완료 결과</h3><p>구현·검증·배포 후 계획대로 완료된 항목과 수치를 기록합니다.</p></article><article class="card"><h3>변경·미완료·위험</h3><p>범위 변경, 변경 이유, 제외 항목, 남은 위험과 다음 단계를 기록합니다.</p></article></div><details><summary>다음 단계</summary><div>Phase 5C — 비교 중심 재무 피벗 분석판.</div></details></section>
+    </main>
+    <footer>이 문서는 공개 서비스 페이지가 아니라 계획 → 구현 → 검증 → 배포의 전체 과정을 기록하는 저장소 내 정적 프로젝트 대시보드입니다.</footer>
+  </div>
+</body>
+</html>

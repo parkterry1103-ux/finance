@@ -4888,6 +4888,10 @@ Vercel이 생성하는 성공 Production `deployment_status`와 필수 `environm
 
 편집 원고는 `src/content/editorial`의 `ThreeReadsEdition`과 `DailyStockDissection`으로 분리합니다. 홈은 짧은 published summary index만 포함하고 긴 상세 object는 route 진입 뒤 dynamic import합니다. `ownerVerified`는 작성자가 숫자와 사실을 확인했다는 편집 기록이며 미래 결과를 보증하지 않습니다. 주가 해부는 가격·시장·업종·수급 등 URL 선택형 복수 근거를 사용하고, 오늘의 월스트리트는 정확히 세 원문과 공식 교차검증 자료를 요구합니다. 날짜·지원 기업·관련 ID·유한 숫자·상대수익률·근거 무결성을 `npm run validate:editorial`로 검증합니다.
 
-Phase 5A.1에서 SK하이닉스 주가 해부와 2026-07-17 오늘의 월스트리트 두 건을 처음 Published로 등록했습니다. SK하이닉스 `-15.37%`와 같은 거래일 삼성전자 `-10.70%`는 `-4.67%p`로 표시하며 기존 `sk-hynix` 기업 페이지에 연결합니다. 오늘의 월스트리트는 희토류·Burberry·Kimi K3 원고를 보존하고 The Wall Street Journal·Dow Jones 비제휴 고지를 표시합니다. 지원되지 않는 기업의 가짜 프로필은 만들지 않았습니다.
+Phase 5A.1에서는 SK하이닉스 주가 해부와 2026-07-17 오늘의 월스트리트 두 건으로 최초 게시 흐름을 검증했습니다. Phase 5B에서는 검증용 SK하이닉스 게시물을 제거하고, 이후 주가해부를 `01_verified-research.md`·`04_website-article.md`·`05_website-handoff.yaml` 세 파일 계약으로 전환했습니다. 오늘의 월스트리트와 The Wall Street Journal·Dow Jones 비제휴 고지는 유지하며 지원되지 않는 기업의 가짜 프로필은 만들지 않습니다.
+
+## Phase 5B · 기업 Brief
+
+8개 기업 상세는 한 문장 사업 정의와 `돈을 버는 구조 → 최근 변화 → 왜 중요한가 → 가장 큰 위험 → 다음 확인`을 먼저 보여줍니다. 첫 화면 지표는 기존 source가 있는 최대 3개로 제한하고, 비교가 없으면 0을 만들지 않습니다. NVIDIA와 Meta만 실제 심층 리포트 CTA를 표시하며 기존 재무·공시·차트·산업 연결은 결론 아래에서 유지합니다. 모델과 게시 계약은 `docs/company-brief-model.md`, `docs/stock-dissection-intake.md`, 실행 기록은 `docs/plans/phase-5b-company-brief-plan.html`을 참고하세요.
 
 PayPal·ASML·커넥티드카 예시는 draft fixture로 계속 유지해 홈·목록·직접 route에서 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스·WSJ·AI 요청과 자동 생성은 없습니다. Function은 12개입니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`, `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록했습니다. 다음 편집 단계는 Phase 5B입니다.

@@ -33,7 +33,7 @@
     "industryFlows": 4,
     "macroSeries": 9,
     "marketRelations": 3,
-    "editorialPublished": 2
+    "editorialPublished": 1
   },
   "lazyRoutes": [
     { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },
@@ -85,11 +85,12 @@
       "/ko/category/semiconductors"
     ],
     "assetContentChecks": [
-      { "id": "home-sk-hynix-move", "all": ["SK하이닉스", "-15.37"] },
-      { "id": "stock-samsung-comparison", "all": ["삼성전자", "-10.7", "퍼센트포인트 차이"] },
+      { "id": "sk-hynix-stock-removed", "none": ["SK하이닉스, 왜 하루 만에 15.37%나 급락했을까?", "2026-07-13-sk-hynix-selloff", "-15.37"] },
+      { "id": "stock-route-not-found", "all": ["공개된 주가 해부를 찾을 수 없습니다."] },
       { "id": "wall-street-edition", "all": ["오늘의 월스트리트", "먼저 고정한 표준이 가격을 정한다"] },
       { "id": "wsj-non-affiliation", "all": ["The Wall Street Journal", "제휴·후원 관계가 없습니다"] },
-      { "id": "sk-hynix-company-cta", "all": ["SK하이닉스", "분석 보기"] }
+      { "id": "company-brief-five-questions", "all": ["돈을 버는 구조", "최근 변화", "왜 중요한가", "가장 큰 위험", "다음 확인"] },
+      { "id": "company-brief-actions", "all": ["숫자와 비교 보기", "심층 리포트 읽기", "직접 비교 자료 없음"] }
     ],
     "apis": [
       { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },

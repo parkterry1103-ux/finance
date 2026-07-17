@@ -26,7 +26,11 @@ npm run validate:editorial
 
 ## 고정 fixture
 
-기사 URL이 없는 owner-verified 주가 해부, 근거가 없는 공개 주가 해부, 정확히 세 원문과 공식 자료를 가진 오늘의 월스트리트, 미래 날짜, 기사 2개·4개, 미지원 기업, 깨진 관계, 실제 draft registry를 검사한다. 비교 fixture는 SK하이닉스 `-15.37%`, 삼성전자 `-10.70%`에서 `-4.67%p`가 나와야 하며 기준일이 다르면 validation이 실패한다. SK하이닉스 기존 slug 연결과 Burberry 가짜 프로필 부재도 검사한다.
+기사 URL이 없는 owner-verified 주가 해부, 근거가 없는 공개 주가 해부, 정확히 세 원문과 공식 자료를 가진 오늘의 월스트리트, 미래 날짜, 기사 2개·4개, 미지원 기업, 깨진 관계, 실제 draft registry를 검사한다. 비교 fixture는 수익률 차이를 `%p`로 표시하고 기준일이 다르면 validation이 실패한다. Burberry 같은 미지원 기업의 가짜 프로필 부재도 검사한다.
+
+Phase 5B부터 Published 주가해부에는 세 파일 intake가 필수다. `researchSourceFile`, `detailSourceFile`, `handoffSourceFile`은 각각 표준 파일명으로 끝나야 하고 `contentType`, `status`, `session`, `keyFiguresConsistent`를 함께 검사한다. 세 파일 누락, 잘못된 handoff 경로 또는 핵심 수치 불일치 fixture는 실패해야 한다. 실제 registry에는 제거된 SK하이닉스 slug·summary·기업 relation이 없어야 한다.
+
+Company Brief validation은 지원 기업 8개, 다섯 질문, 빈 summary, 핵심 지표 최대 3개, finite number, 단위·기간·source, `%`와 `%p`, Published editorial ID와 report route를 검사한다. 이 unit은 Release Gate에 포함된다.
 
 ## 실패 처리
 

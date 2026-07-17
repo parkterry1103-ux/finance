@@ -106,6 +106,16 @@ export type ComparableReturn = {
   precision?: number;
 };
 
+export type StockDissectionIntake = {
+  contentType: 'stock_dissection';
+  status: 'owner_verified';
+  session: 'regular' | 'preMarket' | 'afterHours';
+  researchSourceFile: string;
+  detailSourceFile: string;
+  handoffSourceFile: string;
+  keyFiguresConsistent: true;
+};
+
 export type DailyStockDissection = {
   id: string;
   slug: string;
@@ -147,6 +157,7 @@ export type DailyStockDissection = {
   reasons: Array<{ title: string; explanation: string }>;
   verification?: EditorialVerification;
   evidence?: EditorialEvidence[];
+  intake?: StockDissectionIntake;
   fullArticle?: string[];
   editorialConclusion?: string;
   comparison?: {

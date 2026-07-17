@@ -331,10 +331,13 @@ async function main() {
 
     const deployedAssetText = deployedAssetBodies.join('\n');
     for (const check of config.smoke.assetContentChecks) {
-      const missing = check.all.filter((fragment) => !deployedAssetText.includes(fragment));
-      contentResults.push(missing.length
-        ? failedResult(check.id, baseUrl, new Error(`deployed assets are missing: ${missing.join(', ')}`))
-        : { id: check.id, url: baseUrl, status: 200, result: 'passed', durationMs: 0, redirects: 0, retries: 0, detail: `${check.all.length} required fragments found in deployed lazy assets` });
+      const required = check.all ?? [];
+      const forbidden = check.none ?? [];
+      const missing = required.filter((fragment) => !deployedAssetText.includes(fragment));
+      const present = forbidden.filter((fragment) => deployedAssetText.includes(fragment));
+      contentResults.push(missing.length || present.length
+        ? failedResult(check.id, baseUrl, new Error(`${missing.length ? `deployed assets are missing: ${missing.join(', ')}` : ''}${missing.length && present.length ? '; ' : ''}${present.length ? `deployed assets still contain: ${present.join(', ')}` : ''}`))
+        : { id: check.id, url: baseUrl, status: 200, result: 'passed', durationMs: 0, redirects: 0, retries: 0, detail: `${required.length} required fragments found; ${forbidden.length} forbidden fragments absent` });
     }
 
     for (const api of config.smoke.apis) {

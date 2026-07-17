@@ -7,6 +7,7 @@ import {
   type SmartMoneyMove,
 } from '../data.js';
 import {
+  CompanyBriefLoadingPage,
   CompanyProfileNotFoundPage,
   CompanyProfilesListPage,
   CompanyResearchProfilePage,
@@ -14,6 +15,8 @@ import {
 import {
   buildCompanyResearchProfile,
 } from '../content/company-profiles/selectors.js';
+import { loadCompanyBrief } from '../content/company-briefs/registry.js';
+import type { CompanyBrief } from '../content/company-briefs/types.js';
 import { companySearchIndex } from '../content/company-profiles/search.js';
 import { fetchOwnershipTrades } from '../services/trades.js';
 
@@ -39,13 +42,29 @@ type FinancialLearningRouteProps = {
 
 type CompaniesRouteProps = CompanyProfilesRouteProps | OwnershipRouteProps | FinancialLearningRouteProps;
 
+function CompanyProfileDetailRoute({ navigation, onNavigate, slug }: Omit<CompanyProfilesRouteProps, 'slug'> & { slug: string }) {
+  const profile = buildCompanyResearchProfile(slug);
+  const [briefState, setBriefState] = useState<{ slug: string; brief: CompanyBrief | null; failed: boolean }>({ slug: '', brief: null, failed: false });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!profile) return () => { cancelled = true; };
+    setBriefState({ slug, brief: null, failed: false });
+    loadCompanyBrief(slug, profile).then((brief) => {
+      if (!cancelled) setBriefState({ slug, brief, failed: !brief });
+    }).catch(() => {
+      if (!cancelled) setBriefState({ slug, brief: null, failed: true });
+    });
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  if (!profile) return <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;
+  if (briefState.slug !== slug || !briefState.brief) return <CompanyBriefLoadingPage viewModel={profile} navigation={navigation} onNavigate={onNavigate} failed={briefState.slug === slug && briefState.failed} />;
+  return <CompanyResearchProfilePage viewModel={profile} brief={briefState.brief} navigation={navigation} onNavigate={onNavigate} />;
+}
+
 function CompanyProfilesRoute({ navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {
-  if (slug) {
-    const profile = buildCompanyResearchProfile(slug);
-    return profile
-      ? <CompanyResearchProfilePage viewModel={profile} navigation={navigation} onNavigate={onNavigate} />
-      : <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;
-  }
+  if (slug) return <CompanyProfileDetailRoute slug={slug} navigation={navigation} onNavigate={onNavigate} searchQuery={searchQuery} />;
 
   return <CompanyProfilesListPage companies={companySearchIndex} initialQuery={searchQuery} navigation={navigation} onNavigate={onNavigate} />;
 }

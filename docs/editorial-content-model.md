@@ -29,4 +29,4 @@ WSJ 원문은 분석의 주요 출처일 뿐이며 콘텐츠 자체는 주가해
 
 ## 현재 공개 콘텐츠와 fixture
 
-첫 공개 콘텐츠는 `2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-price` 두 건이다. SK하이닉스는 기존 `sk-hynix` 프로필에만 연결하고 Burberry, Moonshot AI, USA Rare Earth, Pensana, Serra Verde의 가짜 프로필은 만들지 않는다. PayPal·ASML·커넥티드카 예시는 형식 확인용 draft로 계속 유지하며 공개 index에는 포함하지 않는다.
+Phase 5A.1의 첫 공개 콘텐츠는 `2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-price` 두 건이었다. Phase 5B에서 게시 흐름 검증용 SK하이닉스 해부를 제거했으므로 현재 공개 index에는 오늘의 월스트리트 한 건만 남는다. Burberry, Moonshot AI, USA Rare Earth, Pensana, Serra Verde의 가짜 프로필은 만들지 않는다. PayPal·ASML·커넥티드카 예시는 형식 확인용 draft로 계속 유지하며 공개 index에는 포함하지 않는다.

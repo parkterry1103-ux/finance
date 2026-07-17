@@ -46,6 +46,7 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
     if (item.priceMove.unit !== 'percent' || !Number.isFinite(item.priceMove.value)) errors.push(`${label}: 등락률은 유한한 percent 값이어야 합니다.`);
     if (item.company.companySlug && !supportedSlugs.has(item.company.companySlug)) errors.push(`${label}: 지원하지 않는 기업 slug ${item.company.companySlug}입니다.`);
     if (isPublic) {
+      const intake = item.intake;
       for (const [field, value] of [['publishedAt', item.publishedAt], ['eventAsOf', item.eventAsOf], ['priceAsOf', item.priceAsOf]] as const) {
         if (!dateIsNotFuture(value, input.today)) errors.push(`${label}: ${field}가 없거나 미래 날짜입니다.`);
       }
@@ -55,6 +56,15 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
       if (!item.confirmedItems.length || !item.unconfirmedItems.length || !item.watchItems.length) errors.push(`${label}: 확인·미확인·다음 확인 항목이 필요합니다.`);
       if (!item.fullArticle?.length || !item.fullArticle.every(hasText)) errors.push(`${label}: 완성 원고가 없습니다.`);
       if (!item.evidence?.length) errors.push(`${label}: 분석 근거가 없습니다.`);
+      if (intake?.contentType !== 'stock_dissection'
+        || intake.status !== 'owner_verified'
+        || !hasText(intake.session)
+        || !intake.researchSourceFile.endsWith('01_verified-research.md')
+        || !intake.detailSourceFile.endsWith('04_website-article.md')
+        || !intake.handoffSourceFile.endsWith('05_website-handoff.yaml')
+        || intake.keyFiguresConsistent !== true) {
+        errors.push(`${label}: 3파일 intake 계약 또는 핵심 수치 일치 확인이 없습니다.`);
+      }
       const evidenceIds = new Set(item.evidence?.map((evidence) => evidence.id) ?? []);
       if (evidenceIds.size !== (item.evidence?.length ?? 0)) errors.push(`${label}: 근거 ID가 중복됐습니다.`);
       item.evidence?.forEach((evidence) => {
