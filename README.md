@@ -4910,3 +4910,11 @@ NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격�
 현재 Production record는 공식 실적에 근거한 NVIDIA와 Meta 2건입니다. 두 Phase 5D 모형은 해당 사건 뒤 작성돼 같은 model version을 유지하며 실제 가정 변경은 0건입니다. Company Brief와 Financial Pivot, 가치평가 화면은 현재 기업 module만 dynamic import하고 연결이 없는 6개 기업과 Published 3Reads에는 빈 section을 표시하지 않습니다.
 
 편집물 게시나 가격 변화로 DCF·Reverse DCF·Company Brief·핵심 판단을 자동 수정하지 않습니다. 신규 API·Function·DB·dependency·전용 route는 없고 Function은 12개를 유지합니다. 모델, 연결 방법론, validation과 실행 계획은 `docs/event-impact-model.md`, `docs/event-to-assumption-methodology.md`, `docs/event-impact-validation.md`, `docs/plans/phase-5e-event-assumption-linkage-plan.html`을 참고하세요.
+
+## Phase 5F · 콘텐츠 유입과 리서치 전환 측정
+
+외부 유입이 편집물 읽기, 기업, 재무, 가치평가와 심층 리포트로 이어지는 흐름을 21개 typed event로 정의했습니다. SPA pageview는 query·hash 없는 route template으로 한 번만 기록하고 hash 이동은 제외합니다. 편집물은 25·50·75·90% 읽기와 90%+10초 완료를 구분하며 CTA click과 destination view를 합치지 않습니다.
+
+UTM source·medium·campaign·content와 referrer category·landing route만 같은 탭의 sessionStorage에 보존합니다. 원문 검색어·전체 URL·referrer, 사용자 ID, 가격·재무 금액, WACC·성장률·가치평가 결과는 수집하지 않습니다. Do Not Track이 `1`이면 runtime을 비활성화하며 공급자 실패는 UI를 막지 않습니다.
+
+finance1의 Vercel Web Analytics 기본 pageview를 활성화했지만 현재 Hobby 플랜은 custom event 수집을 지원하지 않습니다. 따라서 Production pageview와 21개 행동 event의 코드·테스트 상태를 분리해 보고하며, 승인 없는 유료 업그레이드나 다른 tracker 우회는 하지 않습니다. `npm run validate:analytics`가 taxonomy·UTM·dedupe·privacy·실패 격리를 검증합니다. 상세 모델과 운영 기준은 `docs/analytics-event-model.md`, `docs/research-funnel-measurement.md`, `docs/instagram-linking-workflow.md`, `docs/privacy-analytics-policy.md`, 실행 기록은 `docs/plans/phase-5f-research-funnel-analytics-plan.html`을 참고하세요.

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5F 구현 계획 · 콘텐츠 유입과 리서치 전환 측정</title>
+  <style>
+    :root{color-scheme:light;--ink:#17232d;--muted:#5b6873;--line:#d7dee4;--paper:#f2efe8;--panel:#fff;--navy:#17364d;--blue:#235e83;--green:#28664f;--amber:#825816;--red:#8a3b34;--soft:#eef3f6;--radius:18px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.65;overflow-wrap:anywhere;word-break:keep-all}a{color:inherit;text-underline-offset:.18em}a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #347bab;outline-offset:4px}.skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:12px;z-index:10;background:#fff;padding:10px 14px}.wrap{width:min(1120px,calc(100% - 32px));margin:auto}
+    .hero{background:var(--navy);color:#fff;padding:54px 0 38px}.hero-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}.eyebrow{margin:0 0 8px;text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:800}.hero h1{margin:0;font-size:clamp(2rem,6vw,4.4rem);line-height:1.04;letter-spacing:-.045em}.hero-copy{max-width:820px;margin:22px 0 0;color:#d9e5ec;font-size:1.04rem}.status,.tag{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 11px;font-size:.78rem;font-weight:800;white-space:nowrap}.status{background:#fff1d2;color:var(--amber)}.status:before{content:"진행"}.tag{background:#e9f2ee;color:var(--green)}.tag:before{content:"✓"}.tag.progress{background:#fff1d2;color:var(--amber)}.tag.progress:before{content:"진행"}.tag.blocked{background:#f8e9e7;color:var(--red)}.tag.blocked:before{content:"제한"}.tag.pending{background:#edf1f4;color:#4f5d68}.tag.pending:before{content:"대기"}.meta{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;margin-top:34px;background:#ffffff30;border:1px solid #ffffff30;border-radius:14px;overflow:hidden}.meta div{min-width:0;background:#ffffff0c;padding:13px}.meta dt{font-size:.72rem;color:#b8cbd6}.meta dd{margin:3px 0 0;font-weight:750;overflow-wrap:anywhere;word-break:break-word}
+    .toc{padding:18px 0;border-bottom:1px solid var(--line);background:#fff}.toc nav{display:flex;gap:8px;overflow:auto}.toc a{flex:0 0 auto;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:.8rem}.content{padding:34px 0 72px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(20px,4vw,34px);margin:0 0 18px;box-shadow:0 8px 30px #2439490a}.panel-head{display:flex;justify-content:space-between;gap:18px;align-items:start;margin-bottom:22px}.panel h2{margin:0;font-size:clamp(1.35rem,3vw,2rem);letter-spacing:-.03em}.panel h3{margin:0 0 8px;font-size:1rem}.panel p{margin-top:0}.grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.card{min-width:0;border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}.card p,.card ul{margin:0;color:var(--muted)}.card ul{padding-left:20px}.metric{font-size:1.7rem;font-weight:850;color:var(--navy)}.table-wrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:720px;background:#fff}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-size:.82rem}.flow,.tasks{margin:0;padding:0;list-style:none;display:grid;gap:10px}.flow{grid-template-columns:repeat(5,minmax(0,1fr))}.flow li,.tasks li{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff}.flow strong,.tasks strong{display:block;color:var(--blue)}.tasks li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start}.tasks b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff}.note-box{border-left:4px solid var(--amber);background:#fff7e8;padding:14px 16px;border-radius:0 12px 12px 0}.risk-box{border-left-color:var(--red);background:#fff0ee}.muted{color:var(--muted)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;background:#edf1f4;border-radius:5px;padding:.12em .35em;word-break:break-all}details{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}summary{cursor:pointer;font-weight:800;min-height:44px;display:flex;align-items:center}footer{padding:24px 0 42px;color:var(--muted);font-size:.85rem}
+    @media(max-width:900px){.meta{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-3,.flow{grid-template-columns:1fr 1fr}}@media(max-width:640px){.wrap{width:min(100% - 20px,1120px)}.hero{padding-top:38px}.hero-top,.grid-2,.grid-3,.flow{grid-template-columns:1fr}.hero-top{gap:18px}.status{justify-self:start}.meta{grid-template-columns:1fr 1fr}.panel-head{display:block}.panel-head .tag{margin-top:10px}.tasks li{grid-template-columns:auto minmax(0,1fr)}.tasks .tag{grid-column:2;justify-self:start}th,td{padding:10px 12px}}@media(max-width:360px){.meta{grid-template-columns:1fr}.panel{padding:18px}.hero h1{font-size:2rem}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">본문으로 바로가기</a>
+  <header class="hero">
+    <div class="wrap">
+      <div class="hero-top">
+        <div>
+          <p class="eyebrow">Stock Autopsy · Research Funnel Analytics</p>
+          <h1>Phase 5F<br>유입에서 리서치까지</h1>
+          <p class="hero-copy">인스타그램과 검색에서 들어온 사용자가 편집 콘텐츠를 읽고 기업·재무·가치평가·리포트로 이동하는 흐름을 개인정보를 수집하지 않는 최소 이벤트로 측정합니다.</p>
+        </div>
+        <span class="status">Review</span>
+      </div>
+      <dl class="meta">
+        <div><dt>시작 SHA</dt><dd>f24d9fbd2acdef0f2737abfd6e8baa8fc3f65e54</dd></div>
+        <div><dt>Feature branch</dt><dd>feat/research-funnel-analytics-phase-5f</dd></div>
+        <div><dt>PR</dt><dd>준비 중</dd></div>
+        <div><dt>최종 main SHA</dt><dd>병합 전</dd></div>
+        <div><dt>Production</dt><dd>기준 dpl_3P8mszC8CRomTa7wxe2vQHyKSTQ6</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-18</dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <div class="toc"><nav class="wrap" aria-label="문서 목차"><a href="#goal">목표</a><a href="#audit">감사</a><a href="#flow">흐름</a><a href="#model">모델</a><a href="#scope">범위</a><a href="#files">파일</a><a href="#quality">검증</a><a href="#risks">위험</a><a href="#actual">결과</a></nav></div>
+
+  <main class="content wrap" id="main">
+    <section class="panel" id="goal">
+      <div class="panel-head"><div><p class="eyebrow">01 · Purpose</p><h2>이번 단계가 해결하려는 문제</h2></div><span class="tag progress">진행 중</span></div>
+      <div class="grid-2">
+        <article class="card"><h3>제품 질문</h3><p>어떤 유입이 실제 읽기로 이어지고, 편집 콘텐츠가 기업·재무·가치평가·심층 리포트 탐색으로 연결되는지 현재는 확인할 수 없습니다.</p></article>
+        <article class="card"><h3>운영 목표</h3><p>페이지뷰와 의미 있는 행동을 분리하고, 원문 검색어·전체 URL·금액·가치평가 입력값·개인 식별자를 수집하지 않는 측정 계약을 만듭니다.</p></article>
+      </div>
+      <p class="note-box">성공 기준은 이벤트 수 자체가 아니라 콘텐츠 읽기 완료와 다음 리서치 화면으로의 이동을 재현 가능한 방식으로 확인하는 것입니다.</p>
+    </section>
+
+    <section class="panel" id="audit">
+      <div class="panel-head"><div><p class="eyebrow">02 · Audit</p><h2>구현 전 감사 결과</h2></div><span class="tag">완료</span></div>
+      <div class="grid-3">
+        <article class="card"><h3>기존 분석</h3><div class="metric">0개</div><p>SDK·스크립트·이벤트·동의 화면·분석용 저장소가 없었습니다. 중복 공급자는 만들지 않습니다.</p></article>
+        <article class="card"><h3>라우터</h3><div class="metric">SPA</div><p><code>history.pushState</code>와 <code>popstate</code> 기반 자체 라우터이며 hash 이동은 별도 페이지뷰가 아니어야 합니다.</p></article>
+        <article class="card"><h3>공개 데이터</h3><div class="metric">8개 기업</div><p>Published 3Reads 1건, Published 주가해부 0건, full 가치평가 2개를 현재 측정 대상으로 확인했습니다.</p></article>
+      </div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="분석 공급자 감사">
+        <table><thead><tr><th scope="col">항목</th><th scope="col">확인 결과</th><th scope="col">이번 단계 결정</th></tr></thead><tbody>
+          <tr><th scope="row">Vercel Web Analytics</th><td>finance1에서 비활성 상태였음</td><td>Hobby 익명 페이지뷰 기능 활성화</td></tr>
+          <tr><th scope="row">개인정보</th><td>기존 쿠키·분석 식별자 없음</td><td>쿠키·사용자 ID·원문 query·전체 referrer 금지</td></tr>
+          <tr><th scope="row">환경</th><td>Production·Preview 구분 코드 없음</td><td>Production만 공급자 전송, Preview·Development 분리</td></tr>
+          <tr><th scope="row">함수·의존성</th><td>Serverless Function 12개</td><td>신규 Function·npm dependency 0개 유지</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <section class="panel" id="flow">
+      <div class="panel-head"><div><p class="eyebrow">03 · User Flow</p><h2>측정할 핵심 흐름</h2></div><span class="tag progress">설계 확정</span></div>
+      <ol class="flow">
+        <li><strong>1 · 유입</strong>UTM과 referrer 범주만 session에 보존</li><li><strong>2 · 읽기</strong>편집물 25·50·75·90%와 완료 조건</li><li><strong>3 · 기업</strong>회사 선택·도착을 서로 분리</li><li><strong>4 · 분석</strong>재무·가치평가의 의미 있는 펼침만 측정</li><li><strong>5 · 리서치</strong>심층 리포트 클릭과 도착을 구분</li>
+      </ol>
+    </section>
+
+    <section class="panel" id="model">
+      <div class="panel-head"><div><p class="eyebrow">04 · Event Model</p><h2>21개 이벤트와 최소 payload</h2></div><span class="tag">구현 완료</span></div>
+      <div class="grid-3">
+        <article class="card"><h3>공통 문맥</h3><p><code>schemaVersion: 1</code>, <code>locale: ko</code>, page type, route template와 필요한 콘텐츠·기업 ID만 보냅니다.</p></article>
+        <article class="card"><h3>Attribution</h3><p>source·medium·campaign·content·referrer category·landing route만 탭 session에 보존합니다.</p></article>
+        <article class="card"><h3>금지 데이터</h3><p>원문 검색어, 전체 query·referrer·URL, 이메일·계정 ID, 주가·재무 금액, WACC·성장률·모형 가치 입력값을 전송하지 않습니다.</p></article>
+      </div>
+      <details><summary>21개 이벤트 이름 보기</summary><div><p><code>research_landing_view</code>, <code>editorial_view</code>, <code>editorial_read_depth</code>, <code>editorial_complete</code>, <code>editorial_source_open</code>, <code>editorial_company_click</code>, <code>related_research_click</code>, <code>company_view</code>, <code>company_financials_click</code>, <code>financials_view</code>, <code>financial_group_select</code>, <code>financial_compare_mode_select</code>, <code>financial_metric_expand</code>, <code>company_valuation_click</code>, <code>valuation_view</code>, <code>valuation_assumptions_open</code>, <code>valuation_sensitivity_open</code>, <code>company_report_click</code>, <code>research_report_view</code>, <code>company_search_select</code>, <code>macro_dashboard_view</code></p></div></details>
+    </section>
+
+    <section class="panel" id="scope">
+      <div class="panel-head"><div><p class="eyebrow">05 · Scope</p><h2>구현 범위와 제외 범위</h2></div><span class="tag">구현 완료</span></div>
+      <div class="grid-2">
+        <article class="card"><h3>구현</h3><ul><li>공급자 중립 typed adapter와 테스트 adapter</li><li>SPA pageview 정규화·중복 방지·hash 제외</li><li>sessionStorage UTM·referrer 범주화</li><li>읽기 깊이·완료·클릭과 도착 분리</li><li>21개 이벤트 UI 연결과 validation</li><li>Production 네트워크·브라우저 QA</li></ul></article>
+        <article class="card"><h3>제외</h3><ul><li>관리자 대시보드·DB·공개 API·Serverless Function</li><li>신규 dependency·광고 tracker·fingerprinting</li><li>session replay·heatmap·개인 프로필</li><li>원문 query·referrer·금융 수치 수집</li><li>유료 플랜 자동 업그레이드</li><li>기존 제품 화면 재설계</li></ul></article>
+      </div>
+    </section>
+
+    <section class="panel" id="files">
+      <div class="panel-head"><div><p class="eyebrow">06 · Files & Architecture</p><h2>주요 컴포넌트와 실제 변경</h2></div><span class="tag">완료</span></div>
+      <div class="grid-2">
+        <article class="card"><h3>코드</h3><ul><li><a href="../../src/analytics/types.ts">event taxonomy</a></li><li><a href="../../src/analytics/attribution.ts">session attribution</a></li><li><a href="../../src/analytics/provider.ts">provider-neutral transport</a></li><li><a href="../../src/analytics/runtime.ts">pageview·dedupe·read tracker</a></li><li><a href="../../scripts/analytics-unit.ts">unit validation</a></li></ul></article>
+        <article class="card"><h3>화면 연결</h3><ul><li><a href="../../src/App.tsx">SPA route lifecycle</a></li><li><a href="../../src/components/editorial">editorial 읽기·근거·기업 이동</a></li><li><a href="../../src/components/company-profiles">기업 CTA</a></li><li><a href="../../src/routes/FinancialPivotRoute.tsx">재무 상호작용</a></li><li><a href="../../src/routes/ValuationExpectationsRoute.tsx">가치평가 상호작용</a></li></ul></article>
+      </div>
+      <p class="muted">실제 저장소 naming과 컴포넌트 경계에 맞춰 파일은 조정할 수 있으며, 완료 기록에서 계획 대비 변경 이유를 남깁니다.</p>
+    </section>
+
+    <section class="panel" id="quality">
+      <div class="panel-head"><div><p class="eyebrow">07 · Work & Verification</p><h2>작업 순서와 완료 기준</h2></div><span class="tag progress">배포 검토</span></div>
+      <ol class="tasks">
+        <li><b>1</b><span><strong>공급자·개인정보 경계</strong>공식 문서, Vercel 계정, 환경과 transport 능력 확인</span><span class="tag">완료</span></li>
+        <li><b>2</b><span><strong>공통 계층</strong>route template·attribution·dedupe·실패 격리 구현</span><span class="tag">완료</span></li>
+        <li><b>3</b><span><strong>제품 연결</strong>편집·기업·재무·가치평가·리포트·검색·거시 이벤트</span><span class="tag">완료</span></li>
+        <li><b>4</b><span><strong>검증</strong>typecheck·build·validator·unit·Release Gate·개인정보 검사</span><span class="tag">완료</span></li>
+        <li><b>5</b><span><strong>브라우저</strong>Chromium·WebKit·Safari, 320~1440px, 네트워크·중복·오류 확인</span><span class="tag">완료</span></li>
+        <li><b>6</b><span><strong>Git·Production</strong>PR 병합, finance1 배포, dashboard와 transport 확인</span><span class="tag pending">대기</span></li>
+      </ol>
+      <div class="grid-3">
+        <article class="card"><h3>단위 테스트</h3><p>UTM 정규화, referrer 분류, route pageview, Strict Mode 중복, 읽기 임계치·완료, 금지 payload를 확인합니다.</p></article>
+        <article class="card"><h3>브라우저 테스트</h3><p>SPA 이동·hash·뒤로가기·검색 선택·CTA click/arrival 분리와 provider 장애 시 UI 정상 동작을 확인합니다.</p></article>
+        <article class="card"><h3>Production 테스트</h3><p>익명 pageview 요청·정규화 경로·환경 분리·custom event 실제 수집 능력과 Vercel dashboard 반영을 확인합니다.</p></article>
+      </div>
+    </section>
+
+    <section class="panel" id="risks">
+      <div class="panel-head"><div><p class="eyebrow">08 · Risks</p><h2>위험과 대응</h2></div><span class="tag blocked">공급자 제한</span></div>
+      <p class="note-box risk-box"><strong>현재 확인된 제한:</strong> finance1은 Hobby 플랜입니다. Vercel Web Analytics의 기본 익명 페이지뷰는 활성화했지만 공식 커스텀 이벤트 수집은 Pro·Enterprise 기능입니다. 승인 없는 결제·플랜 변경은 하지 않으며, 실제 21개 이벤트 Production 전송이 확인되지 않으면 이 문서는 <code>Completed</code>로 표시하지 않습니다.</p>
+      <div class="grid-2">
+        <article class="card"><h3>현재 대응</h3><p>페이지뷰는 Production 공급자로 전송하고, 21개 행동 이벤트는 동일 typed 계약과 테스트 adapter로 완성합니다. 공급자 능력이 없을 때 UI를 막거나 이벤트를 다른 서비스로 우회하지 않습니다.</p></article>
+        <article class="card"><h3>완전한 완료 조건</h3><p>유료 기능 사용 승인이 별도로 주어지고 custom event 네트워크·dashboard 반영이 확인되거나, 사용자 승인을 받은 동등한 개인정보 보호형 공급자가 확정돼야 합니다.</p></article>
+      </div>
+      <details><summary>추가 위험과 대응 보기</summary><div><ul><li>SPA 중복: route template과 page lifecycle key로 한 번만 기록</li><li>민감 정보: allowlist payload와 validator로 원문 query·referrer·금융값 차단</li><li>긴 글 오탐: 90% 도달과 최소 10초를 모두 만족할 때 완료</li><li>공급자 장애: 모든 호출을 비동기·실패 격리해 UI와 이동을 보호</li><li>번들 증가: 외부 dependency 없이 작은 공통 모듈로 구현</li></ul></div></details>
+    </section>
+
+    <section class="panel" id="actual">
+      <div class="panel-head"><div><p class="eyebrow">09 · Plan vs Actual</p><h2>계획 대비 실제 결과</h2></div><span class="tag progress">Review</span></div>
+      <div class="grid-2">
+        <article class="card"><h3>계획대로 완료</h3><ul><li>공급자 중립 adapter와 21개 typed 이벤트</li><li>SPA pageview·UTM session attribution·중복 방지</li><li>검색 result position과 재무·가치·리포트 행동 연결</li><li>선택 handoff analytics schema·게시 충돌 validation</li><li>단위 42 checks, Chromium·WebKit 24개 브라우저 시나리오, 실제 Safari QA</li><li>Release Gate 27개 통과 · entry 781,629 bytes(raw) / 212,317 bytes(gzip)</li><li>신규 Function·dependency·쿠키·사용자 ID 0개</li></ul></article>
+        <article class="card"><h3>변경·미완료</h3><ul><li>외부 SDK 대신 공식 Vercel script를 adapter 내부에서 지연 삽입해 dependency를 늘리지 않음</li><li>Hobby에서 가능한 기본 pageview는 활성화, custom event는 승인 없는 유료 전환 대신 feature flag로 차단</li><li>PR 병합·Production 재배포·pageview network와 dashboard 확인이 남음</li><li>custom event Production 수집은 플랜 또는 승인된 동등 공급자 확정 전 미완료</li></ul></article>
+      </div>
+      <p class="note-box"><strong>현재 계획 대비 완료율 90%.</strong> 코드·문서·로컬 품질·브라우저 항목은 완료했고 Git·Production 검증을 진행합니다. Custom event 공급자 제한 때문에 최종 상태는 Completed가 아니라 Review로 유지합니다.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><p class="eyebrow">10 · Git & Deployment</p><h2>현재 상태</h2></div><span class="tag progress">Feature branch</span></div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Git과 배포 상태">
+        <table><thead><tr><th scope="col">단계</th><th scope="col">상태</th><th scope="col">기록</th></tr></thead><tbody>
+          <tr><th scope="row">기준점</th><td>완료</td><td><code>f24d9fbd2acdef0f2737abfd6e8baa8fc3f65e54</code></td></tr>
+          <tr><th scope="row">Feature branch</th><td>진행 중</td><td><code>feat/research-funnel-analytics-phase-5f</code></td></tr>
+          <tr><th scope="row">Pull Request</th><td>대기</td><td>검증 후 생성</td></tr>
+          <tr><th scope="row">Production</th><td>대기</td><td>PR 병합 뒤 finance1 Current 확인</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><p class="eyebrow">11 · Next</p><h2>완료 후 다음 단계</h2></div><span class="tag pending">결과 기반</span></div>
+      <p>Phase 5F 측정이 안정화되면 최소 2~4주의 익명 집계 데이터를 바탕으로 콘텐츠 유입과 리서치 전환의 실제 병목을 검토합니다. 충분한 표본이 생기기 전에는 화면 우선순위를 성급하게 바꾸지 않습니다.</p>
+    </section>
+  </main>
+  <footer><div class="wrap">구현 계획 · 외부 CDN·JavaScript·dependency 없음 · 저장소 상대 경로 사용 · 모바일·데스크톱 반응형</div></footer>
+</body>
+</html>

@@ -50,3 +50,7 @@ CompanyBriefConfig
 ## Phase 5D 가치평가 연결
 
 Company Brief는 기존 report route가 있고 공개 가치평가 상태가 `full`인 NVIDIA와 Meta에만 `시장가격에 반영된 기대 보기`를 표시한다. 다른 6개 기업은 direct valuation URL에서 안전한 unavailable 상태를 제공하지만 첫 화면에 지원되지 않는 CTA를 노출하지 않는다. valuation UI와 기업별 report data는 CTA 진입 뒤 lazy load되므로 8개 Brief 전체나 가치 엔진을 기업 상세 첫 진입에 추가하지 않는다.
+
+## Phase 5F 측정 연결
+
+Brief가 실제 로드된 뒤 `company_view`를 한 번 기록한다. 재무·가치평가·리포트 CTA click과 destination view를 분리하고 실제 CTA가 없는 기업에는 이벤트도 만들지 않는다. 기업 검색은 선택된 registry slug만 기록하며 사용자가 입력한 query, ticker 문자열과 검색 실패 문구는 전송하지 않는다.

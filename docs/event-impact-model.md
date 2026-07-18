@@ -64,3 +64,7 @@ Event Impact는 사건 자체의 중요도 점수나 주가 인과 추정이 아
 ## 로딩 경계
 
 회사별 entry는 `src/content/event-impacts/entries/{company}.ts`로 분리한다. 기업 상세·재무·가치평가 route가 열린 뒤 현재 회사 module만 가져온다. editorial detail은 작은 ID→company index에 명시적으로 등록된 경우에만 회사 module을 불러온다. 홈과 App entry는 전체 impact object를 선로딩하지 않는다.
+
+## Phase 5F 측정 경계
+
+사건 impact의 방향, confidence, 가정 before/after 값은 analytics payload가 아니다. Phase 5F는 기업·재무·가치평가 route 도착과 사용자가 지표 설명·가정·민감도 영역을 열었는지만 기록한다. event impact를 읽었다는 이유로 투자 성향이나 가정 변경 의도를 추론하지 않는다.

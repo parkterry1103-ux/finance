@@ -6,6 +6,7 @@ import {
   relativeReturn,
 } from '../../content/editorial/selectors.js';
 import type { EditorialSummary, StockDissectionSummary, ThreeReadsSummary } from '../../content/editorial/types.js';
+import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 export type EditorialNavigate = (path: string) => void;
 
@@ -51,8 +52,8 @@ export function StockSummaryCard({ item, onNavigate, compact = false }: { item: 
         {item.watchItems[0] ? <div><dt>다음 확인</dt><dd>{item.watchItems.slice(0, compact ? 1 : 3).join(' · ')}</dd></div> : null}
       </dl>
       <div className="editorial-card-actions">
-        <a href={path} onClick={editorialInternalLink(path, onNavigate)}>전체 해부 읽기 <ArrowRight size={15} aria-hidden="true" /></a>
-        {item.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(item.company.companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(item.company.companySlug)}`, onNavigate)}>{item.company.name} 분석 보기</a> : null}
+        <a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'stock_dissection', contentId: item.id, placement: compact ? 'insights_index' : 'home', destinationType: 'editorial' }); editorialInternalLink(path, onNavigate)(event); }}>전체 해부 읽기 <ArrowRight size={15} aria-hidden="true" /></a>
+        {item.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(item.company.companySlug)}`} onClick={(event) => { trackAnalyticsEvent('editorial_company_click', { contentType: 'stock_dissection', contentId: item.id, companySlug: item.company.companySlug, placement: compact ? 'insights_index' : 'home', destinationType: 'company' }); editorialInternalLink(`/ko/companies/${encodeURIComponent(item.company.companySlug!)}`, onNavigate)(event); }}>{item.company.name} 분석 보기</a> : null}
       </div>
     </article>
   );
@@ -68,7 +69,7 @@ export function ThreeReadsSummaryCard({ item, onNavigate, compact = false }: { i
       {!compact ? <p className="editorial-three-thread">세 개의 뉴스, 하나의 투자 질문</p> : null}
       <ol>{item.readHeadlines.map((headline, index) => <li key={headline}><strong>{headline}</strong><span>{item.readSummaries[index]}</span></li>)}</ol>
       <div className="editorial-takeaway"><span>오늘의 한 줄</span><p>{item.oneLineTakeaway}</p></div>
-      <div className="editorial-card-actions"><a href={path} onClick={editorialInternalLink(path, onNavigate)}>오늘의 월스트리트 전체 읽기 <ArrowRight size={15} aria-hidden="true" /></a></div>
+      <div className="editorial-card-actions"><a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'wall_street_edition', contentId: item.id, placement: compact ? 'insights_index' : 'home', destinationType: 'editorial' }); editorialInternalLink(path, onNavigate)(event); }}>오늘의 월스트리트 전체 읽기 <ArrowRight size={15} aria-hidden="true" /></a></div>
     </article>
   );
 }

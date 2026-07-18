@@ -36,6 +36,17 @@ export type EditorialArticleSource = {
   accessedAt: string;
 };
 
+export type EditorialAnalyticsMetadata = {
+  content_id: string;
+  campaign_id: string;
+  recommended_utm: {
+    source: string;
+    medium: string;
+    campaign: string;
+    content: string;
+  };
+};
+
 export type ThreeReadsItem = {
   id: string;
   order: 1 | 2 | 3;
@@ -96,6 +107,7 @@ export type ThreeReadsEdition = {
   relatedIndustries: string[];
   relatedStockDissectionIds: string[];
   disclaimer: string;
+  analytics?: EditorialAnalyticsMetadata;
 };
 
 export type ComparableReturn = {
@@ -171,6 +183,7 @@ export type DailyStockDissection = {
   relatedThreeReadsIds: string[];
   sourceIds: string[];
   disclaimer: string;
+  analytics?: EditorialAnalyticsMetadata;
 };
 
 export type StockDissectionSummary = Pick<

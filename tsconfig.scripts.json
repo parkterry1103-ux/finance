@@ -25,6 +25,7 @@
     "src/content/monte-carlo/**/*.ts",
     "src/content/valuation/**/*.ts",
     "src/content/financial-pivots/**/*.ts",
+    "src/analytics/**/*.ts",
     "src/services/**/*.ts"
   ]
 }

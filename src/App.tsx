@@ -157,6 +157,7 @@ import { industryFlows } from './content/industry-flows';
 import { replaceLegacyMarketMapLocation, resolveLegacyMarketMapRoute } from './lib/legacyMarketMapRoutes';
 import { DeferredRoute, RouteLoadingFallback } from './routes/RouteBoundary';
 import { NewsroomHome } from './components/editorial/NewsroomHome';
+import { trackRoutePageView } from './analytics';
 
 const CompaniesRoute = lazy(() => import('./routes/CompaniesRoute'));
 const CompanyEventsRoute = lazy(() => import('./routes/CompanyEventsRoute'));
@@ -7003,6 +7004,10 @@ function App() {
     window.addEventListener('popstate', syncRoute);
     return () => window.removeEventListener('popstate', syncRoute);
   }, []);
+
+  useEffect(() => {
+    trackRoutePageView(window.location);
+  }, [routePath]);
 
   useEffect(() => {
     const title = isHomeRoute

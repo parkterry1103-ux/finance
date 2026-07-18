@@ -1,5 +1,5 @@
 import { dateIsNotFuture, publishedEditorialSummaries } from './selectors.js';
-import type { DailyStockDissection, EditorialSource, ThreeReadsEdition } from './types.js';
+import type { DailyStockDissection, EditorialAnalyticsMetadata, EditorialSource, ThreeReadsEdition } from './types.js';
 
 export type EditorialValidationInput = {
   stockDissections: DailyStockDissection[];
@@ -27,6 +27,21 @@ function validHttpUrl(value: string | undefined) {
   }
 }
 
+const campaignValuePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function validateEditorialAnalyticsMetadata(contentId: string, analytics?: EditorialAnalyticsMetadata) {
+  if (!analytics) return [];
+  const errors: string[] = [];
+  if (analytics.content_id !== contentId) errors.push('analytics content_id가 실제 editorial ID와 다릅니다.');
+  if (analytics.campaign_id !== contentId) errors.push('analytics campaign_id가 실제 editorial ID와 다릅니다.');
+  if (!campaignValuePattern.test(analytics.campaign_id)) errors.push('analytics campaign_id는 영문 소문자·숫자·하이픈만 사용할 수 있습니다.');
+  if (analytics.recommended_utm.campaign !== analytics.campaign_id) errors.push('recommended_utm.campaign이 campaign_id와 다릅니다.');
+  for (const [key, value] of Object.entries(analytics.recommended_utm)) {
+    if (!campaignValuePattern.test(value)) errors.push(`recommended_utm.${key} 형식이 올바르지 않습니다.`);
+  }
+  return errors;
+}
+
 export function validateEditorialRegistry(input: EditorialValidationInput): EditorialValidationResult {
   const errors: string[] = [];
   const supportedSlugs = new Set(input.supportedCompanySlugs);
@@ -43,6 +58,7 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
     const label = `주가 해부 ${item.id}`;
     const isPublic = publicStatuses.has(item.status);
     if (!hasText(item.id) || !hasText(item.slug) || !hasText(item.headline)) errors.push(`${label}: 필수 문자열이 없습니다.`);
+    validateEditorialAnalyticsMetadata(item.id, item.analytics).forEach((error) => errors.push(`${label}: ${error}`));
     if (item.priceMove.unit !== 'percent' || !Number.isFinite(item.priceMove.value)) errors.push(`${label}: 등락률은 유한한 percent 값이어야 합니다.`);
     if (item.company.companySlug && !supportedSlugs.has(item.company.companySlug)) errors.push(`${label}: 지원하지 않는 기업 slug ${item.company.companySlug}입니다.`);
     if (isPublic) {
@@ -88,6 +104,7 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
     const label = `3Reads ${item.id}`;
     const isPublic = publicStatuses.has(item.status);
     if (!hasText(item.id) || !hasText(item.slug) || !hasText(item.centralQuestion) || !hasText(item.commonThread) || !hasText(item.oneLineTakeaway)) errors.push(`${label}: 필수 문자열이 없습니다.`);
+    validateEditorialAnalyticsMetadata(item.id, item.analytics).forEach((error) => errors.push(`${label}: ${error}`));
     if (item.reads.length !== 3) errors.push(`${label}: read는 정확히 3개여야 합니다.`);
     if (item.reads.map((read) => read.order).join(',') !== '1,2,3') errors.push(`${label}: order는 1,2,3이어야 합니다.`);
     const sourceUrls = item.reads.map((read) => read.source.url).filter((url): url is string => Boolean(url));
