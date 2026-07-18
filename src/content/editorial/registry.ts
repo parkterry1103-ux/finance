@@ -4,6 +4,11 @@ export const editorialSources: EditorialSource[] = [];
 
 export const stockDissectionRegistry = [
   {
+    id: 'stock-2026-07-18-netflix-guidance-disclosure-reset',
+    slug: '2026-07-18-netflix-guidance-disclosure-reset',
+    load: () => import('./stock-dissections/2026-07-18-netflix-guidance-disclosure-reset.js').then((module) => module.netflixGuidanceDisclosureReset),
+  },
+  {
     id: 'paypal-control-premium-draft',
     slug: 'paypal-control-premium-draft',
     load: () => import('./stock-dissections/2026-07-17-paypal-control-premium-draft.js').then((module) => module.paypalControlPremiumDraft),
@@ -11,6 +16,11 @@ export const stockDissectionRegistry = [
 ] as const;
 
 export const threeReadsRegistry = [
+  {
+    id: 'wall-street-2026-07-18-capital-gate-premium',
+    slug: '2026-07-18-capital-gate-premium',
+    load: () => import('./three-reads/2026-07-18-capital-gate-premium.js').then((module) => module.capitalGatePremiumEdition),
+  },
   {
     id: 'three-reads-2026-07-17-standards-set-price',
     slug: '2026-07-17-standards-set-price',

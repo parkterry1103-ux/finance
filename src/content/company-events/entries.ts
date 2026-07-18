@@ -9,6 +9,7 @@ export const companyEventCompanies: CompanyEventCompany[] = [
   { id: 'ai-datacenter-eaton', name: 'Eaton', country: 'US', countryLabel: '미국', ticker: 'ETN' },
   { id: 'meta-platforms', name: 'Meta', country: 'US', countryLabel: '미국', ticker: 'META' },
   { id: 'ai-datacenter-supermicro', name: 'Supermicro', country: 'US', countryLabel: '미국', ticker: 'SMCI' },
+  { id: 'netflix', name: 'Netflix', country: 'US', countryLabel: '미국', ticker: 'NFLX' },
 ];
 
 const standardCaution = '공식 발표 한 건이 향후 실적이나 시장 가격을 보장하지 않으며, 산업 전체의 상태를 자동으로 바꾸지도 않습니다.';
@@ -253,6 +254,27 @@ export const companyEvents: CompanyEvent[] = [
     marketMapIds: ['us-semiconductors'],
     reportIds: ['nvidia-fy2027-q1'],
     pickIds: ['pick-smci-ai-server-funding-dilution'],
+    caution: standardCaution,
+  },
+  {
+    id: 'netflix-q2-2026-guidance-disclosure',
+    companyId: 'netflix',
+    eventDate: '2026-07-16',
+    reviewedAt: '2026-07-18',
+    group: 'earnings-guidance',
+    eventType: 'guidance',
+    stage: 'reported',
+    title: '2분기 실적과 3분기 전망·시청시간 공시 빈도 변경',
+    factualSummary: 'Netflix는 2분기 매출 125억5,994만달러와 영업이익 41억9,261만달러를 발표하고, 3분기 매출 128억6,000만달러와 희석 EPS 0.82달러를 전망했습니다. 2027년부터 종합 시청시간 보고는 연 1회로 전환하되 주간 Top 10은 유지한다고 밝혔습니다.',
+    whyItMatters: '실적의 절대 수준과 다음 분기 성장 기대, 투자자가 성장의 질을 확인할 수 있는 정보 빈도가 동시에 달라진 사건입니다.',
+    nextCheckpoints: ['3분기 매출·영업이익률 전망 달성', '광고·가격·회원 증가의 기여', '연 1회 시청시간 보고의 범위와 세분성'],
+    sourceRefs: ['netflix-q2-2026-8k', 'netflix-q2-2026-letter'],
+    officialFiling: { jurisdiction: 'us', form: '8-K', itemCodes: ['2.02', '9.01'], accessionNumber: '0001065280-26-000211' },
+    bottleneckIds: [],
+    demandSupplyIds: [],
+    marketMapIds: [],
+    reportIds: [],
+    pickIds: [],
     caution: standardCaution,
   },
 ];

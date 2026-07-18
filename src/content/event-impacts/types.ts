@@ -1,6 +1,6 @@
 import type { FinancialPivotMetricId } from '../financial-pivots/types.js';
 
-export type EventImpactCompanySlug = 'nvidia' | 'meta';
+export type EventImpactCompanySlug = 'nvidia' | 'meta' | 'netflix';
 
 export type EventImpactConfidence =
   | 'confirmed'
@@ -51,7 +51,10 @@ export type BusinessDriverId =
   | 'nvidia-platform-competition'
   | 'meta-advertising-demand'
   | 'meta-ai-infrastructure-investment'
-  | 'meta-platform-engagement';
+  | 'meta-platform-engagement'
+  | 'netflix-member-price-ad-demand'
+  | 'netflix-content-engagement'
+  | 'netflix-disclosure-visibility';
 
 export type EventImpactEvidenceItem = {
   id: string;

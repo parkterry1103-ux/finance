@@ -1316,6 +1316,7 @@ function validateDemandSupplyContent() {
 function validateCompanyEventContent() {
   const canonicalCompanyIds = new Set([
     ...companies.map((company) => company.id),
+    ...companyProfiles.map((profile) => profile.companyId),
     ...reconstructionInfrastructureMap.companies.map((company) => company.id),
     ...semiconductorClusterInfrastructureMap.companies.map((company) => company.id),
     ...enabledDartTrackedCompanies.map((company) => company.id),
@@ -1345,7 +1346,7 @@ function validateCompanyEventContent() {
   companyEventValidation.usCompanyCount = companyEventCompanies.filter((company) => company.country === 'US').length;
 
   if (companyEvents.length !== releaseConfig.content.companyEvents) addError(`company event count must be exactly ${releaseConfig.content.companyEvents}: ${companyEvents.length}`);
-  if (companyEventCompanies.length < 6 || companyEventCompanies.length > 8) addError(`company event company count must be 6-8: ${companyEventCompanies.length}`);
+  if (companyEventCompanies.length !== companyProfiles.length) addError(`company event company count must match supported profiles: ${companyEventCompanies.length} / ${companyProfiles.length}`);
   if (companyEventValidation.koreanCompanyCount < 2) addError(`company event Korean company count must be >= 2: ${companyEventValidation.koreanCompanyCount}`);
   if (companyEventValidation.usCompanyCount < 2) addError(`company event US company count must be >= 2: ${companyEventValidation.usCompanyCount}`);
   if (companyEventGroupOrder.length !== 4 || new Set(companyEventGroupOrder).size !== 4) addError(`company event groups must be exactly 4: ${companyEventGroupOrder.join(', ')}`);
@@ -1387,7 +1388,8 @@ function validateCompanyEventContent() {
     if (event.nextCheckpoints.length < 1 || event.nextCheckpoints.length > 3) addError(`company event checkpoints must be 1-3: ${event.id} / ${event.nextCheckpoints.length}`);
     if (!event.sourceRefs.length) addError(`company event sourceRefs required: ${event.id}`);
     if (forbiddenCopy.test(JSON.stringify(event))) addError(`forbidden recommendation, fake score, or causal wording in company event: ${event.id}`);
-    if (![event.bottleneckIds, event.demandSupplyIds, event.marketMapIds, event.reportIds, event.pickIds].some((ids) => ids.length)) addError(`company event requires at least one existing connection: ${event.id}`);
+    if (![event.bottleneckIds, event.demandSupplyIds, event.marketMapIds, event.reportIds, event.pickIds].some((ids) => ids.length)
+      && !companyProfiles.some((profile) => profile.companyId === event.companyId)) addError(`company event requires an existing connection or supported company profile: ${event.id}`);
 
     const validateRefs = (kind: string, refs: string[], validIds: Set<string>) => {
       duplicateValues(refs).forEach((id) => addError(`duplicate company event ${kind}: ${event.id} / ${id}`));

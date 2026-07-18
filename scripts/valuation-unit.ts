@@ -173,10 +173,13 @@ mixedInput.historicals.push({ ...mixedInput.historicals[0], periodEnd: '2026-09-
 expectError(() => validateValuationInput(mixedInput), /cannot be mixed/);
 expectError(() => validateValuationInput(baseInput, { knownSourceIds: new Set(['different-source']) }), /Unknown valuation source ID/);
 
-assert(valuationReadinessCompanies.length === 8, 'valuation registry must include eight companies');
-assert(new Set(valuationReadinessCompanies.map((company) => company.companySlug)).size === 8, 'valuation company slugs must be unique');
+assert(valuationReadinessCompanies.length === 9, 'valuation registry must include nine companies');
+assert(new Set(valuationReadinessCompanies.map((company) => company.companySlug)).size === 9, 'valuation company slugs must be unique');
 assert(valuationReadinessCompanies.filter((company) => company.country === 'US').every((company) => /^\d+$/.test(company.cik ?? '')), 'US CIK mapping missing');
 assert(valuationReadinessCompanies.filter((company) => company.country === 'KR').every((company) => /^\d{8}$/.test(company.corpCode ?? '')), 'Korean corp_code must preserve eight digits');
+const netflixReadiness = valuationReadinessCompanies.find((company) => company.companySlug === 'netflix');
+assert(netflixReadiness?.cik === '1065280', 'Netflix CIK mapping is incorrect');
+assert(netflixReadiness?.publicValuationStatus === 'unavailable', 'Netflix valuation must remain unavailable without a validated model');
 
 const artifactRoot = join(process.cwd(), 'artifacts', 'phase-4a-valuation');
 const requiredRootFiles = ['valuation-readiness-summary.md', 'valuation-readiness.json', 'selected-pilots.md', 'benchmark-snapshot.json', 'validation-summary.md'];

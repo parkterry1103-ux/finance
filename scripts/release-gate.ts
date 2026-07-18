@@ -363,6 +363,7 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   const metaMonteCarlo = manifest['src/content/monte-carlo/meta.ts'];
   const nvidiaEventImpacts = manifest['src/content/event-impacts/entries/nvidia.ts'];
   const metaEventImpacts = manifest['src/content/event-impacts/entries/meta.ts'];
+  const netflixEventImpacts = manifest['src/content/event-impacts/entries/netflix.ts'];
   const companiesRoute = manifest['src/routes/CompaniesRoute.tsx'];
   assert(nvidiaReport?.isDynamicEntry && metaReport?.isDynamicEntry, 'company report content is not split into company-specific dynamic entries');
   assert(entryDefinition.dynamicImports?.includes(reportRouteKey), 'research report route is not dynamically imported by the App entry');
@@ -378,9 +379,10 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically imported by report route');
   assert(!nvidiaMonteCarlo?.dynamicImports?.some((source) => source.includes('/meta.')), 'NVIDIA Monte Carlo chunk preloads Meta data');
   assert(!metaMonteCarlo?.dynamicImports?.some((source) => source.includes('/nvidia.')), 'Meta Monte Carlo chunk preloads NVIDIA data');
-  assert(nvidiaEventImpacts?.isDynamicEntry && metaEventImpacts?.isDynamicEntry, 'event impacts are not split into company-specific dynamic entries');
+  assert(nvidiaEventImpacts?.isDynamicEntry && metaEventImpacts?.isDynamicEntry && netflixEventImpacts?.isDynamicEntry, 'event impacts are not split into company-specific dynamic entries');
   assert(!nvidiaEventImpacts?.imports?.some((source) => source.includes('entries/meta')), 'NVIDIA event impact chunk preloads Meta data');
   assert(!metaEventImpacts?.imports?.some((source) => source.includes('entries/nvidia')), 'Meta event impact chunk preloads NVIDIA data');
+  assert(!netflixEventImpacts?.imports?.some((source) => source.includes('entries/nvidia') || source.includes('entries/meta')), 'Netflix event impact chunk preloads another company');
   assert(!entryDefinition.dynamicImports?.some((source) => source.includes('event-impacts/entries/')), 'App entry directly preloads company event impacts');
   assert(!companiesRoute?.dynamicImports?.some((source) => source.includes('research-reports')), 'company dashboard preloads report content');
   assert(!entryDefinition.dynamicImports?.some((source) => source.includes('content/research-reports/')), 'App entry directly preloads company report content');

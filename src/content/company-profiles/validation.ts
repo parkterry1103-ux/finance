@@ -16,7 +16,7 @@ export function validateCompanyProfileRegistry(now = new Date()) {
   const eventIds = new Set(companyEvents.map((event) => event.id));
   const flowIds = new Set(industryFlows.map((flow) => flow.id));
   const forbidden = /(수혜주|대장주|목표주가|매수|매도|상승 가능성|실적 개선 확정|가장 유망한 기업|기업 점수|경쟁력 점수|관계가 많으므로)/;
-  if (companyProfiles.length !== 8) errors.push(`company profile count must be exactly 8: ${companyProfiles.length}`);
+  if (companyProfiles.length !== 9) errors.push(`company profile count must be exactly 9: ${companyProfiles.length}`);
   duplicates(companyProfiles.map((profile) => profile.id)).forEach((id) => errors.push(`duplicate profile id: ${id}`));
   duplicates(companyProfiles.map((profile) => profile.slug)).forEach((slug) => errors.push(`duplicate profile slug: ${slug}`));
   duplicates(companyProfiles.map((profile) => profile.companyId)).forEach((companyId) => errors.push(`duplicate profile companyId: ${companyId}`));

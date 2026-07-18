@@ -4894,13 +4894,13 @@ Phase 5A.1에서는 SK하이닉스 주가 해부와 2026-07-17 오늘의 월스�
 
 ## Phase 5B · 기업 Brief
 
-8개 기업 상세는 한 문장 사업 정의와 `돈을 버는 구조 → 최근 변화 → 왜 중요한가 → 가장 큰 위험 → 다음 확인`을 먼저 보여줍니다. 첫 화면 지표는 기존 source가 있는 최대 3개로 제한하고, 비교가 없으면 0을 만들지 않습니다. NVIDIA와 Meta만 실제 심층 리포트 CTA를 표시하며 기존 재무·공시·차트·산업 연결은 결론 아래에서 유지합니다. 모델과 게시 계약은 `docs/company-brief-model.md`, `docs/stock-dissection-intake.md`, 실행 기록은 `docs/plans/phase-5b-company-brief-plan.html`을 참고하세요.
+현재 9개 기업 상세는 한 문장 사업 정의와 `돈을 버는 구조 → 최근 변화 → 왜 중요한가 → 가장 큰 위험 → 다음 확인`을 먼저 보여줍니다. 첫 화면 지표는 기존 source가 있는 최대 3개로 제한하고, 비교가 없으면 0을 만들지 않습니다. NVIDIA와 Meta만 실제 심층 리포트 CTA를 표시하며 기존 재무·공시·차트·산업 연결은 결론 아래에서 유지합니다. Netflix는 2026-07-18 릴리스에서 같은 Brief 계약으로 추가했습니다. 모델과 게시 계약은 `docs/company-brief-model.md`, `docs/stock-dissection-intake.md`, 실행 기록은 `docs/plans/phase-5b-company-brief-plan.html`을 참고하세요.
 
 PayPal·ASML·커넥티드카 예시는 draft fixture로 계속 유지해 홈·목록·직접 route에서 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스·WSJ·AI 요청과 자동 생성은 없습니다. Function은 12개입니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`, `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록했습니다. 다음 편집 단계는 Phase 5B입니다.
 
 ## Phase 5D · 시장가격에 반영된 기대
 
-NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격과 기준시각, 보수·기준·낙관 가치 범위, 범위 안 가격 위치, Reverse DCF의 7년 내재 매출 CAGR, 근거 상태가 붙은 기대 후보, WACC×영구성장률 민감도와 다음 확인 항목을 순서대로 설명합니다. 나머지 6개 기업은 검증 모형 부재를 0이나 빈 그래프로 대체하지 않습니다.
+NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격과 기준시각, 보수·기준·낙관 가치 범위, 범위 안 가격 위치, Reverse DCF의 7년 내재 매출 CAGR, 근거 상태가 붙은 기대 후보, WACC×영구성장률 민감도와 다음 확인 항목을 순서대로 설명합니다. Netflix를 포함한 나머지 7개 기업은 검증 모형 부재를 0이나 빈 그래프로 대체하지 않습니다.
 
 기업 상세·재무 피벗·심층 리포트는 실제 full 기업만 가치평가로 연결합니다. 기업별 report data는 route 진입 뒤 하나만 dynamic import하며 뉴스·편집 콘텐츠는 사업 가정을 자동 변경하지 않습니다. 신규 API·Function·DB·dependency는 없고 Function은 12개입니다. 모델과 운영 기준은 `docs/valuation-expectation-model.md`, `docs/reverse-dcf-methodology.md`, `docs/valuation-validation.md`, 실행 기록은 `docs/plans/phase-5d-valuation-expectations-plan.html`을 참고하세요.
 
@@ -4908,7 +4908,7 @@ NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격�
 
 검증된 사건을 `확인된 사실 / 아직 확인되지 않음 → 사업 동인 → Phase 5C 재무지표 → Phase 5D 가치평가 가정 → 검토 단계 → 실제 결정`으로 연결합니다. 검토 단계는 monitoring, scenario, base case, thesis 네 단계이고, 검토 완료와 실제 모형 변경은 별도 상태와 change record로 관리합니다.
 
-현재 Production record는 공식 실적에 근거한 NVIDIA와 Meta 2건입니다. 두 Phase 5D 모형은 해당 사건 뒤 작성돼 같은 model version을 유지하며 실제 가정 변경은 0건입니다. Company Brief와 Financial Pivot, 가치평가 화면은 현재 기업 module만 dynamic import하고 연결이 없는 6개 기업과 Published 3Reads에는 빈 section을 표시하지 않습니다.
+현재 record는 공식 실적에 근거한 NVIDIA·Meta와 2026 Q2 Netflix 3건입니다. NVIDIA와 Meta는 `reviewed_no_change`, 공개 가치평가 모형이 없는 Netflix는 `scenario_review`·`pending`으로 남기며 실제 가정 변경은 0건입니다. Company Brief와 Financial Pivot, 가치평가 화면은 현재 기업 module만 dynamic import하고 연결이 없는 6개 기업과 Published 3Reads에는 빈 section을 표시하지 않습니다.
 
 편집물 게시나 가격 변화로 DCF·Reverse DCF·Company Brief·핵심 판단을 자동 수정하지 않습니다. 신규 API·Function·DB·dependency·전용 route는 없고 Function은 12개를 유지합니다. 모델, 연결 방법론, validation과 실행 계획은 `docs/event-impact-model.md`, `docs/event-to-assumption-methodology.md`, `docs/event-impact-validation.md`, `docs/plans/phase-5e-event-assumption-linkage-plan.html`을 참고하세요.
 
@@ -4919,3 +4919,11 @@ NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격�
 UTM source·medium·campaign·content와 referrer category·landing route만 같은 탭의 sessionStorage에 보존합니다. 원문 검색어·전체 URL·referrer, 사용자 ID, 가격·재무 금액, WACC·성장률·가치평가 결과는 수집하지 않습니다. Do Not Track이 `1`이면 runtime을 비활성화하며 공급자 실패는 UI를 막지 않습니다.
 
 finance1의 Vercel Web Analytics 기본 pageview를 활성화했지만 현재 Hobby 플랜은 custom event 수집을 지원하지 않습니다. 따라서 Production pageview와 21개 행동 event의 코드·테스트 상태를 분리해 보고하며, 승인 없는 유료 업그레이드나 다른 tracker 우회는 하지 않습니다. `npm run validate:analytics`가 taxonomy·UTM·dedupe·privacy·실패 격리를 검증합니다. 상세 모델과 운영 기준은 `docs/analytics-event-model.md`, `docs/research-funnel-measurement.md`, `docs/instagram-linking-workflow.md`, `docs/privacy-analytics-policy.md`, 실행 기록은 `docs/plans/phase-5f-research-funnel-analytics-plan.html`을 참고하세요.
+
+## 2026-07-18 · Netflix 기업 분석과 콘텐츠 릴리스
+
+Netflix(`NFLX`)를 아홉 번째 지원 기업으로 온보딩했습니다. `/ko/companies/netflix`는 핵심 다섯 질문과 Q2 2026 기준 지표 최대 3개를 보여주고, `/ko/companies/netflix/financials`는 기존 SEC adapter와 CIK `0001065280`을 재사용합니다. 심층 리포트와 공개 가치평가 모형은 추가하지 않았으므로 존재하지 않는 CTA를 표시하지 않습니다. Netflix Brief와 재무 audit entry는 기업별 dynamic import 경계를 유지합니다.
+
+Netflix 주가해부 `stock-2026-07-18-netflix-guidance-disclosure-reset`과 오늘의 월스트리트 `wall-street-2026-07-18-capital-gate-premium`을 독립 Published 콘텐츠로 등록했습니다. 홈에는 각 판형의 짧은 최신 summary를 노출하고 상세 본문은 route 진입 뒤 불러옵니다. 주가해부만 Netflix 기업에 연결하며 PIX·VC·Etched를 다룬 월가인사이트에는 근거 없는 기업 relation을 만들지 않습니다. 기존 2026-07-17 월가인사이트와 draft fixture는 유지합니다.
+
+Netflix 사건 impact는 `scenario_review`·`pending`으로 기록해 재무 지표와 가치평가 가정 후보의 검토 필요성만 보존합니다. 공개 가치평가 모형을 만들거나 숫자를 자동 변경하지 않았고 실제 assumption change는 0건입니다. 전체 현재 inventory는 기업 9개, 사건 13개, Published editorial 3개, Event Impact 3개, Serverless Function 12개입니다. 신규 API·Function·DB·dependency·sync 실행은 없습니다. 상세 릴리스 기록은 `docs/releases/2026-07-18-netflix-wall-street.md`, 구현 대시보드는 `docs/plans/release-2026-07-18-netflix-wall-street-plan.html`을 참고하세요.

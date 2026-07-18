@@ -36,11 +36,12 @@ function SourceLink({ impact }: { impact: EventImpactRecord }) {
   return source ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${impact.event.title} 근거 · ${source.publisher} 원문`}>{source.publisher} 원문 <ExternalLink size={13} aria-hidden="true" /></a> : null;
 }
 
-export function CompanyEventImpactSection({ companyName, companySlug, impacts, onNavigate }: {
+export function CompanyEventImpactSection({ companyName, companySlug, impacts, onNavigate, showValuationReview }: {
   companyName: string;
   companySlug: string;
   impacts: EventImpactRecord[];
   onNavigate: Navigate;
+  showValuationReview: boolean;
 }) {
   const visible = sortedImpacts(impacts).slice(0, 3);
   if (!visible.length) return null;
@@ -56,7 +57,7 @@ export function CompanyEventImpactSection({ companyName, companySlug, impacts, o
         <div><dt>사업 동인</dt><dd>{impact.businessDriverImpacts.map((driver) => businessDriverById.get(driver.driverId)?.label).filter(Boolean).join(' · ')}</dd></div>
         <div><dt>검토 결과</dt><dd>{eventImpactReviewStatusLabels[impact.reviewStatus]}</dd></div>
       </dl>
-      <footer><SourceLink impact={impact} /><a href={`/ko/companies/${companySlug}/valuation#valuation-review-records-title`} onClick={internalLink(`/ko/companies/${companySlug}/valuation#valuation-review-records-title`, onNavigate)}>{companyName} 가정 검토 보기 <ArrowRight size={13} aria-hidden="true" /></a></footer>
+      <footer><SourceLink impact={impact} />{showValuationReview ? <a href={`/ko/companies/${companySlug}/valuation#valuation-review-records-title`} onClick={internalLink(`/ko/companies/${companySlug}/valuation#valuation-review-records-title`, onNavigate)}>{companyName} 가정 검토 보기 <ArrowRight size={13} aria-hidden="true" /></a> : null}</footer>
     </article>)}</div>
   </section>;
 }

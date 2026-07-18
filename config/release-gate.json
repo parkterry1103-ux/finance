@@ -25,15 +25,15 @@
     "entryGzipMaxBytes": 225000
   },
   "content": {
-    "companyProfiles": 8,
-    "companyEvents": 12,
+    "companyProfiles": 9,
+    "companyEvents": 13,
     "demandSupplyEntries": 4,
     "bottlenecks": 6,
     "reports": 15,
     "industryFlows": 4,
     "macroSeries": 9,
     "marketRelations": 3,
-    "editorialPublished": 1
+    "editorialPublished": 3
   },
   "lazyRoutes": [
     { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },
@@ -57,6 +57,8 @@
       "/ko/insights",
       "/ko/insights/stock/2026-07-13-sk-hynix-selloff",
       "/ko/insights/3reads/2026-07-17-standards-set-price",
+      "/ko/insights/3reads/2026-07-18-capital-gate-premium",
+      "/ko/insights/stock/2026-07-18-netflix-guidance-disclosure-reset",
       "/ko/insights/stock/paypal-control-premium-draft",
       "/ko/insights/3reads/switching-power-draft",
       "/ko/demand-supply",
@@ -81,6 +83,7 @@
       "/ko/companies/eaton/valuation",
       "/ko/companies/supermicro/valuation",
       "/ko/companies/supermicro",
+      "/ko/companies/netflix",
       "/ko/companies/sk-hynix/financials",
       "/ko/companies/lg-electronics/financials",
       "/ko/companies/nvidia/financials",
@@ -89,6 +92,8 @@
       "/ko/companies/eaton/financials",
       "/ko/companies/meta/financials",
       "/ko/companies/supermicro/financials",
+      "/ko/companies/netflix/financials",
+      "/ko/companies/netflix/valuation",
       "/ko/company-events",
       "/ko/bottlenecks",
       "/ko/reports",
@@ -113,6 +118,8 @@
       { "id": "valuation-expectations", "all": ["현재 가격은 모형 범위의 어디에 있나요?", "현재 가격을 설명하려면 어떤 성과가 필요한가요?", "모형이 포착하지 못한 기대 후보", "투자 권유가 아닙니다"] },
       { "id": "valuation-unavailable", "all": ["검증된 가치평가 모형이 아직 없습니다", "0 또는 빈 그래프로 대신하지 않습니다"] },
       { "id": "event-impact-linkage", "all": ["최근 사건이 무엇을 다시 보게 했나요?", "가정 검토 기록", "기준 가정 유지"] }
+      ,{ "id": "netflix-release", "all": ["넷플릭스 -7.263%, 좋은 실적보다 약한 전망", "기대치 재조정 + 밸류에이션 변화", "Netflix, Inc."] }
+      ,{ "id": "wall-street-july-18", "all": ["자본은 가장 좁은 관문에 프리미엄을 붙인다", "PIX와 통상정책", "VC의 회수 관문", "Etched의 추론 프리미엄"] }
     ],
     "apis": [
       { "id": "prices", "path": "/api/market-prices?limit=200", "contract": "prices" },

@@ -38,7 +38,11 @@ sourceIds / filingType / filedAt / accessionOrReceiptNumber
 
 ## 로딩 경계
 
-`FinancialPivotRoute`는 App에서 lazy import한다. 기본 진입은 현재 기업의 선택 기간만 요청한다. 비교기업 데이터는 사용자가 비교기업 모드를 선택한 뒤에만 연간 기준으로 요청한다. 홈이나 기업 목록은 8개 기업 시계열을 선로딩하지 않는다.
+`FinancialPivotRoute`는 App에서 lazy import한다. 기본 진입은 현재 기업의 선택 기간만 요청한다. 비교기업 데이터는 사용자가 비교기업 모드를 선택한 뒤에만 연간 기준으로 요청한다. 홈이나 기업 목록은 9개 기업 시계열을 선로딩하지 않는다. Netflix의 audit entry와 Company Brief도 slug별 dynamic import이므로 다른 기업 진입에 포함되지 않는다.
+
+## Netflix 2026-07-18 기준
+
+Netflix는 CIK `0001065280`으로 기존 SEC adapter를 재사용한다. 최신 완료 분기는 2026-06-30 종료 Q2 10-Q(`0001065280-26-000212`, 2026-07-17 제출)이며, 연결 독립 분기 수치만 공개한다. Q2 매출 12,559.938백만달러, 영업이익 4,192.610백만달러, 영업현금흐름 1,743.812백만달러, CAPEX 218.644백만달러로부터 FCF 1,525.168백만달러를 파생한다. 전년 동기 비교는 2025 Q2 같은 fiscal period만 사용하며 배열상 직전 분기와 비교하지 않는다.
 
 ## Phase 5F 측정 연결
 

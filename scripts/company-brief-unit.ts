@@ -21,8 +21,8 @@ function check(condition: unknown, label: string) {
 
 const validation = await validateCompanyBriefRegistry();
 check(validation.errors.length === 0, `registry validation: ${validation.errors.join(' | ')}`);
-check(validation.configs.length === 8 && companyBriefSlugs.length === 8 && companyProfiles.length === 8, 'eight supported company briefs');
-check(new Set(validation.configs.map((config) => config.companySlug)).size === 8, 'company slug deduplicated');
+check(validation.configs.length === 9 && companyBriefSlugs.length === 9 && companyProfiles.length === 9, 'nine supported company briefs');
+check(new Set(validation.configs.map((config) => config.companySlug)).size === 9, 'company slug deduplicated');
 
 const briefs = await Promise.all(validation.configs.map(async (config) => {
   const profile = buildCompanyResearchProfile(config.companySlug);
@@ -31,13 +31,14 @@ const briefs = await Promise.all(validation.configs.map(async (config) => {
 }));
 check(briefs.every(Boolean), 'all briefs build through lazy loader');
 check(briefs.every((brief) => brief && companyBriefQuestionKeys.every((key) => brief.questions[key].summary.trim() && brief.questions[key].sourceIds.length)), 'five sourced questions per brief');
-check(briefs.reduce((total, brief) => total + (brief ? Object.keys(brief.questions).length : 0), 0) === 40, 'forty question answers');
+check(briefs.reduce((total, brief) => total + (brief ? Object.keys(brief.questions).length : 0), 0) === 45, 'forty-five question answers');
 check(briefs.every((brief) => brief && brief.keyMetrics.length > 0 && brief.keyMetrics.length <= 3), 'one to three key metrics');
-check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.length ?? 0), 0) === 19, 'nineteen key metrics');
+check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.length ?? 0), 0) === 22, 'twenty-two key metrics');
 check(briefs.every((brief) => brief?.keyMetrics.every((metric) => Number.isFinite(metric.value) && metric.unit && metric.period && sourceRegistry[metric.sourceId])), 'metric finite number, unit, period and source');
-check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.filter((metric) => metric.comparison).length ?? 0), 0) === 5, 'five evidence-backed comparisons');
+check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.filter((metric) => metric.comparison).length ?? 0), 0) === 8, 'eight evidence-backed comparisons');
 check(briefs.filter((brief) => brief?.reportSlug).length === 2, 'only NVIDIA and Meta report CTAs');
-check(briefs.every((brief) => brief?.relatedEditorialIds.length === 0), 'no empty related editorial sections after SK Hynix removal');
+check(briefs.find((brief) => brief?.companySlug === 'netflix')?.relatedEditorialIds.join('|') === 'stock-2026-07-18-netflix-guidance-disclosure-reset', 'Netflix related editorial connected');
+check(briefs.filter((brief) => brief?.companySlug !== 'netflix').every((brief) => brief?.relatedEditorialIds.length === 0), 'unrelated editorial sections remain omitted');
 check(expectedBriefDifferenceUnit('영업이익률', '전년 동기 대비') === 'percentagePoint', 'margin comparison uses percentage points');
 check(expectedBriefDifferenceUnit('매출 성장률', '전년 대비') === 'percent', 'growth comparison uses percent');
 
@@ -73,4 +74,4 @@ check(componentSource.includes('brief.reportSlug ?') && componentSource.includes
 check(componentSource.includes('recentEditorial.length ?') && componentSource.includes('최근 관련 해부'), 'related editorial section condition');
 check(!componentSource.includes('최근 관련 해부가 없습니다'), 'no empty editorial message');
 
-console.log(`✓ Company Brief unit ${checks}개 검증 · 기업 8 · 질문 40 · 지표 19 · 비교 5 · 리포트 CTA 2`);
+console.log(`✓ Company Brief unit ${checks}개 검증 · 기업 9 · 질문 45 · 지표 22 · 비교 8 · 리포트 CTA 2`);

@@ -28,7 +28,7 @@ check(companyProfiles.length === releaseConfig.content.companyProfiles, 'profile
 check(companyProfileByIdOrSlug('nvidia')?.companyId === 'us-semiconductors-nvidia', 'profile slug resolve');
 check(companyProfileByIdOrSlug('us-semiconductors-nvidia')?.slug === 'nvidia', 'canonical company resolve');
 check(companyProfileByIdOrSlug('not-a-company') === undefined, 'invalid slug not found');
-check(companyProfiles.map((profile) => profile.order).join('|') === '1|2|3|4|5|6|7|8', 'profile order');
+check(companyProfiles.map((profile) => profile.order).join('|') === '1|2|3|4|5|6|7|8|9', 'profile order');
 check(canonicalCompanyProfileId('kr-semiconductors-sk-hynix') === 'ai-datacenter-sk-hynix', 'SK hynix canonical alias');
 check(canonicalCompanyProfileId('datacenter-power-eaton') === 'ai-datacenter-eaton', 'Eaton canonical alias');
 check(companyProfilePathForCompanyId('us-energy-grid-eaton') === '/ko/companies/eaton', 'canonical alias path');
@@ -49,6 +49,7 @@ const expectedSearches: Array<[string, string]> = [
   ['Eaton', 'eaton'], ['이튼', 'eaton'], ['ETN', 'eaton'],
   ['Meta', 'meta'], ['메타', 'meta'], ['Facebook', 'meta'], ['META', 'meta'],
   ['Supermicro', 'supermicro'], ['Super Micro', 'supermicro'], ['슈퍼마이크로', 'supermicro'], ['SMCI', 'supermicro'],
+  ['Netflix', 'netflix'], ['넷플릭스', 'netflix'], ['NFLX', 'netflix'],
 ];
 expectedSearches.forEach(([query, slug]) => check(searchCompanyProfiles(query)[0]?.profile.slug === slug, `search ${query}`));
 check(searchCompanyProfiles('NVIDIA').map(({ profile }) => profile.slug).join('|') === searchCompanyProfiles('nvidia').map(({ profile }) => profile.slug).join('|'), 'search case insensitive');
@@ -123,6 +124,6 @@ check(!companyProfileSectionVisibility(nvidia).showPrice, 'price absent section 
 check(companyProfileSectionVisibility({ ...nvidia, companyEvents: [] }).showEventEmpty, 'event empty state');
 check(!companyProfileSectionVisibility({ ...nvidia, picks: [] }).showPick, 'pick absent section omitted');
 check(!companyProfileSectionVisibility({ ...nvidia, verifiedMetrics: [] }).showMetrics, 'metric absent section omitted');
-check(validateCompanyProfileRegistry(new Date('2026-07-14T12:00:00Z')).length === 0, 'registry validation');
+check(validateCompanyProfileRegistry(new Date('2026-07-18T12:00:00Z')).length === 0, 'registry validation');
 
 console.log(`✓ 기업 프로필 unit ${checks}개 검증`);

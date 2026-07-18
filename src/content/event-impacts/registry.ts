@@ -1,13 +1,16 @@
 import type { EventImpactCompanySlug, EventImpactRecord, ValuationAssumptionChange } from './types.js';
 
-export const eventImpactCompanySlugs = ['nvidia', 'meta'] as const;
+export const eventImpactCompanySlugs = ['nvidia', 'meta', 'netflix'] as const;
 
 const loaders: Record<EventImpactCompanySlug, () => Promise<{ default: EventImpactRecord[] }>> = {
   nvidia: () => import('./entries/nvidia.js'),
   meta: () => import('./entries/meta.js'),
+  netflix: () => import('./entries/netflix.js'),
 };
 
-const editorialImpactCompanyIndex: Record<string, EventImpactCompanySlug> = {};
+const editorialImpactCompanyIndex: Record<string, EventImpactCompanySlug> = {
+  'stock-2026-07-18-netflix-guidance-disclosure-reset': 'netflix',
+};
 
 export const valuationAssumptionChanges: ValuationAssumptionChange[] = [];
 

@@ -18,10 +18,14 @@
 
 ## ADR·분할·주식 종류
 
-ADR이면 ordinary share per ADR 비율을 명시해 EPS와 주식수를 상장 증서 단위로 변환한다. 이번 8개 상장 종목에는 ADR이 없다. NVIDIA와 Super Micro의 2024년 10:1 분할은 SEC가 재작성한 per-share context를 사용하며, 재작성 여부가 불명확한 값은 계산하지 않는다. Dell Class C와 Meta Class A처럼 거래 주식 종류가 있는 경우 가격과 common equity 범위를 기록한다.
+ADR이면 ordinary share per ADR 비율을 명시해 EPS와 주식수를 상장 증서 단위로 변환한다. 이번 9개 상장 종목에는 ADR이 없다. NVIDIA와 Super Micro의 2024년 10:1 분할, Netflix의 2025년 10:1 분할은 SEC가 재작성한 per-share context를 사용하며, 재작성 여부가 불명확한 값은 계산하지 않는다. Netflix는 2025-11-17부터 분할 조정 거래가 시작됐으므로 2026-07-17 종가와 주당 지표를 모두 조정 후 기준으로 읽는다. Dell Class C와 Meta Class A처럼 거래 주식 종류가 있는 경우 가격과 common equity 범위를 기록한다.
 
 ## EV 계열
 
 `EV = 시가총액 + 차입금 + 우선주 + 비지배지분 - 현금`. 모든 구성요소와 EBITDA 정의가 같은 시점·연결 기준으로 확보된 기업만 게시한다. 이번 단계는 PER·PBR·PSR을 공개하고 EV/Sales와 EV/EBITDA는 원재료가 불완전해 보류한다.
 
 계산에는 원값을 쓰고 화면에서는 배수를 소수 둘째 자리까지 표시한다. NaN, Infinity, 결측값의 0 대체를 허용하지 않는다.
+
+## Netflix 외부 교차검증
+
+Netflix 감사 snapshot은 2026-07-17 정규장 종가 68.95달러를 사용한다. StockAnalysis의 TTM PER 21.72배와 CompaniesMarketCap의 21.8954배를 같은 날짜 외부 참고값으로 기록하되, 자체 fallback인 FY2025 희석 EPS 2.53달러로 단순 계산한 27.25배와 동일하다고 보지 않는다. 네 독립 분기의 split-adjusted GAAP 희석 EPS가 모두 안전하게 연결되기 전에는 외부 TTM 정의와 연간 EPS 분모의 차이를 숨기지 않고 자체 PER 게시를 보류한다.

@@ -23,8 +23,8 @@ function check(condition: unknown, label: string) {
 
 const validationErrors = validateFinancialPivotRegistry();
 check(validationErrors.length === 0, `registry validation: ${validationErrors.join(' | ')}`);
-check(financialPivotCompanies.length === 8, 'eight supported companies');
-check(new Set(financialPivotCompanies.map((company) => company.companySlug)).size === 8, 'company slugs unique');
+check(financialPivotCompanies.length === 9, 'nine supported companies');
+check(new Set(financialPivotCompanies.map((company) => company.companySlug)).size === 9, 'company slugs unique');
 check(financialPivotCompanies.every((company) => company.companyId && company.currency && (company.country === 'US' ? company.cik : company.corpCode)), 'official identifiers complete');
 check(financialPivotCompanies.flatMap((company) => company.peerSlugs).every((slug) => financialPivotCompanies.some((company) => company.companySlug === slug)), 'peer slugs valid');
 check(financialMetricDefinitions.every((metric) => metric.label && metric.description && metric.group && metric.format), 'metric metadata complete');
@@ -83,4 +83,4 @@ const financialApiSource = readFileSync(join(process.cwd(), 'api', 'financials.t
 check(financialApiSource.includes('buildDartLineage') && financialApiSource.includes('conceptOrAccountId'), 'OpenDART values preserve account lineage');
 check(financialApiSource.includes('frame: item.fact.frame') && financialApiSource.includes('filedValue: item.fact.val'), 'SEC values preserve frame and filed value');
 
-console.log(`✓ Financial Pivot unit ${checks}개 검증 · 기업 8 · 안전 계산 · lazy route · semantic table`);
+console.log(`✓ Financial Pivot unit ${checks}개 검증 · 기업 9 · 안전 계산 · lazy route · semantic table`);

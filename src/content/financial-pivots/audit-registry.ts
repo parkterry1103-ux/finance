@@ -9,6 +9,7 @@ const loaders: Record<string, () => Promise<{ default: FinancialAuditCompany }>>
   eaton: () => import('./audit-entries/eaton.js'),
   meta: () => import('./audit-entries/meta.js'),
   supermicro: () => import('./audit-entries/supermicro.js'),
+  netflix: () => import('./audit-entries/netflix.js'),
 };
 
 export const financialAuditCompanySlugs = Object.freeze(Object.keys(loaders));
