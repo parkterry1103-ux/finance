@@ -18,7 +18,7 @@
     h1 { max-width:820px; margin:0; font-size:clamp(2rem,6vw,4.5rem); line-height:1.05; letter-spacing:-.055em; }
     .lead { max-width:790px; margin:22px 0 0; color:var(--muted); font-size:clamp(1rem,2vw,1.2rem); }
     .status { display:inline-flex; min-height:44px; margin-top:24px; padding:9px 14px; align-items:center; gap:8px; border:1px solid #b7d2c9; border-radius:999px; background:#e8f5ef; font-weight:800; }
-    .status::before { content:"진행"; padding:2px 7px; border-radius:999px; color:#fff; background:var(--accent); font-size:.72rem; }
+    .status::before { content:"완료"; padding:2px 7px; border-radius:999px; color:#fff; background:var(--accent); font-size:.72rem; }
     .meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:26px 0 0; padding:0; }
     .meta div { min-width:0; padding:15px; border:1px solid var(--line); border-radius:15px; background:var(--wash); }
     dt { color:var(--muted); font-size:.76rem; font-weight:700; }
@@ -41,7 +41,7 @@
     .flag { color:var(--warm); font-weight:800; }
     .checklist { padding:0; list-style:none; }
     .checklist li { position:relative; padding-left:28px; }
-    .checklist li::before { position:absolute; left:0; content:"○"; color:var(--accent); font-weight:900; }
+    .checklist li::before { position:absolute; left:0; content:"✓"; color:var(--accent); font-weight:900; }
     footer { padding:28px 8px 0; color:var(--muted); font-size:.82rem; }
     @media (max-width:820px) { .meta,.grid { grid-template-columns:1fr; } .wide { grid-column:auto; } .flow { grid-template-columns:1fr; } }
     @media (max-width:420px) { .shell { width:min(100% - 20px,1120px); padding-top:10px; } .hero,.card { border-radius:17px; } .hero { padding:22px 18px; } .card { padding:20px 17px; } h1 { font-size:2.2rem; } .meta div { padding:12px; } th,td { padding:10px 6px; } }
@@ -53,13 +53,13 @@
       <p class="eyebrow">Release · 2026-07-18</p>
       <h1>Netflix 기업 온보딩과 두 편의 독립 리서치 공개</h1>
       <p class="lead">Netflix 기업 페이지와 최신 SEC 재무 계보를 먼저 완성한 뒤, 주가해부픽과 「자본은 가장 좁은 관문에 프리미엄을 붙인다」 월가인사이트를 각각 독립 콘텐츠로 게시합니다.</p>
-      <div class="status" aria-label="현재 상태: 배포 검토 중">Review</div>
+      <div class="status" aria-label="현재 상태: 완료">Completed</div>
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd><code>9a3a2fda02ed2595a8004aaf9939f3b93e578265</code></dd></div>
         <div><dt>Feature branch</dt><dd><code>feat/netflix-company-content-release-20260718</code></dd></div>
-        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/25">#25</a> · Draft · checks 진행 중</dd></div>
-        <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
-        <div><dt>Production</dt><dd>finance1 · 배포 후 기록</dd></div>
+        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/25">#25</a> · Squash merged</dd></div>
+        <div><dt>구현 main SHA</dt><dd><code>e7106b7c90b0a91981c491b1a5b9e8bb3170d8ca</code></dd></div>
+        <div><dt>Production</dt><dd><code>dpl_AE6SjW7QpSg5wS2xm2KyD6aAiVje</code> · Ready · Current</dd></div>
         <div><dt>최종 수정일</dt><dd>2026-07-18 KST</dd></div>
       </dl>
     </header>
@@ -138,7 +138,7 @@
           <li><strong>완료</strong> · SEC 재무·배수·Brief·Event Impact 연결</li>
           <li><strong>완료</strong> · Netflix 주가해부와 7월 18일 월가인사이트 등록</li>
           <li><strong>완료</strong> · 홈·인사이트·회사 CTA 및 문서 정리</li>
-          <li><strong>진행 중</strong> · 정적 검사·브라우저 QA 완료, PR·병합·Production 검증 대기</li>
+          <li><strong>완료</strong> · 정적 검사·PR 병합·Production 배포·브라우저 QA·smoke 검증</li>
         </ol>
       </section>
 
@@ -168,10 +168,11 @@
 
       <section class="card wide">
         <h2>Git·배포 및 계획 대비 실제 결과</h2>
-        <p>구현 commit <code>5f59a94c9aa35819e5de1616bcb38ddfe96596e7</code>을 PR <a href="https://github.com/parkterry1103-ux/finance/pull/25">#25 · Add Netflix company analysis and publish July 18 research</a>로 제출했습니다. 직접 main에 push하지 않고 검증된 feature branch를 PR로 병합한 뒤 canonical <a href="https://finance1-flax.vercel.app/ko/">finance1 Production</a>을 확인합니다.</p>
-        <p><strong>Review 결과:</strong> 기업 9개·사건 13개·Published editorial 3개·Event Impact 3개이며 실제 가정 변경은 0개입니다. Netflix는 Company Brief 5문항·핵심 지표 3개·Q2 10-Q lineage를 제공하고 가치평가·리포트 CTA는 표시하지 않습니다.</p>
-        <p>Release Gate 27개가 통과했습니다. Chromium·WebKit은 7개 viewport × 11개 route 77회를 각각 확인해 overflow·깨진 텍스트·console 오류 0개였고 실제 Safari에서 Netflix 기업·주가해부·월가인사이트와 뒤로·앞으로가기를 확인했습니다. 홈 초기 자산은 JS·CSS 2개이며 entry는 raw 787,250B·gzip 214,470B입니다. Netflix Brief 2,531B, filing audit 1,134B, Event Impact 4,255B, 주가해부 11,048B, 월가인사이트 14,840B가 별도 chunk로 유지됩니다.</p>
-        <p><strong>계획 대비 변경:</strong> 검증된 자체 Netflix 가치평가가 없어 Event Impact 카드의 가정 검토 링크도 full 가치평가 기업에만 표시하도록 공통 조건을 보강했습니다. 신규 API·Function·dependency 없이 계획 범위를 지켰으며 PR·Production 결과만 남았습니다.</p>
+        <p>구현 commit <code>5f59a94c9aa35819e5de1616bcb38ddfe96596e7</code>과 검토 기록 commit <code>64964ad841ee5b431a5445723f07f0ba4ed97a71</code>을 PR <a href="https://github.com/parkterry1103-ux/finance/pull/25">#25 · Add Netflix company analysis and publish July 18 research</a>로 제출해 squash merge했습니다. 구현 main은 <code>e7106b7c90b0a91981c491b1a5b9e8bb3170d8ca</code>, canonical <a href="https://finance1-flax.vercel.app/ko/">finance1 Production</a>은 <code>dpl_AE6SjW7QpSg5wS2xm2KyD6aAiVje</code>에서 Ready · Current를 확인했습니다.</p>
+        <p><strong>완료 결과:</strong> 기업 9개·사건 13개·Published editorial 3개·Event Impact 3개이며 실제 가정 변경은 0개입니다. Netflix는 Company Brief 5문항·핵심 지표 3개·Q2 10-Q lineage를 제공하고 가치평가·리포트 CTA는 표시하지 않습니다. 계획 대비 완료율은 100%이며 미완료 항목은 없습니다.</p>
+        <p>Release Gate 27개와 npm audit 0이 통과했습니다. Production smoke는 route 53개·asset 54개·content 12개·API 9개·인증 없는 sync 거부 6개를 확인했습니다. Chromium Production은 7개 viewport × 11개 route 77회를 확인해 overflow·깨진 텍스트·console 오류 0개였고 WebKit 77회 및 실제 Safari에서 Netflix 기업·재무·주가해부·월가인사이트와 뒤로·앞으로가기를 확인했습니다. Serverless Function은 12개입니다.</p>
+        <p>홈 초기 자산은 JS·CSS 2개이며 entry는 raw 787,250B·gzip 214,470B입니다. Netflix Brief 2,531B, filing audit 1,134B, Event Impact 4,255B, 주가해부 11,048B, 월가인사이트 14,840B가 별도 chunk로 유지됩니다.</p>
+        <p><strong>계획 대비 변경:</strong> 검증된 자체 Netflix 가치평가가 없어 Event Impact 카드의 가정 검토 링크도 full 가치평가 기업에만 표시하도록 공통 조건을 보강했습니다. 신규 API·Function·dependency 없이 계획 범위를 지켰습니다. 자동 브라우저의 <code>file://</code> 재열기는 보안 정책으로 제한됐으나 단일 HTML의 시맨틱 구조·반응형 CSS·상대 링크를 정적 검증했고, 사이트 기능은 Production URL에서 별도로 검증했습니다.</p>
       </section>
     </div>
     <footer>저장소 문서 링크는 상대 경로를 사용합니다. 관련 문서: <a href="../company-brief-model.md">Company Brief 모델</a> · <a href="../stock-dissection-intake.md">주가해부 게시 계약</a> · <a href="../editorial-validation.md">편집 검증</a></footer>

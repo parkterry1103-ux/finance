@@ -6,7 +6,9 @@
 - feature branch: `feat/netflix-company-content-release-20260718`
 - 구현 commit: `5f59a94c9aa35819e5de1616bcb38ddfe96596e7`
 - PR: [#25 · Add Netflix company analysis and publish July 18 research](https://github.com/parkterry1103-ux/finance/pull/25)
-- 최종 main·Production deployment: 배포 완료 후 기록
+- 구현 main: `e7106b7c90b0a91981c491b1a5b9e8bb3170d8ca`
+- Production deployment: `dpl_AE6SjW7QpSg5wS2xm2KyD6aAiVje` · Ready · Current
+- Production URL: `https://finance1-flax.vercel.app`
 - 대상: Netflix 기업 분석, Netflix 주가해부픽, 2026-07-18 오늘의 월스트리트
 
 ## 입력 원고
@@ -40,4 +42,6 @@ Netflix Q2 실적·가이던스·공개정책 변화는 `scenario_review`·`pend
 
 ## 검증·배포 기록
 
-구현 중 검증에서 content, editorial, Company Brief, financial, filing freshness, event impact, valuation expectation과 company profile/event unit이 통과했다. 최종 typecheck, build, Release Gate, 브라우저 QA, Production smoke와 배포 식별자는 PR 병합 뒤 이 문서와 Plan HTML에 갱신한다.
+content, editorial, Company Brief, financial, filing freshness, event impact, valuation expectation, company profile/event unit, typecheck와 build가 통과했다. `npm audit`은 0건이고 Release Gate 27개 검사를 통과했다.
+
+PR #25를 squash merge한 뒤 canonical Production `dpl_AE6SjW7QpSg5wS2xm2KyD6aAiVje`가 Ready · Current임을 확인했다. Production smoke는 route 53개, asset 54개, content 12개, 공개 API 9개와 인증 없는 sync 거부 6개를 통과했다. Chromium은 7개 viewport × 11개 route 77회에서 overflow·깨진 텍스트·console 오류가 없었고, WebKit 77회와 실제 Safari에서도 Netflix 기업·재무·주가해부·월가인사이트가 정상 동작했다. Serverless Function은 12개이며 신규 dependency와 package lock 변경은 없다.
