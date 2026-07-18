@@ -9,6 +9,7 @@ import {
   financialMetricDefinitions,
   financialPivotCompanies,
   median,
+  formatMetricValue,
   validateFinancialPivotRegistry,
   withDerivedMetrics,
   type FinancialSeriesPeriod,
@@ -27,6 +28,7 @@ check(new Set(financialPivotCompanies.map((company) => company.companySlug)).siz
 check(financialPivotCompanies.every((company) => company.companyId && company.currency && (company.country === 'US' ? company.cik : company.corpCode)), 'official identifiers complete');
 check(financialPivotCompanies.flatMap((company) => company.peerSlugs).every((slug) => financialPivotCompanies.some((company) => company.companySlug === slug)), 'peer slugs valid');
 check(financialMetricDefinitions.every((metric) => metric.label && metric.description && metric.group && metric.format), 'metric metadata complete');
+check(formatMetricValue(24_200, financialMetricDefinitions.find((metric) => metric.id === 'sharesOutstanding')!, 'USD') === '24,200백만 주', 'share count is not formatted as currency');
 
 check(calculateChange(120, 100, 'percent').label === '+20.0%', 'positive percent change');
 check(calculateChange(80, 100, 'percent').label === '-20.0%', 'negative percent change');
@@ -68,10 +70,17 @@ const appSource = readFileSync(join(process.cwd(), 'src', 'App.tsx'), 'utf8');
 check(appSource.includes("lazy(() => import('./routes/FinancialPivotRoute'))"), 'financial route lazy loaded');
 check(appSource.includes('routeFinancialPivotMatch'), 'financial route parsed before company profile');
 const routeSource = readFileSync(join(process.cwd(), 'src', 'routes', 'FinancialPivotRoute.tsx'), 'utf8');
-check(routeSource.includes('비교 자료 없음') && routeSource.includes('자료 미수집'), 'missing-data language present');
+check(routeSource.includes('전년 동기 공시값 없음') && routeSource.includes('공식 원자료 미수집'), 'specific missing-data language present');
+check(!routeSource.includes('비교 자료 없음') && !routeSource.includes('비교 대상 없음'), 'generic comparison copy removed');
+check(routeSource.includes('FilingBasisStrip') && routeSource.includes('MarketMultiplePanel'), 'filing basis and multiple audit UI present');
+check(routeSource.includes('값 상태:') && routeSource.includes('공시 직접 확인') && routeSource.includes('공시값으로 계산'), 'reported and derived value origin copy present');
+check(routeSource.includes('loadFinancialAuditCompany'), 'company audit data loads per route');
 check(routeSource.includes('peerPayloads') && routeSource.includes("comparisonMode !== 'peer'"), 'peer data loads on demand');
 check(routeSource.includes('<table>') && routeSource.includes('scope="row"') && routeSource.includes('scope="col"'), 'semantic table structure');
 const profileSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
 check(profileSource.includes('/financials') && profileSource.includes('숫자와 비교 보기'), 'company brief CTA connects financial route');
+const financialApiSource = readFileSync(join(process.cwd(), 'api', 'financials.ts'), 'utf8');
+check(financialApiSource.includes('buildDartLineage') && financialApiSource.includes('conceptOrAccountId'), 'OpenDART values preserve account lineage');
+check(financialApiSource.includes('frame: item.fact.frame') && financialApiSource.includes('filedValue: item.fact.val'), 'SEC values preserve frame and filed value');
 
 console.log(`✓ Financial Pivot unit ${checks}개 검증 · 기업 8 · 안전 계산 · lazy route · semantic table`);

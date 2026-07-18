@@ -1,5 +1,24 @@
 export type FinancialPivotPeriodType = 'annual' | 'quarterly';
 export type FinancialComparisonMode = 'history' | 'peer' | 'industry';
+export type FinancialValueOrigin = 'reported' | 'derived_from_reported' | 'market_implied_derived' | 'external_reference' | 'unavailable';
+export type FinancialConsolidationBasis = 'consolidated' | 'separate' | 'unknown';
+export type FinancialPeriodBasis = 'standalone' | 'cumulative' | 'annual' | 'instant';
+export type FilingFreshness = 'current' | 'stale' | 'filing_pending';
+export type ComparisonUnavailableReason =
+  | 'prior_period_missing'
+  | 'same_period_missing'
+  | 'period_not_comparable'
+  | 'definition_mismatch'
+  | 'consolidation_basis_mismatch'
+  | 'currency_mismatch_absolute'
+  | 'unit_mismatch'
+  | 'restatement_unresolved'
+  | 'insufficient_peer_count'
+  | 'negative_denominator'
+  | 'metric_not_meaningful'
+  | 'source_unavailable'
+  | 'filing_not_yet_available'
+  | 'calculation_inputs_missing';
 export type FinancialMetricGroupId = 'growth' | 'profitability' | 'cashFlow' | 'capitalEfficiency' | 'balanceSheet' | 'perShare';
 
 export type FinancialPivotMetricId =
@@ -7,6 +26,7 @@ export type FinancialPivotMetricId =
   | 'grossProfit'
   | 'operatingIncome'
   | 'netIncome'
+  | 'basicEps'
   | 'dilutedEps'
   | 'operatingCashFlow'
   | 'capitalExpenditure'
@@ -19,6 +39,7 @@ export type FinancialPivotMetricId =
   | 'currentAssets'
   | 'currentLiabilities'
   | 'dilutedShares'
+  | 'sharesOutstanding'
   | 'grossMargin'
   | 'operatingMargin'
   | 'netMargin'
@@ -30,16 +51,60 @@ export type FinancialPivotMetricId =
 
 export type FinancialSeriesPeriod = {
   label: string;
+  periodStart?: string;
   periodEnd: string;
   fiscalYear: number | null;
   fiscalPeriod: string;
+  periodBasis?: FinancialPeriodBasis;
+  consolidation?: FinancialConsolidationBasis;
   currency: string;
   unit: 'million';
   metrics: Partial<Record<FinancialPivotMetricId, number>>;
+  metricOrigins?: Partial<Record<FinancialPivotMetricId, FinancialValueOrigin>>;
+  metricLineage?: Partial<Record<FinancialPivotMetricId, FinancialValueLineage>>;
   sourceIds: string[];
   filingType: string;
   filedAt: string | null;
   accessionOrReceiptNumber: string | null;
+};
+
+export type FinancialFilingIdentity = {
+  system: 'sec' | 'opendart';
+  formOrReportCode: string;
+  accessionOrReceiptNumber: string;
+  filedAt: string;
+  reportPeriod: string;
+  fiscalYear: number;
+  fiscalQuarter: string;
+  consolidated: boolean;
+  amended: boolean;
+  sourceUrl: string;
+};
+
+export type FinancialValueLineage = {
+  companySlug: string;
+  metricId: FinancialPivotMetricId;
+  value: number | null;
+  currency?: string;
+  unit: string;
+  period: { start?: string; end: string; fiscalYear?: number; fiscalQuarter?: string; periodType: 'quarter' | 'year' | 'ttm' | 'instant' };
+  origin: FinancialValueOrigin;
+  filing?: {
+    system: 'sec' | 'opendart';
+    formOrReportCode: string;
+    accessionOrReceiptNumber: string;
+    filedAt: string;
+    reportPeriod: string;
+    consolidated: boolean;
+    conceptOrAccountId: string;
+    conceptOrAccountName: string;
+    frame?: string;
+    filedValue?: number;
+    filedUnit?: string;
+    sourceUrl: string;
+  };
+  calculation?: { formulaId: string; inputIds: string[]; explanation: string };
+  verifiedAt: string;
 };
 
 export type FinancialSeriesResponse = {
@@ -52,6 +117,9 @@ export type FinancialSeriesResponse = {
   currency: string | null;
   reportType: string | null;
   periodBasis: string | null;
+  consolidation?: FinancialConsolidationBasis;
+  freshness?: FilingFreshness;
+  latestFiling?: FinancialFilingIdentity | null;
   message?: string;
   series?: {
     periodType: FinancialPivotPeriodType;
@@ -81,7 +149,7 @@ export type FinancialMetricDefinition = {
   id: FinancialPivotMetricId;
   label: string;
   group: FinancialMetricGroupId;
-  format: 'amount' | 'percent' | 'percentagePoint' | 'multiple' | 'perShare';
+  format: 'amount' | 'percent' | 'percentagePoint' | 'multiple' | 'perShare' | 'shares';
   change: 'percent' | 'percentagePoint' | 'absolute';
   description: string;
   calculation?: string;
@@ -103,4 +171,45 @@ export type IndustryComparison = {
   sampleSize: number;
   debtToCapital: number;
   roic: number;
+};
+
+export type ExternalMultipleMatchStatus =
+  | 'matched'
+  | 'matched_with_rounding'
+  | 'definition_difference'
+  | 'timing_difference'
+  | 'share_basis_difference'
+  | 'adr_ratio_difference'
+  | 'gaap_vs_adjusted'
+  | 'trailing_vs_forward'
+  | 'stale_external_value'
+  | 'unresolved_difference';
+
+export type ExternalMultipleCheck = {
+  provider: string;
+  value: number | null;
+  definition?: string;
+  asOf?: string;
+  multipleBasis: 'trailing' | 'forward' | 'definition_not_disclosed';
+  epsBasis: 'basic' | 'diluted' | 'definition_not_disclosed';
+  accountingBasis: 'gaap' | 'adjusted' | 'definition_not_disclosed';
+  priceAsOf: string | null;
+  financialPeriod: string;
+  retrievedAt: string;
+  matchStatus: ExternalMultipleMatchStatus;
+  sourceUrl: string;
+};
+
+export type VerifiedMarketMultiple = {
+  companySlug: string;
+  metric: 'per' | 'pbr' | 'psr' | 'evSales' | 'evEbitda';
+  basis: 'ttm' | 'latestFiscalYear' | 'latestReportedInstant';
+  value: number | null;
+  status: 'verified' | 'review' | 'notMeaningful' | 'unavailable';
+  unavailableReason?: ComparisonUnavailableReason;
+  price: { value: number; currency: string; asOf: string; session: 'regularClose'; sourceId: string };
+  denominator: { metricId: string; value: number | null; periodEnd: string; origin: 'reported' | 'derived_from_reported'; lineageId: string };
+  formulaId: string;
+  externalChecks: ExternalMultipleCheck[];
+  verifiedAt: string;
 };

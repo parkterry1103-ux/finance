@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5C.1 구현 계획 · 공시 기반 재무와 멀티플 감사</title>
+  <style>
+    :root{color-scheme:light;--ink:#17232d;--muted:#5b6873;--line:#d7dee4;--paper:#f2efe8;--panel:#fff;--navy:#17364d;--blue:#235e83;--green:#28664f;--amber:#825816;--red:#8a3b34;--soft:#eef3f6;--radius:18px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.65;overflow-wrap:anywhere;word-break:keep-all}a{color:inherit;text-underline-offset:.18em}a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #347bab;outline-offset:4px}.skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:12px;z-index:10;background:#fff;padding:10px 14px}.wrap{width:min(1120px,calc(100% - 32px));margin:auto}
+    .hero{background:var(--navy);color:#fff;padding:54px 0 38px}.hero-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}.eyebrow{margin:0 0 8px;text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:800}.hero h1{margin:0;font-size:clamp(2rem,6vw,4.4rem);line-height:1.04;letter-spacing:-.045em}.hero-copy{max-width:840px;margin:22px 0 0;color:#d9e5ec;font-size:1.04rem}.status,.tag{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 11px;font-size:.78rem;font-weight:800;white-space:nowrap}.status{background:#fff1d2;color:var(--amber)}.status:before{content:"검토"}.tag{background:#e9f2ee;color:var(--green)}.tag:before{content:"✓"}.tag.progress{background:#fff1d2;color:var(--amber)}.tag.progress:before{content:"진행"}.tag.pending{background:#edf1f4;color:#4f5d68}.tag.pending:before{content:"대기"}.meta{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;margin-top:34px;background:#ffffff30;border:1px solid #ffffff30;border-radius:14px;overflow:hidden}.meta div{min-width:0;background:#ffffff0c;padding:13px}.meta dt{font-size:.72rem;color:#b8cbd6}.meta dd{margin:3px 0 0;font-weight:750;overflow-wrap:anywhere;word-break:break-word}
+    .toc{padding:18px 0;border-bottom:1px solid var(--line);background:#fff}.toc nav{display:flex;gap:8px;overflow:auto}.toc a{flex:0 0 auto;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:.8rem}.content{padding:34px 0 72px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(20px,4vw,34px);margin:0 0 18px;box-shadow:0 8px 30px #2439490a}.panel-head{display:flex;justify-content:space-between;gap:18px;align-items:start;margin-bottom:22px}.panel h2{margin:0;font-size:clamp(1.35rem,3vw,2rem);letter-spacing:-.03em}.panel h3{margin:0 0 8px;font-size:1rem}.panel p{margin-top:0}.grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.card{min-width:0;border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}.card p,.card ul{margin:0;color:var(--muted)}.card ul{padding-left:20px}.metric{font-size:1.7rem;font-weight:850;color:var(--navy)}.table-wrap{max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:760px;background:#fff}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-size:.82rem}.flow,.tasks{margin:0;padding:0;list-style:none;display:grid;gap:10px}.flow{grid-template-columns:repeat(5,minmax(0,1fr))}.flow li,.tasks li{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff}.flow strong,.tasks strong{display:block;color:var(--blue)}.tasks li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start}.tasks b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff}.note-box{border-left:4px solid var(--amber);background:#fff7e8;padding:14px 16px;border-radius:0 12px 12px 0}.risk-box{border-left-color:var(--red);background:#fff0ee}.muted{color:var(--muted)}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;background:#edf1f4;border-radius:5px;padding:.12em .35em;word-break:break-all}details{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}summary{cursor:pointer;font-weight:800;min-height:44px;display:flex;align-items:center}footer{padding:24px 0 42px;color:var(--muted);font-size:.85rem}
+    @media(max-width:900px){.meta{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-3,.flow{grid-template-columns:1fr 1fr}}@media(max-width:640px){.wrap{width:min(100% - 20px,1120px)}.hero{padding-top:38px}.hero-top,.grid-2,.grid-3,.flow{grid-template-columns:1fr}.hero-top{gap:18px}.status{justify-self:start}.meta{grid-template-columns:1fr 1fr}.panel-head{display:block}.panel-head .tag{margin-top:10px}.tasks li{grid-template-columns:auto minmax(0,1fr)}.tasks .tag{grid-column:2;justify-self:start}th,td{padding:10px 12px}}@media(max-width:360px){.meta{grid-template-columns:1fr}.panel{padding:18px}.hero h1{font-size:2rem}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">본문으로 바로가기</a>
+  <header class="hero">
+    <div class="wrap">
+      <div class="hero-top">
+        <div><p class="eyebrow">Stock Autopsy · Filing Accuracy Audit</p><h1>Phase 5C.1<br>공시에서 멀티플까지</h1><p class="hero-copy">지원 기업 8개의 최신 SEC·OpenDART 공시를 기간·연결 기준부터 다시 확인하고, 독립 분기·TTM·EPS·PER·PBR·PSR의 원재료와 계산 경로를 추적 가능한 형태로 정규화합니다.</p></div>
+        <span class="status">Review</span>
+      </div>
+      <dl class="meta">
+        <div><dt>시작 SHA</dt><dd>85cabf41e0dbcdd1c235e43dc39c36ae780be8de</dd></div>
+        <div><dt>Feature branch</dt><dd>feat/filing-multiples-audit-phase-5c1</dd></div>
+        <div><dt>PR</dt><dd>검증 완료 · 생성 대기</dd></div>
+        <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
+        <div><dt>Production</dt><dd>배포 후 기록</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-18</dd></div>
+      </dl>
+    </div>
+  </header>
+  <div class="toc"><nav class="wrap" aria-label="문서 목차"><a href="#goal">목표</a><a href="#baseline">기준점</a><a href="#companies">8개 기업</a><a href="#method">계산 정책</a><a href="#reconcile">교차검증</a><a href="#scope">범위</a><a href="#files">파일</a><a href="#quality">검증</a><a href="#risks">위험</a><a href="#actual">결과</a></nav></div>
+  <main class="content wrap" id="main">
+    <section class="panel" id="goal">
+      <div class="panel-head"><div><p class="eyebrow">01 · Purpose</p><h2>이번 단계의 목적</h2></div><span class="tag">감사 완료</span></div>
+      <div class="grid-2"><article class="card"><h3>현재 문제</h3><p>CompanyFacts·OpenDART 응답에서 최신 항목을 고르는 것만으로는 독립 분기, 누적 기간, 정정, 연결 기준과 주식수 기준을 보장할 수 없습니다. 화면 비교도 배열상 직전 값에 의존해 YoY 우선 정책과 어긋날 수 있습니다.</p></article><article class="card"><h3>제품 목표</h3><p>공식 공시 원재료 → 기간·연결 기준 검증 → 표준 계산 → 가격 기준일 정렬 → 동일 정의 외부 교차검증 → 차이 설명의 전 과정을 사용자와 코드가 함께 확인할 수 있게 합니다.</p></article></div>
+      <p class="note-box">원인을 설명할 수 없는 값은 Verified로 게시하지 않습니다. 임의 성장률·Forward EPS·누락값 보간·결측치 0 대체는 하지 않습니다.</p>
+    </section>
+
+    <section class="panel" id="baseline">
+      <div class="panel-head"><div><p class="eyebrow">02 · Baseline</p><h2>Phase 5F 완료 상태와 현재 수집 구조</h2></div><span class="tag">기준점 확정</span></div>
+      <div class="grid-3"><article class="card"><h3>Git</h3><div class="metric">85cabf4</div><p><code>HEAD == origin/main</code>, working tree clean, Node 22.23.1, npm audit 0에서 시작했습니다.</p></article><article class="card"><h3>현재 재무 경로</h3><div class="metric">2 systems</div><p>미국은 SEC CompanyFacts, 한국은 OpenDART 단일계정 전체 API를 runtime Serverless Function에서 조회합니다.</p></article><article class="card"><h3>기존 제품 보호</h3><div class="metric">5A–5F</div><p>Company Brief, Financial Pivot, Valuation, Event Impact, 뉴스룸과 Phase 5F Review · 95%를 유지합니다.</p></article></div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="현재 수집 구조 감사"><table><thead><tr><th scope="col">영역</th><th scope="col">현재 상태</th><th scope="col">이번 단계 보정</th></tr></thead><tbody><tr><th scope="row">SEC</th><td>CompanyFacts concept selector와 연간 정규화</td><td>accession·context·기간·정정·독립 분기 lineage 검증</td></tr><tr><th scope="row">OpenDART</th><td>CFS 우선, 없으면 OFS, 연간 series와 최신 정기공시</td><td>보고서 코드·누적/단독·계정 ID·정정·연결 기준 명시</td></tr><tr><th scope="row">시장가격</th><td>기존 가격 공급자 fallback</td><td>최신 완료 정규장 종가·세션·기준일 고정</td></tr><tr><th scope="row">멀티플</th><td>공통 검증 모델 없음</td><td>공식·분모·가격·외부 확인을 포함한 typed registry</td></tr></tbody></table></div>
+    </section>
+
+    <section class="panel" id="companies">
+      <div class="panel-head"><div><p class="eyebrow">03 · Audit Population</p><h2>지원 기업 8개 감사 대상</h2></div><span class="tag">8 / 8</span></div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="감사 대상 기업"><table><thead><tr><th scope="col">기업</th><th scope="col">Ticker</th><th scope="col">공시 시스템</th><th scope="col">식별자</th><th scope="col">핵심 감사 항목</th></tr></thead><tbody><tr><th scope="row">SK하이닉스</th><td>000660.KS</td><td>OpenDART</td><td>00164779</td><td>CFS, 분기 누적, 지배주주 자본</td></tr><tr><th scope="row">LG전자</th><td>066570.KS</td><td>OpenDART</td><td>00401731</td><td>CFS, 분기 누적, 보통주 기준</td></tr><tr><th scope="row">NVIDIA</th><td>NVDA</td><td>SEC</td><td>CIK 1045810</td><td>1월 결산, 10-for-1 split, diluted EPS</td></tr><tr><th scope="row">Micron</th><td>MU</td><td>SEC</td><td>CIK 723125</td><td>8월 결산, 분기 context</td></tr><tr><th scope="row">Dell</th><td>DELL</td><td>SEC</td><td>CIK 1571996</td><td>1월 결산, Class C 가격·자본</td></tr><tr><th scope="row">Eaton</th><td>ETN</td><td>SEC</td><td>CIK 1551182</td><td>12월 결산, diluted shares</td></tr><tr><th scope="row">Meta</th><td>META</td><td>SEC</td><td>CIK 1326801</td><td>Class A 가격, common equity</td></tr><tr><th scope="row">Super Micro</th><td>SMCI</td><td>SEC</td><td>CIK 1375365</td><td>6월 결산, 10-for-1 split, filing freshness</td></tr></tbody></table></div>
+      <p class="muted">최신 연간·분기 공시, 접수일, 보고기간, 회계연도·분기, 통화, 연결 기준, 정정 여부, ADR·분할·주식 종류는 <a href="../audits/phase-5c1-financial-multiples-audit.md">감사 문서</a>에 실제 확인 결과를 기록합니다.</p>
+    </section>
+
+    <section class="panel" id="method">
+      <div class="panel-head"><div><p class="eyebrow">04 · Filing & Calculation Policy</p><h2>공시 판정과 계산 정책</h2></div><span class="tag">구현 완료</span></div>
+      <ol class="flow"><li><strong>1 · 원자료</strong>실제 filing·XBRL과 OpenDART 정기공시 우선</li><li><strong>2 · 기간</strong>flow·instant, 독립·누적, 정정 context 판정</li><li><strong>3 · TTM</strong>동일 정의 연속 독립 4분기만 합산</li><li><strong>4 · 주당 기준</strong>diluted EPS·분할·주식 종류·ADR 일치</li><li><strong>5 · 시점</strong>가격 기준일 이후 공시를 배제해 look-ahead 방지</li></ol>
+      <div class="grid-3"><article class="card"><h3>분기 단독값</h3><p>독립 context를 우선하고, Q2=H1-Q1, Q3=9M-H1, Q4=FY-9M은 회사·계정·통화·단위·연결·정정 기준이 모두 같을 때만 계산합니다.</p></article><article class="card"><h3>TTM·EPS</h3><p>연속 4개 독립 flow만 TTM에 포함합니다. 공시 희석 EPS를 우선하고 기본·희석 혼합, 가중평균·기간 말 주식수 혼용을 차단합니다.</p></article><article class="card"><h3>연결·별도</h3><p>OpenDART는 CFS를 기본으로 하고, 연결이 실제로 없을 때만 OFS를 쓰며 화면과 lineage에 표시합니다.</p></article></div>
+      <details><summary>PER·PBR·PSR·EV 정책 보기</summary><div><ul><li>PER: 정규장 종가 ÷ TTM 희석 EPS. 안전한 TTM이 없으면 최근 회계연도 기준임을 명시합니다.</li><li>PBR: 종가 ÷ 최신 공시 보통주 BVPS. 지배기업 소유주·common stockholders’ equity를 우선합니다.</li><li>PSR: 시가총액 ÷ TTM 매출. TTM 불가 시 최근 회계연도 기준을 명시합니다.</li><li>EV: 시가총액 + 차입금 + 우선주 + 비지배지분 - 현금. 구성값이 충분한 기업만 게시합니다.</li><li>EV/EBITDA: 동일 정의의 EBIT와 D&amp;A를 검증하지 못하면 계산 보류합니다.</li><li>음수 EPS·BVPS·불명확한 분모는 음수 배수를 만들지 않고 not meaningful 사유를 표시합니다.</li></ul></div></details>
+      <details><summary>값 origin과 freshness 보기</summary><div><p><code>reported</code>, <code>derived_from_reported</code>, <code>market_implied_derived</code>, <code>external_reference</code>, <code>unavailable</code>을 구분합니다. 최신 완료 정기공시 반영은 <code>current</code>, 미반영은 <code>stale</code>, 실적 발표 후 정기공시 전은 <code>filing_pending</code>으로 표시합니다.</p></div></details>
+    </section>
+
+    <section class="panel" id="reconcile">
+      <div class="panel-head"><div><p class="eyebrow">05 · Reconciliation & Comparison</p><h2>외부 교차검증과 비교 우선순위</h2></div><span class="tag">16개 기록</span></div>
+      <div class="grid-2"><article class="card"><h3>동일 정의 교차검증</h3><p>기업별 공개 외부 표시값 2곳의 trailing/forward, basic/diluted, GAAP/adjusted, 가격 시점과 기간을 기록합니다. 정의가 불명인 값은 일치 판정에서 제외합니다.</p></article><article class="card"><h3>허용 오차와 보류</h3><p>가격은 동일 세션 0.1%, 배수는 절대 0.15배 또는 상대 1.5% 중 큰 범위를 적용합니다. 원인 불명 초과 차이는 Review이며 Verified로 게시하지 않습니다.</p></article></div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="비교 우선순위"><table><thead><tr><th scope="col">지표</th><th scope="col">1순위</th><th scope="col">2순위</th><th scope="col">이후</th></tr></thead><tbody><tr><th scope="row">손익·현금흐름</th><td>전년 동기</td><td>직전 분기</td><td>전년도 → 3년 추세 → peer → 업종</td></tr><tr><th scope="row">재무상태표</th><td>전년 동기 말</td><td>직전 회계연도 말</td><td>직전 분기 → peer → 업종</td></tr><tr><th scope="row">마진</th><td>전년 동기 %p</td><td>직전 분기 %p</td><td>전년도 → peer → 업종</td></tr><tr><th scope="row">멀티플</th><td>전년 동일 기준일</td><td>자체 동일 정의 중앙값</td><td>peer → 업종</td></tr></tbody></table></div>
+      <p class="note-box">단순 “비교 대상 없음”을 없애고, <code>prior_period_missing</code>, <code>definition_mismatch</code>, <code>filing_not_yet_available</code> 같은 reason code를 한국어 설명으로 연결합니다. Peer가 없어도 자기 과거 비교를 우선합니다.</p>
+    </section>
+
+    <section class="panel" id="scope">
+      <div class="panel-head"><div><p class="eyebrow">06 · Scope</p><h2>구현 범위와 제외 범위</h2></div><span class="tag">구현 완료</span></div>
+      <div class="grid-2"><article class="card"><h3>구현</h3><ul><li>8개 기업 filing identity·lineage·freshness registry</li><li>flow/instant, 독립/누적, TTM·EPS 안전 계산</li><li>PER·PBR·PSR와 가능한 EV 멀티플</li><li>가격·공시 시점 정렬과 look-ahead validation</li><li>외부 값 정의·차이 상태·허용 오차 기록</li><li>YoY 우선 비교와 구체적 unavailable reason</li><li>Financial Pivot 출처·공식·기준일 UI</li><li>validator·unit·브라우저·Production QA</li></ul></article><article class="card"><h3>제외</h3><ul><li>Forward EPS·Forward PER 자체 생성</li><li>누락 분기 보간·성장률 임의 가정</li><li>외부 숫자에 맞춘 공시값 조정</li><li>DCF·Reverse DCF·Phase 5F provider 변경</li><li>신규 DB·공개 API·Function·dependency</li><li>런타임 LLM·관리자 CMS·신규 기업</li></ul></article></div>
+    </section>
+
+    <section class="panel" id="files">
+      <div class="panel-head"><div><p class="eyebrow">07 · Model & Files</p><h2>데이터 모델과 파일 변경 계획</h2></div><span class="tag">문서화 완료</span></div>
+      <div class="grid-2"><article class="card"><h3>코드</h3><ul><li><a href="../../src/content/financial-pivots/types.ts">lineage·comparison·multiple types</a></li><li><a href="../../src/content/financial-pivots/calculations.ts">안전 계산과 기간 비교</a></li><li><a href="../../src/content/financial-pivots/validation.ts">registry validation</a></li><li><a href="../../api/financials.ts">공시 context와 series 응답</a></li><li><a href="../../src/routes/FinancialPivotRoute.tsx">최신 기준·계산·교차검증 UI</a></li></ul></article><article class="card"><h3>문서·검사</h3><ul><li><a href="../audits/phase-5c1-financial-multiples-audit.md">8개 기업 수동 감사표</a></li><li><a href="../filing-source-policy.md">공시 source policy</a></li><li><a href="../quarterly-financial-derivation.md">분기·TTM 계산</a></li><li><a href="../market-multiple-methodology.md">멀티플 방법론</a></li><li><a href="../external-multiple-reconciliation.md">외부 조정 원칙</a></li></ul></article></div>
+      <p class="muted">8개 기업 전체 lineage를 공통 entry에 넣지 않고, 현재 기업의 financial route에서만 필요한 metadata를 불러오는 구조를 유지합니다.</p>
+    </section>
+
+    <section class="panel" id="quality">
+      <div class="panel-head"><div><p class="eyebrow">08 · Work & Verification</p><h2>작업 순서와 완료 기준</h2></div><span class="tag progress">7 / 8 · Review</span></div>
+      <ol class="tasks"><li><b>1</b><span><strong>기준점·레지스트리 감사</strong>Git, Vercel, 8개 기업, 현재 API·화면·번들을 확정</span><span class="tag">완료</span></li><li><b>2</b><span><strong>공식 자료 조사</strong>최신 filing·XBRL/OpenDART·가격과 외부 정의 확인</span><span class="tag">완료</span></li><li><b>3</b><span><strong>모델·계산</strong>lineage·origin·freshness·comparison reason·multiple 모델 구현</span><span class="tag">완료</span></li><li><b>4</b><span><strong>Financial Pivot</strong>최신 기준·출처·공식·교차검증·구체적 비교 사유 UI</span><span class="tag">완료</span></li><li><b>5</b><span><strong>Validation·unit</strong>분기 차감, TTM, EPS, 배수, ADR, look-ahead 회귀 검사</span><span class="tag">완료</span></li><li><b>6</b><span><strong>문서·성능</strong>감사표·정책·변경 전후 bundle과 요청 수 기록</span><span class="tag">완료</span></li><li><b>7</b><span><strong>브라우저 QA</strong>Chromium·WebKit·Safari, 320~1440px, 접근성·overflow</span><span class="tag">완료</span></li><li><b>8</b><span><strong>Git·Production</strong>PR 병합, finance1 배포, route·smoke·함수 수 검증</span><span class="tag progress">배포 대기</span></li></ol>
+      <div class="grid-3"><article class="card"><h3>Validation</h3><p>8개 최신 공시, look-ahead 0, 기준 혼합 0, 불연속 TTM 0, 음수 분모 안전 처리, unresolved 차이 Verified 0을 검사합니다.</p></article><article class="card"><h3>브라우저</h3><p>표 내부 스크롤, 전체 overflow 0, 긴 공시 번호·URL·사유 줄바꿈, 키보드 출처·계산식 접근을 확인합니다.</p></article><article class="card"><h3>Production</h3><p>8개 기업 상세·재무 route, NVIDIA·Meta 가치평가·리포트, Event Impact, 뉴스룸과 Phase 5F pageview를 회귀 확인합니다.</p></article></div>
+    </section>
+
+    <section class="panel" id="risks">
+      <div class="panel-head"><div><p class="eyebrow">09 · Risks</p><h2>위험과 대응</h2></div><span class="tag progress">통제 중</span></div>
+      <div class="grid-2"><article class="card"><h3>공시 시점·정정</h3><p>최신 응답이 반드시 당시 알려진 값은 아닙니다. accession·filedAt·report period를 보존하고 가격 기준일보다 늦은 filing을 분모에서 차단합니다.</p></article><article class="card"><h3>누적값 오표시</h3><p>OpenDART 반기·3분기와 SEC YTD context를 독립 분기로 표시하지 않습니다. 안전한 차감 조건이 하나라도 빠지면 unavailable로 둡니다.</p></article><article class="card"><h3>외부 정의 차이</h3><p>Forward·Adjusted·Basic·장중값을 TTM GAAP diluted·정규장 종가와 직접 비교하지 않고 차이 유형을 명시합니다.</p></article><article class="card"><h3>번들·API 한도</h3><p>공시 lineage는 현재 기업 단위로 유지하고, SEC Fair Access와 OpenDART 호출 한도를 지키며 공통 entry와 Serverless Function 수를 늘리지 않습니다.</p></article></div>
+    </section>
+
+    <section class="panel" id="actual">
+      <div class="panel-head"><div><p class="eyebrow">10 · Plan vs Actual</p><h2>계획 대비 실제 결과</h2></div><span class="tag progress">Review</span></div>
+      <div class="grid-2"><article class="card"><h3>계획대로 완료</h3><ul><li>SEC 6개·OpenDART 2개 기업 최신 연간·분기 공시 식별</li><li>독립 분기·안전한 누적 차감·YoY·TTM·PER/PBR/PSR 계산</li><li>CFS 전용 한국 재무와 값별 lineage·공시 기준 UI</li><li>외부 PER 기업별 2곳, 총 16개 정의·차이 기록</li><li>단위·회귀·Release Gate와 14개 viewport·8개 route QA</li></ul></article><article class="card"><h3>계획에서 조정</h3><ul><li>분기 희석 EPS 4개가 안전하지 않으면 최근 연간 EPS 기반 PER로 명시</li><li>EV·EV/EBITDA는 구성 원재료 불완전으로 공개 계산 보류</li><li>한국 반기·3분기는 CFS 누적 차감 lineage가 완성될 때까지 미게시</li><li>8개 감사 레코드는 기업별 약 1KB dynamic chunk로 분리</li><li>PR·Production 식별자는 병합·배포 후 최종 기록</li></ul></article></div>
+      <p class="note-box"><strong>현재 계획 대비 완료율 95%.</strong> 구현과 로컬 검증은 완료했으며, PR 병합·finance1 Production smoke 뒤 상태를 Completed로 갱신합니다. 미완료 기능 항목은 없습니다.</p>
+    </section>
+
+    <section class="panel"><div class="panel-head"><div><p class="eyebrow">11 · Git & Deployment</p><h2>현재 상태</h2></div><span class="tag progress">Review</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="Git과 배포 상태"><table><thead><tr><th scope="col">단계</th><th scope="col">상태</th><th scope="col">기록</th></tr></thead><tbody><tr><th scope="row">기준점</th><td>완료</td><td><code>85cabf41e0dbcdd1c235e43dc39c36ae780be8de</code></td></tr><tr><th scope="row">Feature branch</th><td>검증 완료</td><td><code>feat/filing-multiples-audit-phase-5c1</code></td></tr><tr><th scope="row">Pull Request</th><td>생성 대기</td><td>검증 결과 포함 후 병합</td></tr><tr><th scope="row">Local QA</th><td>통과</td><td>npm audit 0 · Release Gate 27 · Chromium/WebKit 14 viewport · Safari desktop</td></tr><tr><th scope="row">Production</th><td>대기</td><td>병합 후 finance1 Current 배포와 8개 route 재확인</td></tr></tbody></table></div></section>
+
+    <section class="panel"><div class="panel-head"><div><p class="eyebrow">12 · Next</p><h2>완료 후 다음 단계</h2></div><span class="tag pending">정확성 우선</span></div><p>검증된 공시 실적과 멀티플을 기준으로 Phase 4C Monte Carlo 기반 가치평가 불확실성 분석을 진행합니다. 공시·가격·분모 정의가 Review인 기업은 다음 단계 입력으로 사용하지 않습니다.</p></section>
+  </main>
+  <footer><div class="wrap">Phase 5C.1 구현 계획 · 외부 CDN·JavaScript·dependency 없음 · 저장소 상대 경로 사용 · 모바일·데스크톱 반응형</div></footer>
+</body>
+</html>

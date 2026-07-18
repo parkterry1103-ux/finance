@@ -18,7 +18,7 @@ export function calculateChange(
   previous: number | undefined,
   unit: FinancialChange['unit'],
 ): FinancialChange {
-  if (!finite(current) || !finite(previous)) return { status: 'missing', value: null, unit, label: '비교 자료 없음' };
+  if (!finite(current) || !finite(previous)) return { status: 'missing', value: null, unit, label: '전년 동기 공시값 없음' };
   if (unit === 'percentagePoint') {
     const value = current - previous;
     return { status: 'ready', value, unit, label: `${value >= 0 ? '+' : ''}${value.toFixed(1)}%p` };
@@ -70,6 +70,7 @@ export function median(values: Array<number | null | undefined>) {
 
 export function withDerivedMetrics(period: FinancialSeriesPeriod): FinancialSeriesPeriod {
   const metrics = { ...period.metrics };
+  const metricOrigins = { ...period.metricOrigins };
   const percent = (numerator: FinancialPivotMetricId, denominator: FinancialPivotMetricId) => {
     const value = safeDivide(metrics[numerator], metrics[denominator]);
     return value === null ? undefined : value * 100;
@@ -83,7 +84,10 @@ export function withDerivedMetrics(period: FinancialSeriesPeriod): FinancialSeri
   const debtCapital = safeDivide(metrics.totalDebt, finite(metrics.totalDebt) && finite(metrics.totalEquity) ? metrics.totalDebt + metrics.totalEquity : undefined);
   metrics.debtToCapital = debtCapital === null ? undefined : debtCapital * 100;
   metrics.currentRatio = safeDivide(metrics.currentAssets, metrics.currentLiabilities) ?? undefined;
-  return { ...period, metrics };
+  (['grossMargin', 'operatingMargin', 'netMargin', 'freeCashFlowMargin', 'returnOnAssets', 'returnOnEquity', 'debtToCapital', 'currentRatio'] as FinancialPivotMetricId[]).forEach((metricId) => {
+    if (finite(metrics[metricId])) metricOrigins[metricId] = 'derived_from_reported';
+  });
+  return { ...period, metrics, metricOrigins };
 }
 
 export function finiteMetric(period: FinancialSeriesPeriod, metricId: FinancialPivotMetricId) {
@@ -96,6 +100,7 @@ export function formatMetricValue(value: number | null, metric: FinancialMetricD
   if (metric.format === 'percent' || metric.format === 'percentagePoint') return `${value.toFixed(1)}%`;
   if (metric.format === 'multiple') return `${value.toFixed(2)}배`;
   if (metric.format === 'perShare') return `${currency} ${value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}`;
+  if (metric.format === 'shares') return `${value.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}백만 주`;
   const abs = Math.abs(value);
   const compact = abs >= 1_000_000
     ? `${(value / 1_000_000).toFixed(1)}조`

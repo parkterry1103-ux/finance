@@ -27,7 +27,7 @@ const viewports = [
 function fixture(slug, periodType) {
   const isKr = slug === 'sk-hynix' || slug === 'lg-electronics';
   const periods = periodType === 'quarterly'
-    ? [{ label: 'FY 2026 Q1', periodEnd: '2026-04-30', fiscalYear: 2026, fiscalPeriod: 'Q1' }]
+    ? [2025, 2026].flatMap((year) => [1, 2, 3, 4].map((quarter) => ({ label: `FY ${year} Q${quarter}`, periodStart: `${year}-${String((quarter - 1) * 3 + 1).padStart(2, '0')}-01`, periodEnd: `${year}-${String(quarter * 3).padStart(2, '0')}-28`, fiscalYear: year, fiscalPeriod: `Q${quarter}`, periodBasis: 'standalone', consolidation: 'consolidated' })))
     : [2022, 2023, 2024, 2025, 2026].map((year) => ({ label: `FY ${year}`, periodEnd: `${year}-12-31`, fiscalYear: year, fiscalPeriod: 'FY' }));
   return {
     ok: true,
@@ -39,6 +39,9 @@ function fixture(slug, periodType) {
     currency: isKr ? 'KRW' : 'USD',
     reportType: isKr ? 'OpenDART 사업보고서 CFS' : '10-K',
     periodBasis: 'browser QA fixture',
+    consolidation: 'consolidated',
+    freshness: 'current',
+    latestFiling: { system: isKr ? 'opendart' : 'sec', formOrReportCode: periodType === 'quarterly' ? (isKr ? '11013' : '10-Q') : (isKr ? '11011' : '10-K'), accessionOrReceiptNumber: isKr ? '20260515000001' : '0000000000-26-000001', filedAt: '2026-05-15', reportPeriod: periods.at(-1).periodEnd, fiscalYear: periods.at(-1).fiscalYear, fiscalQuarter: periods.at(-1).fiscalPeriod, consolidated: true, amended: false, sourceUrl: 'https://example.com/filing' },
     metrics: {},
     series: {
       periodType,
@@ -60,12 +63,16 @@ function fixture(slug, periodType) {
           totalDebt: 12_000 + index * 600,
           totalAssets: 180_000 + index * 12_000,
           totalEquity: 100_000 + index * 8_000,
+          sharesOutstanding: 1_000 + index * 10,
           currentAssets: 70_000 + index * 4_000,
           currentLiabilities: 35_000 + index * 2_000,
           dilutedEps: 2.1 + index * .6,
+          basicEps: 2.2 + index * .6,
         },
         sourceIds: [`${isKr ? 'opendart' : 'sec'}:${slug}:${period.periodEnd}`],
-        filingType: isKr ? 'OpenDART 사업보고서 CFS' : 'SEC 10-K',
+        periodBasis: periodType === 'quarterly' ? 'standalone' : 'annual',
+        consolidation: 'consolidated',
+        filingType: isKr ? `OpenDART ${periodType === 'quarterly' ? '1분기보고서' : '사업보고서'} CFS` : `SEC ${periodType === 'quarterly' ? '10-Q' : '10-K'}`,
         filedAt: '2026-02-01',
         accessionOrReceiptNumber: isKr ? '20260201000001' : '0000000000-26-000001',
       })),
@@ -88,6 +95,9 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
     page.on('pageerror', (error) => consoleErrors.push(error.message));
     if (!useLiveApi) {
+      await page.route('**/api/market-prices?**', async (route) => {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ prices: [] }) });
+      });
       await page.route('**/api/financials?**', async (route) => {
         const url = new URL(route.request().url());
         const companyId = url.searchParams.get('companyId') ?? 'nvidia';
@@ -104,10 +114,15 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
       pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       tableOverflow: Boolean(document.querySelector('.financial-pivot-table-scroll') && document.querySelector('.financial-pivot-table-scroll').scrollWidth > document.querySelector('.financial-pivot-table-scroll').clientWidth),
       touchTargets: [...document.querySelectorAll('.financial-pivot-controls button')].every((element) => element.getBoundingClientRect().height >= 44),
+      allMainTargets: [...document.querySelectorAll('main button,main a')].filter((element) => element.getClientRects().length).every((element) => element.getBoundingClientRect().height >= 44),
+      filingBasis: Boolean(document.querySelector('.financial-filing-basis')),
+      multiplePanel: Boolean(document.querySelector('.financial-multiple-panel')),
     }));
     assert(audit.h1 === 1, `${engineName} ${viewport.width}: expected one h1`);
     assert(!audit.pageOverflow, `${engineName} ${viewport.width}: page overflow`);
     assert(audit.touchTargets, `${engineName} ${viewport.width}: control below 44px`);
+    assert(audit.allMainTargets, `${engineName} ${viewport.width}: main touch target below 44px`);
+    assert(audit.filingBasis && audit.multiplePanel, `${engineName} ${viewport.width}: filing/multiple basis missing`);
     if (viewport.width <= 390) assert(audit.tableOverflow, `${engineName} ${viewport.width}: table should scroll internally`);
     await page.getByRole('tab', { name: '수익성' }).click();
     await page.getByRole('button', { name: /영업이익률/ }).click();
@@ -116,8 +131,11 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     await page.getByText(/비교기업 중앙값/).first().waitFor();
     await page.getByRole('button', { name: '산업 집계' }).click();
     await page.getByRole('heading', { name: 'Semiconductor' }).waitFor();
+    await page.getByRole('button', { name: '연간' }).click();
+    await page.getByText('연결 · 연간 · USD', { exact: true }).waitFor();
     await page.getByRole('button', { name: '분기' }).click();
-    await page.getByText('비교 자료 없음').first().waitFor();
+    await page.getByText('연결 · 독립 분기 · USD', { exact: true }).waitFor();
+    assert(!await page.getByText('비교 자료 없음', { exact: true }).count(), `${engineName} ${viewport.width}: generic comparison copy present`);
     assert(consoleErrors.length === 0, `${engineName} ${viewport.width}: ${consoleErrors.join(' | ')}`);
     if ((viewport.width === 1440 || viewport.width === 390 || viewport.width === 320) && engineName === 'chromium') {
       await page.screenshot({ path: join(artifactDir, `${engineName}-${viewport.width}.png`), fullPage: true });
@@ -130,6 +148,9 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();
       if (!useLiveApi) {
+        await page.route('**/api/market-prices?**', async (route) => {
+          await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ prices: [] }) });
+        });
         await page.route('**/api/financials?**', async (route) => {
           const url = new URL(route.request().url());
           const period = url.searchParams.get('period') === 'quarterly' ? 'quarterly' : 'annual';
@@ -137,14 +158,17 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
         });
       }
       await page.goto(`${baseUrl}/ko/companies/${slug}/financials`, { waitUntil: 'networkidle' });
+      await page.getByRole('heading', { name: /숫자와 비교/ }).waitFor();
       const routeAudit = await page.evaluate(() => ({
         h1: document.querySelectorAll('h1').length,
         title: document.querySelector('h1')?.textContent?.trim() ?? '',
         pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         hasTable: Boolean(document.querySelector('.financial-pivot-table-scroll table')),
+        filingBasis: Boolean(document.querySelector('.financial-filing-basis')),
+        multiplePanel: Boolean(document.querySelector('.financial-multiple-panel')),
       }));
       assert(routeAudit.h1 === 1 && routeAudit.title.includes('숫자와 비교'), `${slug}: h1 missing`);
-      assert(!routeAudit.pageOverflow && routeAudit.hasTable, `${slug}: route layout failed`);
+      assert(!routeAudit.pageOverflow && routeAudit.hasTable && routeAudit.filingBasis && routeAudit.multiplePanel, `${slug}: route layout failed`);
       routeResults.push({ slug, ...routeAudit, status: 'passed' });
       await context.close();
     }

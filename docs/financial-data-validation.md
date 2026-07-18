@@ -1,5 +1,9 @@
 # 재무 데이터 Validation
 
+## Phase 5C.1 추가 검사
+
+`npm run validate:filing-freshness`는 8개 기업의 최신 연간·분기 filing identity, 연결 기준, 가격일 이전 제출 여부, 외부 값 2곳과 ADR 상태를 검사한다. `npm run validate:multiples`는 독립 분기 누적 차감, 연속 4분기 TTM, PER·PBR·PSR, 음수 분모, ADR 환산, 외부 오차 분류와 구체적 결측 문구를 검사한다. OpenDART 지원 기업의 OFS 자동 fallback은 허용하지 않는다.
+
 ## 입력 검증
 
 - 지원 기업은 기존 8개 프로필과 일치해야 한다.

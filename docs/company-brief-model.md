@@ -1,5 +1,7 @@
 # Company Brief 모델
 
+> Company Brief의 숫자와 비교 CTA는 Phase 5C.1 Financial Pivot으로 연결한다. 그 화면의 분기값과 시장 배수는 최신 공시 식별자, 연결·독립 분기, 가격 기준일을 함께 표시하며 결측을 0으로 대체하지 않는다.
+
 ## 역할
 
 Company Brief는 기업 전체 데이터의 복제본이 아니라 첫 화면 결론을 구성하는 작은 typed config다. `src/content/company-briefs/entries/{companySlug}.ts`에는 기존 metric ID와 source ID만 선택해 기록하고, route에서 선택한 회사의 기존 `CompanyResearchProfileViewModel`과 결합한다.

@@ -1,5 +1,7 @@
 # 가치평가 방법론
 
+> Phase 5C.1의 공개 시장 배수는 DCF 판단을 대체하지 않는다. PER·PBR·PSR은 가격 기준일과 공식 공시 분모를 추적하는 검산 지표이며, Forward EPS와 원인 불명 외부 값은 가치평가 입력으로 사용하지 않는다.
+
 ## 목적과 표현
 
 4A 엔진은 같은 입력에 같은 결과를 내는 내부 계산 기반입니다. 결과 명칭은 `estimatedValuePerShare`, `baseScenarioValue`, `reverseDcfExpectation` 계열을 사용하고 목표주가·상승여력·BUY/HOLD/SELL을 공개 UI에 표시하지 않습니다.
