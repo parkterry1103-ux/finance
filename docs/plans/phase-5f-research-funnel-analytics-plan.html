@@ -27,9 +27,9 @@
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd>f24d9fbd2acdef0f2737abfd6e8baa8fc3f65e54</dd></div>
         <div><dt>Feature branch</dt><dd>feat/research-funnel-analytics-phase-5f</dd></div>
-        <div><dt>PR</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/21">#21 · Review</a></dd></div>
-        <div><dt>최종 main SHA</dt><dd>병합 전</dd></div>
-        <div><dt>Production</dt><dd>기준 dpl_3P8mszC8CRomTa7wxe2vQHyKSTQ6</dd></div>
+        <div><dt>PR</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/21">#21 · Squash merged</a></dd></div>
+        <div><dt>최종 main SHA</dt><dd>e71244b991cafe7c2cad0c989e8597f2f3c71cbb</dd></div>
+        <div><dt>Production</dt><dd>dpl_Df5YNG7WSWj5WKxsWdqd3KomaYDB · Ready · Current</dd></div>
         <div><dt>최종 수정일</dt><dd>2026-07-18</dd></div>
       </dl>
     </div>
@@ -106,7 +106,7 @@
         <li><b>3</b><span><strong>제품 연결</strong>편집·기업·재무·가치평가·리포트·검색·거시 이벤트</span><span class="tag">완료</span></li>
         <li><b>4</b><span><strong>검증</strong>typecheck·build·validator·unit·Release Gate·개인정보 검사</span><span class="tag">완료</span></li>
         <li><b>5</b><span><strong>브라우저</strong>Chromium·WebKit·Safari, 320~1440px, 네트워크·중복·오류 확인</span><span class="tag">완료</span></li>
-        <li><b>6</b><span><strong>Git·Production</strong>PR 병합, finance1 배포, dashboard와 transport 확인</span><span class="tag pending">대기</span></li>
+        <li><b>6</b><span><strong>Git·Production</strong>PR #21 squash 병합, finance1 Ready · Current, 익명 pageview dashboard 확인</span><span class="tag">완료</span></li>
       </ol>
       <div class="grid-3">
         <article class="card"><h3>단위 테스트</h3><p>UTM 정규화, referrer 분류, route pageview, Strict Mode 중복, 읽기 임계치·완료, 금지 payload를 확인합니다.</p></article>
@@ -129,19 +129,20 @@
       <div class="panel-head"><div><p class="eyebrow">09 · Plan vs Actual</p><h2>계획 대비 실제 결과</h2></div><span class="tag progress">Review</span></div>
       <div class="grid-2">
         <article class="card"><h3>계획대로 완료</h3><ul><li>공급자 중립 adapter와 21개 typed 이벤트</li><li>SPA pageview·UTM session attribution·중복 방지</li><li>검색 result position과 재무·가치·리포트 행동 연결</li><li>선택 handoff analytics schema·게시 충돌 validation</li><li>단위 42 checks, Chromium·WebKit 24개 브라우저 시나리오, 실제 Safari QA</li><li>Release Gate 27개 통과 · entry 781,629 bytes(raw) / 212,317 bytes(gzip)</li><li>신규 Function·dependency·쿠키·사용자 ID 0개</li></ul></article>
-        <article class="card"><h3>변경·미완료</h3><ul><li>외부 SDK 대신 공식 Vercel script를 adapter 내부에서 지연 삽입해 dependency를 늘리지 않음</li><li>Hobby에서 가능한 기본 pageview는 활성화, custom event는 승인 없는 유료 전환 대신 feature flag로 차단</li><li>PR 병합·Production 재배포·pageview network와 dashboard 확인이 남음</li><li>custom event Production 수집은 플랜 또는 승인된 동등 공급자 확정 전 미완료</li></ul></article>
+        <article class="card"><h3>변경·미완료</h3><ul><li>외부 SDK 대신 공식 Vercel script를 adapter 내부에서 지연 삽입해 dependency를 늘리지 않음</li><li>Hobby에서 가능한 기본 pageview는 활성화, custom event는 승인 없는 유료 전환 대신 feature flag로 차단</li><li>Production 19개 route 200 · script 200 · dashboard 방문 1·페이지뷰 1 · UTM 누출 0 · DNT provider 요청 0 확인</li><li>custom event Production 수집은 플랜 또는 승인된 동등 공급자 확정 전 유일한 미완료 항목</li></ul></article>
       </div>
-      <p class="note-box"><strong>현재 계획 대비 완료율 90%.</strong> 코드·문서·로컬 품질·브라우저 항목은 완료했고 Git·Production 검증을 진행합니다. Custom event 공급자 제한 때문에 최종 상태는 Completed가 아니라 Review로 유지합니다.</p>
+      <p class="note-box"><strong>현재 계획 대비 완료율 95%.</strong> 코드·문서·Git·Production pageview·브라우저 검증은 완료했습니다. Custom event 공급자 제한이 유일하게 남아 최종 상태는 Completed가 아니라 Review로 유지합니다.</p>
     </section>
 
     <section class="panel">
-      <div class="panel-head"><div><p class="eyebrow">10 · Git & Deployment</p><h2>현재 상태</h2></div><span class="tag progress">Feature branch</span></div>
+      <div class="panel-head"><div><p class="eyebrow">10 · Git & Deployment</p><h2>현재 상태</h2></div><span class="tag">Ready · Current</span></div>
       <div class="table-wrap" tabindex="0" role="region" aria-label="Git과 배포 상태">
         <table><thead><tr><th scope="col">단계</th><th scope="col">상태</th><th scope="col">기록</th></tr></thead><tbody>
           <tr><th scope="row">기준점</th><td>완료</td><td><code>f24d9fbd2acdef0f2737abfd6e8baa8fc3f65e54</code></td></tr>
-          <tr><th scope="row">Feature branch</th><td>진행 중</td><td><code>feat/research-funnel-analytics-phase-5f</code></td></tr>
-          <tr><th scope="row">Pull Request</th><td>Review</td><td><a href="https://github.com/parkterry1103-ux/finance/pull/21">#21 · Add privacy-first research funnel analytics</a></td></tr>
-          <tr><th scope="row">Production</th><td>대기</td><td>PR 병합 뒤 finance1 Current 확인</td></tr>
+          <tr><th scope="row">Feature branch</th><td>병합 완료</td><td><code>feat/research-funnel-analytics-phase-5f</code></td></tr>
+          <tr><th scope="row">Pull Request</th><td>Squash merged</td><td><a href="https://github.com/parkterry1103-ux/finance/pull/21">#21 · Add privacy-first research funnel analytics</a></td></tr>
+          <tr><th scope="row">최종 main</th><td>완료</td><td><code>e71244b991cafe7c2cad0c989e8597f2f3c71cbb</code></td></tr>
+          <tr><th scope="row">Production</th><td>Ready · Current</td><td><code>dpl_Df5YNG7WSWj5WKxsWdqd3KomaYDB</code> · dashboard 방문 1 / pageview 1</td></tr>
         </tbody></table>
       </div>
     </section>

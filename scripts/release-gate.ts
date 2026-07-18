@@ -228,6 +228,7 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'scripts/event-impact-browser-qa.mjs',
     'scripts/analytics-unit.ts',
     'scripts/analytics-browser-qa.mjs',
+    'scripts/analytics-production-smoke.mjs',
     'src/analytics/types.ts',
     'src/analytics/routes.ts',
     'src/analytics/attribution.ts',
