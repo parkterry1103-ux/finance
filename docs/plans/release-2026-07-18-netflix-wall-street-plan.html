@@ -57,7 +57,7 @@
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd><code>9a3a2fda02ed2595a8004aaf9939f3b93e578265</code></dd></div>
         <div><dt>Feature branch</dt><dd><code>feat/netflix-company-content-release-20260718</code></dd></div>
-        <div><dt>Pull Request</dt><dd>검증 완료 · 생성 예정</dd></div>
+        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/25">#25</a> · Draft · checks 진행 중</dd></div>
         <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
         <div><dt>Production</dt><dd>finance1 · 배포 후 기록</dd></div>
         <div><dt>최종 수정일</dt><dd>2026-07-18 KST</dd></div>
@@ -168,7 +168,7 @@
 
       <section class="card wide">
         <h2>Git·배포 및 계획 대비 실제 결과</h2>
-        <p>PR 제목은 <strong>Add Netflix company analysis and publish July 18 research</strong>로 준비합니다. 직접 main에 push하지 않고 검증된 feature branch를 PR로 병합한 뒤 canonical <a href="https://finance1-flax.vercel.app/ko/">finance1 Production</a>을 확인합니다.</p>
+        <p>구현 commit <code>5f59a94c9aa35819e5de1616bcb38ddfe96596e7</code>을 PR <a href="https://github.com/parkterry1103-ux/finance/pull/25">#25 · Add Netflix company analysis and publish July 18 research</a>로 제출했습니다. 직접 main에 push하지 않고 검증된 feature branch를 PR로 병합한 뒤 canonical <a href="https://finance1-flax.vercel.app/ko/">finance1 Production</a>을 확인합니다.</p>
         <p><strong>Review 결과:</strong> 기업 9개·사건 13개·Published editorial 3개·Event Impact 3개이며 실제 가정 변경은 0개입니다. Netflix는 Company Brief 5문항·핵심 지표 3개·Q2 10-Q lineage를 제공하고 가치평가·리포트 CTA는 표시하지 않습니다.</p>
         <p>Release Gate 27개가 통과했습니다. Chromium·WebKit은 7개 viewport × 11개 route 77회를 각각 확인해 overflow·깨진 텍스트·console 오류 0개였고 실제 Safari에서 Netflix 기업·주가해부·월가인사이트와 뒤로·앞으로가기를 확인했습니다. 홈 초기 자산은 JS·CSS 2개이며 entry는 raw 787,250B·gzip 214,470B입니다. Netflix Brief 2,531B, filing audit 1,134B, Event Impact 4,255B, 주가해부 11,048B, 월가인사이트 14,840B가 별도 chunk로 유지됩니다.</p>
         <p><strong>계획 대비 변경:</strong> 검증된 자체 Netflix 가치평가가 없어 Event Impact 카드의 가정 검토 링크도 full 가치평가 기업에만 표시하도록 공통 조건을 보강했습니다. 신규 API·Function·dependency 없이 계획 범위를 지켰으며 PR·Production 결과만 남았습니다.</p>

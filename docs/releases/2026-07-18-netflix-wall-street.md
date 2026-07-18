@@ -4,7 +4,9 @@
 
 - 시작 SHA: `9a3a2fda02ed2595a8004aaf9939f3b93e578265`
 - feature branch: `feat/netflix-company-content-release-20260718`
-- PR·최종 main·Production deployment: 배포 완료 후 기록
+- 구현 commit: `5f59a94c9aa35819e5de1616bcb38ddfe96596e7`
+- PR: [#25 · Add Netflix company analysis and publish July 18 research](https://github.com/parkterry1103-ux/finance/pull/25)
+- 최종 main·Production deployment: 배포 완료 후 기록
 - 대상: Netflix 기업 분석, Netflix 주가해부픽, 2026-07-18 오늘의 월스트리트
 
 ## 입력 원고
