@@ -26,11 +26,11 @@ function expectError(action: () => unknown, pattern: RegExp, label: string) {
   check(false, label);
 }
 
-check(valuationReadinessCompanies.length === 8, 'eight supported companies');
-check(new Set(valuationReadinessCompanies.map((company) => company.companySlug)).size === 8, 'company slugs unique');
+check(valuationReadinessCompanies.length === 9, 'nine supported companies');
+check(new Set(valuationReadinessCompanies.map((company) => company.companySlug)).size === 9, 'company slugs unique');
 check(valuationReadinessCompanies.filter((company) => company.publicValuationStatus === 'full').length === 2, 'two full public valuation companies');
 check(valuationReadinessCompanies.filter((company) => company.publicValuationStatus === 'partial').length === 0, 'no partial company is overstated');
-check(valuationReadinessCompanies.filter((company) => company.publicValuationStatus === 'unavailable').length === 6, 'six companies use explicit unavailable state');
+check(valuationReadinessCompanies.filter((company) => company.publicValuationStatus === 'unavailable').length === 7, 'seven companies use explicit unavailable state');
 
 check(locatePriceInRange(70, 80, 120) === 'belowRange', 'below-range classification');
 check(locatePriceInRange(100, 80, 120) === 'insideRange', 'inside-range classification');
@@ -91,4 +91,4 @@ check(routeSource.includes('0 또는 빈 그래프로 대신하지 않습니다'
 check(profileSource.includes('/valuation') && financialSource.includes('/valuation') && reportSource.includes('/valuation'), 'company, financial, and report paths connect valuation route');
 check(!/(BUY|HOLD|SELL|매수|매도|목표주가|상승여력|하락여력)/.test(routeSource), 'forbidden investment recommendation terms absent');
 
-console.log(`✓ Valuation expectations unit ${checks}개 검증 · 지원 8개 · full 2 · unavailable 6 · reverse DCF · 범위 판정 · 민감도 · 출처`);
+console.log(`✓ Valuation expectations unit ${checks}개 검증 · 지원 9개 · full 2 · unavailable 7 · reverse DCF · 범위 판정 · 민감도 · 출처`);

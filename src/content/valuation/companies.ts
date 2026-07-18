@@ -145,6 +145,22 @@ export const valuationReadinessCompanies: ValuationReadinessCompany[] = [
     keyDrivers: ['AI 서버 출하', 'ASP', '매출총이익률', '재고일수', '매출채권', '자금조달'],
     publicValuationStatus: 'unavailable',
   },
+  {
+    companySlug: 'netflix',
+    companyName: 'Netflix',
+    ticker: 'NFLX',
+    country: 'US',
+    currency: 'USD',
+    cik: '1065280',
+    industry: '글로벌 스트리밍·광고',
+    benchmarkIndustry: 'Entertainment',
+    primaryMethod: 'Driver-based FCFF DCF',
+    secondaryMethods: ['역산 DCF', 'PER', 'EV/EBITDA'],
+    unsuitableMethods: ['단일 분기 PER', '가입자 수 단독 배수'],
+    methodRationale: '가격·회원·광고 성장과 콘텐츠 현금지출을 함께 연결해야 하므로 driver-based FCFF가 적합하지만 검증된 자체 모형은 아직 공개하지 않습니다.',
+    keyDrivers: ['회원·가격', '광고 매출', '시청 참여', '콘텐츠 현금지출', '영업이익률', '잉여현금흐름'],
+    publicValuationStatus: 'unavailable',
+  },
 ];
 
 export function valuationReadinessCompany(slug: string) {

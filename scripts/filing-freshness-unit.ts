@@ -13,8 +13,8 @@ function check(condition: unknown, label: string) {
 
 const errors = validateFinancialPivotRegistry();
 check(errors.length === 0, `registry validation: ${errors.join(' | ')}`);
-check(financialAuditRegistry.length === 8 && financialPivotCompanies.length === 8, 'all eight companies covered');
-check(new Set(financialAuditRegistry.map((item) => item.companySlug)).size === 8, 'audit slugs unique');
+check(financialAuditRegistry.length === 9 && financialPivotCompanies.length === 9, 'all nine companies covered');
+check(new Set(financialAuditRegistry.map((item) => item.companySlug)).size === 9, 'audit slugs unique');
 check(financialPivotCompanies.every((company) => financialAuditRegistry.some((audit) => audit.companySlug === company.companySlug)), 'audit covers supported companies');
 check(financialAuditRegistry.every((item) => item.latestAnnual.consolidated && item.latestQuarter.consolidated), 'consolidated filings only');
 check(financialAuditRegistry.every((item) => isFilingAvailableAtPriceDate(item.latestAnnual.filedAt, item.auditedPrice.asOf)), 'annual filings available before price date');
@@ -27,4 +27,4 @@ check(financialAuditRegistry.filter((item) => item.filingSystem === 'sec').every
 check(!isFilingAvailableAtPriceDate('2026-07-19', '2026-07-18'), 'look-ahead fixture rejected');
 check(isFilingAvailableAtPriceDate('2026-07-18', '2026-07-18'), 'same-day filing fixture accepted');
 
-console.log(`✓ Filing freshness unit ${checks}개 검증 · 8개 기업 · 최신 연간/분기 · no look-ahead · 외부 2곳`);
+console.log(`✓ Filing freshness unit ${checks}개 검증 · 9개 기업 · 최신 연간/분기 · no look-ahead · 외부 2곳`);

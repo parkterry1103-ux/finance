@@ -49,6 +49,30 @@ export const businessDriverRegistry: BusinessDriverDefinition[] = [
     financialMetricIds: ['revenue', 'operatingMargin'],
     valuationAssumptionIds: ['revenue_growth', 'growth_duration'],
   },
+  {
+    id: 'netflix-member-price-ad-demand',
+    companySlug: 'netflix',
+    label: '회원·가격·광고 수요',
+    description: '회원 수와 요금제 가격, 광고 판매가 매출 성장과 영업현금흐름으로 이어지는 경로입니다.',
+    financialMetricIds: ['revenue', 'operatingIncome', 'operatingCashFlow', 'freeCashFlow'],
+    valuationAssumptionIds: ['revenue_growth', 'operating_margin', 'growth_duration'],
+  },
+  {
+    id: 'netflix-content-engagement',
+    companySlug: 'netflix',
+    label: '콘텐츠 참여와 회수',
+    description: '콘텐츠 투자와 시청 참여가 회원 유지·가격 수용력·광고 수요를 거쳐 현금으로 회수되는 경로입니다.',
+    financialMetricIds: ['revenue', 'operatingMargin', 'freeCashFlow'],
+    valuationAssumptionIds: ['reinvestment_rate', 'growth_duration', 'terminal_roic'],
+  },
+  {
+    id: 'netflix-disclosure-visibility',
+    companySlug: 'netflix',
+    label: '참여도 공시 가시성',
+    description: '시청시간과 참여도 공개 범위가 성장의 질과 지속기간을 검증할 수 있는 정도에 영향을 주는 경로입니다.',
+    financialMetricIds: ['revenue', 'operatingMargin'],
+    valuationAssumptionIds: ['revenue_growth', 'growth_duration'],
+  },
 ];
 
 export const businessDriverById = new Map(businessDriverRegistry.map((driver) => [driver.id, driver]));

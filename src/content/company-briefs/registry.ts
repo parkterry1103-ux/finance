@@ -1,7 +1,7 @@
 import { buildCompanyBrief } from './build.js';
 import type { CompanyBrief, CompanyBriefBuildInput, CompanyBriefConfig } from './types.js';
 
-export const companyBriefSlugs = ['sk-hynix', 'lg-electronics', 'nvidia', 'micron', 'dell', 'eaton', 'meta', 'supermicro'] as const;
+export const companyBriefSlugs = ['sk-hynix', 'lg-electronics', 'nvidia', 'micron', 'dell', 'eaton', 'meta', 'supermicro', 'netflix'] as const;
 export type CompanyBriefSlug = (typeof companyBriefSlugs)[number];
 
 const loaders: Record<CompanyBriefSlug, () => Promise<{ default: CompanyBriefConfig }>> = {
@@ -13,6 +13,7 @@ const loaders: Record<CompanyBriefSlug, () => Promise<{ default: CompanyBriefCon
   eaton: () => import('./entries/eaton.js'),
   meta: () => import('./entries/meta.js'),
   supermicro: () => import('./entries/supermicro.js'),
+  netflix: () => import('./entries/netflix.js'),
 };
 
 export function isCompanyBriefSlug(value: string): value is CompanyBriefSlug {

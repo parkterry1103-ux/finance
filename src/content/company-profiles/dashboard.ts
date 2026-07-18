@@ -352,6 +352,51 @@ const dashboardMetricsBySlug: Record<string, DashboardMetric[]> = {
       qualityStatus: 'ok',
     }),
   ],
+  netflix: [
+    metric({
+      id: 'nflx-q2-2026-revenue-growth',
+      label: '분기 매출 성장률',
+      value: 13.4,
+      formattedValue: '+13.4%',
+      unit: '%',
+      period: '2026년 2분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 대비', value: 13.4, formattedValue: '+13.4%', direction: 'up' },
+      description: '2025년 2분기와 비교한 매출 성장률입니다.',
+      sourceIds: ['netflix-q2-2026-10q'],
+      updatedAt: '2026-07-17',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'nflx-q2-2026-operating-margin',
+      label: '영업이익률',
+      value: 33.4,
+      formattedValue: '33.4%',
+      unit: '%',
+      period: '2026년 2분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 34.1%', value: -0.7, formattedValue: '-0.7%p', direction: 'down' },
+      description: '매출 중 본업 이익으로 남은 비율로, 전년 동기보다 0.7%p 낮아졌습니다.',
+      sourceIds: ['netflix-q2-2026-10q'],
+      updatedAt: '2026-07-17',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'nflx-q2-2026-free-cash-flow',
+      label: '잉여현금흐름',
+      value: 1.525,
+      formattedValue: '$1.525B',
+      unit: '십억 달러',
+      currency: 'USD',
+      period: '2026년 2분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 $2.267B', value: -32.7, formattedValue: '-32.7%', direction: 'down' },
+      description: '영업현금흐름에서 설비투자를 차감한 금액이며 높은 현금세 납부가 영향을 줬습니다.',
+      sourceIds: ['netflix-q2-2026-10q', 'netflix-q2-2026-letter'],
+      updatedAt: '2026-07-17',
+      qualityStatus: 'ok',
+    }),
+  ],
 };
 
 const dashboardChartsBySlug: Record<string, DashboardChart[]> = {
@@ -417,6 +462,7 @@ const dashboardChartsBySlug: Record<string, DashboardChart[]> = {
     accessibleSummary: '2026년 CAPEX 전망은 125십억 달러에서 145십억 달러 범위입니다.',
   }],
   supermicro: [],
+  netflix: [],
 };
 
 function assessment(
@@ -479,6 +525,12 @@ const assessmentsBySlug: Record<string, CompanyAssessment[]> = {
     assessment('financialHealth', '재무건전성', 'needsReview', '주식 관련 자금조달은 생산자금을 늘릴 수 있지만 실제 조달액과 주식 수 변화를 확인해야 합니다.', ['smci-2026-potential-financing'], ['ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243']),
     assessment('valuation', '밸류에이션', 'insufficientData', '검증된 평가배수와 과거 비교 데이터가 없습니다.', [], ['ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243']),
   ],
+  netflix: [
+    assessment('growth', '성장성', 'needsReview', '2분기 매출은 전년 동기 대비 13.4% 늘었지만 3분기 회사 성장 전망은 11.7%로 낮아졌습니다.', ['nflx-q2-2026-revenue-growth'], ['netflix-q2-2026-10q', 'netflix-q2-2026-letter']),
+    assessment('profitability', '수익성', 'stable', '2분기 영업이익률 33.4%는 높은 수준이지만 전년 동기보다 0.7%p 낮았습니다.', ['nflx-q2-2026-operating-margin'], ['netflix-q2-2026-10q']),
+    assessment('cashFlow', '현금창출력', 'needsReview', '2분기 잉여현금흐름은 15억2,500만달러로 전년 동기보다 감소했지만 회사는 연간 전망을 유지했습니다.', ['nflx-q2-2026-free-cash-flow'], ['netflix-q2-2026-10q', 'netflix-q2-2026-letter']),
+    assessment('valuation', '밸류에이션', 'insufficientData', '외부 배수 검산은 제공하지만 검증된 자체 가치평가 모형은 아직 없습니다.', [], ['netflix-q2-2026-10q']),
+  ],
 };
 
 export const companyDashboardConfigs: CompanyDashboardConfig[] = [
@@ -490,6 +542,7 @@ export const companyDashboardConfigs: CompanyDashboardConfig[] = [
   { companySlug: 'eaton', metricIds: ['etn-q1-2026-revenue', 'etn-q1-2026-electrical-americas-revenue', 'etn-q1-2026-electrical-backlog-growth', 'etn-q1-2026-orders-growth'], chartIds: ['etn-q1-2026-revenue-mix'], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production', 'us-manufacturing-utilization'] },
   { companySlug: 'meta', metricIds: ['meta-2026-capex-low', 'meta-2026-capex-high', 'meta-2025-senior-notes'], chartIds: ['meta-2026-capex-range'], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
   { companySlug: 'supermicro', metricIds: ['smci-2026-ai-orders', 'smci-2026-potential-financing'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
+  { companySlug: 'netflix', metricIds: ['nflx-q2-2026-revenue-growth', 'nflx-q2-2026-operating-margin', 'nflx-q2-2026-free-cash-flow'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
 ];
 
 function macroCopy(viewModel: DashboardInput, variableId: string) {

@@ -91,3 +91,7 @@ free-form article title or source URL
 ```
 
 이벤트 추가는 taxonomy, 이벤트별 allowlist, unit fixture, 개인정보 문서와 Plan HTML을 함께 변경해야 한다.
+
+## 2026-07-18 콘텐츠 ID
+
+이번 릴리스는 기존 21개 이벤트 taxonomy를 변경하지 않는다. Netflix 주가해부는 `stock-2026-07-18-netflix-guidance-disclosure-reset`, 오늘의 월스트리트는 `wall-street-2026-07-18-capital-gate-premium`을 content ID와 campaign ID로 사용한다. 권장 UTM은 `instagram / social / 같은 campaign ID / profile-link`이며 제목, 가격, 등락률과 원문 URL은 payload에 넣지 않는다. Netflix 기업 상세에서는 기존 `company_view`, 재무 CTA와 editorial→company click만 재사용한다. 가치평가·리포트 CTA가 없으므로 해당 click event도 만들지 않는다.

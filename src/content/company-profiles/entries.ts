@@ -149,6 +149,24 @@ export const companyProfiles: CompanyProfileEntry[] = [
     sourceRefs: ['ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243'],
     reviewedAt: '2026-07-14',
   },
+  {
+    id: 'profile-netflix',
+    companyId: 'netflix',
+    slug: 'netflix',
+    order: 9,
+    englishName: 'Netflix, Inc.',
+    exchange: 'NASDAQ',
+    industry: '글로벌 스트리밍·광고',
+    searchDescription: '유료 스트리밍 구독과 광고 요금제로 영화·시리즈·라이브 콘텐츠를 제공합니다.',
+    aliases: ['넷플릭스', 'NFLX'],
+    beginnerSummary: '전 세계 이용자에게 영상 콘텐츠를 제공하고 구독료와 광고로 수익을 얻는 스트리밍 기업입니다.',
+    businessDescription: '영화·시리즈·라이브 콘텐츠를 전 세계 회원에게 제공하고 구독료를 받으며, 광고 포함 요금제에서는 광고 매출도 얻습니다. 콘텐츠 투자와 이용자 참여가 가격·회원·광고 성장으로 이어지는지를 함께 확인합니다.',
+    primaryRole: '글로벌 스트리밍 구독·광고',
+    keyQuestions: ['가격 인상과 회원 증가가 매출 성장으로 이어지는가', '콘텐츠 투자가 시청시간·유지율·광고 매출로 회수되는가', '성장률과 정보 가시성 변화가 현금흐름에 어떻게 반영되는가'],
+    caution: commonCaution,
+    sourceRefs: ['netflix-q2-2026-10q', 'netflix-q2-2026-letter'],
+    reviewedAt: '2026-07-18',
+  },
 ];
 
 export const companyProfileCanonicalAliases: Record<string, string> = {

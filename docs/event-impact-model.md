@@ -53,13 +53,15 @@ Event Impact는 사건 자체의 중요도 점수나 주가 인과 추정이 아
 
 ## 사업 동인
 
-사업 동인은 기업별로 정의한다. NVIDIA는 AI 가속기 수요, 제품·지역 구성, 플랫폼 경쟁력이고 Meta는 광고 수요와 단가, AI 인프라 재투자, 플랫폼 참여다. 각 동인은 허용된 Phase 5C metric IDs와 Phase 5D assumption IDs를 갖는다. impact는 다른 기업의 driver를 참조할 수 없다.
+사업 동인은 기업별로 정의한다. NVIDIA는 AI 가속기 수요, 제품·지역 구성, 플랫폼 경쟁력이고 Meta는 광고 수요와 단가, AI 인프라 재투자, 플랫폼 참여다. Netflix는 회원·광고 기반 매출 성장, 콘텐츠·운영 레버리지, 가이던스·공개정책 신뢰를 별도 동인으로 둔다. 각 동인은 허용된 Phase 5C metric IDs와 Phase 5D assumption IDs를 갖는다. impact는 다른 기업의 driver를 참조할 수 없다.
 
 ## 실제 변경 기록
 
 `ValuationAssumptionChange`는 실제로 숫자가 바뀐 경우에만 생성한다. before/after 값과 단위, 서로 다른 before/after model version, 변경 시각, owner, rationale과 source IDs가 필수다. 같은 값, NaN, Infinity, 깨진 impact·assumption·source는 거부한다.
 
 현재 Production change registry는 빈 배열이다. 테스트의 update fixture는 validator의 정상·실패 경로를 검증할 뿐 runtime data가 아니다.
+
+2026-07-18 Netflix record는 Q2 실적과 가이던스·공개정책 변화를 `scenario_review`·`pending`으로 연결한다. 확인된 사실과 미확인 시장 해석을 분리하고 재무 지표 3개와 가정 후보 3개를 검토 대상으로만 기록한다. 공개 가치평가 모형이 없는 상태이므로 decision과 `ValuationAssumptionChange`는 생성하지 않으며 Production change count는 계속 0이다.
 
 ## 로딩 경계
 

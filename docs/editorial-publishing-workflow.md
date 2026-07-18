@@ -44,3 +44,7 @@ Phase 5A.1에서는 `2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-p
 Website handoff의 `analytics`는 선택 필드다. 없으면 실제 registry ID를 content ID로 사용한다. 있으면 `content_id`, `campaign_id`, `recommended_utm.source`, `recommended_utm.medium`, `recommended_utm.campaign`, `recommended_utm.content`를 모두 검토한다. content ID가 실제 editorial ID와 충돌하거나 권장 campaign이 campaign ID와 다르면 Published로 올리지 않는다. 외부 주가해부·오늘의 월스트리트 스킬은 Phase 5F에서 직접 수정하지 않는다.
 
 오늘의 월스트리트 handoff는 같은 선택 schema에서 `content_id`와 `campaign_id`를 `wall-street-YYYY-MM-DD-topic` 형식으로 제안할 수 있다. `recommended_utm`의 기본 의미는 `source: instagram`, `medium: social`, `campaign: campaign_id`, `content: profile-link`다. 실제 Published ID가 정해진 뒤에는 suggested ID가 아니라 registry ID를 우선하고, 제목을 analytics ID로 쓰지 않는다.
+
+## 2026-07-18 Netflix·월가인사이트 릴리스
+
+Netflix 주가해부는 세 파일을 함께 검토한 뒤 ID `stock-2026-07-18-netflix-guidance-disclosure-reset`로 게시한다. company slug는 먼저 등록·검증된 `netflix`에만 연결하며 주가해부에서 Netflix 기업 상세로 이동할 수 있다. 오늘의 월스트리트는 ID `wall-street-2026-07-18-capital-gate-premium`으로 별도 게시하고 PIX·VC·Etched 세 읽을거리를 유지한다. 두 콘텐츠는 같은 릴리스 날짜라는 이유만으로 서로 또는 관련 기업에 relation을 만들지 않는다. 홈은 짧은 Published summary 두 장을 독립적으로 노출하고 상세 본문은 각 route 진입 후 불러온다.

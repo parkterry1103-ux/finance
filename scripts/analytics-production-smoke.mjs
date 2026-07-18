@@ -7,15 +7,18 @@ if (!modules) throw new Error('CODEX_NODE_MODULES is required');
 const { chromium } = require(join(modules, 'playwright'));
 
 const baseUrl = process.env.PHASE5F_PRODUCTION_URL ?? 'https://finance1-flax.vercel.app';
-const companySlugs = ['nvidia', 'meta', 'sk-hynix', 'micron', 'dell', 'supermicro', 'eaton', 'lg-electronics'];
+const companySlugs = ['nvidia', 'meta', 'sk-hynix', 'micron', 'dell', 'supermicro', 'eaton', 'lg-electronics', 'netflix'];
 const routes = [
   '/ko/',
   '/ko/insights',
   '/ko/insights/3reads/2026-07-17-standards-set-price',
+  '/ko/insights/3reads/2026-07-18-capital-gate-premium',
+  '/ko/insights/stock/2026-07-18-netflix-guidance-disclosure-reset',
   '/ko/companies',
   ...companySlugs.map((slug) => `/ko/companies/${slug}`),
   '/ko/companies/nvidia/financials',
   '/ko/companies/meta/financials',
+  '/ko/companies/netflix/financials',
   '/ko/companies/nvidia/valuation',
   '/ko/companies/meta/valuation',
   '/ko/companies/nvidia/report',

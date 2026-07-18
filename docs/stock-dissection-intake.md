@@ -72,7 +72,7 @@ key_figures_consistent == true
 
 ## `company_slug`가 null인 경우
 
-지원 기업 8개와 확정적으로 매핑되지 않으면 `company_slug`는 null로 유지한다. 회사명·ticker는 콘텐츠에 표시할 수 있지만 가짜 기업 프로필이나 CTA를 만들지 않는다. related company index에도 넣지 않으며 새 기업 프로필은 별도 검증 단계에서만 추가한다.
+지원 기업 9개와 확정적으로 매핑되지 않으면 `company_slug`는 null로 유지한다. 회사명·ticker는 콘텐츠에 표시할 수 있지만 가짜 기업 프로필이나 CTA를 만들지 않는다. related company index에도 넣지 않으며 새 기업 프로필은 별도 검증 단계에서만 추가한다. Netflix는 기업 프로필·Brief·재무 registry 온보딩과 validation을 먼저 완료했으므로 2026-07-18 게시물부터 `company_slug: netflix`를 사용한다.
 
 ## 업로드 후 검증 순서
 
