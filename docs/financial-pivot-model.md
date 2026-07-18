@@ -35,3 +35,7 @@ sourceIds / filingType / filedAt / accessionOrReceiptNumber
 ## 로딩 경계
 
 `FinancialPivotRoute`는 App에서 lazy import한다. 기본 진입은 현재 기업의 선택 기간만 요청한다. 비교기업 데이터는 사용자가 비교기업 모드를 선택한 뒤에만 연간 기준으로 요청한다. 홈이나 기업 목록은 8개 기업 시계열을 선로딩하지 않는다.
+
+## Phase 5F 측정 연결
+
+재무 화면 도착, 지표 묶음 선택, history·peer·industry 비교 모드 선택과 지표 설명 펼침만 기록한다. 기간별 금액, 계산 비율, 비교 중앙값, 기간 label과 공시 원문 URL은 analytics payload에 넣지 않는다. 같은 묶음이나 모드를 다시 누른 동작은 상태 변화가 아니므로 이벤트를 만들지 않는다.

@@ -26,3 +26,7 @@ watch item은 매출 성장, 마진, 재투자·현금흐름을 다음 공식 �
 ## 결측과 지원 상태
 
 `full`은 공개 시나리오·내재 기대·민감도·후보가 모두 검증된 상태다. `partial`은 타입으로 허용하지만 현재 기업은 없다. `unavailable`은 계산값이나 빈 그래프 대신 검증 모형 부재를 표시한다. 통화 불일치, 누락 날짜, 비정상 주식 수, 시나리오 역전, 깨진 source/evidence, 유효 범위 밖 내재 기대는 공개 view 생성에 실패한다.
+
+## Phase 5F 측정 연결
+
+가치평가 route 도착, 가정 설명 펼침과 민감도 조절 영역 첫 접근만 기록한다. 시장가격, scenario value, 내재 CAGR, WACC·영구성장률 입력, 변경 조합 결과와 model gap은 절대 analytics payload에 넣지 않는다. `valuation_view`는 가치평가 지원 상태를 추천 신호로 해석하지 않으며 unavailable 기업의 0값을 만들지 않는다.

@@ -36,3 +36,11 @@ Phase 5A.1에서는 `2026-07-13-sk-hynix-selloff`와 `2026-07-17-standards-set-p
 ## Phase 5B 주가해부 등록
 
 새 주가해부는 `01_verified-research.md`, `04_website-article.md`, `05_website-handoff.yaml` 세 파일을 모두 review한 뒤 등록한다. typed Published 객체에는 `stock_dissection`, `owner_verified`, 세션, 세 source file 경로와 `keyFiguresConsistent: true`를 기록한다. 가격·사실의 자료 제공처는 주가해부실의 작성·분석 표시와 분리한다. 전체 계약과 정정 순서는 [stock-dissection-intake.md](stock-dissection-intake.md)를 따른다.
+
+## Phase 5F 게시와 analytics 확인
+
+새 Published 콘텐츠는 기존 taxonomy의 content ID와 type을 재사용한다. 상세 route, summary, related link를 등록한 뒤 `npm run validate:analytics`로 payload allowlist를 함께 확인한다. Instagram link는 [instagram-linking-workflow.md](instagram-linking-workflow.md)의 UTM 규칙을 따르며 원고 제목·가격·원문 URL을 campaign 값에 복사하지 않는다. analytics가 실패해도 게시물, source link와 내부 이동은 정상이어야 한다. custom event dashboard 지원 여부는 배포 계정 플랜과 별도로 확인한다.
+
+Website handoff의 `analytics`는 선택 필드다. 없으면 실제 registry ID를 content ID로 사용한다. 있으면 `content_id`, `campaign_id`, `recommended_utm.source`, `recommended_utm.medium`, `recommended_utm.campaign`, `recommended_utm.content`를 모두 검토한다. content ID가 실제 editorial ID와 충돌하거나 권장 campaign이 campaign ID와 다르면 Published로 올리지 않는다. 외부 주가해부·오늘의 월스트리트 스킬은 Phase 5F에서 직접 수정하지 않는다.
+
+오늘의 월스트리트 handoff는 같은 선택 schema에서 `content_id`와 `campaign_id`를 `wall-street-YYYY-MM-DD-topic` 형식으로 제안할 수 있다. `recommended_utm`의 기본 의미는 `source: instagram`, `medium: social`, `campaign: campaign_id`, `content: profile-link`다. 실제 Published ID가 정해진 뒤에는 suggested ID가 아니라 registry ID를 우선하고, 제목을 analytics ID로 쓰지 않는다.

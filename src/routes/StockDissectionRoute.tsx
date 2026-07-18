@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { loadStockDissection } from '../content/editorial/registry.js';
 import { dateIsNotFuture, formatRelativeReturn, formatSignedPercent, isDetailVisible, moveCharacterLabels, relativeReturn, thesisImpactLabels } from '../content/editorial/selectors.js';
@@ -7,10 +7,12 @@ import type { DailyStockDissection, ThreeReadsSummary } from '../content/editori
 import { editorialDate, editorialInternalLink, editorialPath, type EditorialNavigate } from '../components/editorial/EditorialUi.js';
 import { loadEditorialEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
 import { EditorialEventImpactSection } from '../components/event-impacts/EventImpactUi.js';
+import { observeEditorialReading, trackAnalyticsEvent } from '../analytics/index.js';
 
 export default function StockDissectionRoute({ slug, navigation, onNavigate }: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const [item, setItem] = useState<DailyStockDissection | null | undefined>(undefined);
   const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
+  const articleRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let active = true;
     setItem(undefined);
@@ -27,6 +29,12 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
 
   const today = new Date().toISOString().slice(0, 10);
   const publicItem = item && isDetailVisible(item.status) && dateIsNotFuture(item.publishedAt, today) ? item : null;
+  useEffect(() => {
+    if (!publicItem || !articleRef.current) return;
+    const properties = { contentType: 'stock_dissection' as const, contentId: publicItem.id };
+    trackAnalyticsEvent('editorial_view', properties, { oncePerPage: true, dedupeKey: publicItem.id });
+    return observeEditorialReading(articleRef.current, properties);
+  }, [publicItem?.id]);
   if (item === undefined) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>주가 해부를 불러오는 중입니다.</h1></main></div>;
   if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 주가 해부를 찾을 수 없습니다.</h1><p>출처와 기준일 검증을 마친 콘텐츠만 표시합니다.</p><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치 목록으로 이동</a></main></div>;
 
@@ -40,7 +48,7 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
   return (
     <div className="pick-shell editorial-shell">
       {navigation}
-      <main className="editorial-detail-main">
+      <main className="editorial-detail-main" ref={articleRef}>
         <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치</a><span aria-hidden="true">/</span><strong>주가 해부</strong></nav>
         <header className="editorial-detail-header"><p>{publicItem.company.name}{publicItem.company.ticker ? ` · ${publicItem.company.ticker}` : ''}</p><h1>{publicItem.headline}</h1><div><time dateTime={publicItem.eventAsOf}>사건 기준 {editorialDate(publicItem.eventAsOf)}</time><time dateTime={publicItem.priceAsOf}>가격 기준 {editorialDate(publicItem.priceAsOf)}</time>{publicItem.intake ? <span>세션 {publicItem.intake.session === 'regular' ? '정규장' : publicItem.intake.session === 'preMarket' ? '장전' : '시간외'}</span> : null}</div></header>
         <dl className="editorial-verification editorial-authorship"><div><dt>작성·분석</dt><dd>주가해부실</dd></div><div><dt>편집 검증</dt><dd>Owner Verified{publicItem.verification ? ` · ${publicItem.verification.verifiedAt.replace('T', ' ').replace('+09:00', ' KST')}` : ''}</dd></div><div><dt>분석 기준</dt><dd>{editorialDate(publicItem.eventAsOf)} 사건 · {editorialDate(publicItem.priceAsOf)} 가격{publicItem.intake ? ` · ${publicItem.intake.session === 'regular' ? '정규장' : publicItem.intake.session === 'preMarket' ? '장전' : '시간외'}` : ''}</dd></div><div><dt>근거 자료</dt><dd>기업 공시 · 공식 발표 · 시장 데이터 · 주요 보도</dd></div></dl>
@@ -53,16 +61,22 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
         <section className="editorial-detail-section" aria-labelledby="stock-unconfirmed-title"><div className="editorial-detail-heading"><span>06</span><h2 id="stock-unconfirmed-title">아직 확인되지 않은 것</h2></div><div className="editorial-certainty-grid editorial-single-factor"><article><h3>현재까지 공식 확인되지 않은 것</h3><ul>{publicItem.unconfirmedItems.map((entry) => <li key={entry}>{entry}</li>)}</ul></article></div></section>
         <section className="editorial-detail-section" aria-labelledby="stock-watch-title"><div className="editorial-detail-heading"><span>07</span><h2 id="stock-watch-title">앞으로 확인할 것</h2></div><ol className="editorial-watch-list">{publicItem.watchItems.map((entry) => <li key={entry}>{entry}</li>)}</ol></section>
         <section className="editorial-detail-section" aria-labelledby="stock-conclusion-title"><div className="editorial-detail-heading"><span>08</span><h2 id="stock-conclusion-title">주가해부실의 해석</h2></div><p className="editorial-conclusion">{publicItem.editorialConclusion ?? publicItem.marketInterpretation}</p></section>
-        {visibleEvidence.length ? <section className="editorial-detail-section" aria-labelledby="stock-evidence-title"><div className="editorial-detail-heading"><span>09</span><h2 id="stock-evidence-title">분석에 사용한 자료</h2></div><div className="editorial-evidence-grid">{visibleEvidence.map((evidence) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} />)}</div>{remainingEvidence.length ? <details className="editorial-evidence-details"><summary>전체 근거와 검증 기록 보기</summary><div className="editorial-evidence-grid">{remainingEvidence.map((evidence) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} />)}</div></details> : null}</section> : null}
+        {visibleEvidence.length ? <section className="editorial-detail-section" aria-labelledby="stock-evidence-title"><div className="editorial-detail-heading"><span>09</span><h2 id="stock-evidence-title">분석에 사용한 자료</h2></div><div className="editorial-evidence-grid">{visibleEvidence.map((evidence, index) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} contentId={publicItem.id} sourceOrder={index + 1} />)}</div>{remainingEvidence.length ? <details className="editorial-evidence-details"><summary>전체 근거와 검증 기록 보기</summary><div className="editorial-evidence-grid">{remainingEvidence.map((evidence, index) => <EvidenceCard key={evidence.id} evidence={evidence} typeLabel={evidenceTypeLabels[evidence.type]} statusLabel={factStatusLabels[evidence.factStatus]} contentId={publicItem.id} sourceOrder={visibleEvidence.length + index + 1} />)}</div></details> : null}</section> : null}
         {publicItem.verification ? <section className="editorial-detail-section" aria-labelledby="stock-verification-title"><div className="editorial-detail-heading"><span>10</span><h2 id="stock-verification-title">작성·검증 정보</h2></div><dl className="editorial-verification"><div><dt>작성·분석</dt><dd>주가해부실</dd></div><div><dt>편집 검증</dt><dd>Owner Verified</dd></div><div><dt>검증 시각</dt><dd><time dateTime={publicItem.verification.verifiedAt}>{publicItem.verification.verifiedAt.replace('T', ' ').replace('+09:00', ' KST')}</time></dd></div>{publicItem.verification.note ? <div><dt>기록</dt><dd>{publicItem.verification.note}</dd></div> : null}</dl><p className="editorial-verification-note">Owner Verified는 사실과 숫자를 확인했다는 편집 기록이며, 사건의 미래 결과를 보증하지 않습니다. 가격·실적·공시의 원천 출처는 위 근거 자료에서 별도로 확인합니다.</p></section> : null}
         <EditorialEventImpactSection impacts={eventImpacts} headingNumber="11" />
-        {relatedThreeReads.length || publicItem.company.companySlug ? <section className="editorial-detail-section" aria-labelledby="stock-related-title"><div className="editorial-detail-heading"><span>{eventImpacts.length ? '12' : '11'}</span><h2 id="stock-related-title">관련 기업</h2></div><div className="editorial-related-links">{relatedThreeReads.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={editorialInternalLink(path, onNavigate)}>{related.title}<ArrowRight size={14} aria-hidden="true" /></a>; })}{publicItem.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`} onClick={editorialInternalLink(`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`, onNavigate)}>{publicItem.company.name} 분석 보기<ArrowRight size={14} aria-hidden="true" /></a> : null}</div></section> : null}
+        {relatedThreeReads.length || publicItem.company.companySlug ? <section className="editorial-detail-section" aria-labelledby="stock-related-title"><div className="editorial-detail-heading"><span>{eventImpacts.length ? '12' : '11'}</span><h2 id="stock-related-title">관련 기업</h2></div><div className="editorial-related-links">{relatedThreeReads.map((related) => { const path = editorialPath(related); return <a key={related.id} href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'stock_dissection', contentId: publicItem.id, placement: 'related_research', destinationType: 'editorial' }); editorialInternalLink(path, onNavigate)(event); }}>{related.title}<ArrowRight size={14} aria-hidden="true" /></a>; })}{publicItem.company.companySlug ? <a href={`/ko/companies/${encodeURIComponent(publicItem.company.companySlug)}`} onClick={(event) => { trackAnalyticsEvent('editorial_company_click', { contentType: 'stock_dissection', contentId: publicItem.id, companySlug: publicItem.company.companySlug, placement: 'editorial_footer', destinationType: 'company' }); editorialInternalLink(`/ko/companies/${encodeURIComponent(publicItem.company.companySlug!)}`, onNavigate)(event); }}>{publicItem.company.name} 분석 보기<ArrowRight size={14} aria-hidden="true" /></a> : null}</div></section> : null}
         <aside className="editorial-disclaimer"><strong>면책</strong><p>{publicItem.disclaimer}</p></aside>
       </main>
     </div>
   );
 }
 
-function EvidenceCard({ evidence, typeLabel, statusLabel }: { evidence: NonNullable<DailyStockDissection['evidence']>[number]; typeLabel: string; statusLabel: string }) {
-  return <article><div><span>{typeLabel}</span><strong>{statusLabel}</strong></div><h3>{evidence.title ?? evidence.publisher ?? evidence.id}</h3>{evidence.publisher ? <small>자료 제공처 {evidence.publisher}</small> : null}{evidence.asOf ? <time dateTime={evidence.asOf}>기준 {editorialDate(evidence.asOf)}</time> : null}{evidence.publishedAt ? <time dateTime={evidence.publishedAt}>발행 {editorialDate(evidence.publishedAt)}</time> : null}{evidence.note ? <p>{evidence.note}</p> : null}{evidence.url ? <a href={evidence.url} target="_blank" rel="noopener noreferrer" aria-label={`${evidence.title ?? evidence.id} 자료 새 창에서 열기`}>자료 열기 <ExternalLink size={13} aria-hidden="true" /></a> : null}</article>;
+function EvidenceCard({ evidence, typeLabel, statusLabel, contentId, sourceOrder }: { evidence: NonNullable<DailyStockDissection['evidence']>[number]; typeLabel: string; statusLabel: string; contentId: string; sourceOrder: number }) {
+  return <article><div><span>{typeLabel}</span><strong>{statusLabel}</strong></div><h3>{evidence.title ?? evidence.publisher ?? evidence.id}</h3>{evidence.publisher ? <small>자료 제공처 {evidence.publisher}</small> : null}{evidence.asOf ? <time dateTime={evidence.asOf}>기준 {editorialDate(evidence.asOf)}</time> : null}{evidence.publishedAt ? <time dateTime={evidence.publishedAt}>발행 {editorialDate(evidence.publishedAt)}</time> : null}{evidence.note ? <p>{evidence.note}</p> : null}{evidence.url ? <a href={evidence.url} target="_blank" rel="noopener noreferrer" aria-label={`${evidence.title ?? evidence.id} 자료 새 창에서 열기`} onClick={() => trackAnalyticsEvent('editorial_source_open', { contentType: 'stock_dissection', contentId, sourceType: evidenceSourceType(evidence.type), sourceOrder, placement: 'editorial_body' })}>자료 열기 <ExternalLink size={13} aria-hidden="true" /></a> : null}</article>;
+}
+
+function evidenceSourceType(type: NonNullable<DailyStockDissection['evidence']>[number]['type']) {
+  if (['price', 'market', 'sector', 'flow'].includes(type)) return 'market_data';
+  if (type === 'news') return 'major_news';
+  return type;
 }

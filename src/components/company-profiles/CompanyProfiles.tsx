@@ -21,6 +21,7 @@ import { moveCharacterLabels } from '../../content/editorial/selectors.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
 import type { EventImpactRecord } from '../../content/event-impacts/index.js';
 import { CompanyEventImpactSection } from '../event-impacts/EventImpactUi.js';
+import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 type Navigate = (path: string) => void;
 
@@ -103,8 +104,9 @@ export function CompanyProfilesListPage({
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
   };
 
-  const openCompany = (record: CompanySearchRecord) => {
+  const openCompany = (record: CompanySearchRecord, resultPosition: number) => {
     setAutocompleteOpen(false);
+    trackAnalyticsEvent('company_search_select', { companySlug: record.profile.slug, resultPosition, placement: 'search', destinationType: 'company' });
     onNavigate(companySearchRecordPath(record));
   };
 
@@ -119,7 +121,8 @@ export function CompanyProfilesListPage({
       setActiveIndex((current) => current > 0 ? current - 1 : results.length - 1);
     } else if (event.key === 'Enter' && results.length) {
       event.preventDefault();
-      openCompany(results[activeIndex >= 0 ? activeIndex : 0]);
+      const selectedIndex = activeIndex >= 0 ? activeIndex : 0;
+      openCompany(results[selectedIndex], selectedIndex + 1);
     } else if (event.key === 'Escape') {
       event.preventDefault();
       setAutocompleteOpen(false);
@@ -181,7 +184,7 @@ export function CompanyProfilesListPage({
                           tabIndex={-1}
                           aria-selected={activeIndex === index}
                           onMouseDown={(event) => event.preventDefault()}
-                          onClick={(event) => { event.preventDefault(); openCompany(record); }}
+                          onClick={(event) => { event.preventDefault(); openCompany(record, index + 1); }}
                         >
                           <span><strong>{record.company.name}</strong><small>{record.profile.englishName}</small></span>
                           <span>{security} · {record.profile.exchange}<ArrowRight size={15} aria-hidden="true" /></span>
@@ -292,6 +295,9 @@ export function CompanyResearchProfilePage({
   const security = profile.stockCode ?? company.ticker;
   const relatedEditorialIds = new Set(brief.relatedEditorialIds);
   const recentEditorial = publishedEditorialSummaryIndex.filter((item) => relatedEditorialIds.has(item.id)).slice(0, 2);
+  useEffect(() => {
+    trackAnalyticsEvent('company_view', { companySlug: profile.slug }, { oncePerPage: true, dedupeKey: profile.slug });
+  }, [profile.slug]);
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -359,14 +365,14 @@ export function CompanyResearchProfilePage({
           <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
           <div className="company-dashboard-editorial-grid">{recentEditorial.map((item) => {
             const path = item.kind === 'stock' ? `/ko/insights/stock/${encodeURIComponent(item.slug)}` : `/ko/insights/3reads/${encodeURIComponent(item.slug)}`;
-            return <article key={item.id}><time dateTime={item.kind === 'stock' ? item.eventAsOf : item.publishedAt}>{formatDate(item.kind === 'stock' ? item.eventAsOf : item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? item.cardCharacter ?? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p>{item.kind === 'stock' && item.unconfirmedItems[0] ? <div className="company-dashboard-editorial-unconfirmed"><strong>현재까지 공식 확인되지 않은 것</strong><span>{item.unconfirmedItems.slice(0, 3).join(' · ')}</span></div> : null}<a href={path} onClick={internalLink(path, onNavigate)}>전체 해부 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
+            return <article key={item.id}><time dateTime={item.kind === 'stock' ? item.eventAsOf : item.publishedAt}>{formatDate(item.kind === 'stock' ? item.eventAsOf : item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? item.cardCharacter ?? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p>{item.kind === 'stock' && item.unconfirmedItems[0] ? <div className="company-dashboard-editorial-unconfirmed"><strong>현재까지 공식 확인되지 않은 것</strong><span>{item.unconfirmedItems.slice(0, 3).join(' · ')}</span></div> : null}<a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: item.kind === 'stock' ? 'stock_dissection' : 'wall_street_edition', contentId: item.id, companySlug: profile.slug, placement: 'related_research', destinationType: 'editorial' }); internalLink(path, onNavigate)(event); }}>전체 해부 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
           })}</div>
         </section> : null}
 
         <nav className="company-brief-actions" aria-label={`${company.name} 상세 분석 이동`}>
-          <a href={`/ko/companies/${profile.slug}/financials`} onClick={internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)}>숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
-          {brief.reportSlug ? <a href={`/ko/companies/${profile.slug}/valuation`} onClick={internalLink(`/ko/companies/${profile.slug}/valuation`, onNavigate)}>시장가격에 반영된 기대 보기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
-          {brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)}>심층 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
+          <a href={`/ko/companies/${profile.slug}/financials`} onClick={(event) => { trackAnalyticsEvent('company_financials_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'financials' }); internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)(event); }}>숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
+          {brief.reportSlug ? <a href={`/ko/companies/${profile.slug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'valuation' }); internalLink(`/ko/companies/${profile.slug}/valuation`, onNavigate)(event); }}>시장가격에 반영된 기대 보기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
+          {brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={(event) => { trackAnalyticsEvent('company_report_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'report' }); internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)(event); }}>심층 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
         </nav>
 
         <section className="company-dashboard-section company-dashboard-secondary-start" id="company-detailed-data" aria-labelledby="company-assessments-title">

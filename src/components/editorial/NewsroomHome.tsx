@@ -4,6 +4,7 @@ import { companySearchIndex, companySearchRecordPath, searchCompanyProfiles } fr
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
 import type { CompanySearchRecord } from '../../content/company-profiles/types.js';
 import { StockSummaryCard, ThreeReadsSummaryCard, editorialInternalLink, type EditorialNavigate } from './EditorialUi.js';
+import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const listboxId = useId();
@@ -25,8 +26,9 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
     listboxRef.current?.querySelector<HTMLElement>(`[data-home-option="${activeIndex}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const openCompany = (record: CompanySearchRecord) => {
+  const openCompany = (record: CompanySearchRecord, resultPosition: number) => {
     setOpen(false);
+    trackAnalyticsEvent('company_search_select', { companySlug: record.profile.slug, resultPosition, placement: 'home', destinationType: 'company' });
     onNavigate(companySearchRecordPath(record));
   };
 
@@ -36,7 +38,9 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
     } else if (event.key === 'ArrowUp' && results.length) {
       event.preventDefault(); setOpen(true); setActiveIndex((current) => current > 0 ? current - 1 : results.length - 1);
     } else if (event.key === 'Enter' && results.length) {
-      event.preventDefault(); openCompany(results[activeIndex >= 0 ? activeIndex : 0]);
+      event.preventDefault();
+      const selectedIndex = activeIndex >= 0 ? activeIndex : 0;
+      openCompany(results[selectedIndex], selectedIndex + 1);
     } else if (event.key === 'Escape') {
       event.preventDefault(); setOpen(false); setActiveIndex(-1);
     }
@@ -87,7 +91,7 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
                     tabIndex={-1}
                     aria-selected={activeIndex === index}
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={(event) => { event.preventDefault(); openCompany(record); }}
+                    onClick={(event) => { event.preventDefault(); openCompany(record, index + 1); }}
                   ><span><strong>{record.company.name}</strong><small>{record.profile.englishName}</small></span><span>{security} · {record.profile.exchange}<ArrowRight size={14} aria-hidden="true" /></span></a>;
                 })}
               </div>

@@ -18,6 +18,21 @@
 
 홈 카드와 typed content 등록에 필요한 회사·ticker·시장, 사건·가격 기준일, 세션, 등락률, 시장·업종·비교기업과 `%p` 차이, 움직임 분류, 확인·미확인·다음 확인, 기업 판단·가치평가 검토 여부, 두 원문 경로와 근거 목록을 전달한다.
 
+선택적으로 아래 analytics block을 포함할 수 있다. 누락해도 게시할 수 있고 registry ID를 기본 content ID로 쓴다. 존재하면 typed schema가 형식과 ID 충돌을 검증한다.
+
+```yaml
+analytics:
+  content_id: "stock-YYYY-MM-DD-company-topic"
+  campaign_id: "stock-YYYY-MM-DD-company-topic"
+  recommended_utm:
+    source: "instagram"
+    medium: "social"
+    campaign: "stock-YYYY-MM-DD-company-topic"
+    content: "profile-link"
+```
+
+`analytics.content_id` 또는 `campaign_id`가 실제 editorial ID와 다르거나 `recommended_utm.campaign`이 `campaign_id`와 다르면 게시 validation이 실패한다. 이 metadata는 권장 링크를 전달할 뿐 runtime YAML parser나 자동 게시를 만들지 않는다.
+
 ## Published 필수조건
 
 세 파일 중 하나라도 없으면 Published로 등록하지 않는다. 등록 객체는 다음을 모두 만족해야 한다.
@@ -76,3 +91,7 @@ PR에서 세 원문과 typed content, summary, relation, smoke 기대값을 함�
 ## 정정·업데이트
 
 사실 또는 수치가 바뀌면 원본 세 파일, typed content의 `updatedAt`, 근거와 검증 시각을 함께 갱신한다. 공개 결론이 바뀌는 정정은 변경 내용과 이유를 본문에 명시하고 동일한 검증 순서를 다시 거친다. 단순 오탈자 외에는 근거 기록 없이 Production만 직접 수정하지 않는다.
+
+## Phase 5F 측정 연결
+
+Published 상세이 실제 표시될 때만 `editorial_view`를 기록한다. 25·50·75·90% 읽기와 90%+10초 완료, 근거 열기, 관련 기업·리서치 이동을 typed event로 구분한다. 콘텐츠의 가격, 등락률, 거래량, 기사 제목, source URL과 사용자의 정확한 체류시간은 analytics payload에 넣지 않는다. 세 파일은 게시 근거이며, handoff의 선택 analytics block은 안정적인 콘텐츠·캠페인 ID와 권장 UTM만 전달한다.

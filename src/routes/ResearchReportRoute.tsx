@@ -13,6 +13,7 @@ import type {
   ResearchSource,
   SensitivityMatrix,
 } from '../content/research-reports/types.js';
+import { trackAnalyticsEvent } from '../analytics/index.js';
 
 type Props = {
   slug: string;
@@ -207,7 +208,7 @@ function ResearchReport({ report, monteCarlo, navigation, onNavigate }: { report
   return <div className="pick-shell research-report-shell">
     <div className="research-screen-navigation">{navigation}</div>
     <main className="research-report-main">
-      <div className="research-report-actions"><a href={`/ko/companies/${report.slug}`} onClick={internalLink(`/ko/companies/${report.slug}`, onNavigate)}><ArrowLeft size={16} aria-hidden="true" /> 기업 대시보드</a><a href={`/ko/companies/${report.slug}/valuation`} onClick={internalLink(`/ko/companies/${report.slug}/valuation`, onNavigate)}>시장가격에 반영된 기대 보기</a></div>
+      <div className="research-report-actions"><a href={`/ko/companies/${report.slug}`} onClick={internalLink(`/ko/companies/${report.slug}`, onNavigate)}><ArrowLeft size={16} aria-hidden="true" /> 기업 대시보드</a><a href={`/ko/companies/${report.slug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: report.slug, placement: 'report', destinationType: 'valuation' }); internalLink(`/ko/companies/${report.slug}/valuation`, onNavigate)(event); }}>시장가격에 반영된 기대 보기</a></div>
 
       <section className="research-report-cover" id="report-cover" aria-labelledby="research-report-title">
         <p className="research-report-brand">주가해부실 Research <span>작성 시점 기업 리서치</span></p>
@@ -264,6 +265,10 @@ function ResearchReport({ report, monteCarlo, navigation, onNavigate }: { report
 export default function ResearchReportRoute({ slug, navigation, onNavigate }: Props) {
   const [report, setReport] = useState<ResearchReportModel | null | undefined>(undefined);
   const [monteCarlo, setMonteCarlo] = useState<MonteCarloValuationResult | null | undefined>(undefined);
+  useEffect(() => {
+    if (!report) return;
+    trackAnalyticsEvent('research_report_view', { companySlug: report.slug }, { oncePerPage: true, dedupeKey: report.slug });
+  }, [report?.slug]);
   useEffect(() => {
     let active = true;
     setReport(undefined);

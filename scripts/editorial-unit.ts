@@ -68,6 +68,19 @@ const validResult = validate([validStock], [validThreeReads]);
 assert(validResult.ok, `owner verified 정상 fixture 실패: ${validResult.errors.join(' | ')}`);
 assert(validResult.publishedCount === 2, '정상 fixture 공개 요약 수가 다릅니다.');
 
+const withAnalytics = validate([{ ...validStock, analytics: {
+  content_id: validStock.id,
+  campaign_id: validStock.id,
+  recommended_utm: { source: 'instagram', medium: 'social', campaign: validStock.id, content: 'profile-link' },
+} }], [validThreeReads]);
+assert(withAnalytics.ok, `선택 analytics block 정상 fixture 실패: ${withAnalytics.errors.join(' | ')}`);
+const conflictingAnalytics = validate([{ ...validStock, analytics: {
+  content_id: 'different-id',
+  campaign_id: validStock.id,
+  recommended_utm: { source: 'instagram', medium: 'social', campaign: 'stock-2026-07-17-other', content: 'profile-link' },
+} }], [validThreeReads]);
+assert(!conflictingAnalytics.ok && conflictingAnalytics.errors.some((error) => error.includes('editorial ID')) && conflictingAnalytics.errors.some((error) => error.includes('campaign_id')), '충돌한 analytics block이 게시 validation을 통과했습니다.');
+
 assert(!isHomepageVisible('draft') && !isHomepageVisible('verified') && isHomepageVisible('published') && !isHomepageVisible('archived'), '홈 상태 selector가 다릅니다.');
 assert(!isDetailVisible('draft') && !isDetailVisible('verified') && isDetailVisible('published') && isDetailVisible('archived'), '상세 상태 selector가 다릅니다.');
 assert(publishedEditorialSummaries([{ ...validStock, status: 'verified' }], [{ ...validThreeReads, status: 'archived' }], today).length === 0, 'published 외 상태가 홈 index에 포함됐습니다.');

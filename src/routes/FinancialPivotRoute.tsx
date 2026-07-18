@@ -24,6 +24,7 @@ import { fetchFinancialSeries } from '../services/financial-pivots.js';
 import { valuationReadinessCompany } from '../content/valuation/companies.js';
 import { loadEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
 import { FinancialMetricImpactRecords } from '../components/event-impacts/EventImpactUi.js';
+import { trackAnalyticsEvent } from '../analytics/index.js';
 
 type Props = {
   slug: string;
@@ -80,10 +81,11 @@ function SummaryCards({ periods, currency }: { periods: FinancialSeriesPeriod[];
   </section>;
 }
 
-function HistoricalTable({ periods, currency, group, expandedMetric, setExpandedMetric, eventImpacts }: {
+function HistoricalTable({ periods, currency, group, companySlug, expandedMetric, setExpandedMetric, eventImpacts }: {
   periods: FinancialSeriesPeriod[];
   currency: string;
   group: FinancialMetricGroupId;
+  companySlug: string;
   expandedMetric: string | null;
   setExpandedMetric: (metric: string | null) => void;
   eventImpacts: EventImpactRecord[];
@@ -102,7 +104,7 @@ function HistoricalTable({ periods, currency, group, expandedMetric, setExpanded
         const change = calculateChange(currentValue ?? undefined, previousValue ?? undefined, metric.change);
         const expanded = expandedMetric === metric.id;
         return <tr key={metric.id} className={expanded ? 'is-expanded' : undefined}>
-          <th scope="row"><button type="button" aria-expanded={expanded} onClick={() => setExpandedMetric(expanded ? null : metric.id)}><span>{metric.label}</span><ChevronDown size={15} aria-hidden="true" /></button>{expanded ? <span className="financial-pivot-row-detail"><b>{metric.description}</b>{metric.calculation ? ` 계산: ${metric.calculation}.` : ''} 공시 원문 단위를 통화 백만 단위로 정규화했습니다.</span> : null}<FinancialMetricImpactRecords impacts={eventImpacts} metricId={metric.id} /></th>
+          <th scope="row"><button type="button" aria-expanded={expanded} onClick={() => { if (!expanded) trackAnalyticsEvent('financial_metric_expand', { companySlug, groupId: group, metricId: metric.id, placement: 'financial_pivot' }); setExpandedMetric(expanded ? null : metric.id); }}><span>{metric.label}</span><ChevronDown size={15} aria-hidden="true" /></button>{expanded ? <span className="financial-pivot-row-detail"><b>{metric.description}</b>{metric.calculation ? ` 계산: ${metric.calculation}.` : ''} 공시 원문 단위를 통화 백만 단위로 정규화했습니다.</span> : null}<FinancialMetricImpactRecords impacts={eventImpacts} metricId={metric.id} /></th>
           {periods.map((period) => <td key={period.periodEnd}>{formatMetricValue(finiteMetric(period, metric.id), metric, currency)}</td>)}
           <td><strong>{previous ? change.label : '비교 자료 없음'}</strong></td>
         </tr>;
@@ -151,6 +153,11 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
   const [dataState, setDataState] = useState<DataState>({ status: 'loading', payload: null });
   const [peerPayloads, setPeerPayloads] = useState<Map<string, FinancialSeriesResponse> | null>(null);
   const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
+
+  useEffect(() => {
+    if (!company) return;
+    trackAnalyticsEvent('financials_view', { companySlug: company.companySlug }, { oncePerPage: true, dedupeKey: company.companySlug });
+  }, [company?.companySlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +212,7 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
 
       <section className="financial-pivot-controls" aria-label="재무 분석 보기 설정">
         <fieldset><legend>기간</legend>{(['annual', 'quarterly'] as const).map((period) => <button type="button" key={period} aria-pressed={periodType === period} onClick={() => { setPeriodType(period); setComparisonMode('history'); }}>{period === 'annual' ? '연간' : '분기'}</button>)}</fieldset>
-        <fieldset><legend>비교</legend>{(['history', 'peer', 'industry'] as const).map((mode) => <button type="button" key={mode} aria-pressed={comparisonMode === mode} onClick={() => setComparisonMode(mode)}>{comparisonModeLabel(mode)}</button>)}</fieldset>
+        <fieldset><legend>비교</legend>{(['history', 'peer', 'industry'] as const).map((mode) => <button type="button" key={mode} aria-pressed={comparisonMode === mode} onClick={() => { if (comparisonMode !== mode) trackAnalyticsEvent('financial_compare_mode_select', { companySlug: company.companySlug, compareMode: mode, placement: 'financial_pivot' }); setComparisonMode(mode); }}>{comparisonModeLabel(mode)}</button>)}</fieldset>
       </section>
 
       {dataState.status === 'loading' ? <div className="financial-pivot-loading" role="status">공식 공시에서 {periodType === 'annual' ? '연간' : '분기'} 데이터를 불러오는 중입니다.</div> : null}
@@ -216,14 +223,14 @@ export default function FinancialPivotRoute({ slug, navigation, onNavigate }: Pr
         <SummaryCards periods={periods} currency={company.currency} />
         {comparisonMode === 'history' ? <section className="financial-pivot-analysis" aria-labelledby="financial-pivot-analysis-title">
           <header><div><span>기간 추세</span><h2 id="financial-pivot-analysis-title">무엇이 얼마나 달라졌나요?</h2><p>{periods.length < 2 ? '현재 확인 가능한 한 기간만 표시합니다. 비교값은 만들지 않았습니다.' : `${periods[0].label}부터 ${periods[periods.length - 1].label}까지 같은 공시 기준으로 비교합니다.`}</p></div><small>{dataState.payload?.source} · {dataState.payload?.sourceStatus === 'direct' ? '직접 확인' : '일부 자료'}</small></header>
-          <div className="financial-pivot-group-tabs" role="tablist" aria-label="재무 지표 묶음">{metricGroupOrder.map((group) => <button type="button" role="tab" aria-selected={metricGroup === group} key={group} onClick={() => { setMetricGroup(group); setExpandedMetric(null); }}>{financialMetricGroupLabels[group]}</button>)}</div>
-          <HistoricalTable periods={periods} currency={company.currency} group={metricGroup} expandedMetric={expandedMetric} setExpandedMetric={setExpandedMetric} eventImpacts={eventImpacts} />
+          <div className="financial-pivot-group-tabs" role="tablist" aria-label="재무 지표 묶음">{metricGroupOrder.map((group) => <button type="button" role="tab" aria-selected={metricGroup === group} key={group} onClick={() => { if (metricGroup !== group) trackAnalyticsEvent('financial_group_select', { companySlug: company.companySlug, groupId: group, placement: 'financial_pivot' }); setMetricGroup(group); setExpandedMetric(null); }}>{financialMetricGroupLabels[group]}</button>)}</div>
+          <HistoricalTable periods={periods} currency={company.currency} group={metricGroup} companySlug={company.companySlug} expandedMetric={expandedMetric} setExpandedMetric={setExpandedMetric} eventImpacts={eventImpacts} />
         </section> : null}
         {comparisonMode === 'peer' ? <section className="financial-pivot-analysis" aria-labelledby="peer-title"><header><div><span>비교기업</span><h2 id="peer-title">같은 사업 흐름의 기업과 비율 비교</h2><p>비교 버튼을 누른 뒤에만 필요한 기업 데이터를 추가 요청합니다.</p></div></header><PeerComparison company={company} peerPayloads={peerPayloads} /></section> : null}
         {comparisonMode === 'industry' ? <IndustryPanel company={company} latest={periods[periods.length - 1]} /> : null}
 
         <section className="financial-pivot-sources" aria-labelledby="financial-source-title"><div><span>자료와 계산</span><h2 id="financial-source-title">출처와 계산 기준</h2><p>기간별 실제 공시를 사용하며 수정 공시는 기존 정규화 규칙으로 우선 선택합니다.</p></div><details><summary>공시 원문과 기준 보기</summary><ul>{periods.map((period) => { const url = sourceUrl(company, period); return <li key={period.periodEnd}><div><strong>{period.label} · {period.filingType}</strong><span>기간 말 {period.periodEnd}{period.filedAt ? ` · 제출 ${period.filedAt}` : ''} · {period.currency} 백만 단위</span></div>{url ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`${company.companyName} ${period.label} 공시 원문`}>원문 보기 <ExternalLink size={13} aria-hidden="true" /></a> : <span>원문 링크 확인 필요</span>}</li>; })}</ul><p>YoY는 직전 같은 연간 기간, 분기 비교는 동일한 기간 정의가 확인될 때만 계산합니다. 이전 값이 0이거나 부호가 바뀌면 백분율을 표시하지 않습니다. 마진 변화는 %p를 사용합니다.</p></details></section>
-        {valuationStatus === 'full' ? <nav className="financial-pivot-next-actions" aria-label="재무 추세와 가치평가 연결"><a href={`/ko/companies/${company.companySlug}/valuation`} onClick={internalLink(`/ko/companies/${company.companySlug}/valuation`, onNavigate)}>이 재무 추세가 가치평가에 미치는 영향</a></nav> : null}
+        {valuationStatus === 'full' ? <nav className="financial-pivot-next-actions" aria-label="재무 추세와 가치평가 연결"><a href={`/ko/companies/${company.companySlug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: company.companySlug, placement: 'financial_pivot', destinationType: 'valuation' }); internalLink(`/ko/companies/${company.companySlug}/valuation`, onNavigate)(event); }}>이 재무 추세가 가치평가에 미치는 영향</a></nav> : null}
       </> : null}
     </main>
   </div>;
