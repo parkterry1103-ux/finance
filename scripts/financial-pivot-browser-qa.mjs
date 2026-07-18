@@ -107,8 +107,12 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
       });
     }
     const url = `${baseUrl}/ko/companies/nvidia/financials`;
-    await page.goto(url, { waitUntil: 'networkidle' });
-    await page.getByRole('heading', { name: /NVIDIA 숫자와 비교/ }).waitFor();
+    await page.goto(url, { waitUntil: useLiveApi ? 'domcontentloaded' : 'networkidle', timeout: useLiveApi ? 90_000 : 30_000 });
+    await page.getByRole('heading', { name: /NVIDIA 숫자와 비교/ }).waitFor({ timeout: useLiveApi ? 90_000 : 30_000 });
+    if (useLiveApi) {
+      await page.locator('.financial-filing-basis').waitFor({ timeout: 90_000 });
+      await page.locator('.financial-multiple-panel').waitFor({ timeout: 90_000 });
+    }
     const audit = await page.evaluate(() => ({
       h1: document.querySelectorAll('h1').length,
       pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -157,8 +161,12 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
           await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixture(slug, period)) });
         });
       }
-      await page.goto(`${baseUrl}/ko/companies/${slug}/financials`, { waitUntil: 'networkidle' });
-      await page.getByRole('heading', { name: /숫자와 비교/ }).waitFor();
+      await page.goto(`${baseUrl}/ko/companies/${slug}/financials`, { waitUntil: useLiveApi ? 'domcontentloaded' : 'networkidle', timeout: useLiveApi ? 90_000 : 30_000 });
+      await page.getByRole('heading', { name: /숫자와 비교/ }).waitFor({ timeout: useLiveApi ? 90_000 : 30_000 });
+      if (useLiveApi) {
+        await page.locator('.financial-filing-basis').waitFor({ timeout: 90_000 });
+        await page.locator('.financial-multiple-panel').waitFor({ timeout: 90_000 });
+      }
       const routeAudit = await page.evaluate(() => ({
         h1: document.querySelectorAll('h1').length,
         title: document.querySelector('h1')?.textContent?.trim() ?? '',
