@@ -1,5 +1,7 @@
 # 재무 비교 방법론
 
+> Phase 5C.1 보정: 분기 비교는 배열상 직전 값이 아니라 전년 동기의 동일 fiscal period를 우선한다. 독립 분기·누적 차감·TTM·공시 lineage의 상세 규칙은 [독립 분기와 TTM 계산 정책](./quarterly-financial-derivation.md), 멀티플은 [시장 멀티플 계산 방법론](./market-multiple-methodology.md)을 따른다.
+
 ## 연간·분기 정의
 
 연간은 SEC 10-K 또는 OpenDART 사업보고서의 회계연도 값이다. 분기는 SEC 10-Q 또는 OpenDART 정기보고서에서 직접 확인된 최근 값이다. 누적 YTD를 독립 분기로 바꾸려면 동일 시작일·통화·연결 범위와 직전 누적 기간이 모두 확인돼야 한다. Phase 5C 공개 API는 이 조건을 충족하지 않는 누적값을 임의 분기값으로 변환하지 않는다.

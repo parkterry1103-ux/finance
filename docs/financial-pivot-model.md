@@ -1,5 +1,9 @@
 # Financial Pivot 모델
 
+## Phase 5C.1 lineage 확장
+
+기간에는 `periodBasis`, `consolidation`, `metricOrigins`, `metricLineage`를 붙인다. 값 origin은 `reported`, `derived_from_reported`, `market_implied_derived`, `external_reference`, `unavailable`을 구분한다. 응답은 최신 filing identity와 `current`/`stale`/`filing_pending` freshness를 제공한다. 화면은 분기를 기본으로 열고 공시·연결·가격 기준을 먼저 표시한다.
+
 ## 구성
 
 `FinancialPivotCompany`는 기존 기업 프로필과 가치평가 준비도 registry에서 파생한다. 회사명·slug·ticker·통화·CIK 또는 corpCode·산업·peer slug를 가진다. 새 기업 registry를 별도로 수기 복제하지 않는다.

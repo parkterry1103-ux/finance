@@ -11,6 +11,8 @@
     "validate:content": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/validate-content.js",
     "validate:editorial": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/editorial-unit.js",
     "validate:financials": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/financial-pivot-unit.js",
+    "validate:multiples": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/market-multiple-unit.js",
+    "validate:filing-freshness": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/filing-freshness-unit.js",
     "validate:company-briefs": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/company-brief-unit.js",
     "validate:valuation": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/valuation-unit.js",
     "validate:valuation-expectations": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/valuation-expectations-unit.js",

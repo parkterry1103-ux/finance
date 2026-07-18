@@ -43,6 +43,7 @@ type CompanyFactsPayload = {
   facts?: {
     'us-gaap'?: Record<string, SecConceptFacts | undefined>;
     'ifrs-full'?: Record<string, SecConceptFacts | undefined>;
+    dei?: Record<string, SecConceptFacts | undefined>;
   };
 };
 
@@ -89,16 +90,39 @@ type FinancialComparison = {
 
 type FinancialSeriesPeriod = {
   label: string;
+  periodStart?: string;
   periodEnd: string;
   fiscalYear: number | null;
   fiscalPeriod: string;
+  periodBasis?: 'standalone' | 'cumulative' | 'annual' | 'instant';
+  consolidation?: 'consolidated' | 'separate' | 'unknown';
   currency: string;
   unit: 'million';
   metrics: Record<string, number>;
+  metricOrigins?: Record<string, 'reported' | 'derived_from_reported'>;
+  metricLineage?: Record<string, unknown>;
   sourceIds: string[];
   filingType: string;
   filedAt: string | null;
   accessionOrReceiptNumber: string | null;
+};
+
+type PivotMetricMapping = {
+  metricId: string;
+  concepts: string[];
+  unit: 'USD' | 'USD/shares' | 'shares';
+  kind: 'flow' | 'instant';
+  allowCumulativeDerivation?: boolean;
+};
+
+type PivotCandidate = {
+  metricId: string;
+  concept: string;
+  unit: string;
+  fact: SecFact;
+  value: number;
+  origin: 'reported' | 'derived_from_reported';
+  inputFacts?: SecFact[];
 };
 
 const SEC_TIMEOUT_MS = 8000;
@@ -111,7 +135,9 @@ const DART_REPORTS = [
   { code: '11011', label: 'OpenDART 사업보고서', fiscalPeriod: 'FY' },
 ];
 
-const DART_FS_DIVS = ['CFS', 'OFS'];
+// 지원 기업은 모두 연결재무제표를 공시하므로 CFS만 게시한다. OFS 자동 fallback은
+// 연결 값이 있는데 별도 값을 최신 실적으로 오표시할 수 있어 Phase 5C.1에서 제거했다.
+const DART_FS_DIVS = ['CFS'];
 
 const SEC_CONCEPTS = {
   revenue: ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet'],
@@ -131,6 +157,25 @@ const SEC_CONCEPTS = {
     'Depreciation',
   ],
 };
+
+const SEC_PIVOT_METRICS: PivotMetricMapping[] = [
+  { metricId: 'revenue', concepts: ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'grossProfit', concepts: ['GrossProfit'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'operatingIncome', concepts: ['OperatingIncomeLoss'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'netIncome', concepts: ['NetIncomeLoss', 'ProfitLoss'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'operatingCashFlow', concepts: ['NetCashProvidedByUsedInOperatingActivities'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'capitalExpenditure', concepts: ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets'], unit: 'USD', kind: 'flow', allowCumulativeDerivation: true },
+  { metricId: 'basicEps', concepts: ['EarningsPerShareBasic'], unit: 'USD/shares', kind: 'flow' },
+  { metricId: 'dilutedEps', concepts: ['EarningsPerShareDiluted'], unit: 'USD/shares', kind: 'flow' },
+  { metricId: 'dilutedShares', concepts: ['WeightedAverageNumberOfDilutedSharesOutstanding'], unit: 'shares', kind: 'flow' },
+  { metricId: 'cashAndEquivalents', concepts: ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents'], unit: 'USD', kind: 'instant' },
+  { metricId: 'totalLiabilities', concepts: ['Liabilities'], unit: 'USD', kind: 'instant' },
+  { metricId: 'totalAssets', concepts: ['Assets'], unit: 'USD', kind: 'instant' },
+  { metricId: 'totalEquity', concepts: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], unit: 'USD', kind: 'instant' },
+  { metricId: 'currentAssets', concepts: ['AssetsCurrent'], unit: 'USD', kind: 'instant' },
+  { metricId: 'currentLiabilities', concepts: ['LiabilitiesCurrent'], unit: 'USD', kind: 'instant' },
+  { metricId: 'sharesOutstanding', concepts: ['EntityCommonStockSharesOutstanding', 'CommonStockSharesOutstanding'], unit: 'shares', kind: 'instant' },
+];
 
 type SecMetricKey = keyof typeof SEC_CONCEPTS;
 type SecFacts = Record<string, SecConceptFacts | undefined>;
@@ -472,6 +517,154 @@ function secFiledAtForAccession(payload: CompanyFactsPayload, accession: string 
   return null;
 }
 
+function factDuration(fact: SecFact) {
+  if (!fact.start || !fact.end) return null;
+  const duration = Math.round((dateValue(fact.end) - dateValue(fact.start)) / 86_400_000);
+  return duration > 0 ? duration : null;
+}
+
+function pivotValue(value: number, unit: PivotMetricMapping['unit']) {
+  return unit === 'USD/shares' ? value : value / 1_000_000;
+}
+
+function amendmentRank(form?: string) {
+  return /\/A$/i.test(form ?? '') ? 1 : 0;
+}
+
+function preferLatestFact(left: SecFact, right: SecFact) {
+  const amendment = amendmentRank(right.form) - amendmentRank(left.form);
+  if (amendment !== 0) return amendment;
+  return dateValue(right.filed) - dateValue(left.filed);
+}
+
+function factsForPivotMapping(facts: SecFacts | undefined, mapping: PivotMetricMapping) {
+  return mapping.concepts.flatMap((concept, conceptPriority) => {
+    const units = facts?.[concept]?.units ?? {};
+    const exact = units[mapping.unit] ?? [];
+    return exact.map((fact) => ({ fact, concept, conceptPriority }));
+  }).filter(({ fact }) => validFact(fact) && /^10-(?:Q|K)(?:\/A)?$/.test(fact.form ?? ''));
+}
+
+function uniquePivotFacts(facts: Array<{ fact: SecFact; concept: string; conceptPriority: number }>) {
+  const groups = new Map<string, Array<{ fact: SecFact; concept: string; conceptPriority: number }>>();
+  facts.forEach((item) => {
+    const key = [item.fact.start ?? '', item.fact.end ?? '', item.fact.form?.replace('/A', '') ?? ''].join('|');
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  });
+  return [...groups.values()].map((items) => {
+    const selected = [...items].sort((left, right) => preferLatestFact(left.fact, right.fact) || left.conceptPriority - right.conceptPriority)[0];
+    const originalContext = [...items]
+      .filter((item) => item.concept === selected.concept)
+      .sort((left, right) => dateValue(left.fact.filed) - dateValue(right.fact.filed))[0] ?? selected;
+    return { ...selected, fact: { ...selected.fact, fy: originalContext.fact.fy, fp: originalContext.fact.fp } };
+  });
+}
+
+function directQuarterCandidates(facts: SecFacts | undefined, mapping: PivotMetricMapping): PivotCandidate[] {
+  return uniquePivotFacts(factsForPivotMapping(facts, mapping))
+    .filter(({ fact }) => {
+      if (mapping.kind === 'instant') return !fact.start && Boolean(fact.end);
+      const duration = factDuration(fact);
+      return Boolean(fact.start && fact.end && duration !== null && duration >= 70 && duration <= 110);
+    })
+    .map(({ fact, concept }) => ({ metricId: mapping.metricId, concept, unit: mapping.unit, fact, value: pivotValue(fact.val!, mapping.unit), origin: 'reported' }));
+}
+
+function cumulativeQuarterCandidates(facts: SecFacts | undefined, mapping: PivotMetricMapping): PivotCandidate[] {
+  if (!mapping.allowCumulativeDerivation || mapping.kind !== 'flow') return [];
+  const candidates = uniquePivotFacts(factsForPivotMapping(facts, mapping))
+    .filter(({ fact }) => {
+      const duration = factDuration(fact);
+      return Boolean(fact.start && fact.end && duration !== null && duration >= 150 && duration <= 400);
+    });
+  const derived: PivotCandidate[] = [];
+  candidates.forEach((current) => {
+    const duration = factDuration(current.fact)!;
+    const previous = candidates
+      .filter((item) => item.concept === current.concept && item.fact.start === current.fact.start && dateValue(item.fact.end) < dateValue(current.fact.end))
+      .sort((left, right) => dateValue(right.fact.end) - dateValue(left.fact.end))[0];
+    if (!previous) return;
+    const gap = Math.round((dateValue(current.fact.end) - dateValue(previous.fact.end)) / 86_400_000);
+    if (gap < 70 || gap > 115) return;
+    if (duration >= 300 && current.fact.form?.replace('/A', '') !== '10-K') return;
+    const value = pivotValue(current.fact.val! - previous.fact.val!, mapping.unit);
+    if (!Number.isFinite(value)) return;
+    derived.push({ metricId: mapping.metricId, concept: current.concept, unit: mapping.unit, fact: { ...current.fact, start: previous.fact.end, fp: duration >= 300 ? 'Q4' : current.fact.fp }, value, origin: 'derived_from_reported', inputFacts: [current.fact, previous.fact] });
+  });
+  return derived;
+}
+
+function pivotSourceUrl(cik: string, accession?: string) {
+  if (!accession) return `https://data.sec.gov/api/xbrl/companyfacts/CIK${paddedCik(cik)}.json`;
+  return `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accession.replace(/-/g, '')}/${accession}-index.htm`;
+}
+
+function buildSecQuarterlyPeriods(payload: CompanyFactsPayload, companyId: string, cik: string): FinancialSeriesPeriod[] {
+  const facts = { ...(payload.facts?.['us-gaap'] ?? {}), ...(payload.facts?.dei ?? {}) };
+  const direct = SEC_PIVOT_METRICS.flatMap((mapping) => directQuarterCandidates(facts, mapping));
+  const derived = SEC_PIVOT_METRICS.flatMap((mapping) => cumulativeQuarterCandidates(facts, mapping));
+  const directKeys = new Set(direct.filter((item) => item.fact.start).map((item) => `${item.metricId}|${item.fact.end}`));
+  const flows = [...direct, ...derived.filter((item) => !directKeys.has(`${item.metricId}|${item.fact.end}`))];
+  const quarterEnds = [...new Set(flows.filter((item) => item.fact.start).map((item) => item.fact.end).filter(Boolean) as string[])].sort().slice(-12);
+  const instants = direct.filter((item) => !item.fact.start);
+
+  return quarterEnds.flatMap((periodEnd) => {
+    const flowPeriodFacts = flows.filter((item) => item.fact.end === periodEnd && item.fact.start);
+    const representative = flowPeriodFacts.sort((left, right) => preferLatestFact(left.fact, right.fact))[0];
+    if (!representative) return [];
+    const periodFacts = [...flowPeriodFacts, ...instants.filter((item) => {
+      if (item.fact.end === periodEnd) return true;
+      if (item.metricId !== 'sharesOutstanding' || item.fact.accn !== representative.fact.accn || !item.fact.end) return false;
+      const coverDateGap = Math.round((dateValue(item.fact.end) - dateValue(periodEnd)) / 86_400_000);
+      return coverDateGap >= 0 && coverDateGap <= 45;
+    })];
+    const metrics: Record<string, number> = {};
+    const metricOrigins: Record<string, 'reported' | 'derived_from_reported'> = {};
+    const metricLineage: Record<string, unknown> = {};
+    periodFacts.forEach((item) => {
+      if (metrics[item.metricId] !== undefined) return;
+      metrics[item.metricId] = item.value;
+      metricOrigins[item.metricId] = item.origin;
+      const accession = item.fact.accn ?? representative.fact.accn ?? '';
+      metricLineage[item.metricId] = {
+        companySlug: companyId,
+        metricId: item.metricId,
+        value: item.value,
+        currency: 'USD',
+        unit: item.unit === 'USD/shares' ? 'USD/share' : item.unit === 'shares' ? 'million shares' : 'million',
+        period: { start: item.fact.start, end: item.fact.end ?? periodEnd, fiscalYear: item.fact.fy, fiscalQuarter: item.fact.fp, periodType: item.fact.start ? 'quarter' : 'instant' },
+        origin: item.origin,
+        filing: { system: 'sec', formOrReportCode: item.fact.form ?? 'SEC filing', accessionOrReceiptNumber: accession, filedAt: item.fact.filed ?? '', reportPeriod: periodEnd, consolidated: true, conceptOrAccountId: `${item.concept === 'EntityCommonStockSharesOutstanding' ? 'dei' : 'us-gaap'}:${item.concept}`, conceptOrAccountName: item.concept, frame: item.fact.frame, filedValue: item.fact.val, filedUnit: item.unit, sourceUrl: pivotSourceUrl(cik, accession) },
+        calculation: item.origin === 'derived_from_reported' ? { formulaId: 'standalone_from_cumulative', inputIds: (item.inputFacts ?? []).map((fact) => `sec:${fact.accn}:${item.concept}:${fact.start}:${fact.end}`), explanation: '같은 시작일·계정·통화의 누적 공시값 차감' } : undefined,
+        verifiedAt: '2026-07-18',
+      };
+    });
+    if (typeof metrics.operatingCashFlow === 'number' && typeof metrics.capitalExpenditure === 'number') {
+      metrics.freeCashFlow = metrics.operatingCashFlow - Math.abs(metrics.capitalExpenditure);
+      metricOrigins.freeCashFlow = 'derived_from_reported';
+    }
+    const fiscalPeriod = representative.fact.fp === 'FY' ? 'Q4' : representative.fact.fp ?? 'quarter';
+    return [{
+      label: [representative.fact.fy ? `FY ${representative.fact.fy}` : '', fiscalPeriod].filter(Boolean).join(' '),
+      periodStart: representative.fact.start,
+      periodEnd,
+      fiscalYear: representative.fact.fy ?? null,
+      fiscalPeriod,
+      periodBasis: 'standalone' as const,
+      consolidation: 'consolidated' as const,
+      currency: 'USD',
+      unit: 'million' as const,
+      metrics,
+      metricOrigins,
+      metricLineage,
+      sourceIds: [...new Set(periodFacts.flatMap((item) => item.inputFacts?.map((fact) => `sec:${paddedCik(cik)}:${fact.accn}:${item.concept}:${fact.end}`) ?? [`sec:${paddedCik(cik)}:${item.fact.accn}:${item.concept}:${item.fact.end}`]))],
+      filingType: representative.fact.form ?? 'SEC filing',
+      filedAt: representative.fact.filed ?? null,
+      accessionOrReceiptNumber: representative.fact.accn ?? null,
+    }];
+  });
+}
+
 function selectSecMetrics(facts: SecFacts | undefined): SecSelectedMetrics {
   return {
     revenue: selectMetric(facts, SEC_CONCEPTS.revenue),
@@ -773,8 +966,8 @@ function annualDartYears() {
   return [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5].map(String);
 }
 
-function buildDartMetrics(rows: DartAccountRow[]) {
-  const selections = {
+function buildDartMetricSelections(rows: DartAccountRow[]) {
+  return {
     revenue: findDartMetric(rows, DART_ACCOUNT_ALIASES.revenue, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
     operatingIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.operatingIncome, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
     netIncome: findDartMetric(rows, DART_ACCOUNT_ALIASES.netIncome, { statements: ['IS', 'CIS'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
@@ -787,6 +980,10 @@ function buildDartMetrics(rows: DartAccountRow[]) {
     capitalExpenditures: findDartMetric(rows, DART_ACCOUNT_ALIASES.capitalExpenditures, { statements: ['CF'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
     depreciationAndAmortization: findDartMetric(rows, DART_ACCOUNT_ALIASES.depreciationAndAmortization, { statements: ['CF'], excludePerShare: true, excludeRatios: true, minAbsAmount: 1_000_000 }),
   };
+}
+
+function buildDartMetrics(rows: DartAccountRow[]) {
+  const selections = buildDartMetricSelections(rows);
   const values = {
     revenue: selectionValue(selections.revenue),
     operatingIncome: selectionValue(selections.operatingIncome),
@@ -821,12 +1018,76 @@ function buildDartMetrics(rows: DartAccountRow[]) {
 }
 
 type DartMetrics = ReturnType<typeof buildDartMetrics>;
+type DartSelections = ReturnType<typeof buildDartMetricSelections>;
 
 function finiteMillion(value: number | null) {
   return typeof value === 'number' && Number.isFinite(value) ? value / 1_000_000 : undefined;
 }
 
-function buildDartSeriesPeriod(year: string, fsDiv: string, rows: DartAccountRow[], metrics: DartMetrics): FinancialSeriesPeriod {
+const DART_PIVOT_SELECTION_KEYS = {
+  revenue: 'revenue',
+  operatingIncome: 'operatingIncome',
+  netIncome: 'netIncome',
+  operatingCashFlow: 'operatingCashFlow',
+  totalLiabilities: 'totalLiabilities',
+  totalEquity: 'stockholdersEquity',
+  currentAssets: 'assetsCurrent',
+  currentLiabilities: 'liabilitiesCurrent',
+  interestExpense: 'interestExpense',
+  capitalExpenditure: 'capitalExpenditures',
+  depreciationAndAmortization: 'depreciationAndAmortization',
+} as const satisfies Record<string, keyof DartSelections>;
+
+function buildDartLineage({ companyId, year, fsDiv, reportCode, periodStart, periodEnd, periodType, rows, values }: {
+  companyId: string;
+  year: string;
+  fsDiv: string;
+  reportCode: '11011' | '11013';
+  periodStart: string;
+  periodEnd: string;
+  periodType: 'quarter' | 'year';
+  rows: DartAccountRow[];
+  values: Record<string, number | undefined>;
+}) {
+  const selections = buildDartMetricSelections(rows);
+  const receiptNumber = rows.find((row) => row.rcept_no)?.rcept_no ?? '';
+  const filedAt = dartReceiptDate(rows) ?? '';
+  const sourceUrl = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${receiptNumber}`;
+  const lineage: Record<string, unknown> = {};
+  Object.entries(DART_PIVOT_SELECTION_KEYS).forEach(([metricId, selectionKey]) => {
+    const value = values[metricId];
+    const selection = selections[selectionKey];
+    if (typeof value !== 'number' || !selection) return;
+    const instant = selection.row.sj_div === 'BS';
+    lineage[metricId] = {
+      companySlug: companyId,
+      metricId,
+      value,
+      currency: selection.currency ?? 'KRW',
+      unit: 'million',
+      period: { start: instant ? undefined : periodStart, end: periodEnd, fiscalYear: Number(year), fiscalQuarter: periodType === 'quarter' ? 'Q1' : 'FY', periodType: instant ? 'instant' : periodType },
+      origin: 'reported',
+      filing: { system: 'opendart', formOrReportCode: reportCode, accessionOrReceiptNumber: receiptNumber, filedAt, reportPeriod: periodEnd, consolidated: fsDiv === 'CFS', conceptOrAccountId: selection.row.account_id ?? selection.row.account_nm ?? '', conceptOrAccountName: selection.row.account_nm ?? selection.row.account_id ?? '', filedValue: selection.value, filedUnit: selection.currency ?? 'KRW', sourceUrl },
+      verifiedAt: '2026-07-18',
+    };
+  });
+  if (typeof values.freeCashFlow === 'number' && selections.operatingCashFlow && selections.capitalExpenditures) {
+    lineage.freeCashFlow = {
+      companySlug: companyId,
+      metricId: 'freeCashFlow',
+      value: values.freeCashFlow,
+      currency: selections.operatingCashFlow.currency ?? selections.capitalExpenditures.currency ?? 'KRW',
+      unit: 'million',
+      period: { start: periodStart, end: periodEnd, fiscalYear: Number(year), fiscalQuarter: periodType === 'quarter' ? 'Q1' : 'FY', periodType },
+      origin: 'derived_from_reported',
+      calculation: { formulaId: 'free_cash_flow', inputIds: [selections.operatingCashFlow.row.account_id, selections.capitalExpenditures.row.account_id].filter(Boolean), explanation: 'OpenDART 영업활동현금흐름 - 유형자산 취득 현금유출' },
+      verifiedAt: '2026-07-18',
+    };
+  }
+  return lineage;
+}
+
+function buildDartSeriesPeriod(companyId: string, year: string, fsDiv: string, rows: DartAccountRow[], metrics: DartMetrics): FinancialSeriesPeriod {
   const values: Record<string, number | undefined> = {
     revenue: finiteMillion(metrics.revenue),
     operatingIncome: finiteMillion(metrics.operatingIncome),
@@ -847,11 +1108,49 @@ function buildDartSeriesPeriod(year: string, fsDiv: string, rows: DartAccountRow
     periodEnd: `${year}-12-31`,
     fiscalYear: Number(year),
     fiscalPeriod: 'FY',
+    periodBasis: 'annual',
+    consolidation: fsDiv === 'CFS' ? 'consolidated' : 'separate',
     currency: metrics.currency ?? 'KRW',
     unit: 'million',
     metrics: Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
+    metricOrigins: Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => typeof entry[1] === 'number').map(([metricId]) => [metricId, metricId === 'freeCashFlow' ? 'derived_from_reported' : 'reported'])),
+    metricLineage: buildDartLineage({ companyId, year, fsDiv, reportCode: '11011', periodStart: `${year}-01-01`, periodEnd: `${year}-12-31`, periodType: 'year', rows, values }),
     sourceIds: receiptNumber ? [`opendart:${corpReceiptId(receiptNumber)}`] : [],
     filingType: `OpenDART 사업보고서 ${fsDiv}`,
+    filedAt: dartReceiptDate(rows),
+    accessionOrReceiptNumber: receiptNumber,
+  };
+}
+
+function buildDartQ1SeriesPeriod(companyId: string, year: string, fsDiv: string, rows: DartAccountRow[], metrics: DartMetrics): FinancialSeriesPeriod {
+  const values: Record<string, number | undefined> = {
+    revenue: finiteMillion(metrics.revenue),
+    operatingIncome: finiteMillion(metrics.operatingIncome),
+    netIncome: finiteMillion(metrics.netIncome),
+    operatingCashFlow: finiteMillion(metrics.operatingCashFlow),
+    totalLiabilities: finiteMillion(metrics.totalLiabilities),
+    totalEquity: finiteMillion(metrics.stockholdersEquity),
+    currentAssets: finiteMillion(metrics.assetsCurrent),
+    currentLiabilities: finiteMillion(metrics.liabilitiesCurrent),
+    capitalExpenditure: finiteMillion(metrics.capitalExpenditures),
+    freeCashFlow: finiteMillion(metrics.freeCashFlow),
+  };
+  const receiptNumber = rows.find((row) => row.rcept_no)?.rcept_no ?? null;
+  return {
+    label: `${year}년 1분기`,
+    periodStart: `${year}-01-01`,
+    periodEnd: `${year}-03-31`,
+    fiscalYear: Number(year),
+    fiscalPeriod: 'Q1',
+    periodBasis: 'standalone',
+    consolidation: fsDiv === 'CFS' ? 'consolidated' : 'separate',
+    currency: metrics.currency ?? 'KRW',
+    unit: 'million',
+    metrics: Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
+    metricOrigins: Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => typeof entry[1] === 'number').map(([metricId]) => [metricId, metricId === 'freeCashFlow' ? 'derived_from_reported' : 'reported'])),
+    metricLineage: buildDartLineage({ companyId, year, fsDiv, reportCode: '11013', periodStart: `${year}-01-01`, periodEnd: `${year}-03-31`, periodType: 'quarter', rows, values }),
+    sourceIds: receiptNumber ? [`opendart:${corpReceiptId(receiptNumber)}:${fsDiv}`] : [],
+    filingType: `OpenDART 1분기보고서 ${fsDiv}`,
     filedAt: dartReceiptDate(rows),
     accessionOrReceiptNumber: receiptNumber,
   };
@@ -861,7 +1160,7 @@ function corpReceiptId(receiptNumber: string) {
   return receiptNumber.replace(/[^0-9]/g, '');
 }
 
-async function fetchKoreanAnnualSeries(apiKey: string, corpCode: string) {
+async function fetchKoreanAnnualSeries(apiKey: string, corpCode: string, companyId: string) {
   const report = DART_REPORTS.find((item) => item.fiscalPeriod === 'FY')!;
   const candidates = await Promise.all(annualDartYears().map(async (year) => {
     for (const fsDiv of DART_FS_DIVS) {
@@ -881,7 +1180,7 @@ async function fetchKoreanAnnualSeries(apiKey: string, corpCode: string) {
         capitalExpenditures: metrics.capitalExpenditures,
         depreciationAndAmortization: metrics.depreciationAndAmortization,
       }) === 'not-found') continue;
-      return { period: buildDartSeriesPeriod(year, fsDiv, result.rows, metrics), metrics, rows: result.rows };
+      return { period: buildDartSeriesPeriod(companyId, year, fsDiv, result.rows, metrics), metrics, rows: result.rows };
     }
     return null;
   }));
@@ -917,7 +1216,7 @@ async function fetchOpenDartMetrics({
     capitalExpenditures: metrics.capitalExpenditures,
     depreciationAndAmortization: metrics.depreciationAndAmortization,
   });
-  return sourceStatus === 'not-found' ? null : metrics;
+  return sourceStatus === 'not-found' ? null : { metrics, rows: result.rows };
 }
 
 function dartComparison(current: DartMetrics, priorYear: DartMetrics | null): FinancialComparison {
@@ -981,8 +1280,8 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
   }
 
   if (period === 'annual') {
-    const annualSeries = await fetchKoreanAnnualSeries(openDartApiKey, corpCode);
-    const latest = annualSeries.at(-1);
+    const annualSeries = await fetchKoreanAnnualSeries(openDartApiKey, corpCode, companyId);
+    const latest = annualSeries[annualSeries.length - 1];
     if (latest) {
       const { currency, amountBasis, ...metrics } = latest.metrics;
       const values = {
@@ -998,7 +1297,7 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
         capitalExpenditures: metrics.capitalExpenditures,
         depreciationAndAmortization: metrics.depreciationAndAmortization,
       };
-      const prior = annualSeries.length > 1 ? annualSeries.at(-2)?.metrics ?? null : null;
+      const prior = annualSeries.length > 1 ? annualSeries[annualSeries.length - 2]?.metrics ?? null : null;
       return {
         ok: true,
         country,
@@ -1013,12 +1312,26 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
         asOf: latest.period.filedAt,
         currency,
         amountBasis,
-        periodBasis: 'OpenDART annual business reports; consolidated statements preferred',
+        periodBasis: 'OpenDART annual business reports; CFS consolidated statements only',
+        consolidation: 'consolidated',
+        freshness: 'current',
+        latestFiling: latest.period.accessionOrReceiptNumber ? {
+          system: 'opendart',
+          formOrReportCode: '11011',
+          accessionOrReceiptNumber: latest.period.accessionOrReceiptNumber,
+          filedAt: latest.period.filedAt ?? '',
+          reportPeriod: latest.period.periodEnd,
+          fiscalYear: latest.period.fiscalYear ?? Number(latest.period.periodEnd.slice(0, 4)),
+          fiscalQuarter: 'FY',
+          consolidated: true,
+          amended: false,
+          sourceUrl: `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${latest.period.accessionOrReceiptNumber}`,
+        } : null,
         metrics,
         comparison: dartComparison(latest.metrics, prior),
         rawAvailable: rawAvailableFromValues(values),
         series: { periodType: 'annual', periods: annualSeries.map((item) => item.period), requestedLimit: 5, complete: annualSeries.length >= 2 },
-        message: 'OpenDART annual series loaded. Amounts in series are normalized to currency millions; missing years and metrics remain missing.',
+        message: 'OpenDART CFS annual series loaded. Amounts in series are normalized to currency millions; missing years and metrics remain missing.',
         env: { secUserAgent: hasEnv('SEC_USER_AGENT') ? 'present' : 'missing', openDartApiKey: 'present' },
       };
     }
@@ -1068,6 +1381,13 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
               fsDiv,
             })
           : null;
+        const q1Series = report.fiscalPeriod === 'Q1'
+          ? [
+              ...(priorYear ? [buildDartQ1SeriesPeriod(companyId, String(Number(year) - 1), fsDiv, priorYear.rows, priorYear.metrics)] : []),
+              buildDartQ1SeriesPeriod(companyId, year, fsDiv, result.rows, selectedMetrics),
+            ]
+          : [];
+        const currentPeriod = q1Series[q1Series.length - 1];
 
         return {
           ok: true,
@@ -1083,11 +1403,30 @@ async function buildKoreanFinancialsResponse(country: string, companyId: string,
           asOf: dartReceiptDate(result.rows),
           currency,
           amountBasis,
-          periodBasis: 'OpenDART regular filing disclosure basis',
+          periodBasis: report.fiscalPeriod === 'Q1'
+            ? 'OpenDART standalone Q1 amounts; CFS consolidated statements'
+            : 'OpenDART cumulative interim filing; standalone quarter publication withheld until safe derivation is available',
+          consolidation: fsDiv === 'CFS' ? 'consolidated' : 'separate',
+          freshness: 'current',
+          latestFiling: currentPeriod?.accessionOrReceiptNumber ? {
+            system: 'opendart',
+            formOrReportCode: report.code,
+            accessionOrReceiptNumber: currentPeriod.accessionOrReceiptNumber,
+            filedAt: currentPeriod.filedAt ?? '',
+            reportPeriod: currentPeriod.periodEnd,
+            fiscalYear: Number(year),
+            fiscalQuarter: report.fiscalPeriod,
+            consolidated: fsDiv === 'CFS',
+            amended: false,
+            sourceUrl: `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${currentPeriod.accessionOrReceiptNumber}`,
+          } : null,
           metrics,
-          comparison: dartComparison(selectedMetrics, priorYear),
+          comparison: dartComparison(selectedMetrics, priorYear?.metrics ?? null),
           rawAvailable: rawAvailableFromValues(dartValues),
-          message: 'OpenDART data loaded. Amounts are parsed from raw OpenDART thstrm_amount strings and are not rescaled by this API. Currency follows the OpenDART currency field when available.',
+          series: { periodType: 'quarterly', periods: q1Series, requestedLimit: 8, complete: false },
+          message: q1Series.length
+            ? 'OpenDART CFS standalone Q1 series loaded. Missing quarters remain missing.'
+            : 'OpenDART cumulative interim filing loaded, but no amount is published as a standalone quarter without verified derivation.',
           env: {
             secUserAgent: hasEnv('SEC_USER_AGENT') ? 'present' : 'missing',
             openDartApiKey: 'present',
@@ -1261,6 +1600,8 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
           periodEnd: item.periodEnd,
           fiscalYear: item.fiscalYear ?? null,
           fiscalPeriod: 'FY',
+          periodBasis: 'annual',
+          consolidation: 'consolidated',
           currency: item.currency,
           unit: 'million',
           metrics: Object.fromEntries(Object.entries(item.metrics).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
@@ -1272,33 +1613,11 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       })
     : [];
 
-  const currentSeries: FinancialSeriesPeriod[] = period === 'quarterly' && reportFact
-    ? [{
-        label: [reportFact.fy ? `FY ${reportFact.fy}` : '', reportFact.fp ?? '최근 분기'].filter(Boolean).join(' '),
-        periodEnd: reportFact.end ?? reportFact.filed ?? '',
-        fiscalYear: reportFact.fy ?? null,
-        fiscalPeriod: reportFact.fp ?? '최근 분기',
-        currency,
-        unit: 'million',
-        metrics: Object.fromEntries(Object.entries({
-          revenue: selected.revenue?.value !== undefined ? selected.revenue.value / 1_000_000 : undefined,
-          operatingIncome: selected.operatingIncome?.value !== undefined ? selected.operatingIncome.value / 1_000_000 : undefined,
-          netIncome: selected.netIncome?.value !== undefined ? selected.netIncome.value / 1_000_000 : undefined,
-          operatingCashFlow: operatingCashFlow !== null ? operatingCashFlow / 1_000_000 : undefined,
-          capitalExpenditure: capitalExpenditures !== null ? capitalExpenditures / 1_000_000 : undefined,
-          freeCashFlow: freeCashFlow !== null ? freeCashFlow / 1_000_000 : undefined,
-          totalLiabilities: selected.totalLiabilities?.value !== undefined ? selected.totalLiabilities.value / 1_000_000 : undefined,
-          totalEquity: selected.stockholdersEquity?.value !== undefined ? selected.stockholdersEquity.value / 1_000_000 : undefined,
-          currentAssets: selected.assetsCurrent?.value !== undefined ? selected.assetsCurrent.value / 1_000_000 : undefined,
-          currentLiabilities: selected.liabilitiesCurrent?.value !== undefined ? selected.liabilitiesCurrent.value / 1_000_000 : undefined,
-          dilutedEps: selected.eps?.value,
-        }).filter((entry): entry is [string, number] => typeof entry[1] === 'number')),
-        sourceIds: [`sec:${paddedCik(cik)}:${reportFact.filed ?? reportFact.end ?? 'latest'}`],
-        filingType: reportFact.form ?? 'SEC filing',
-        filedAt: reportFact.filed ?? null,
-        accessionOrReceiptNumber: null,
-      }]
+  const currentSeries = period === 'quarterly' && !foreign20FConfig
+    ? buildSecQuarterlyPeriods(secResult.payload, companyId, cik)
     : [];
+  const latestQuarter = currentSeries[currentSeries.length - 1];
+  const latestSeriesPeriod = period === 'quarterly' ? latestQuarter : annualPeriods[annualPeriods.length - 1];
 
   return {
     ok: true,
@@ -1316,7 +1635,21 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
     amountBasis: foreign20FConfig
       ? `SEC CompanyFacts ${foreign20FConfig.taxonomy} ${currency}`
       : `SEC CompanyFacts ${currency}`,
-    periodBasis: foreign20FConfig ? 'SEC 20-F annual facts only' : 'SEC 10-K/10-Q CompanyFacts selector',
+    periodBasis: foreign20FConfig ? 'SEC 20-F annual facts only' : period === 'quarterly' ? 'SEC standalone quarter contexts; safe YTD subtraction only when direct context is absent' : 'SEC 10-K annual contexts',
+    consolidation: 'consolidated',
+    freshness: 'current',
+    latestFiling: latestSeriesPeriod?.accessionOrReceiptNumber ? {
+      system: 'sec',
+      formOrReportCode: latestSeriesPeriod.filingType,
+      accessionOrReceiptNumber: latestSeriesPeriod.accessionOrReceiptNumber,
+      filedAt: latestSeriesPeriod.filedAt ?? '',
+      reportPeriod: latestSeriesPeriod.periodEnd,
+      fiscalYear: latestSeriesPeriod.fiscalYear ?? Number(latestSeriesPeriod.periodEnd.slice(0, 4)),
+      fiscalQuarter: latestSeriesPeriod.fiscalPeriod,
+      consolidated: true,
+      amended: /\/A$/.test(latestSeriesPeriod.filingType),
+      sourceUrl: pivotSourceUrl(cik, latestSeriesPeriod.accessionOrReceiptNumber),
+    } : null,
     metrics: {
       revenue: selected.revenue?.value ?? null,
       operatingIncome: selected.operatingIncome?.value ?? null,
@@ -1344,13 +1677,15 @@ async function buildUsFinancialsResponse(country: string, companyId: string, cik
       periodType: period === 'quarterly' ? 'quarterly' : 'annual',
       periods: period === 'quarterly' ? currentSeries : annualPeriods,
       requestedLimit: period === 'quarterly' ? 8 : 5,
-      complete: period === 'annual' ? annualPeriods.length >= 2 : false,
+      complete: period === 'annual' ? annualPeriods.length >= 2 : currentSeries.length >= 4,
     },
     message: sourceStatus === 'not-found'
       ? 'No usable SEC CompanyFacts metrics found.'
       : foreign20FConfig
         ? 'SEC CompanyFacts 20-F annual data loaded. Only the configured foreign issuer and preferred currency facts are selected.'
-        : 'SEC CompanyFacts data loaded.',
+        : period === 'quarterly'
+          ? 'SEC CompanyFacts standalone quarter series loaded. YTD cash-flow facts are subtracted only across matching contexts.'
+          : 'SEC CompanyFacts data loaded.',
     env: {
       secUserAgent: 'present',
       openDartApiKey: hasEnv('OPENDART_API_KEY') ? 'present' : 'missing',

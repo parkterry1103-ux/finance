@@ -63,7 +63,9 @@ export const financialMetricDefinitions: FinancialMetricDefinition[] = [
   { id: 'totalDebt', label: '총차입금', group: 'balanceSheet', format: 'amount', change: 'percent', description: '단기와 장기 이자부 부채의 합계입니다.' },
   { id: 'debtToCapital', label: '자본 대비 차입금', group: 'balanceSheet', format: 'percent', change: 'percentagePoint', description: '차입금과 자기자본을 합친 자본 중 차입금의 비율입니다.', calculation: '총차입금 ÷ (총차입금 + 자기자본)' },
   { id: 'currentRatio', label: '유동비율', group: 'balanceSheet', format: 'multiple', change: 'absolute', description: '단기 의무를 유동자산으로 감당할 수 있는 정도입니다.', calculation: '유동자산 ÷ 유동부채' },
+  { id: 'basicEps', label: '기본 주당순이익', group: 'perShare', format: 'perShare', change: 'percent', description: '희석성 증권을 반영하기 전 보통주 1주당 순이익입니다.' },
   { id: 'dilutedEps', label: '희석 주당순이익', group: 'perShare', format: 'perShare', change: 'percent', description: '잠재 주식 희석을 반영한 주당 순이익입니다.' },
+  { id: 'sharesOutstanding', label: '기말 발행주식수', group: 'perShare', format: 'shares', change: 'percent', description: '해당 공시일 현재 실제 발행된 보통주 수입니다.' },
 ];
 
 export function financialPivotCompany(slug: string) {
