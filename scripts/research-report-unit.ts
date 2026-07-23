@@ -167,17 +167,23 @@ const cssSource = readFileSync(join(root, 'src', 'styles.css'), 'utf8');
 assert(appSource.includes("lazy(() => import('./routes/ResearchReportRoute'))"), 'research report route is not lazy');
 assert(appSource.includes('/^\\/ko\\/companies\\/([^/]+)\\/report\\/?$/'), 'canonical report route matcher missing');
 assert(!profileSource.includes("content/research-reports"), 'dashboard bundle imports report content');
-assert(profileSource.includes('brief.reportSlug ?') && profileSource.includes('심층 리포트 읽기'), 'dashboard report CTA is not controlled by Company Brief');
+assert(
+  profileSource.includes("profile.searchStatus.reportStatus === 'supported' && brief.reportSlug")
+    && profileSource.includes('장기 기업 판단'),
+  'dashboard report CTA is not controlled by Company Registry and Company Brief',
+);
 const briefReportConfigs = ['nvidia', 'meta'].map((slug) => readFileSync(join(root, 'src', 'content', 'company-briefs', 'entries', `${slug}.ts`), 'utf8'));
 assert(briefReportConfigs.every((source, index) => source.includes(`reportSlug: '${['nvidia', 'meta'][index]}'`)), 'dashboard CTA scope is not exactly NVIDIA and Meta');
 assert(!routeSource.includes('window.print()'), 'print action must be removed');
 assert(!routeSource.includes('Printer'), 'print icon must be removed');
 assert(!routeSource.includes('인쇄·PDF 저장'), 'print/PDF label must be removed');
-assert(routeSource.includes('왜 이 가치평가 방식을 사용했나요?'), 'valuation-method explanation missing');
-assert(routeSource.includes('시장가격과 모형 가치의 차이'), 'market/model comparison missing');
-assert(routeSource.includes('현재 가격에는 어떤 기대가 반영돼 있나요?'), 'required reverse DCF section title missing');
-assert(routeSource.includes('산업 기준과 비교'), 'industry benchmark section missing');
-assert(routeSource.includes('기준 가정'), 'sensitivity base-state text missing');
+assert(!routeSource.includes('loadMonteCarloResult'), 'report must not preload valuation distribution');
+assert(!/(Reverse DCF|Monte Carlo|민감도 매트릭스|DCF 시나리오)/.test(routeSource), 'report must not duplicate full valuation UI');
+assert(routeSource.includes('핵심 브리프'), 'research brief missing');
+assert(routeSource.includes('좋은 점 3개') && routeSource.includes('위험 3개'), 'brief strengths and risks missing');
+assert(routeSource.includes('현재 가격에 반영된 기대'), 'valuation handoff missing');
+assert(routeSource.includes('반증 조건과 다음 확인'), 'falsification section missing');
+assert(routeSource.includes('고급 보기 · 사업부·해자·공시 근거'), 'advanced evidence disclosure missing');
 assert(!routeSource.includes("fact: '사실'"), 'public evidence label mapping must be removed');
 assert(!routeSource.includes('EvidenceLedger'), 'public evidence ledger must be removed');
 assert(cssSource.includes('.research-paragraph {') && cssSource.includes('min-width: 0;'), 'single-column paragraph width guard missing');

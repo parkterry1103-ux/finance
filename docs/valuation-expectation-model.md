@@ -30,3 +30,7 @@ watch item은 매출 성장, 마진, 재투자·현금흐름을 다음 공식 �
 ## Phase 5F 측정 연결
 
 가치평가 route 도착, 가정 설명 펼침과 민감도 조절 영역 첫 접근만 기록한다. 시장가격, scenario value, 내재 CAGR, WACC·영구성장률 입력, 변경 조합 결과와 model gap은 절대 analytics payload에 넣지 않는다. `valuation_view`는 가치평가 지원 상태를 추천 신호로 해석하지 않으며 unavailable 기업의 0값을 만들지 않는다.
+
+## Phase 5G 역할 경계
+
+완전한 가격·모형 범위·Reverse DCF·민감도·확률 분포는 Valuation에서만 렌더링한다. Research Report는 사업·해자·위험 판단에 집중하고 현재 가격 기대는 이 route로 연결하는 한 줄 handoff만 제공한다. `full`이 아닌 기업은 기업 상세과 Report에서 Valuation CTA를 노출하지 않는다.

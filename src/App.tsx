@@ -4290,54 +4290,6 @@ function BeginnerLandingPage({ onHome, onOpenMarketMapLibrary, onOpenPicks, onOp
   );
 }
 
-type HomeEntry = {
-  id: 'companies' | 'macro';
-  title: string;
-  eyebrow: string;
-  description: string;
-  href: string;
-  cta: string;
-};
-
-const homeEntries: HomeEntry[] = [
-  {
-    id: 'companies',
-    title: '기업 분석',
-    eyebrow: 'Bottom-up',
-    description: '기업의 사업과 재무 흐름을 봅니다.',
-    href: '/ko/companies',
-    cta: '기업 분석 보기',
-  },
-  {
-    id: 'macro',
-    title: '거시경제',
-    eyebrow: 'Top-down',
-    description: '금리·환율·원자재의 흐름을 봅니다.',
-    href: '/ko/macro-dashboard',
-    cta: '거시경제 보기',
-  },
-];
-
-function HomeEntryCard({ entry }: { entry: HomeEntry }) {
-  return (
-    <article className="simplified-home-card">
-      <p>{entry.eyebrow}</p>
-      <h2>{entry.title}</h2>
-      <p>{entry.description}</p>
-      <a
-        href={entry.href}
-        onClick={(event) => {
-          event.preventDefault();
-          navigateWithinApp(entry.href);
-        }}
-      >
-        {entry.cta}
-        <ArrowRight size={17} aria-hidden="true" />
-      </a>
-    </article>
-  );
-}
-
 function SimplifiedHome({ onHome }: Pick<LandingPageProps, 'onHome'>) {
   return <NewsroomHome navigation={<PrimaryNavigation active="today" variant="home" onHome={onHome} />} onNavigate={navigateWithinApp} />;
 }

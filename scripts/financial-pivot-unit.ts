@@ -78,7 +78,7 @@ check(routeSource.includes('loadFinancialAuditCompany'), 'company audit data loa
 check(routeSource.includes('peerPayloads') && routeSource.includes("comparisonMode !== 'peer'"), 'peer data loads on demand');
 check(routeSource.includes('<table>') && routeSource.includes('scope="row"') && routeSource.includes('scope="col"'), 'semantic table structure');
 const profileSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
-check(profileSource.includes('/financials') && profileSource.includes('숫자와 비교 보기'), 'company brief CTA connects financial route');
+check(profileSource.includes('/financials') && profileSource.includes('숫자와 비교'), 'company dissection CTA connects financial route');
 const financialApiSource = readFileSync(join(process.cwd(), 'api', 'financials.ts'), 'utf8');
 check(financialApiSource.includes('buildDartLineage') && financialApiSource.includes('conceptOrAccountId'), 'OpenDART values preserve account lineage');
 check(financialApiSource.includes('frame: item.fact.frame') && financialApiSource.includes('filedValue: item.fact.val'), 'SEC values preserve frame and filed value');

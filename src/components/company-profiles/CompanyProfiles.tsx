@@ -7,13 +7,13 @@ import {
 import { companyProfileRelationTypeLabels } from '../../content/company-profile-relations/index.js';
 import { companySearchRecordPath, searchCompanyProfiles } from '../../content/company-profiles/search.js';
 import type {
-  CompanyAssessmentState,
-  CompanyResearchProfileViewModel,
-  CompanySearchRecord,
   DashboardChart,
   DashboardMetric,
+  CompanyResearchProfileViewModel,
+  CompanySearchRecord,
 } from '../../content/company-profiles/types.js';
-import type { CompanyBrief, CompanyBriefQuestionKey } from '../../content/company-briefs/types.js';
+import type { CompanyBrief } from '../../content/company-briefs/types.js';
+import type { CompanyDissectionModel } from '../../content/company-dissections/index.js';
 import { sourceRegistry } from '../../content/sources/index.js';
 import { bottleneckStatusLabels, bottleneckTrendLabels } from '../../content/bottlenecks/index.js';
 import { IndustryFlowCard } from '../industry-flows/IndustryFlowCard.js';
@@ -21,6 +21,7 @@ import { moveCharacterLabels } from '../../content/editorial/selectors.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
 import type { EventImpactRecord } from '../../content/event-impacts/index.js';
 import { CompanyEventImpactSection } from '../event-impacts/EventImpactUi.js';
+import { CompanyDissectionRadar } from './CompanyDissectionRadar.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 type Navigate = (path: string) => void;
@@ -40,24 +41,6 @@ function internalLink(path: string, onNavigate: Navigate) {
 function formatDate(value: string) {
   return value ? value.replace(/-/g, '.') : '확인 제한';
 }
-
-const companyBriefQuestionKeys: CompanyBriefQuestionKey[] = ['revenueEngine', 'recentChange', 'whyItMatters', 'keyRisk', 'watchNext'];
-
-const companyBriefQuestionLabels: Record<CompanyBriefQuestionKey, string> = {
-  revenueEngine: '돈을 버는 구조',
-  recentChange: '최근 변화',
-  whyItMatters: '왜 중요한가',
-  keyRisk: '가장 큰 위험',
-  watchNext: '다음 확인',
-};
-
-const companyBriefQuestionNumbers: Record<CompanyBriefQuestionKey, string> = {
-  revenueEngine: '01',
-  recentChange: '02',
-  whyItMatters: '03',
-  keyRisk: '04',
-  watchNext: '05',
-};
 
 function CompanyProfileMonogram({ profile }: { profile: CompanyResearchProfileViewModel }) {
   return <span className="company-profile-monogram" aria-hidden="true">{profile.company.name.replace(/[^A-Za-z0-9가-힣]/g, '').slice(0, 2).toUpperCase()}</span>;
@@ -222,8 +205,8 @@ export function CompanyProfilesListPage({
                       <p className="company-profile-list-security">{security} <span aria-hidden="true">·</span> {record.profile.exchange}</p>
                       <p className="company-profile-list-industry">{record.profile.industry}</p>
                       <p className="company-profile-list-description">{record.profile.searchDescription}</p>
-                      <a className="company-profile-list-cta" href={path} aria-label={`${record.company.name} 기업 분석 보기`} onClick={internalLink(path, onNavigate)}>
-                        기업 분석 보기 <ArrowRight size={15} aria-hidden="true" />
+                      <a className="company-profile-list-cta" href={path} aria-label={`${record.company.name} 기업 해부 보기`} onClick={internalLink(path, onNavigate)}>
+                        기업 해부 보기 <ArrowRight size={15} aria-hidden="true" />
                       </a>
                     </article>
                   );
@@ -286,15 +269,17 @@ export function CompanyBriefLoadingPage({
 export function CompanyResearchProfilePage({
   viewModel,
   brief,
+  dissection,
   eventImpacts,
   navigation,
   onNavigate,
-}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; eventImpacts: EventImpactRecord[] }) {
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; dissection: CompanyDissectionModel; eventImpacts: EventImpactRecord[] }) {
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
   const relatedEditorialIds = new Set(brief.relatedEditorialIds);
   const recentEditorial = publishedEditorialSummaryIndex.filter((item) => relatedEditorialIds.has(item.id)).slice(0, 2);
+  const recentStock = recentEditorial.find((item) => item.kind === 'stock');
   useEffect(() => {
     trackAnalyticsEvent('company_view', { companySlug: profile.slug }, { oncePerPage: true, dedupeKey: profile.slug });
   }, [profile.slug]);
@@ -312,138 +297,57 @@ export function CompanyResearchProfilePage({
             <span className="company-dashboard-kicker">{company.countryLabel} 기업 분석</span>
             <h1 id="company-profile-title">{company.name}</h1>
             <p className="company-dashboard-english-name">{profile.englishName}</p>
-            <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {profile.industry}</p>
+            <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {dissection.industryProfile.primaryIndustry}</p>
             <p className="company-dashboard-description">{brief.oneLineBusiness}</p>
             <p className="company-dashboard-asof">분석 기준 <time dateTime={brief.asOf}>{formatDate(brief.asOf)}</time></p>
           </div>
         </header>
 
-        <section className="company-brief-section" aria-labelledby="company-brief-title">
-          <div className="company-dashboard-section-heading"><span>1분 핵심 판단</span><h2 id="company-brief-title">기업을 이해하는 다섯 질문</h2><p>공식 자료에 근거한 현재 판단이며, 다음 공시에서 달라질 수 있습니다.</p></div>
-          <div className="company-brief-grid">
-            {companyBriefQuestionKeys.map((key) => {
-              const answer = brief.questions[key];
-              const source = sourceRegistry[answer.sourceIds[0]];
-              const headingId = `company-brief-${key}`;
-              return <article className={key === 'revenueEngine' ? 'company-brief-card company-brief-card--lead' : 'company-brief-card'} key={key} aria-labelledby={headingId}>
-                <span>{companyBriefQuestionNumbers[key]}</span>
-                <h3 id={headingId}>{companyBriefQuestionLabels[key]}</h3>
-                <p>{answer.summary}</p>
-                <footer>
-                  {answer.asOf ? <time dateTime={answer.asOf}>기준 {formatDate(answer.asOf)}</time> : <span>분석 기준 {formatDate(brief.asOf)}</span>}
-                  {source ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${companyBriefQuestionLabels[key]} 근거 · ${source.publisher} 원문`}>{source.publisher} 근거 <ExternalLink size={12} aria-hidden="true" /></a> : null}
-                </footer>
-              </article>;
-            })}
-          </div>
+        <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
+          <div className="company-dashboard-section-heading"><span>10초 핵심 상태</span><h2 id="company-dissection-core-title">네 가지 핵심 카드</h2><p>각 카드는 한 개의 대표 근거와 비교 기준만 보여줍니다.</p></div>
+          <div className="company-dissection-core-grid">{dissection.coreCards.map((card) => <article key={card.key} className={`state-${card.state}`}>
+            <span>{card.label}</span><h3>{card.statusLabel}</h3><strong>{card.value}</strong><p>{card.comparisonLabel}</p><small>{formatDate(card.period)}</small>
+          </article>)}</div>
         </section>
 
-        <section className="company-brief-metrics" aria-labelledby="company-brief-metrics-title">
-          <div className="company-dashboard-section-heading"><span>핵심 숫자</span><h2 id="company-brief-metrics-title">비교와 함께 보는 숫자</h2><p>첫 화면에는 사업 구조에 중요한 공식 수치만 최대 3개 표시합니다.</p></div>
-          <div className="company-brief-metric-grid">
-            {brief.keyMetrics.map((item) => {
-              const source = sourceRegistry[item.sourceId];
-              return <article key={item.id}>
-                <span>{item.label}</span>
-                <strong>{item.formattedValue}</strong>
-                <small>{item.period} <span aria-hidden="true">·</span> {item.unit}</small>
-                {item.comparison ? <dl className="company-brief-comparison">
-                  {item.comparison.formattedReferenceValue ? <div><dt>{item.comparison.label}</dt><dd>{item.comparison.formattedReferenceValue}</dd></div> : null}
-                  {item.comparison.formattedDifference ? <div><dt>변화</dt><dd>{item.comparison.formattedDifference}</dd></div> : null}
-                  {item.comparison.referencePeriod ? <div><dt>비교 기간</dt><dd>{item.comparison.referencePeriod}</dd></div> : null}
-                </dl> : <p className="company-brief-no-comparison">직접 비교 자료 없음</p>}
-                <p>{item.interpretation}</p>
-                {source ? <a href={source.url} target="_blank" rel="noopener noreferrer" aria-label={`${item.label} 자료 출처 · ${source.publisher} 원문`}>{source.publisher} 원문 <ExternalLink size={12} aria-hidden="true" /></a> : null}
-              </article>;
-            })}
-          </div>
+        <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} />
+
+        <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
+          <div className="company-dashboard-section-heading"><span>단기 상태 · 오각형과 분리</span><h2 id="company-market-momentum-title">시장 기대·모멘텀</h2><p>특정 사건과 주가 반응은 구조적 기업 상태에 합산하지 않습니다.</p></div>
+          {recentStock ? <article className="company-market-momentum-card">
+            <div><span>최근 주요 사건</span><time dateTime={recentStock.priceAsOf}>{formatDate(recentStock.priceAsOf)}</time></div>
+            <h3>{recentStock.headline}</h3>
+            <strong>{recentStock.priceMove.value > 0 ? '+' : ''}{recentStock.priceMove.value.toFixed(recentStock.priceMove.precision ?? 2)}%</strong>
+            <p>{recentStock.directCatalyst}</p>
+            <dl>
+              <div><dt>시장 대비</dt><dd>{recentStock.comparison?.market ? `${recentStock.comparison.market.name} ${recentStock.comparison.market.value > 0 ? '+' : ''}${recentStock.comparison.market.value.toFixed(recentStock.comparison.market.precision ?? 2)}%` : '직접 비교 자료 없음'}</dd></div>
+              <div><dt>확인된 변화</dt><dd>{recentStock.confirmedItems.slice(0, 2).join(' · ')}</dd></div>
+              <div><dt>아직 확인되지 않음</dt><dd>{recentStock.unconfirmedItems.slice(0, 2).join(' · ')}</dd></div>
+            </dl>
+          </article> : <article className="company-market-momentum-empty"><h3>공식 데이터 기준 최근 변화</h3><p>{brief.questions.recentChange.summary}</p><small>공식 공시 기반으로 확인 가능한 내용만 표시합니다.</small></article>}
+          <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={profile.searchStatus.valuationStatus === 'full'} />
         </section>
 
-        <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={Boolean(brief.reportSlug)} />
+        <section className="company-next-watch" aria-labelledby="company-next-watch-title">
+          <div className="company-dashboard-section-heading"><span>최대 3개</span><h2 id="company-next-watch-title">다음 확인</h2><p>다음 판단을 바꿀 수 있는 공식 지표와 시점을 우선합니다.</p></div>
+          <ol>{dissection.watchItems.map((item) => <li key={item.title}><strong>{item.title}</strong><p>{item.why}</p><small>{item.timing}</small></li>)}</ol>
+        </section>
+
+        <nav className="company-deep-links" aria-label={`${company.name} 더 깊게 보기`}>
+          <div><span>더 깊게 보기</span><h2>필요한 화면만 선택하세요</h2></div>
+          <a href={`/ko/companies/${profile.slug}/financials`} onClick={(event) => { trackAnalyticsEvent('company_financials_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'financials' }); internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)(event); }}><strong>숫자와 비교</strong><span>공시 숫자·기간·추세·lineage</span><ArrowRight size={15} aria-hidden="true" /></a>
+          {profile.searchStatus.valuationStatus === 'full' ? <a href={`/ko/companies/${profile.slug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'valuation' }); internalLink(`/ko/companies/${profile.slug}/valuation`, onNavigate)(event); }}><strong>시장가격에 반영된 기대</strong><span>DCF·Reverse DCF·민감도</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
+          {profile.searchStatus.reportStatus === 'supported' && brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={(event) => { trackAnalyticsEvent('company_report_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'report' }); internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)(event); }}><strong>장기 기업 판단</strong><span>사업·해자·위험·반증 조건</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
+          {recentStock ? <a href={`/ko/insights/stock/${encodeURIComponent(recentStock.slug)}`} onClick={(event) => internalLink(`/ko/insights/stock/${encodeURIComponent(recentStock.slug)}`, onNavigate)(event)}><strong>최근 주가 움직임</strong><span>사건·가격 반응·확인/미확인</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
+        </nav>
 
         {recentEditorial.length ? <section className="company-dashboard-section company-dashboard-editorial" aria-labelledby="company-editorial-title">
-          <div className="company-dashboard-section-heading"><span>최근 리서치</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>이 기업과 직접 연결된 최신 편집 콘텐츠입니다.</p></div>
+          <div className="company-dashboard-section-heading"><span>사건 기록</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>기업의 영구 점수가 아니라 특정 시점 사건과 가격 반응 기록입니다.</p></div>
           <div className="company-dashboard-editorial-grid">{recentEditorial.map((item) => {
             const path = item.kind === 'stock' ? `/ko/insights/stock/${encodeURIComponent(item.slug)}` : `/ko/insights/3reads/${encodeURIComponent(item.slug)}`;
             return <article key={item.id}><time dateTime={item.kind === 'stock' ? item.eventAsOf : item.publishedAt}>{formatDate(item.kind === 'stock' ? item.eventAsOf : item.publishedAt)}</time><h3>{item.kind === 'stock' ? item.headline : item.centralQuestion}</h3><p>{item.kind === 'stock' ? item.cardCharacter ?? moveCharacterLabels[item.moveCharacter] : item.commonThread}</p>{item.kind === 'stock' && item.unconfirmedItems[0] ? <div className="company-dashboard-editorial-unconfirmed"><strong>현재까지 공식 확인되지 않은 것</strong><span>{item.unconfirmedItems.slice(0, 3).join(' · ')}</span></div> : null}<a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: item.kind === 'stock' ? 'stock_dissection' : 'wall_street_edition', contentId: item.id, companySlug: profile.slug, placement: 'related_research', destinationType: 'editorial' }); internalLink(path, onNavigate)(event); }}>전체 해부 읽기 <ArrowRight size={14} aria-hidden="true" /></a></article>;
           })}</div>
         </section> : null}
-
-        <nav className="company-brief-actions" aria-label={`${company.name} 상세 분석 이동`}>
-          <a href={`/ko/companies/${profile.slug}/financials`} onClick={(event) => { trackAnalyticsEvent('company_financials_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'financials' }); internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)(event); }}>숫자와 비교 보기 <ArrowRight size={15} aria-hidden="true" /></a>
-          {brief.reportSlug ? <a href={`/ko/companies/${profile.slug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'valuation' }); internalLink(`/ko/companies/${profile.slug}/valuation`, onNavigate)(event); }}>시장가격에 반영된 기대 보기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
-          {brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={(event) => { trackAnalyticsEvent('company_report_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'report' }); internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)(event); }}>심층 리포트 읽기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
-        </nav>
-
-        <section className="company-dashboard-section company-dashboard-secondary-start" id="company-detailed-data" aria-labelledby="company-assessments-title">
-          <div className="company-dashboard-section-heading"><span>핵심 판단</span><h2 id="company-assessments-title">현재 상태를 먼저 봅니다</h2><p>점수 대신 확인된 근거와 데이터 한계를 함께 표시합니다.</p></div>
-          <div className="company-dashboard-assessment-grid">
-            {dashboard.assessments.map((item) => <article key={item.dimension}>
-              <div><span>{item.label}</span><strong className={`state-${item.state}`}>{assessmentStateLabels[item.state]}</strong></div>
-              <p>{item.rationale}</p>
-            </article>)}
-          </div>
-        </section>
-
-        <section className="company-dashboard-section" aria-labelledby="company-dashboard-metrics-title">
-          <div className="company-dashboard-section-heading"><span>핵심 숫자</span><h2 id="company-dashboard-metrics-title">지금 확인 가능한 숫자</h2><p>기간·통화·단위가 확인된 공식 값만 표시합니다.</p></div>
-          <div className="company-dashboard-metric-grid">
-            {dashboard.metrics.map((item) => {
-              const source = sourceRegistry[item.sourceIds[0]];
-              return <article key={item.id}>
-                <span>{item.label}</span>
-                <strong>{item.formattedValue}</strong>
-                <small>{item.period} <span aria-hidden="true">·</span> {item.unit}{item.currency ? ` · ${item.currency}` : ''}</small>
-                <p>{item.description}</p>
-                <div className="company-dashboard-metric-meta">
-                  <span>{item.comparison ? `${item.comparison.label} ${item.comparison.formattedValue}` : '이전 기간 비교 없음'}</span>
-                  {source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.publisher} 원문 <ExternalLink size={12} aria-hidden="true" /></a> : null}
-                </div>
-              </article>;
-            })}
-          </div>
-        </section>
-
-        {dashboard.charts.length ? <section className="company-dashboard-section" aria-labelledby="company-dashboard-charts-title">
-          <div className="company-dashboard-section-heading"><span>핵심 차트</span><h2 id="company-dashboard-charts-title">같은 기준의 숫자만 비교합니다</h2><p>통화나 회계 기간이 다른 값은 한 차트에 섞지 않습니다.</p></div>
-          <div className="company-dashboard-chart-grid">{dashboard.charts.map((chart) => <DashboardBarChart key={chart.id} chart={chart} metrics={dashboard.metrics} />)}</div>
-        </section> : null}
-
-        <section className="company-dashboard-section" aria-labelledby="company-dashboard-changes-title">
-          <div className="company-dashboard-section-heading"><span>지금 중요한 변화</span><h2 id="company-dashboard-changes-title">무엇이 달라졌고, 다음에 무엇을 볼까요?</h2></div>
-          <div className="company-dashboard-change-list">
-            {dashboard.importantChanges.map((item, index) => {
-              const source = sourceRegistry[item.sourceIds[0]];
-              return <article key={item.id}>
-                <div className="company-dashboard-change-index" aria-hidden="true">{index + 1}</div>
-                <div>
-                  <div className="company-dashboard-change-meta"><time dateTime={item.eventDate}>{formatDate(item.eventDate)}</time><span>{item.stageLabel}</span></div>
-                  <h3>{item.title}</h3>
-                  <p><strong>무슨 일이 있었나</strong>{item.whatHappened}</p>
-                  <p><strong>왜 중요한가</strong>{item.whyItMatters}</p>
-                  <p><strong>다음 확인</strong>{item.nextCheckpoints.join(' · ')}</p>
-                  {source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.publisher} 공식 원문 <ExternalLink size={13} aria-hidden="true" /></a> : null}
-                </div>
-              </article>;
-            })}
-          </div>
-        </section>
-
-        <section className="company-dashboard-section" aria-labelledby="company-dashboard-macro-title">
-          <div className="company-dashboard-section-heading"><span>주요 거시 변수</span><h2 id="company-dashboard-macro-title">기업 밖에서 함께 볼 변수</h2><p>확정적인 인과관계가 아니라 영향을 줄 수 있는 경로를 설명합니다.</p></div>
-          <div className="company-dashboard-macro-grid">
-            {dashboard.macroVariables.map((item) => {
-              const source = sourceRegistry[item.sourceIds[0]];
-              return <article key={item.id}>
-                <div><span>{item.label}</span><strong>{item.currentDirection}</strong><small>{item.trendLabel} · {formatDate(item.asOf)}</small></div>
-                <ol aria-label={`${item.label} 영향 경로`}>{item.impactPath.map((step) => <li key={step}>{step}</li>)}</ol>
-                <p>{item.easyExplanation}</p>
-                <small><strong>추가 확인</strong>{item.nextCheck}</small>
-                {source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.publisher} 원자료 <ExternalLink size={12} aria-hidden="true" /></a> : null}
-              </article>;
-            })}
-          </div>
-        </section>
 
         <details className="company-dashboard-details">
           <summary><span>상세 데이터·출처</span><small>기존 사업·산업·관계·리포트 내용을 펼쳐 봅니다.</small></summary>
@@ -498,6 +402,12 @@ export function CompanyResearchProfilePage({
 
             {viewModel.picks.length ? <section className="company-profile-section" aria-labelledby="company-pick-title"><div className="company-profile-section-heading"><span>편집 관점</span><h2 id="company-pick-title">관련 Pick</h2></div>{viewModel.picks.map((pick) => <article className="company-profile-pick-card" key={pick.id}><FileSearch size={20} aria-hidden="true" /><span>{formatDate(pick.publishedAt ?? '')} 검토</span><h3>{pick.title}</h3><p>{pick.reasonSummary}</p><a href={`/ko/picks/${encodeURIComponent(pick.id)}`} onClick={internalLink(`/ko/picks/${encodeURIComponent(pick.id)}`, onNavigate)}>Pick 자세히 보기 <ArrowRight size={14} aria-hidden="true" /></a></article>)}</section> : null}
 
+            <section className="company-profile-section" aria-labelledby="company-dashboard-archive-title">
+              <div className="company-profile-section-heading"><span>기존 상세 데이터</span><h2 id="company-dashboard-archive-title">공식 숫자와 차트</h2><p>첫 화면에서는 대표 근거만 보여주고, 기존 지표와 접근 가능한 차트는 이 영역에 보존합니다.</p></div>
+              <div className="company-dashboard-metric-grid">{dashboard.metrics.map((item) => <article key={item.id}><span>{item.label}</span><strong>{item.formattedValue ?? '자료 미수집'}</strong><small>{item.period} · {item.unit}{item.currency ? ` · ${item.currency}` : ''}</small><p>{item.description}</p></article>)}</div>
+              {dashboard.charts.length ? <div className="company-dashboard-chart-grid">{dashboard.charts.map((chart) => <DashboardBarChart key={chart.id} chart={chart} metrics={dashboard.metrics} />)}</div> : null}
+            </section>
+
             {viewModel.verifiedMetrics.length ? <section className="company-profile-section" aria-labelledby="company-metrics-title"><div className="company-profile-section-heading"><span>기존 공식 수치</span><h2 id="company-metrics-title">리포트에서 확인한 숫자</h2></div><div className="company-profile-metric-grid">{viewModel.verifiedMetrics.map((item) => <article key={`${item.reportId}-${item.label}`}><span>{item.label}</span><strong>{item.value}</strong><p>{item.context}</p><small>{item.asOf ? `${item.asOf} · ` : ''}{item.reportTitle}</small></article>)}</div></section> : null}
 
             <section className="company-profile-section" aria-labelledby="company-sources-title"><div className="company-profile-section-heading"><span>판단 근거</span><h2 id="company-sources-title">관련 보고서·공식 자료</h2></div><div className="company-profile-resource-grid">{viewModel.reports.map((report) => <a key={report.id} href={`/ko/reports/${encodeURIComponent(report.slug)}`} onClick={internalLink(`/ko/reports/${encodeURIComponent(report.slug)}`, onNavigate)}><span>{report.publisher}</span><strong>{report.titleKo}</strong><small>산업 보고서 보기 <ArrowRight size={13} aria-hidden="true" /></small></a>)}{dashboard.sources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noopener noreferrer"><span>{source.publisher} · 공식 자료</span><strong>{source.title}</strong><small>외부 원문 <ExternalLink size={13} aria-hidden="true" /></small></a>)}</div></section>
@@ -509,16 +419,6 @@ export function CompanyResearchProfilePage({
     </div>
   );
 }
-
-const assessmentStateLabels: Record<CompanyAssessmentState, string> = {
-  improving: '개선',
-  healthy: '양호',
-  stable: '안정',
-  slowing: '둔화',
-  stretched: '부담',
-  needsReview: '추가 확인 필요',
-  insufficientData: '데이터 부족',
-};
 
 function DashboardBarChart({ chart, metrics }: { chart: DashboardChart; metrics: DashboardMetric[] }) {
   const chartMetrics = chart.metricIds.flatMap((id) => {

@@ -97,13 +97,17 @@ assert(JSON.stringify(reproducibilityA.percentiles) === JSON.stringify(reproduci
 assert(JSON.stringify(reproducibilityA.driverImportance) === JSON.stringify(reproducibilityB.driverImportance), 'same seed did not reproduce driver importance');
 
 const domainSource = readFileSync('src/domain/valuation/monte-carlo.ts', 'utf8');
-const routeSource = readFileSync('src/routes/ResearchReportRoute.tsx', 'utf8');
+const reportRouteSource = readFileSync('src/routes/ResearchReportRoute.tsx', 'utf8');
+const valuationRouteSource = readFileSync('src/routes/ValuationExpectationsRoute.tsx', 'utf8');
+const uncertaintyUiSource = readFileSync('src/components/valuation/MonteCarloValuationSection.tsx', 'utf8');
 const registrySource = readFileSync('src/content/monte-carlo/registry.ts', 'utf8');
 assert(!domainSource.includes('Math.random'), 'Monte Carlo domain uses Math.random');
-assert(!routeSource.includes('runMonteCarlo'), 'browser route executes Monte Carlo');
-assert(routeSource.includes('가치평가의 불확실성') && routeSource.includes('상세 가정·방법론'), 'required uncertainty UI missing');
+assert(!valuationRouteSource.includes('runMonteCarlo'), 'browser route executes Monte Carlo');
+assert(!reportRouteSource.includes('loadMonteCarloResult'), 'Research Report preloads valuation distribution');
+assert(valuationRouteSource.includes('loadMonteCarloResult'), 'Valuation route does not load stored Monte Carlo result');
+assert(uncertaintyUiSource.includes('가치평가의 불확실성') && uncertaintyUiSource.includes('상세 가정·방법론'), 'required uncertainty UI missing');
 ['주가 상승 확률', '수익 확률', '손실 확률', '목표주가', '상승여력', '하락여력', 'BUY', 'HOLD', 'SELL'].forEach((term) => {
-  assert(!routeSource.includes(term), `forbidden public term ${term}`);
+  assert(!uncertaintyUiSource.includes(term), `forbidden public term ${term}`);
 });
 assert(registrySource.includes("nvidia: () => import('./nvidia.js')"), 'NVIDIA Monte Carlo snapshot is not lazy');
 assert(registrySource.includes("meta: () => import('./meta.js')"), 'Meta Monte Carlo snapshot is not lazy');

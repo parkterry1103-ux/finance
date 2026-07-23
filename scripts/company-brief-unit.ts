@@ -68,9 +68,9 @@ companyBriefSlugs.forEach((slug) => check(registrySource.includes(`import('./ent
 const companiesRoute = readFileSync(join(process.cwd(), 'src', 'routes', 'CompaniesRoute.tsx'), 'utf8');
 check(companiesRoute.includes('loadCompanyBrief') && companiesRoute.includes('CompanyBriefLoadingPage'), 'company brief loads only after company route');
 const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
-check(companyBriefQuestionKeys.every((key) => componentSource.includes(key)), 'five question UI mapping');
-check(componentSource.includes('brief.keyMetrics.map'), 'first screen renders only validated brief metrics');
-check(componentSource.includes('brief.reportSlug ?') && componentSource.includes('심층 리포트 읽기'), 'report CTA condition');
+check(componentSource.includes('brief.questions.recentChange.summary'), 'Company Brief feeds official recent-change fallback');
+check(componentSource.includes('dissection.coreCards.map'), 'first screen renders four dissection core cards');
+check(componentSource.includes("profile.searchStatus.reportStatus === 'supported' && brief.reportSlug") && componentSource.includes('장기 기업 판단'), 'report CTA condition');
 check(componentSource.includes('recentEditorial.length ?') && componentSource.includes('최근 관련 해부'), 'related editorial section condition');
 check(!componentSource.includes('최근 관련 해부가 없습니다'), 'no empty editorial message');
 

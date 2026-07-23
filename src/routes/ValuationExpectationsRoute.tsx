@@ -16,6 +16,9 @@ import {
 } from '../content/valuation/index.js';
 import { loadEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
 import { ValuationAssumptionReviewSection } from '../components/event-impacts/EventImpactUi.js';
+import { loadMonteCarloResult } from '../content/monte-carlo/registry.js';
+import type { MonteCarloValuationResult } from '../content/monte-carlo/types.js';
+import { MonteCarloValuationSection } from '../components/valuation/MonteCarloValuationSection.js';
 import { trackAnalyticsEvent } from '../analytics/index.js';
 
 type Props = {
@@ -152,7 +155,7 @@ function SensitivityTable({ view }: { view: ValuationExpectationView }) {
   })}</tr>)}</tbody></table></div>;
 }
 
-function FullValuation({ report, view, eventImpacts, onNavigate }: { report: ResearchReportModel; view: ValuationExpectationView; eventImpacts: EventImpactRecord[]; onNavigate: Props['onNavigate'] }) {
+function FullValuation({ report, view, monteCarlo, eventImpacts, onNavigate }: { report: ResearchReportModel; view: ValuationExpectationView; monteCarlo: MonteCarloValuationResult; eventImpacts: EventImpactRecord[]; onNavigate: Props['onNavigate'] }) {
   const baseScenario = view.scenarios.find((scenario) => scenario.id === 'base')!;
   const [waccPercent, setWaccPercent] = useState(baseScenario.wacc * 100);
   const [growthPercent, setGrowthPercent] = useState(baseScenario.stableGrowthRate * 100);
@@ -194,6 +197,8 @@ function FullValuation({ report, view, eventImpacts, onNavigate }: { report: Res
       <details className="valuation-details" onToggle={(event) => { if (event.currentTarget.open) trackAnalyticsEvent('valuation_assumptions_open', { companySlug: view.companySlug, placement: 'valuation' }, { oncePerPage: true, dedupeKey: 'model-assumptions' }); }}><summary>모형의 주요 가정 보기</summary><dl><div><dt>모형 계산일</dt><dd>{view.model.asOf}</dd></div><div><dt>세율</dt><dd>{formatPercent(lastForecast.normalizedTaxRate)}</dd></div><div><dt>감가상각</dt><dd>매출의 {formatPercent(lastForecast.depreciationAsPercentRevenue)}</dd></div><div><dt>설비투자</dt><dd>매출의 {formatPercent(lastForecast.capexAsPercentRevenue)}</dd></div><div><dt>운전자본 변화</dt><dd>매출의 {formatPercent(lastForecast.changeInWorkingCapitalAsPercentRevenue)}</dd></div><div><dt>순현금·순부채 반영</dt><dd>{new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 }).format(netCash)}백만 {view.model.currency} · 현금·비영업자산·부채·리스 등 Equity bridge</dd></div><div><dt>희석주식 수</dt><dd>{new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 }).format(report.baseInput.capitalStructure.dilutedShares)}백만 주</dd></div><div><dt>Terminal ROIC</dt><dd>{report.baseInput.terminalAssumptions.stableRoic === undefined ? '모형에 별도 가정 없음' : formatPercent(report.baseInput.terminalAssumptions.stableRoic)}</dd></div></dl></details>
     </section>
 
+    <MonteCarloValuationSection result={monteCarlo} />
+
     <ValuationAssumptionReviewSection impacts={eventImpacts} />
 
     <section className="valuation-section" aria-labelledby="valuation-watch-title"><div className="valuation-section-heading"><span>06</span><div><p>What to verify next</p><h2 id="valuation-watch-title">앞으로 무엇을 확인해야 하나요?</h2></div></div><p className="valuation-section-intro">확인 시점은 다음 공식 분기 실적과 연간 가이던스 업데이트입니다.</p><div className="valuation-watch-grid"><article><h3>매출 성장률</h3><dl><div><dt>기준 가정</dt><dd>{view.impliedExpectation?.comparisonItems.find((item) => item.label.includes('기준 모형')) ? formatPercent(view.impliedExpectation.comparisonItems.find((item) => item.label.includes('기준 모형'))!.value) : '직접 비교 자료 없음'}</dd></div><div><dt>시장 내재 수준</dt><dd>{view.impliedExpectation ? formatPercent(view.impliedExpectation.value) : '계산 제한'}</dd></div><div><dt>다음 확인</dt><dd>{view.watchItems.slice(0, 2).join(' · ')}</dd></div><div><dt>차이가 줄어드는 조건</dt><dd>실제 성장 지속성이 시장 내재 경로에 가까워지는지 확인</dd></div></dl></article><article><h3>영업이익률</h3><dl><div><dt>기준 가정</dt><dd>{formatPercent(lastForecast.operatingMargin)}</dd></div><div><dt>시장 내재 수준</dt><dd>매출 성장 역산에서 고정 · 별도 역산하지 않음</dd></div><div><dt>다음 확인</dt><dd>{view.watchItems.slice(2, 4).join(' · ') || report.watchStatement}</dd></div><div><dt>차이가 줄어드는 조건</dt><dd>제품 구성과 비용 증가에도 기준 마진이 유지되는지 확인</dd></div></dl></article><article><h3>재투자와 현금흐름</h3><dl><div><dt>기준 가정</dt><dd>Capex 매출의 {formatPercent(lastForecast.capexAsPercentRevenue)}</dd></div><div><dt>시장 내재 수준</dt><dd>기준 모형의 재투자율 유지 · 별도 역산하지 않음</dd></div><div><dt>다음 확인</dt><dd>{view.watchItems.slice(4, 6).join(' · ') || report.watchStatement}</dd></div><div><dt>차이가 줄어드는 조건</dt><dd>성장 투자 이후 FCFF와 장기 ROIC가 함께 확인되는지 점검</dd></div></dl></article></div></section>
@@ -205,6 +210,7 @@ function FullValuation({ report, view, eventImpacts, onNavigate }: { report: Res
 export default function ValuationExpectationsRoute({ slug, marketPrices, navigation, onNavigate }: Props) {
   const company = valuationReadinessCompany(slug);
   const [report, setReport] = useState<ResearchReportModel | null | undefined>(undefined);
+  const [monteCarlo, setMonteCarlo] = useState<MonteCarloValuationResult | null | undefined>(undefined);
   const [eventImpacts, setEventImpacts] = useState<EventImpactRecord[]>([]);
   useEffect(() => {
     if (!company) return;
@@ -218,6 +224,16 @@ export default function ValuationExpectationsRoute({ slug, marketPrices, navigat
     }
     setReport(undefined);
     loadResearchReport(company.companySlug).then((value) => { if (active) setReport(value); }).catch(() => { if (active) setReport(null); });
+    return () => { active = false; };
+  }, [company?.companySlug, company?.publicValuationStatus]);
+  useEffect(() => {
+    let active = true;
+    if (!company || company.publicValuationStatus !== 'full' || (company.companySlug !== 'nvidia' && company.companySlug !== 'meta')) {
+      setMonteCarlo(null);
+      return () => { active = false; };
+    }
+    setMonteCarlo(undefined);
+    loadMonteCarloResult(company.companySlug).then((value) => { if (active) setMonteCarlo(value); }).catch(() => { if (active) setMonteCarlo(null); });
     return () => { active = false; };
   }, [company?.companySlug, company?.publicValuationStatus]);
   useEffect(() => {
@@ -240,5 +256,5 @@ export default function ValuationExpectationsRoute({ slug, marketPrices, navigat
     }
   }, [marketPrices, report]);
   const backPath = company ? `/ko/companies/${company.companySlug}` : '/ko/companies';
-  return <div className="pick-shell company-profiles-shell valuation-shell">{navigation}<main className="valuation-main"><nav className="company-profile-breadcrumb" aria-label="현재 위치"><a href={backPath} onClick={internalLink(backPath, onNavigate)}><ArrowLeft size={15} aria-hidden="true" /> {company?.companyName ?? '기업'} 상세</a><span aria-hidden="true">/</span><strong>시장가격에 반영된 기대</strong></nav>{!company ? <section className="valuation-safe-state"><h1>기업 가치평가 정보를 찾을 수 없습니다.</h1><p>지원 기업 목록에서 다시 선택해 주세요.</p><a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 목록으로 이동</a></section> : company.publicValuationStatus !== 'full' ? <section className="valuation-safe-state"><span>Valuation status · {company.publicValuationStatus}</span><h1>{company.companyName}의 검증된 가치평가 모형이 아직 없습니다.</h1><p>{company.primaryMethod}이 적합한 후보지만, 공개 가능한 가치 범위에 필요한 기업별 가정과 원문 검증이 완료되지 않았습니다. 0 또는 빈 그래프로 대신하지 않습니다.</p><div><a href={`/ko/companies/${company.companySlug}/financials`} onClick={internalLink(`/ko/companies/${company.companySlug}/financials`, onNavigate)}>검증된 재무 추세 보기</a><a href={backPath} onClick={internalLink(backPath, onNavigate)}>기업 상세로 돌아가기</a></div></section> : report === undefined ? <section className="valuation-safe-state" role="status"><h1>{company.companyName} 가치평가 설명을 불러오는 중입니다.</h1><p>현재 기업의 검증된 모형 데이터만 지연 로딩합니다.</p></section> : !report || viewState?.error || !viewState?.view ? <section className="valuation-safe-state" role="alert"><h1>가치평가 설명을 안전하게 표시할 수 없습니다.</h1><p>{viewState?.error ?? '검증된 모형 데이터를 불러오지 못했습니다.'}</p><a href={backPath} onClick={internalLink(backPath, onNavigate)}>기업 상세로 돌아가기</a></section> : <FullValuation report={report} view={viewState.view} eventImpacts={eventImpacts} onNavigate={onNavigate} />}</main></div>;
+  return <div className="pick-shell company-profiles-shell valuation-shell">{navigation}<main className="valuation-main"><nav className="company-profile-breadcrumb" aria-label="현재 위치"><a href={backPath} onClick={internalLink(backPath, onNavigate)}><ArrowLeft size={15} aria-hidden="true" /> {company?.companyName ?? '기업'} 상세</a><span aria-hidden="true">/</span><strong>시장가격에 반영된 기대</strong></nav>{!company ? <section className="valuation-safe-state"><h1>기업 가치평가 정보를 찾을 수 없습니다.</h1><p>지원 기업 목록에서 다시 선택해 주세요.</p><a href="/ko/companies" onClick={internalLink('/ko/companies', onNavigate)}>기업 목록으로 이동</a></section> : company.publicValuationStatus !== 'full' ? <section className="valuation-safe-state"><span>Valuation status · {company.publicValuationStatus}</span><h1>{company.companyName}의 검증된 가치평가 모형이 아직 없습니다.</h1><p>{company.primaryMethod}이 적합한 후보지만, 공개 가능한 가치 범위에 필요한 기업별 가정과 원문 검증이 완료되지 않았습니다. 0 또는 빈 그래프로 대신하지 않습니다.</p><div><a href={`/ko/companies/${company.companySlug}/financials`} onClick={internalLink(`/ko/companies/${company.companySlug}/financials`, onNavigate)}>검증된 재무 추세 보기</a><a href={backPath} onClick={internalLink(backPath, onNavigate)}>기업 상세로 돌아가기</a></div></section> : report === undefined || monteCarlo === undefined ? <section className="valuation-safe-state" role="status"><h1>{company.companyName} 가치평가 설명을 불러오는 중입니다.</h1><p>현재 기업의 검증된 모형 데이터만 지연 로딩합니다.</p></section> : !report || !monteCarlo || viewState?.error || !viewState?.view ? <section className="valuation-safe-state" role="alert"><h1>가치평가 설명을 안전하게 표시할 수 없습니다.</h1><p>{viewState?.error ?? '검증된 모형 데이터를 불러오지 못했습니다.'}</p><a href={backPath} onClick={internalLink(backPath, onNavigate)}>기업 상세로 돌아가기</a></section> : <FullValuation report={report} view={viewState.view} monteCarlo={monteCarlo} eventImpacts={eventImpacts} onNavigate={onNavigate} />}</main></div>;
 }

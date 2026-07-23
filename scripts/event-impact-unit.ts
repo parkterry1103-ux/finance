@@ -136,6 +136,6 @@ check(companiesRoute.includes('loadEventImpacts') && companiesRoute.includes('Co
 check(financialRoute.includes('FinancialMetricImpactRecords'), 'financial pivot links impacts to metric rows');
 check(valuationRoute.includes('ValuationAssumptionReviewSection'), 'valuation route renders review records');
 check(stockRoute.includes('loadEditorialEventImpacts') && threeReadsRoute.includes('loadEditorialEventImpacts'), 'editorial routes use conditional indexed impact loading');
-check(eventImpactUi.includes('showValuationReview ?') && companyProfilesUi.includes('showValuationReview={Boolean(brief.reportSlug)}'), 'valuation review CTA only renders for full valuation companies');
+check(eventImpactUi.includes('showValuationReview ?') && companyProfilesUi.includes("showValuationReview={profile.searchStatus.valuationStatus === 'full'}"), 'valuation review CTA only renders for full valuation companies');
 
 console.log(`✓ Event impact unit ${checks}개 검증 · 사건 3 · 사업 동인 ${businessDriverRegistry.length} · 재무 연결 11 · 가정 검토 10 · 실제 변경 0`);

@@ -1,6 +1,20 @@
-import type { CompanyProfileEntry } from './types.js';
+import type { CompanyProfileEntry, CompanySearchStatus } from './types.js';
 
 const commonCaution = '공식 발표와 산업 흐름 설명은 향후 실적이나 시장 가격을 보장하지 않습니다. 관련 기업은 산업 맥락을 설명하며 직접 계약을 뜻하지 않습니다.';
+
+const supportedSearch: CompanySearchStatus = {
+  searchVisible: true,
+  analysisStatus: 'supported',
+  financialsStatus: 'supported',
+  valuationStatus: 'unavailable',
+  reportStatus: 'unavailable',
+};
+
+const fullResearchSearch: CompanySearchStatus = {
+  ...supportedSearch,
+  valuationStatus: 'full',
+  reportStatus: 'supported',
+};
 
 export const companyProfiles: CompanyProfileEntry[] = [
   {
@@ -21,6 +35,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['sk-hynix-q1-2026-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-lg-electronics',
@@ -40,6 +55,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['lge-story-newsroom-235685-63746d17'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-nvidia',
@@ -58,6 +74,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['nvidia-fy2027-q1-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: fullResearchSearch,
   },
   {
     id: 'profile-micron',
@@ -76,6 +93,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['micron-fy2026-q3-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-dell',
@@ -94,6 +112,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['dell-fy2027-q1-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-eaton',
@@ -112,6 +131,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['eaton-q1-2026-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-meta',
@@ -130,6 +150,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['meta-q1-2026-results'],
     reviewedAt: '2026-07-14',
+    searchStatus: fullResearchSearch,
   },
   {
     id: 'profile-supermicro',
@@ -148,6 +169,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243'],
     reviewedAt: '2026-07-14',
+    searchStatus: supportedSearch,
   },
   {
     id: 'profile-netflix',
@@ -166,6 +188,7 @@ export const companyProfiles: CompanyProfileEntry[] = [
     caution: commonCaution,
     sourceRefs: ['netflix-q2-2026-10q', 'netflix-q2-2026-letter'],
     reviewedAt: '2026-07-18',
+    searchStatus: supportedSearch,
   },
 ];
 
