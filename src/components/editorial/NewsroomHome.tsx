@@ -54,7 +54,6 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
           <div className="editorial-home-hero-copy">
             <p>Stock Autopsy · Daily Research</p>
             <h1 id="editorial-home-title"><span>오늘 주가가 움직인 이유와</span><span>다음에 확인할 것을 해부합니다.</span></h1>
-            <p>뉴스를 기업의 사업·재무·가치평가로 연결합니다.</p>
           </div>
           <form className="editorial-home-search" role="search" onSubmit={(event) => event.preventDefault()}>
             <label htmlFor="editorial-home-search-input">기업 찾기</label>
@@ -64,7 +63,7 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
                 id="editorial-home-search-input"
                 type="search"
                 value={query}
-                placeholder="기업명이나 종목코드를 검색하세요"
+                placeholder="기업명 또는 종목코드를 검색해보세요"
                 role="combobox"
                 aria-autocomplete="list"
                 aria-expanded={open && hasQuery && results.length > 0}
@@ -72,7 +71,6 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
                 aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined}
                 aria-describedby="editorial-home-search-help editorial-home-search-status"
                 autoComplete="off"
-                spellCheck={false}
                 onChange={(event) => { setQuery(event.target.value); setOpen(Boolean(event.target.value.trim())); setActiveIndex(-1); }}
                 onFocus={() => { if (hasQuery) setOpen(true); }}
                 onBlur={() => setOpen(false)}
@@ -92,7 +90,7 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
                     aria-selected={activeIndex === index}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={(event) => { event.preventDefault(); openCompany(record, index + 1); }}
-                  ><span><strong>{record.company.name}</strong><small>{record.profile.englishName}</small></span><span>{security} · {record.profile.exchange}<ArrowRight size={14} aria-hidden="true" /></span></a>;
+                  ><span><strong>{record.company.name}</strong><small>{security} · {record.profile.exchange} · {record.profile.industry}</small><em>{record.profile.searchDescription}</em></span><span>기업 해부 보기<ArrowRight size={14} aria-hidden="true" /></span></a>;
                 })}
               </div>
               <p className="editorial-home-search-no-result" hidden={!open || !hasQuery || results.length > 0}>현재 분석 중인 기업에서는 찾지 못했습니다.</p>
@@ -112,10 +110,6 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
           {threeReadsItems.length ? threeReadsItems.map((item) => <ThreeReadsSummaryCard item={item} onNavigate={onNavigate} key={item.id} />) : <div className="editorial-empty-state"><h3>오늘의 월스트리트를 준비하고 있습니다.</h3><p>세 개의 뉴스, 하나의 투자 질문으로 연결합니다.</p></div>}
         </section>
 
-        <section className="editorial-company-cta" aria-labelledby="editorial-company-cta-title">
-          <div><p>Company Research</p><h2 id="editorial-company-cta-title">오늘의 사건을 기업의 긴 흐름으로 이어 보세요.</h2><span>지원 기업의 사업 구조, 재무, 가치평가와 다음 확인 항목을 살펴봅니다.</span></div>
-          <a href="/ko/companies" onClick={editorialInternalLink('/ko/companies', onNavigate)}>기업 찾기 <ArrowRight size={16} aria-hidden="true" /></a>
-        </section>
       </main>
       <footer className="editorial-home-footer">
         <div><strong>주가해부실</strong><p>표시된 내용은 정보 제공을 위한 리서치이며 투자 권유가 아닙니다.</p></div>

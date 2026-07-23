@@ -56,3 +56,7 @@ Company Brief는 기존 report route가 있고 공개 가치평가 상태가 `fu
 ## Phase 5F 측정 연결
 
 Brief가 실제 로드된 뒤 `company_view`를 한 번 기록한다. 재무·가치평가·리포트 CTA click과 destination view를 분리하고 실제 CTA가 없는 기업에는 이벤트도 만들지 않는다. 기업 검색은 선택된 registry slug만 기록하며 사용자가 입력한 query, ticker 문자열과 검색 실패 문구는 전송하지 않는다.
+
+## Phase 5G 화면 역할
+
+Company Brief의 다섯 질문과 최대 3개 지표는 검증 데이터·최근 변화 fallback으로 유지하지만, 모바일 첫 화면은 별도 `CompanyDissectionConfig`에서 만든 핵심 카드 4개와 5축 해부를 렌더링한다. Brief는 한 줄 사업 정의, 공식 최근 변화, 다음 확인, related editorial과 report relation의 source가 된다. 기존 질문 데이터를 삭제하거나 0으로 바꾸지 않는다.

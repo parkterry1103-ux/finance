@@ -14,6 +14,7 @@ export const companySearchIndex: CompanySearchRecord[] = companyProfiles
   .slice()
   .sort((left, right) => left.order - right.order)
   .flatMap((profile) => {
+    if (!profile.searchStatus.searchVisible || !profile.sourceRefs.length) return [];
     const company = canonicalCompanyProfileIdentity(profile.companyId);
     if (!company) return [];
     return [{

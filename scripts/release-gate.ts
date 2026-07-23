@@ -222,6 +222,8 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'scripts/monte-carlo-unit.ts',
     'scripts/editorial-unit.ts',
     'scripts/company-brief-unit.ts',
+    'scripts/company-dissection-unit.ts',
+    'scripts/phase5g-browser-qa.mjs',
     'scripts/financial-pivot-unit.ts',
     'scripts/valuation-expectations-unit.ts',
     'scripts/event-impact-unit.ts',
@@ -236,9 +238,11 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'src/analytics/runtime.ts',
     'src/analytics/validation.ts',
     'src/content/company-briefs/validation.ts',
+    'src/content/company-dissections/validation.ts',
     'src/content/financial-pivots/validation.ts',
     'src/routes/FinancialPivotRoute.tsx',
     'src/routes/ValuationExpectationsRoute.tsx',
+    'src/components/valuation/MonteCarloValuationSection.tsx',
     'src/content/event-impacts/validation.ts',
     'src/content/event-impacts/registry.ts',
     'src/components/event-impacts/EventImpactUi.tsx',
@@ -277,6 +281,12 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/event-to-assumption-methodology.md',
     'docs/event-impact-validation.md',
     'docs/site-restructure-phase-5f.md',
+    'docs/site-restructure-phase-5g.md',
+    'docs/mobile-company-dissection-model.md',
+    'docs/company-industry-peer-policy.md',
+    'docs/company-search-index.md',
+    'docs/research-surface-boundaries.md',
+    'docs/research-report-model.md',
     'docs/analytics-event-model.md',
     'docs/research-funnel-measurement.md',
     'docs/instagram-linking-workflow.md',
@@ -286,6 +296,7 @@ function validateConfigInventory(activeConfig: ReleaseGateConfig) {
     'docs/plans/phase-5d-valuation-expectations-plan.html',
     'docs/plans/phase-5e-event-assumption-linkage-plan.html',
     'docs/plans/phase-5f-research-funnel-analytics-plan.html',
+    'docs/plans/phase-5g-mobile-company-dissection-plan.html',
     'docs/plans/phase-5a-editorial-newsroom-plan.html',
     'artifacts/phase-4a-valuation/valuation-readiness.json',
     'artifacts/phase-4a-valuation/nvidia/valuation-result.json',
@@ -375,8 +386,8 @@ function validateBundle(activeConfig: ReleaseGateConfig): string {
   assert(valuationReachableDynamic.has('src/content/research-reports/nvidia.ts'), 'NVIDIA report is not dynamically reachable from valuation route');
   assert(valuationReachableDynamic.has('src/content/research-reports/meta.ts'), 'Meta report is not dynamically reachable from valuation route');
   assert(nvidiaMonteCarlo?.isDynamicEntry && metaMonteCarlo?.isDynamicEntry, 'Monte Carlo results are not split into company-specific dynamic entries');
-  assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/nvidia.ts'), 'NVIDIA Monte Carlo result is not dynamically imported by report route');
-  assert(reportRoute?.dynamicImports?.includes('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically imported by report route');
+  assert(valuationReachableDynamic.has('src/content/monte-carlo/nvidia.ts'), 'NVIDIA Monte Carlo result is not dynamically reachable from valuation route');
+  assert(valuationReachableDynamic.has('src/content/monte-carlo/meta.ts'), 'Meta Monte Carlo result is not dynamically reachable from valuation route');
   assert(!nvidiaMonteCarlo?.dynamicImports?.some((source) => source.includes('/meta.')), 'NVIDIA Monte Carlo chunk preloads Meta data');
   assert(!metaMonteCarlo?.dynamicImports?.some((source) => source.includes('/nvidia.')), 'Meta Monte Carlo chunk preloads NVIDIA data');
   assert(nvidiaEventImpacts?.isDynamicEntry && metaEventImpacts?.isDynamicEntry && netflixEventImpacts?.isDynamicEntry, 'event impacts are not split into company-specific dynamic entries');
@@ -445,6 +456,7 @@ const compiledChecks: Array<[string, string]> = [
   ['Market-map retirement unit', 'market-map-retirement-unit.js'],
   ['Company profile unit', 'company-profile-unit.js'],
   ['Company Brief unit', 'company-brief-unit.js'],
+  ['Company dissection unit', 'company-dissection-unit.js'],
   ['Financial Pivot unit', 'financial-pivot-unit.js'],
   ['Valuation expectations unit', 'valuation-expectations-unit.js'],
   ['Event impact unit', 'event-impact-unit.js'],

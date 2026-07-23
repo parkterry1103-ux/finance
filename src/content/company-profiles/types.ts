@@ -25,6 +25,15 @@ export type CompanyProfileEntry = {
   caution: string;
   sourceRefs: string[];
   reviewedAt: string;
+  searchStatus: CompanySearchStatus;
+};
+
+export type CompanySearchStatus = {
+  searchVisible: boolean;
+  analysisStatus: 'supported' | 'partial' | 'unavailable';
+  financialsStatus: 'supported' | 'unavailable';
+  valuationStatus: 'full' | 'partial' | 'unavailable';
+  reportStatus: 'supported' | 'unavailable';
 };
 
 export type CanonicalCompanyProfileIdentity = {

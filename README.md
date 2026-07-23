@@ -4927,3 +4927,9 @@ Netflix(`NFLX`)를 아홉 번째 지원 기업으로 온보딩했습니다. `/ko
 Netflix 주가해부 `stock-2026-07-18-netflix-guidance-disclosure-reset`과 오늘의 월스트리트 `wall-street-2026-07-18-capital-gate-premium`을 독립 Published 콘텐츠로 등록했습니다. 홈에는 각 판형의 짧은 최신 summary를 노출하고 상세 본문은 route 진입 뒤 불러옵니다. 주가해부만 Netflix 기업에 연결하며 PIX·VC·Etched를 다룬 월가인사이트에는 근거 없는 기업 relation을 만들지 않습니다. 기존 2026-07-17 월가인사이트와 draft fixture는 유지합니다.
 
 Netflix 사건 impact는 `scenario_review`·`pending`으로 기록해 재무 지표와 가치평가 가정 후보의 검토 필요성만 보존합니다. 공개 가치평가 모형을 만들거나 숫자를 자동 변경하지 않았고 실제 assumption change는 0건입니다. 전체 현재 inventory는 기업 9개, 사건 13개, Published editorial 3개, Event Impact 3개, Serverless Function 12개입니다. 신규 API·Function·DB·dependency·sync 실행은 없습니다. 상세 릴리스 기록은 `docs/releases/2026-07-18-netflix-wall-street.md`, 구현 대시보드는 `docs/plans/release-2026-07-18-netflix-wall-street-plan.html`을 참고하세요.
+
+## Phase 5G · 모바일 기업 해부
+
+홈 핵심 영역은 Company Registry 검색, 오늘의 주가해부, 월가인사이트 세 가지입니다. 기업 상세는 성장성·수익성·재무건전성·밸류에이션 핵심 카드 4개와 성장성·수익성·해자·재무건전성·밸류에이션 5축 SVG를 먼저 보여줍니다. 모바일 축 선택은 bottom sheet, 데스크톱은 detail panel을 사용하며 `확인 부족`을 중간값으로 바꾸지 않습니다.
+
+Financial Pivot은 공시 숫자·기간 비교, Valuation은 시장가격·모형·내재 기대, Research Report는 사업·해자·위험의 장기 판단, Stock Dissection은 특정 사건과 가격 반응을 담당합니다. 완전한 DCF·Reverse DCF·민감도 UI는 Valuation에만 남기고 Report는 핵심 브리프와 고급 근거로 단순화했습니다. 신규 API·Function·DB·dependency는 없고 Function 12개와 Phase 5F provider 상태를 유지합니다. 상세 문서는 `docs/site-restructure-phase-5g.md`, 구현 대시보드는 `docs/plans/phase-5g-mobile-company-dissection-plan.html`을 참고하세요.

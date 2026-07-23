@@ -48,3 +48,7 @@ Website handoff의 `analytics`는 선택 필드다. 없으면 실제 registry ID
 ## 2026-07-18 Netflix·월가인사이트 릴리스
 
 Netflix 주가해부는 세 파일을 함께 검토한 뒤 ID `stock-2026-07-18-netflix-guidance-disclosure-reset`로 게시한다. company slug는 먼저 등록·검증된 `netflix`에만 연결하며 주가해부에서 Netflix 기업 상세로 이동할 수 있다. 오늘의 월스트리트는 ID `wall-street-2026-07-18-capital-gate-premium`으로 별도 게시하고 PIX·VC·Etched 세 읽을거리를 유지한다. 두 콘텐츠는 같은 릴리스 날짜라는 이유만으로 서로 또는 관련 기업에 relation을 만들지 않는다. 홈은 짧은 Published summary 두 장을 독립적으로 노출하고 상세 본문은 각 route 진입 후 불러온다.
+
+## Phase 5G 검색 경계
+
+주가해부 게시만으로 Company Registry나 검색 index를 만들지 않는다. 기업 CTA와 검색 편입은 Company Registry, Company Brief, 공식 source, 기업 route, `searchVisible` validation이 모두 통과한 뒤에만 허용한다. `companySlug: null` 콘텐츠는 기업 CTA 없이 게시할 수 있다.
