@@ -230,8 +230,8 @@
           <li><strong>완료</strong> · SMCI 기존 등록과 누락 릴리스 항목 감사</li>
           <li><strong>완료</strong> · 공식 자료·가격·WSJ 원문 검증</li>
           <li><strong>완료</strong> · 기업 데이터·Event Impact·두 editorial 구현</li>
-          <li><strong>완료</strong> · validation·Chromium·WebKit·성능 QA</li>
-          <li><strong>진행 중</strong> · 실제 Safari·PR·merge·Production 검증</li>
+          <li><strong>완료</strong> · validation·Chromium·WebKit·실제 Safari·성능 QA</li>
+          <li><strong>진행 중</strong> · PR·merge·Production 검증</li>
         </ol>
       </section>
 
@@ -239,8 +239,8 @@
         <h2>계획 대비 실제 결과</h2>
         <p><strong>계획대로 완료:</strong> SMCI 표준 3파일, Company Brief 5문답, 핵심 카드 4개, 오각형 5축, 최신 SEC 재무·공시 배수, <code>scenario_review</code> Event Impact, 독립 주가해부와 월스트리트 edition을 구현했습니다. 월스트리트는 read 3개, Opinion 1개, 기업 relation 0개를 유지합니다.</p>
         <p><strong>계획 변경:</strong> 요청문은 SMCI 신규 온보딩 가능성을 열어 두었지만 실제 main에는 이미 완성된 지원 기업으로 존재했습니다. 중복 기업을 만들지 않고 기존 <code>supermicro</code>의 최신 사건·근거만 갱신했습니다. 기업 수는 9개로 유지됩니다.</p>
-        <p><strong>검증 결과:</strong> Release Gate 28개 통과, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개입니다. Chromium·WebKit 48개 릴리스 QA와 Phase 5G 25개 회귀 QA에서 320~1440px overflow와 console error가 모두 0이었습니다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안입니다.</p>
-        <p><strong>현재 완료율:</strong> 92%. 미완료: 실제 Safari 확인, PR 병합, Production Ready · Current와 최종 route smoke 기록.</p>
+        <p><strong>검증 결과:</strong> Release Gate 28개 통과, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개입니다. Chromium·WebKit 48개 릴리스 QA와 Phase 5G 25개 회귀 QA에서 320~1440px overflow와 console error가 모두 0이었습니다. 실제 Safari 데스크톱에서도 홈, SMCI 검색·기업·오각형·재무·주가해부, 월스트리트 3개 Read·Opinion, 직접 URL·뒤로가기를 확인했고 시각적 가로 이탈은 0이었습니다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안입니다.</p>
+        <p><strong>현재 완료율:</strong> 94%. 미완료: PR 병합, Production Ready · Current와 최종 route smoke 기록.</p>
       </section>
     </div>
     <footer>저장소 상대 문서: <a href="../stock-dissection-intake.md">Stock Dissection Intake</a> · <a href="../company-brief-model.md">Company Brief</a> · <a href="../financial-pivot-model.md">Financial Pivot</a> · <a href="../event-impact-model.md">Event Impact</a></footer>

@@ -72,6 +72,6 @@ Read 3은 WSJ 편집위원회의 Opinion이다. 확인 사실인 미·사우디 
 - `npm run release:gate`
 - Production smoke와 Chromium·WebKit·Safari 반응형 QA
 
-현재 검증 결과는 Release Gate 28개, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개다. Phase 5G 회귀 QA 25개와 릴리스 전용 Chromium·WebKit QA 48개가 통과했고, 320~1440px 전체 페이지 overflow와 console error는 0이다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안이다.
+현재 검증 결과는 Release Gate 28개, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개다. Phase 5G 회귀 QA 25개와 릴리스 전용 Chromium·WebKit QA 48개가 통과했고, 320~1440px 전체 페이지 overflow와 console error는 0이다. 실제 Safari 데스크톱에서도 홈 SMCI·월스트리트 카드, SMCI 검색, 기업 핵심 카드 4개, 오각형 5축과 축 전환, Financial CTA, 주가해부, 월스트리트 3개 Read·Opinion, 직접 URL과 뒤로가기를 확인했다. 데스크톱 시각 점검의 가로 이탈은 0이다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안이다.
 
 최종 commit, PR, main SHA와 Production deployment는 배포 완료 뒤 Plan HTML과 이 문서의 배포 기록에 반영한다.
