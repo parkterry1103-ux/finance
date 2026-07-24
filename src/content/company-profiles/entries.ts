@@ -167,8 +167,8 @@ export const companyProfiles: CompanyProfileEntry[] = [
     primaryRole: 'AI 서버·랙 솔루션',
     keyQuestions: ['AI 서버 수요가 실제 출하와 매출로 이어지는가', 'GPU·네트워크·냉각 부품 조달이 안정적인가', '자금조달이 생산능력과 현금흐름에 어떻게 반영되는가'],
     caution: commonCaution,
-    sourceRefs: ['ir-supermicro-2026-supermicro-announces-pricing-of-equity-and-equity-lin-f33c9243'],
-    reviewedAt: '2026-07-14',
+    sourceRefs: ['smci-sec-2026-q3-10q', 'smci-sec-2026-preliminary-8k', 'smci-ir-2026-q4-preliminary-update'],
+    reviewedAt: '2026-07-24',
     searchStatus: supportedSearch,
   },
   {

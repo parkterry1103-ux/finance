@@ -2,7 +2,7 @@
 
 ## 공통 가격 기준
 
-현재 감사 snapshot은 2026-07-17 최신 완료 정규장 종가를 사용한다. 통화, 세션, 가격 source ID와 기준일을 함께 기록한다. 장중값, 시간외값과 다른 날짜 공시 분모를 조용히 섞지 않는다.
+감사 snapshot은 기업별 검증 기준일의 최신 완료 정규장 종가를 사용한다. 기존 8개는 2026-07-17, SMCI는 사건 뒤 2026-07-22 종가를 사용한다. 통화, 세션, 가격 source ID와 기준일을 함께 기록하며 장중값, 시간외값과 다른 날짜 공시 분모를 조용히 섞지 않는다.
 
 ## PER
 
@@ -29,3 +29,7 @@ ADR이면 ordinary share per ADR 비율을 명시해 EPS와 주식수를 상장 
 ## Netflix 외부 교차검증
 
 Netflix 감사 snapshot은 2026-07-17 정규장 종가 68.95달러를 사용한다. StockAnalysis의 TTM PER 21.72배와 CompaniesMarketCap의 21.8954배를 같은 날짜 외부 참고값으로 기록하되, 자체 fallback인 FY2025 희석 EPS 2.53달러로 단순 계산한 27.25배와 동일하다고 보지 않는다. 네 독립 분기의 split-adjusted GAAP 희석 EPS가 모두 안전하게 연결되기 전에는 외부 TTM 정의와 연간 EPS 분모의 차이를 숨기지 않고 자체 PER 게시를 보류한다.
+
+## SMCI 외부 교차검증
+
+SMCI 감사 snapshot은 2026-07-22 정규장 종가 $30.56을 사용한다. 안전한 TTM 희석 EPS를 구성할 수 없어 FY2025 희석 EPS $1.68 기반 최근 회계연도 PER 18.19배를 명시적 fallback으로 표시한다. 최신 자기자본·기말주식수 기반 PBR은 약 2.43배, 연속 독립 4분기 매출 기반 PSR은 약 0.55배다. EV 구성 원재료와 EBITDA가 완전하지 않아 EV/Sales·EV/EBITDA는 unavailable이다. GuruFocus 16.17배와 StockAnalysis 14.10배는 가격일·TTM/연간 분모·GAAP 정의가 동일하지 않은 외부 교차검증으로만 기록한다.

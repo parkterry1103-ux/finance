@@ -27,3 +27,7 @@
 ## 검증
 
 `validateCompanyDissectionRegistry`는 분류 source 3개, provider 중복, 날짜·URL, 공식 segment, 5축 비교 문구와 source, 지원되지 않는 Valuation·Report CTA를 검사한다. 존재하지 않는 peer ID는 config에 둘 수 없으며 현재 Phase 5G는 검증된 숫자 peer ID를 새로 만들지 않는다.
+
+## SMCI 적용
+
+SMCI의 대표 업종은 기존 GICS·ICB·Nasdaq 분류를 사용하고 공식 Server & Storage Systems와 Subsystems & Accessories segment를 유지한다. 성장성은 최신 SEC 실제 매출의 전년 동기 비교와 주문→출하 자체 전환을 함께 보고, 수익성·재무건전성은 자체 과거 실제 마진·재고·매입채무·현금흐름을 우선한다. Dell·HPE의 동일 세션 주가 반응은 사건 배경이지 재무 peer 중앙값이 아니다. 검증 가능한 자체 과거 밸류에이션 범위가 없어 오각형 밸류에이션 축은 `확인 부족`으로 남긴다.

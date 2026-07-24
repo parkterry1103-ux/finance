@@ -174,6 +174,8 @@ const SEC_PIVOT_METRICS: PivotMetricMapping[] = [
   { metricId: 'totalEquity', concepts: ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], unit: 'USD', kind: 'instant' },
   { metricId: 'currentAssets', concepts: ['AssetsCurrent'], unit: 'USD', kind: 'instant' },
   { metricId: 'currentLiabilities', concepts: ['LiabilitiesCurrent'], unit: 'USD', kind: 'instant' },
+  { metricId: 'inventory', concepts: ['InventoryNet'], unit: 'USD', kind: 'instant' },
+  { metricId: 'accountsPayable', concepts: ['AccountsPayableCurrent'], unit: 'USD', kind: 'instant' },
   { metricId: 'sharesOutstanding', concepts: ['EntityCommonStockSharesOutstanding', 'CommonStockSharesOutstanding'], unit: 'shares', kind: 'instant' },
 ];
 

@@ -33,6 +33,7 @@ export type EditorialArticleSource = {
   url?: string;
   articleIdentifier?: string;
   publishedAt: string;
+  updatedAt?: string;
   accessedAt: string;
 };
 

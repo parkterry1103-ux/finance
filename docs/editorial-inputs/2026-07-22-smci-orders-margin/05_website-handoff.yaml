@@ -1,0 +1,61 @@
+content_type: stock_dissection
+status: owner_verified
+id: stock-2026-07-22-smci-orders-margin
+slug: 2026-07-22-smci-orders-margin
+company:
+  name: Super Micro Computer, Inc.
+  ticker: SMCI
+  company_slug: supermicro
+  market: NASDAQ
+event_as_of: 2026-07-21
+price_as_of: 2026-07-22
+session: regular
+price_move:
+  value: 19.843
+  unit: percent
+  previous_close: 25.50
+  close: 30.56
+volume:
+  regular_session: 162695900
+  previous_20_session_average: 41514380
+  relative_multiple: 3.919
+comparison:
+  market:
+    name: Nasdaq Composite
+    return: -0.566
+    relative_difference_percentage_point: 20.409
+  sector:
+    name: SOXX
+    return: 0.512
+    relative_difference_percentage_point: 19.331
+  peers:
+    - name: Dell
+      return: 9.316
+      relative_difference_percentage_point: 10.527
+    - name: HPE
+      return: 3.018
+      relative_difference_percentage_point: 16.825
+move_character: mixed
+confirmed_items:
+  - FY2026 4분기 신규 주문 600억달러 초과
+  - 회계연도 말 사상 최대 수주잔고
+  - 예비 GAAP·비GAAP 매출총이익률 15~17%
+  - 매출은 기존 110억~125억달러 전망 하단 부근
+unconfirmed_items:
+  - 주문별 확정성·취소·지연 조건
+  - 고객별 주문 구성과 매출 인식 시점
+  - 예비 마진의 최종 달성·지속성
+  - 재고·매입채무·영업현금흐름 영향
+thesis_impact: not_applicable
+valuation_review: scenario_review_without_model_change
+research_source_file: docs/editorial-inputs/2026-07-22-smci-orders-margin/01_verified-research.md
+detail_source_file: docs/editorial-inputs/2026-07-22-smci-orders-margin/04_website-article.md
+handoff_source_file: docs/editorial-inputs/2026-07-22-smci-orders-margin/05_website-handoff.yaml
+evidence:
+  - smci-sec-2026-preliminary-8k
+  - smci-ir-2026-q4-preliminary-update
+  - smci-sec-2026-q3-10q
+  - smci-yahoo-price-2026-07-22
+  - nasdaq-yahoo-price-2026-07-22
+  - soxx-yahoo-price-2026-07-22
+verified_at: 2026-07-24T02:15:00+09:00

@@ -60,6 +60,8 @@ export const financialMetricDefinitions: FinancialMetricDefinition[] = [
   { id: 'returnOnAssets', label: '총자산이익률', group: 'capitalEfficiency', format: 'percent', change: 'percentagePoint', description: '자산 대비 순이익 비율입니다.', calculation: '순이익 ÷ 총자산' },
   { id: 'returnOnEquity', label: '자기자본이익률', group: 'capitalEfficiency', format: 'percent', change: 'percentagePoint', description: '자기자본 대비 순이익 비율입니다.', calculation: '순이익 ÷ 자기자본' },
   { id: 'cashAndEquivalents', label: '현금성자산', group: 'balanceSheet', format: 'amount', change: 'percent', description: '즉시 사용할 수 있는 현금과 현금성 자산입니다.' },
+  { id: 'inventory', label: '재고자산', group: 'balanceSheet', format: 'amount', change: 'percent', description: '향후 출하를 위해 보유한 제품·부품과 재공품입니다.' },
+  { id: 'accountsPayable', label: '매입채무', group: 'balanceSheet', format: 'amount', change: 'percent', description: '공급자에게 지급해야 할 단기 영업 채무입니다.' },
   { id: 'totalDebt', label: '총차입금', group: 'balanceSheet', format: 'amount', change: 'percent', description: '단기와 장기 이자부 부채의 합계입니다.' },
   { id: 'debtToCapital', label: '자본 대비 차입금', group: 'balanceSheet', format: 'percent', change: 'percentagePoint', description: '차입금과 자기자본을 합친 자본 중 차입금의 비율입니다.', calculation: '총차입금 ÷ (총차입금 + 자기자본)' },
   { id: 'currentRatio', label: '유동비율', group: 'balanceSheet', format: 'multiple', change: 'absolute', description: '단기 의무를 유동자산으로 감당할 수 있는 정도입니다.', calculation: '유동자산 ÷ 유동부채' },

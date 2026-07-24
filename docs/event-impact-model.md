@@ -63,6 +63,8 @@ Event Impact는 사건 자체의 중요도 점수나 주가 인과 추정이 아
 
 2026-07-18 Netflix record는 Q2 실적과 가이던스·공개정책 변화를 `scenario_review`·`pending`으로 연결한다. 확인된 사실과 미확인 시장 해석을 분리하고 재무 지표 3개와 가정 후보 3개를 검토 대상으로만 기록한다. 공개 가치평가 모형이 없는 상태이므로 decision과 `ValuationAssumptionChange`는 생성하지 않으며 Production change count는 계속 0이다.
 
+2026-07-24 SMCI record는 신규 주문·수주잔고·예비 매출총이익률을 AI 서버 수요, 수주잔고 전환, 제품·고객 구성, 운전자본·납품 동인에 연결한다. 재무 연결은 매출·매출총이익률·영업이익률·재고·매입채무·영업현금흐름·FCF 7개이고 가정 검토 후보는 성장·매출총이익률·영업이익률·재투자율 4개다. 상태는 `scenario_review`·`pending`이며 가치평가 모형이 없어 제안 값·decision·change record를 만들지 않는다.
+
 ## 로딩 경계
 
 회사별 entry는 `src/content/event-impacts/entries/{company}.ts`로 분리한다. 기업 상세·재무·가치평가 route가 열린 뒤 현재 회사 module만 가져온다. editorial detail은 작은 ID→company index에 명시적으로 등록된 경우에만 회사 module을 불러온다. 홈과 App entry는 전체 impact object를 선로딩하지 않는다.

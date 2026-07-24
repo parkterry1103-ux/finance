@@ -26,3 +26,7 @@ Published Stock Dissection은 `companySlug`가 있어도 Company Registry를 생
 ## 검증
 
 `scripts/company-dissection-unit.ts`와 기존 company profile unit이 index/Registry 수, slug·ticker·종목코드 중복, Brief 누락, route와 source 조건을 검사한다. 검색 query 원문은 analytics payload로 보내지 않는다.
+
+## SMCI 2026-07-24 감사
+
+SMCI는 이미 `supermicro` Company Registry, Company Brief, 기업 route, 공식 source와 `searchVisible: true`를 갖춘 아홉 번째 지원 기업이다. 이번 주가해부 게시로 새 검색 record를 만들거나 지원 기업 수를 10개로 늘리지 않는다. 검색 alias와 route는 기존 Registry에서 계속 자동 파생한다.
