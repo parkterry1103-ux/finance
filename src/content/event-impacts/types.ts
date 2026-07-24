@@ -1,6 +1,6 @@
 import type { FinancialPivotMetricId } from '../financial-pivots/types.js';
 
-export type EventImpactCompanySlug = 'nvidia' | 'meta' | 'netflix';
+export type EventImpactCompanySlug = 'nvidia' | 'meta' | 'netflix' | 'supermicro';
 
 export type EventImpactConfidence =
   | 'confirmed'
@@ -54,7 +54,11 @@ export type BusinessDriverId =
   | 'meta-platform-engagement'
   | 'netflix-member-price-ad-demand'
   | 'netflix-content-engagement'
-  | 'netflix-disclosure-visibility';
+  | 'netflix-disclosure-visibility'
+  | 'supermicro-ai-server-demand'
+  | 'supermicro-backlog-conversion'
+  | 'supermicro-product-customer-mix'
+  | 'supermicro-working-capital-delivery';
 
 export type EventImpactEvidenceItem = {
   id: string;

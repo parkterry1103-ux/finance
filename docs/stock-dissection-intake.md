@@ -95,3 +95,7 @@ PR에서 세 원문과 typed content, summary, relation, smoke 기대값을 함�
 ## Phase 5F 측정 연결
 
 Published 상세이 실제 표시될 때만 `editorial_view`를 기록한다. 25·50·75·90% 읽기와 90%+10초 완료, 근거 열기, 관련 기업·리서치 이동을 typed event로 구분한다. 콘텐츠의 가격, 등락률, 거래량, 기사 제목, source URL과 사용자의 정확한 체류시간은 analytics payload에 넣지 않는다. 세 파일은 게시 근거이며, handoff의 선택 analytics block은 안정적인 콘텐츠·캠페인 ID와 권장 UTM만 전달한다.
+
+## 2026-07-22 SMCI 입력
+
+SMCI 입력 세 파일은 `docs/editorial-inputs/2026-07-22-smci-orders-margin/`에 저장한다. typed record의 `researchSourceFile`, `detailSourceFile`, `handoffSourceFile`도 같은 저장소 상대 경로를 가리킨다. 사건일 2026-07-21, 가격일 2026-07-22와 정규장 세션을 분리하며 시간외 움직임을 정규장 수익률에 섞지 않는다. 주문 600억달러 초과와 15~17% 마진은 회사의 미감사 예비 수치이고 확정 매출·달성 실적으로 표현하지 않는다.

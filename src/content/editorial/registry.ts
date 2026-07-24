@@ -4,6 +4,11 @@ export const editorialSources: EditorialSource[] = [];
 
 export const stockDissectionRegistry = [
   {
+    id: 'stock-2026-07-22-smci-orders-margin',
+    slug: '2026-07-22-smci-orders-margin',
+    load: () => import('./stock-dissections/2026-07-22-smci-orders-margin.js').then((module) => module.smciOrdersMarginDissection),
+  },
+  {
     id: 'stock-2026-07-18-netflix-guidance-disclosure-reset',
     slug: '2026-07-18-netflix-guidance-disclosure-reset',
     load: () => import('./stock-dissections/2026-07-18-netflix-guidance-disclosure-reset.js').then((module) => module.netflixGuidanceDisclosureReset),
@@ -16,6 +21,11 @@ export const stockDissectionRegistry = [
 ] as const;
 
 export const threeReadsRegistry = [
+  {
+    id: 'wall-street-2026-07-23-option-cost',
+    slug: '2026-07-23-option-cost',
+    load: () => import('./three-reads/2026-07-23-option-cost.js').then((module) => module.optionCostEdition),
+  },
   {
     id: 'wall-street-2026-07-18-capital-gate-premium',
     slug: '2026-07-18-capital-gate-premium',

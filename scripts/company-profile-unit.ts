@@ -124,6 +124,6 @@ check(!companyProfileSectionVisibility(nvidia).showPrice, 'price absent section 
 check(companyProfileSectionVisibility({ ...nvidia, companyEvents: [] }).showEventEmpty, 'event empty state');
 check(!companyProfileSectionVisibility({ ...nvidia, picks: [] }).showPick, 'pick absent section omitted');
 check(!companyProfileSectionVisibility({ ...nvidia, verifiedMetrics: [] }).showMetrics, 'metric absent section omitted');
-check(validateCompanyProfileRegistry(new Date('2026-07-18T12:00:00Z')).length === 0, 'registry validation');
+check(validateCompanyProfileRegistry(new Date('2026-07-24T12:00:00Z')).length === 0, 'registry validation');
 
 console.log(`✓ 기업 프로필 unit ${checks}개 검증`);

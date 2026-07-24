@@ -52,3 +52,7 @@ Netflix 주가해부는 세 파일을 함께 검토한 뒤 ID `stock-2026-07-18-
 ## Phase 5G 검색 경계
 
 주가해부 게시만으로 Company Registry나 검색 index를 만들지 않는다. 기업 CTA와 검색 편입은 Company Registry, Company Brief, 공식 source, 기업 route, `searchVisible` validation이 모두 통과한 뒤에만 허용한다. `companySlug: null` 콘텐츠는 기업 CTA 없이 게시할 수 있다.
+
+## 2026-07-23 통합 릴리스
+
+SMCI 주가해부와 오늘의 월스트리트는 하나의 배포 단위로 검증하지만 서로 독립적인 registry record와 route를 가진다. SMCI만 기존 `supermicro` 기업에 연결하고 `wall-street-2026-07-23-option-cost`의 `relatedCompanySlugs`는 빈 배열을 유지한다. 홈 summary와 상세 typed module을 각각 추가하고 기존 edition·draft를 덮어쓰지 않는다. 긴 본문과 근거는 상세 route에서만 동적 로드한다.

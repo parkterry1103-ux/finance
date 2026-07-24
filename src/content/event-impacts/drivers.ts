@@ -73,6 +73,38 @@ export const businessDriverRegistry: BusinessDriverDefinition[] = [
     financialMetricIds: ['revenue', 'operatingMargin'],
     valuationAssumptionIds: ['revenue_growth', 'growth_duration'],
   },
+  {
+    id: 'supermicro-ai-server-demand',
+    companySlug: 'supermicro',
+    label: 'AI 서버 수요',
+    description: '클라우드·기업 고객의 AI 서버 수요가 신규 주문과 수주잔고로 이어지는 경로입니다.',
+    financialMetricIds: ['revenue'],
+    valuationAssumptionIds: ['revenue_growth', 'growth_duration'],
+  },
+  {
+    id: 'supermicro-backlog-conversion',
+    companySlug: 'supermicro',
+    label: '수주잔고의 출하 전환',
+    description: '신규 주문과 수주잔고가 부품 조달·생산·고객 인수를 거쳐 매출과 현금으로 전환되는 경로입니다.',
+    financialMetricIds: ['revenue', 'inventory', 'accountsPayable', 'operatingCashFlow', 'freeCashFlow'],
+    valuationAssumptionIds: ['revenue_growth', 'reinvestment_rate'],
+  },
+  {
+    id: 'supermicro-product-customer-mix',
+    companySlug: 'supermicro',
+    label: '제품·고객 구성',
+    description: '랙·서버 제품과 고객 구성이 매출총이익률과 영업이익률에 미치는 경로입니다.',
+    financialMetricIds: ['grossMargin', 'operatingMargin'],
+    valuationAssumptionIds: ['gross_margin', 'operating_margin'],
+  },
+  {
+    id: 'supermicro-working-capital-delivery',
+    companySlug: 'supermicro',
+    label: '운전자본과 납품',
+    description: '재고·매입채무와 공급망 조건이 납품 속도와 영업현금흐름에 미치는 경로입니다.',
+    financialMetricIds: ['inventory', 'accountsPayable', 'operatingCashFlow', 'freeCashFlow'],
+    valuationAssumptionIds: ['reinvestment_rate', 'capital_structure'],
+  },
 ];
 
 export const businessDriverById = new Map(businessDriverRegistry.map((driver) => [driver.id, driver]));

@@ -33,12 +33,13 @@ check(briefs.every(Boolean), 'all briefs build through lazy loader');
 check(briefs.every((brief) => brief && companyBriefQuestionKeys.every((key) => brief.questions[key].summary.trim() && brief.questions[key].sourceIds.length)), 'five sourced questions per brief');
 check(briefs.reduce((total, brief) => total + (brief ? Object.keys(brief.questions).length : 0), 0) === 45, 'forty-five question answers');
 check(briefs.every((brief) => brief && brief.keyMetrics.length > 0 && brief.keyMetrics.length <= 3), 'one to three key metrics');
-check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.length ?? 0), 0) === 22, 'twenty-two key metrics');
+check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.length ?? 0), 0) === 23, 'twenty-three key metrics');
 check(briefs.every((brief) => brief?.keyMetrics.every((metric) => Number.isFinite(metric.value) && metric.unit && metric.period && sourceRegistry[metric.sourceId])), 'metric finite number, unit, period and source');
 check(briefs.reduce((total, brief) => total + (brief?.keyMetrics.filter((metric) => metric.comparison).length ?? 0), 0) === 8, 'eight evidence-backed comparisons');
 check(briefs.filter((brief) => brief?.reportSlug).length === 2, 'only NVIDIA and Meta report CTAs');
 check(briefs.find((brief) => brief?.companySlug === 'netflix')?.relatedEditorialIds.join('|') === 'stock-2026-07-18-netflix-guidance-disclosure-reset', 'Netflix related editorial connected');
-check(briefs.filter((brief) => brief?.companySlug !== 'netflix').every((brief) => brief?.relatedEditorialIds.length === 0), 'unrelated editorial sections remain omitted');
+check(briefs.find((brief) => brief?.companySlug === 'supermicro')?.relatedEditorialIds.join('|') === 'stock-2026-07-22-smci-orders-margin', 'SMCI related editorial connected');
+check(briefs.filter((brief) => !['netflix', 'supermicro'].includes(brief?.companySlug ?? '')).every((brief) => brief?.relatedEditorialIds.length === 0), 'unrelated editorial sections remain omitted');
 check(expectedBriefDifferenceUnit('영업이익률', '전년 동기 대비') === 'percentagePoint', 'margin comparison uses percentage points');
 check(expectedBriefDifferenceUnit('매출 성장률', '전년 대비') === 'percent', 'growth comparison uses percent');
 
@@ -74,4 +75,4 @@ check(componentSource.includes("profile.searchStatus.reportStatus === 'supported
 check(componentSource.includes('recentEditorial.length ?') && componentSource.includes('최근 관련 해부'), 'related editorial section condition');
 check(!componentSource.includes('최근 관련 해부가 없습니다'), 'no empty editorial message');
 
-console.log(`✓ Company Brief unit ${checks}개 검증 · 기업 9 · 질문 45 · 지표 22 · 비교 8 · 리포트 CTA 2`);
+console.log(`✓ Company Brief unit ${checks}개 검증 · 기업 9 · 질문 45 · 지표 23 · 비교 8 · 리포트 CTA 2`);

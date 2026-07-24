@@ -38,6 +38,8 @@ export type FinancialPivotMetricId =
   | 'totalEquity'
   | 'currentAssets'
   | 'currentLiabilities'
+  | 'inventory'
+  | 'accountsPayable'
   | 'dilutedShares'
   | 'sharesOutstanding'
   | 'grossMargin'

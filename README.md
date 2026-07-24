@@ -4933,3 +4933,9 @@ Netflix 사건 impact는 `scenario_review`·`pending`으로 기록해 재무 지
 홈 핵심 영역은 Company Registry 검색, 오늘의 주가해부, 월가인사이트 세 가지입니다. 기업 상세는 성장성·수익성·재무건전성·밸류에이션 핵심 카드 4개와 성장성·수익성·해자·재무건전성·밸류에이션 5축 SVG를 먼저 보여줍니다. 모바일 축 선택은 bottom sheet, 데스크톱은 detail panel을 사용하며 `확인 부족`을 중간값으로 바꾸지 않습니다.
 
 Financial Pivot은 공시 숫자·기간 비교, Valuation은 시장가격·모형·내재 기대, Research Report는 사업·해자·위험의 장기 판단, Stock Dissection은 특정 사건과 가격 반응을 담당합니다. 완전한 DCF·Reverse DCF·민감도 UI는 Valuation에만 남기고 Report는 핵심 브리프와 고급 근거로 단순화했습니다. 신규 API·Function·DB·dependency는 없고 Function 12개와 Phase 5F provider 상태를 유지합니다. 상세 문서는 `docs/site-restructure-phase-5g.md`, 구현 대시보드는 `docs/plans/phase-5g-mobile-company-dissection-plan.html`을 참고하세요.
+
+## 2026-07-23 · SMCI 주가해부와 오늘의 월스트리트
+
+기존 아홉 번째 지원 기업 Supermicro를 중복 온보딩하지 않고 최신 SEC 10-Q·10-K와 7월 21일 예비 8-K로 갱신했습니다. SMCI 주가해부 `stock-2026-07-22-smci-orders-margin`은 7월 22일 정규장 +19.843%, 거래량 20일 평균의 3.919배와 신규 주문 600억달러 초과·예비 매출총이익률 15~17%를 설명합니다. 주문을 확정 매출로, 예비 마진을 달성 실적으로 표현하지 않으며 Event Impact는 `scenario_review`·`pending`입니다.
+
+오늘의 월스트리트 `wall-street-2026-07-23-option-cost`는 장중 10년물 4.711%, 노후 사모펀드 NAV와 북미 미매각 기업가치, 미·사우디 민간 원자력 협정을 `선택권은 공짜가 아니다`라는 질문으로 연결합니다. WSJ 기사·Opinion과 공식 자료를 분리하고 related company relation은 빈 배열입니다. 두 콘텐츠는 같은 배포 단위지만 독립 route와 lazy module을 사용합니다. 기업 9개, Published editorial 5개, Event Impact 4개, Serverless Function 12개이며 신규 API·Function·DB·dependency·가치평가·리포트는 없습니다. 상세 기록은 `docs/releases/2026-07-23-smci-wall-street.md`, 구현 대시보드는 `docs/plans/release-2026-07-23-smci-wall-street-plan.html`을 참고하세요.

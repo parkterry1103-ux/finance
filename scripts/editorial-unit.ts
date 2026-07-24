@@ -18,7 +18,7 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-const today = '2026-07-18';
+const today = '2026-07-24';
 const supportedCompanySlugs = companyProfiles.map((profile) => profile.slug);
 const verification = { authoredBy: 'owner', verifiedBy: 'owner', verifiedAt: '2026-07-17T16:55:00+09:00', status: 'ownerVerified' } as const;
 
@@ -85,7 +85,7 @@ assert(!isHomepageVisible('draft') && !isHomepageVisible('verified') && isHomepa
 assert(!isDetailVisible('draft') && !isDetailVisible('verified') && isDetailVisible('published') && isDetailVisible('archived'), '상세 상태 selector가 다릅니다.');
 assert(publishedEditorialSummaries([{ ...validStock, status: 'verified' }], [{ ...validThreeReads, status: 'archived' }], today).length === 0, 'published 외 상태가 홈 index에 포함됐습니다.');
 
-const future = validate([{ ...validStock, publishedAt: '2026-07-19' }], [validThreeReads]);
+const future = validate([{ ...validStock, publishedAt: '2026-07-25' }], [validThreeReads]);
 assert(!future.ok && future.errors.some((error) => error.includes('미래 날짜')), '미래 날짜 fixture가 실패하지 않았습니다.');
 
 for (const count of [2, 4]) {
@@ -132,13 +132,16 @@ assert(!supportedCompanySlugs.includes('burberry'), 'Burberry 가짜 기업 프�
 const realRegistry = await loadEditorialRegistry();
 const registryResult = validateEditorialRegistry({ ...realRegistry, supportedCompanySlugs, today });
 assert(registryResult.ok, `실제 editorial registry 검증 실패: ${registryResult.errors.join(' | ')}`);
-assert(registryResult.publishedCount === 3, '2026-07-18 릴리스 Published 콘텐츠 수가 3개가 아닙니다.');
+assert(registryResult.publishedCount === 5, '2026-07-24 릴리스 Published 콘텐츠 수가 5개가 아닙니다.');
 assert(realRegistry.stockDissections.find((item) => item.id === 'paypal-control-premium-draft')?.status === 'draft', 'PayPal draft 상태가 바뀌었습니다.');
 assert(realRegistry.threeReadsEditions.find((item) => item.id === 'three-reads-switching-power-draft')?.status === 'draft', 'ASML 포함 draft 상태가 바뀌었습니다.');
-assert(publishedEditorialSummaryIndex.length === 3 && publishedEditorialSummaryIndex.every((item) => item.status === 'published'), '홈 요약 index에 draft가 포함됐습니다.');
+assert(publishedEditorialSummaryIndex.length === 5 && publishedEditorialSummaryIndex.every((item) => item.status === 'published'), '홈 요약 index에 draft가 포함됐습니다.');
 assert(realRegistry.stockDissections.find((item) => item.id === 'stock-2026-07-18-netflix-guidance-disclosure-reset')?.company.companySlug === 'netflix', 'Netflix Published 주가해부가 기업에 연결되지 않았습니다.');
+assert(realRegistry.stockDissections.find((item) => item.id === 'stock-2026-07-22-smci-orders-margin')?.company.companySlug === 'supermicro', 'SMCI Published 주가해부가 기업에 연결되지 않았습니다.');
 assert(realRegistry.threeReadsEditions.find((item) => item.id === 'wall-street-2026-07-18-capital-gate-premium')?.relatedCompanySlugs.length === 0, '7월 18일 월가인사이트에 임의 기업 relation이 생겼습니다.');
+assert(realRegistry.threeReadsEditions.find((item) => item.id === 'wall-street-2026-07-23-option-cost')?.relatedCompanySlugs.length === 0, '7월 23일 월가인사이트에 임의 기업 relation이 생겼습니다.');
 assert(summariesForCompany(publishedEditorialSummaryIndex, 'netflix').length === 1, 'Netflix 관련 Published 콘텐츠가 정확히 1개가 아닙니다.');
+assert(summariesForCompany(publishedEditorialSummaryIndex, 'supermicro').length === 1, 'SMCI 관련 Published 콘텐츠가 정확히 1개가 아닙니다.');
 assert(!realRegistry.stockDissections.some((item) => item.slug === '2026-07-13-sk-hynix-selloff'), '제거한 SK하이닉스 해부가 registry에 남아 있습니다.');
 assert(!publishedEditorialSummaryIndex.some((item) => item.slug === '2026-07-13-sk-hynix-selloff'), '제거한 SK하이닉스 해부가 홈 summary에 남아 있습니다.');
 assert(summariesForCompany(publishedEditorialSummaryIndex, 'sk-hynix').length === 0, 'SK하이닉스에 빈 섹션을 만들 Published relation이 남아 있습니다.');
