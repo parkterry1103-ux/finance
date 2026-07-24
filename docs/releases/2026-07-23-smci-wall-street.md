@@ -74,4 +74,15 @@ Read 3은 WSJ 편집위원회의 Opinion이다. 확인 사실인 미·사우디 
 
 현재 검증 결과는 Release Gate 28개, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개다. Phase 5G 회귀 QA 25개와 릴리스 전용 Chromium·WebKit QA 48개가 통과했고, 320~1440px 전체 페이지 overflow와 console error는 0이다. 실제 Safari 데스크톱에서도 홈 SMCI·월스트리트 카드, SMCI 검색, 기업 핵심 카드 4개, 오각형 5축과 축 전환, Financial CTA, 주가해부, 월스트리트 3개 Read·Opinion, 직접 URL과 뒤로가기를 확인했다. 데스크톱 시각 점검의 가로 이탈은 0이다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안이다.
 
-최종 commit, PR, main SHA와 Production deployment는 배포 완료 뒤 Plan HTML과 이 문서의 배포 기록에 반영한다.
+## Git·배포 기록
+
+- 시작 main: `275fc7dc1043830a110e65b7aec0d24686b261e4`
+- feature branch 최종 commit: `2f98292d9844621317d0b18594903a416aa7ac0e`
+- Pull Request: [#29 Add SMCI company research and July 23 Wall Street insight](https://github.com/parkterry1103-ux/finance/pull/29)
+- merge 방식: squash
+- 릴리스 main SHA: `656aff8704df6cd0c337ef53d8b02bfedea5cf7c`
+- Preview: `dpl_WfeWyv4hJ1giNU1nUd4E9y2hWSdz` · Ready
+- Production: `dpl_GQeg6NZbhtN8iKaWXbYf8VqNK7cd` · Ready · Current
+- Production URL: `https://finance1-flax.vercel.app`
+
+Production에서 release smoke가 성공했고, 릴리스 전용 Chromium·WebKit 검사는 7개 viewport와 Plan HTML 검사를 포함해 48개가 다시 통과했다. 320px·390px·1440px을 포함한 모든 대상 viewport에서 페이지 전체 가로 overflow와 console error는 0이다. 완료 문서 갱신은 코드 릴리스와 분리된 후속 PR로 병합한다.

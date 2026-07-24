@@ -50,13 +50,13 @@
       <p class="eyebrow">2026-07-23 Integrated Release</p>
       <h1>SMCI 기업 리서치와 오늘의 월스트리트를 한 번에, 서로 독립적으로 게시</h1>
       <p class="lead">기존 Supermicro 기업 모델에는 최신 공식 사건과 Event Impact를 연결하고, 별도 편집 레코드로 주가해부와 「선택권은 공짜가 아니다」를 게시합니다. 카드뉴스·이미지·소셜 전용 UI는 만들지 않습니다.</p>
-      <div class="status" aria-label="현재 상태: 검토">Review</div>
+      <div class="status" aria-label="현재 상태: 완료">Completed</div>
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd><code>275fc7dc1043830a110e65b7aec0d24686b261e4</code></dd></div>
         <div><dt>Feature branch</dt><dd><code>feat/smci-wall-street-release-20260723</code></dd></div>
-        <div><dt>Pull Request</dt><dd>생성 후 기록</dd></div>
-        <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
-        <div><dt>Production</dt><dd>배포 후 기록</dd></div>
+        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/29">#29 · squash merged</a></dd></div>
+        <div><dt>릴리스 main SHA</dt><dd><code>656aff8704df6cd0c337ef53d8b02bfedea5cf7c</code></dd></div>
+        <div><dt>Production</dt><dd><code>dpl_GQeg6NZbhtN8iKaWXbYf8VqNK7cd</code> · Ready · Current</dd></div>
         <div><dt>최종 수정일</dt><dd>2026-07-24 KST</dd></div>
       </dl>
     </header>
@@ -231,7 +231,7 @@
           <li><strong>완료</strong> · 공식 자료·가격·WSJ 원문 검증</li>
           <li><strong>완료</strong> · 기업 데이터·Event Impact·두 editorial 구현</li>
           <li><strong>완료</strong> · validation·Chromium·WebKit·실제 Safari·성능 QA</li>
-          <li><strong>진행 중</strong> · PR·merge·Production 검증</li>
+          <li><strong>완료</strong> · PR #29 squash merge·Production Ready · Current·공개 route smoke</li>
         </ol>
       </section>
 
@@ -239,8 +239,8 @@
         <h2>계획 대비 실제 결과</h2>
         <p><strong>계획대로 완료:</strong> SMCI 표준 3파일, Company Brief 5문답, 핵심 카드 4개, 오각형 5축, 최신 SEC 재무·공시 배수, <code>scenario_review</code> Event Impact, 독립 주가해부와 월스트리트 edition을 구현했습니다. 월스트리트는 read 3개, Opinion 1개, 기업 relation 0개를 유지합니다.</p>
         <p><strong>계획 변경:</strong> 요청문은 SMCI 신규 온보딩 가능성을 열어 두었지만 실제 main에는 이미 완성된 지원 기업으로 존재했습니다. 중복 기업을 만들지 않고 기존 <code>supermicro</code>의 최신 사건·근거만 갱신했습니다. 기업 수는 9개로 유지됩니다.</p>
-        <p><strong>검증 결과:</strong> Release Gate 28개 통과, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개입니다. Chromium·WebKit 48개 릴리스 QA와 Phase 5G 25개 회귀 QA에서 320~1440px overflow와 console error가 모두 0이었습니다. 실제 Safari 데스크톱에서도 홈, SMCI 검색·기업·오각형·재무·주가해부, 월스트리트 3개 Read·Opinion, 직접 URL·뒤로가기를 확인했고 시각적 가로 이탈은 0이었습니다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안입니다.</p>
-        <p><strong>현재 완료율:</strong> 94%. 미완료: PR 병합, Production Ready · Current와 최종 route smoke 기록.</p>
+        <p><strong>검증 결과:</strong> Release Gate 28개 통과, Published editorial 5개, Company Brief 9개·질문 45개, Event Impact 4개·가정 변경 0개입니다. Chromium·WebKit 48개 릴리스 QA와 Phase 5G 25개 회귀 QA에서 320~1440px overflow와 console error가 모두 0이었습니다. 실제 Safari 데스크톱에서도 홈, SMCI 검색·기업·오각형·재무·주가해부, 월스트리트 3개 Read·Opinion, 직접 URL·뒤로가기를 확인했고 시각적 가로 이탈은 0이었습니다. PR #29 검사와 Preview가 통과한 뒤 squash merge했고, Production <code>dpl_GQeg6NZbhtN8iKaWXbYf8VqNK7cd</code>가 Ready · Current인 상태에서 공개 URL release smoke와 Chromium·WebKit 48개 검사를 다시 통과했습니다. home entry는 raw 791,034B / gzip 215,227B로 예산 825,000B / 225,000B 안입니다.</p>
+        <p><strong>현재 완료율:</strong> 100%. 미완료 항목 없음. 계획에서 달라진 사항은 신규 기업을 만들지 않고 기존 <code>supermicro</code> 등록을 갱신한 것뿐이며, 이는 중복 registry와 검색 항목 생성을 막기 위한 조정입니다.</p>
       </section>
     </div>
     <footer>저장소 상대 문서: <a href="../stock-dissection-intake.md">Stock Dissection Intake</a> · <a href="../company-brief-model.md">Company Brief</a> · <a href="../financial-pivot-model.md">Financial Pivot</a> · <a href="../event-impact-model.md">Event Impact</a></footer>
