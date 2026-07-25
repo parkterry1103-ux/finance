@@ -1,0 +1,80 @@
+website_handoff:
+  schema_version: 1
+  content_type: wall_street_edition
+
+  display_name: "오늘의 월스트리트"
+  status: owner_verified
+
+  content_as_of: "2026-07-25"
+  published_at: "2026-07-25T12:50:00+09:00"
+  verified_at: "2026-07-25T12:45:00+09:00"
+
+  suggested_id: "wall-street-2026-07-25-switching-costs"
+  suggested_slug: "2026-07-25-switching-costs"
+
+  title: "비용을 낮추는 힘은 대체 가능성에서 나온다"
+  central_question: "공급·거래·모델의 대체 가능성이 커질 때 누가 가격을 낮추고, 누가 전환비용과 지연비용을 떠안는가?"
+
+  home_intro: "Apple의 메모리 조달, Paramount–Warner Bros. 합병 지연, 기업의 멀티모델 AI 전환을 하나의 질문으로 읽었습니다. 대안의 명목가격이 아니라 실제 전환비용을 뺀 순가치가 협상력과 현금흐름을 결정합니다."
+
+  reads:
+    - order: 1
+      label: "Apple의 메모리 선택권"
+      home_summary: "Apple은 중국 판매 제품에 중국산 메모리를 쓸 수 있도록 요청하고 Micron은 국내 생산 기반을 이유로 반대합니다. 허용 뒤에도 인증과 계약을 통과해야 조달비 절감이 실현됩니다."
+      source:
+        publisher: "The Wall Street Journal"
+        article_title: "Trump Caught Between Apple and Micron in Fight Over Chinese Chips"
+        published_at: "2026-07-25T01:00:00Z"
+        url_or_identifier: "https://www.wsj.com/tech/trump-apple-micron-china-chips-784bbd3d"
+      related_companies:
+        - "Apple"
+        - "Micron Technology"
+        - "CXMT"
+        - "YMTC"
+      related_company_slugs: []
+
+    - order: 2
+      label: "합병 지연의 현금비용"
+      home_summary: "Paramount–Warner Bros. 합병은 법원 판단 또는 2027년 6월까지 종결이 멈췄습니다. ticking fee와 자금조달·통합 지연이 거래 시너지의 현재가치를 깎을 수 있습니다."
+      source:
+        publisher: "The Wall Street Journal"
+        article_title: "Paramount Agrees to Pause Its Warner Bros. Merger"
+        published_at: "2026-07-24T23:57:00Z"
+        url_or_identifier: "https://www.wsj.com/business/media/paramount-agrees-to-pause-its-warner-bros-merger-88ae1de1"
+      related_companies:
+        - "Paramount Skydance"
+        - "Warner Bros. Discovery"
+      related_company_slugs: []
+
+    - order: 3
+      label: "AI 모델 라우팅 경제학"
+      home_summary: "기업은 최고가 모델 한 개보다 업무별 모델 조합으로 비용을 통제하기 시작했습니다. 단가는 낮아질 수 있지만 평가·보안·재작업을 포함한 업무당 완결비용으로 검증해야 합니다."
+      source:
+        publisher: "The Wall Street Journal"
+        article_title: "Corporate America Has Suddenly Decided to Stop Blowing Money on AI"
+        published_at: "2026-07-25T00:30:00Z"
+        url_or_identifier: "https://www.wsj.com/business/china-us-ai-model-costs-53a12e96"
+      related_companies:
+        - "Cursor"
+        - "OpenAI"
+        - "Anthropic"
+        - "Pylon"
+        - "Telnyx"
+      related_company_slugs: []
+
+  one_line_takeaway: "싸진 가격보다 먼저 볼 것은 실제로 갈아탈 수 있는 선택지와 그 전환비용이다."
+
+  detail_source_file: "01_원문요약_팩트체크_출처반영.md"
+
+  source_summary:
+    primary_publisher: "The Wall Street Journal"
+    article_count: 3
+    official_cross_check_included: true
+    market_data_check_included: true
+
+  related_company_slugs: []
+
+  disclosure: >-
+    본 콘텐츠는 주가해부실의 독자적 분석이며
+    The Wall Street Journal 또는 Dow Jones와
+    제휴·후원 관계가 없습니다.

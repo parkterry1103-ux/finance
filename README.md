@@ -4939,3 +4939,11 @@ Financial Pivot은 공시 숫자·기간 비교, Valuation은 시장가격·모�
 기존 아홉 번째 지원 기업 Supermicro를 중복 온보딩하지 않고 최신 SEC 10-Q·10-K와 7월 21일 예비 8-K로 갱신했습니다. SMCI 주가해부 `stock-2026-07-22-smci-orders-margin`은 7월 22일 정규장 +19.843%, 거래량 20일 평균의 3.919배와 신규 주문 600억달러 초과·예비 매출총이익률 15~17%를 설명합니다. 주문을 확정 매출로, 예비 마진을 달성 실적으로 표현하지 않으며 Event Impact는 `scenario_review`·`pending`입니다.
 
 오늘의 월스트리트 `wall-street-2026-07-23-option-cost`는 장중 10년물 4.711%, 노후 사모펀드 NAV와 북미 미매각 기업가치, 미·사우디 민간 원자력 협정을 `선택권은 공짜가 아니다`라는 질문으로 연결합니다. WSJ 기사·Opinion과 공식 자료를 분리하고 related company relation은 빈 배열입니다. 두 콘텐츠는 같은 배포 단위지만 독립 route와 lazy module을 사용합니다. 기업 9개, Published editorial 5개, Event Impact 4개, Serverless Function 12개이며 신규 API·Function·DB·dependency·가치평가·리포트는 없습니다. 상세 기록은 `docs/releases/2026-07-23-smci-wall-street.md`, 구현 대시보드는 `docs/plans/release-2026-07-23-smci-wall-street-plan.html`을 참고하세요.
+
+## Phase 5H · 최신 콘텐츠와 통합 보관함
+
+Intel 주가해부 `stock-2026-07-25-intel-earnings-capex-reversal`과 월스트리트 `wall-street-2026-07-25-switching-costs`를 Published로 등록했습니다. Intel은 Company Registry에 없는 기업이므로 검증되지 않은 Company Brief나 검색 항목을 만들지 않고 독립 콘텐츠로 게시합니다. 대표 수익률은 7월 24일 미국 정규장 -7.892%이며 시간외 +5.2%와 분리합니다.
+
+홈은 Summary Registry에서 각 유형의 최신 Published 한 건을 `publishedAt DESC → id ASC`로 파생합니다. 당일 새 글 유무에 따라 섹션을 비우지 않으며 발행일과 가격·분석 기준일을 구분합니다. `/ko/insights?tab=stock`과 `/ko/insights?tab=wall-street`은 하나의 콘텐츠 보관함에서 각각 Published 주가해부 3건과 월스트리트 4건을 보여줍니다. 주가해부 탭은 회사명·ticker의 대소문자와 앞뒤 공백을 무시해 검색하며 잘못된 탭 값은 주가해부로 안전하게 처리합니다.
+
+상세 본문은 기존 lazy module 경계를 유지하고 홈·보관함에는 경량 Summary만 포함합니다. 기존 SMCI·Netflix 주가해부와 7월 23일을 포함한 월스트리트 3건, 기존 ID·slug·route는 모두 보존합니다. 신규 API·Function·DB·dependency와 Phase 5F analytics 변경은 없으며 Serverless Function은 12개입니다. 구현·QA 기록은 `docs/plans/phase-5h-content-publishing-archive-plan.html`을 참고하세요.

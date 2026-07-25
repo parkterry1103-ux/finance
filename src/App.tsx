@@ -7156,7 +7156,7 @@ function App() {
   if (routeInsightsMatch) {
     return (
       <DeferredRoute fallback={<div className="pick-shell editorial-shell">{navigation('insights')}<RouteLoadingFallback /></div>} resetKey={routePath}>
-        <InsightsRoute navigation={navigation('insights')} onNavigate={navigateWithinApp} />
+        <InsightsRoute navigation={navigation('insights')} onNavigate={navigateWithinApp} search={routeParams.toString()} />
       </DeferredRoute>
     );
   }

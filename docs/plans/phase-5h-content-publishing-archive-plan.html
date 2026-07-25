@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5H · 최신 콘텐츠 게시와 통합 콘텐츠 보관함</title>
+  <style>
+    :root { color-scheme: light; --ink:#17231f; --muted:#5d6964; --line:#d8d2c6; --paper:#f5f1e9; --card:#fffdf8; --green:#23483d; --gold:#a66f28; }
+    * { box-sizing:border-box; min-width:0; }
+    html { background:var(--paper); }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif; line-height:1.7; overflow-wrap:anywhere; }
+    a { color:#176657; }
+    a:focus-visible { outline:3px solid #b27a31; outline-offset:3px; }
+    .shell { width:min(1120px,calc(100% - 32px)); margin:0 auto; padding:32px 0 72px; }
+    .hero { padding:clamp(30px,6vw,68px); border-radius:28px; color:#f8f4ea; background:linear-gradient(135deg,#142720,#29483e); }
+    .eyebrow { margin:0 0 10px; color:#e0bd82; font-size:.78rem; font-weight:800; letter-spacing:.08em; }
+    h1 { max-width:850px; margin:0; font:650 clamp(2rem,5vw,4rem)/1.13 Georgia,"Noto Serif KR",serif; letter-spacing:-.045em; word-break:keep-all; }
+    .lead { max-width:800px; margin:22px 0 0; color:#cad6d1; }
+    .status { display:inline-flex; min-height:40px; align-items:center; margin-top:26px; padding:0 14px; border:1px solid #d6b57e; border-radius:999px; color:#ffe2aa; font-weight:850; }
+    .meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:30px 0 0; }
+    .meta div { padding:14px; border:1px solid rgba(255,255,255,.16); border-radius:12px; background:rgba(255,255,255,.06); }
+    dt { color:#b8c6c0; font-size:.72rem; font-weight:800; }
+    dd { margin:4px 0 0; }
+    code { font-size:.8em; overflow-wrap:anywhere; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+    section { padding:28px; border:1px solid var(--line); border-radius:18px; background:var(--card); }
+    .wide { grid-column:1/-1; }
+    h2 { margin:0 0 14px; font:650 1.45rem Georgia,"Noto Serif KR",serif; }
+    h3 { margin:22px 0 8px; color:var(--green); font-size:.95rem; }
+    p,ul,ol,dl { margin-top:0; }
+    ul,ol { padding-left:21px; }
+    li + li { margin-top:7px; }
+    .flow { display:flex; flex-wrap:wrap; gap:8px; padding:0; list-style:none; }
+    .flow li { flex:1 1 150px; padding:12px; border-left:3px solid var(--gold); background:#f4eee3; }
+    table { width:100%; border-collapse:collapse; font-size:.86rem; }
+    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--green); }
+    .flag { color:var(--gold); font-weight:850; }
+    footer { margin-top:22px; padding:20px; color:var(--muted); font-size:.82rem; }
+    @media (max-width:720px) { .shell{width:min(100% - 20px,1120px);padding-top:10px}.hero{padding:28px 20px;border-radius:20px}.meta,.grid{grid-template-columns:1fr}.wide{grid-column:auto}section{padding:22px 18px}table{font-size:.76rem}th,td{padding:8px 5px} }
+    @media (max-width:360px) { .shell{width:min(100% - 14px,1120px)} h1{font-size:1.9rem}.flow li{flex-basis:100%} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Phase 5H · Content Publishing &amp; Archive</p>
+      <h1>최신 두 콘텐츠를 게시하고, 이전 기록을 하나의 보관함에서 찾게 합니다.</h1>
+      <p class="lead">Editorial Summary Registry를 단일 공개 목록으로 유지하고 최신 Published 한 건은 홈에, 전체 Published 기록은 유형별 탭에 파생합니다. 기존 콘텐츠·ID·slug·point-in-time 근거는 보존합니다.</p>
+      <div class="status" aria-label="현재 상태: 검토">Review</div>
+      <dl class="meta">
+        <div><dt>시작 SHA</dt><dd><code>e93a5e3d0415d6e2eb1d71e99ef3623a519ef11f</code></dd></div>
+        <div><dt>Feature branch</dt><dd><code>feat/content-publishing-archive-phase-5h</code></dd></div>
+        <div><dt>Pull Request</dt><dd>구현 완료 후 기록</dd></div>
+        <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
+        <div><dt>Production</dt><dd>배포 후 기록</dd></div>
+        <div><dt>최종 수정일</dt><dd>2026-07-25 KST</dd></div>
+      </dl>
+    </header>
+
+    <div class="grid">
+      <section class="wide">
+        <h2>현재 콘텐츠 구조 조사</h2>
+        <table>
+          <thead><tr><th>영역</th><th>현재 구조</th><th>Phase 5H 판단</th></tr></thead>
+          <tbody>
+            <tr><td>상세 Registry</td><td>stock·threeReads lazy registry</td><td>기존 lazy module 방식 재사용</td></tr>
+            <tr><td>공개 Summary</td><td><code>publishedEditorialSummaryIndex</code> 단일 배열</td><td>Published만 유지하고 날짜·ID 결정론 정렬 selector 추가</td></tr>
+            <tr><td>홈</td><td>주가해부 3건, 월스트리트 1건을 배열 순서로 선택</td><td>각 유형 최신 1건만 자동 파생</td></tr>
+            <tr><td>보관함</td><td><code>/ko/insights</code>에서 두 목록 동시 노출</td><td>같은 route를 두 탭 보관함으로 개편</td></tr>
+            <tr><td>상태</td><td>Published만 Summary index에 포함, 상세는 validator 적용</td><td>Draft·verified·archived 공개 목록 제외 유지</td></tr>
+            <tr><td>Intel</td><td>Company Registry·Brief·route 없음</td><td><code>companySlug</code> 없이 게시, 기업 CTA·검색 등록 없음</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>입력과 반영 대상</h2>
+        <h3>Intel 주가해부</h3>
+        <ul>
+          <li><code>01_verified-research.md</code></li>
+          <li><code>04_website-article.md</code></li>
+          <li><code>05_website-handoff.yaml</code></li>
+          <li>정규장 -7.892%, 시간외 +5.2% 분리</li>
+        </ul>
+        <h3>7월 25일 월스트리트</h3>
+        <ul>
+          <li><code>01_원문요약_팩트체크_출처반영.md</code></li>
+          <li><code>04_website-handoff.yaml</code></li>
+          <li>정확히 3개 Read, 기업 relation 0개</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>예상 수정 파일</h2>
+        <ul>
+          <li>Editorial 상세 module·registry·summary</li>
+          <li>summary selector와 unit validation</li>
+          <li>Newsroom 홈 최신 카드 링크</li>
+          <li><code>InsightsRoute</code> 통합 보관함</li>
+          <li>archive 탭·검색 반응형 CSS</li>
+          <li>release inventory와 browser QA</li>
+          <li>Phase 5H QA script·README·본 Plan</li>
+        </ul>
+      </section>
+
+      <section class="wide">
+        <h2>사용자 흐름과 상태 모델</h2>
+        <ol class="flow">
+          <li>홈 최신 주가해부 1건</li>
+          <li>Intel 상세 읽기</li>
+          <li>지난 콘텐츠 보기</li>
+          <li>보관함 주가해부 검색</li>
+          <li>월스트리트 탭 전환</li>
+          <li>상세 후 뒤로가기</li>
+        </ol>
+        <p>탭 상태는 <code>/ko/insights?tab=stock</code>과 <code>?tab=wall-street</code>로 유지합니다. 잘못된 값은 URL을 깨뜨리지 않고 주가해부를 안전하게 기본 선택하며 locale path는 바꾸지 않습니다. 주가해부 검색어는 로컬 상태로만 관리합니다.</p>
+      </section>
+
+      <section>
+        <h2>데이터 등록·선택 방식</h2>
+        <ul>
+          <li>상세 본문은 기업별·edition별 lazy module</li>
+          <li>홈·보관함은 경량 Summary Registry만 사용</li>
+          <li><span class="flag">정렬:</span> <code>publishedAt DESC</code> → <code>id ASC</code></li>
+          <li>최신 1건과 전체 목록을 같은 selector에서 파생</li>
+          <li>기존 SMCI·7월 23일 월스트리트 원본 변경 없음</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>QA와 완료 기준</h2>
+        <ul>
+          <li>Intel·INTC·SMCI·공백·대소문자 검색</li>
+          <li>탭 deep link·새로고침·뒤로/앞으로·invalid fallback</li>
+          <li>홈 최신 두 ID 자동 선택</li>
+          <li>Published 필터와 동일 날짜 결정론 정렬</li>
+          <li>320·375·768·1024·1440px overflow 0</li>
+          <li>Chromium·WebKit·실제 Safari</li>
+          <li>console error·hydration warning·깨진 링크 0</li>
+          <li>기존 Release Gate·npm audit 통과</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>비범위</h2>
+        <ul>
+          <li>Intel Company Brief·검색 기업·재무·가치평가 생성</li>
+          <li>사용자 인터뷰·테스트 문서·포트폴리오 자료</li>
+          <li>추천·개인화·로그인·복잡한 필터</li>
+          <li>신규 DB·외부 API·Function·dependency</li>
+          <li>Phase 5F analytics provider 변경</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>작업 진행 체크리스트</h2>
+        <ol>
+          <li><strong>완료</strong> · Git·입력·Registry·route 감사</li>
+          <li><strong>완료</strong> · Plan HTML 작성·계획 커밋</li>
+          <li><strong>완료</strong> · Intel·월스트리트 등록</li>
+          <li><strong>완료</strong> · 최신 selector·보관함·검색</li>
+          <li><strong>완료</strong> · unit·Release Gate·브라우저 QA</li>
+          <li><strong>진행 중</strong> · PR·Production·완료 기록</li>
+        </ol>
+      </section>
+
+      <section class="wide">
+        <h2>계획 대비 실제 결과</h2>
+        <p>계획한 두 콘텐츠 등록, 최신 한 건 자동 선택, Published 7건의 통합 보관함, query 탭, 주가해부 검색, 상세 복귀 경로를 모두 구현했습니다. Intel은 기존 Company Registry에 없어 계획대로 <code>companySlug</code>와 기업 CTA 없이 게시했습니다.</p>
+        <ul>
+          <li><strong>콘텐츠:</strong> 주가해부 3건, 월스트리트 4건 · 기존 ID·slug 삭제 0</li>
+          <li><strong>검증:</strong> TypeScript·build·Editorial 7건·Release Gate 28개·npm audit 0</li>
+          <li><strong>브라우저:</strong> Chromium·WebKit 26개 시나리오, 320·375·768·1024·1440px overflow 0</li>
+          <li><strong>실제 Safari:</strong> desktop 렌더링·INTC 공백 검색·탭 URL·뒤로가기·Intel 상세 정상</li>
+          <li><strong>계획 변경:</strong> 기존 PostCSS advisory를 신규 dependency 없이 안전한 transitive patch로 갱신</li>
+          <li><strong>남은 작업:</strong> PR 병합, finance1 Production 배포와 공개 URL smoke</li>
+        </ul>
+      </section>
+    </div>
+    <footer>저장소 상대 경로 · <code>docs/plans/phase-5h-content-publishing-archive-plan.html</code></footer>
+  </main>
+</body>
+</html>

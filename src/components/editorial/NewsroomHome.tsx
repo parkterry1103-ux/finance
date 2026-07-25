@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type R
 import { ArrowRight, Search } from 'lucide-react';
 import { companySearchIndex, companySearchRecordPath, searchCompanyProfiles } from '../../content/company-profiles/search.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
+import { latestPublishedSummary } from '../../content/editorial/selectors.js';
 import type { CompanySearchRecord } from '../../content/company-profiles/types.js';
 import { StockSummaryCard, ThreeReadsSummaryCard, editorialInternalLink, type EditorialNavigate } from './EditorialUi.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
@@ -14,8 +15,8 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
   const [activeIndex, setActiveIndex] = useState(-1);
   const results = useMemo(() => searchCompanyProfiles(query).slice(0, 5), [query]);
   const hasQuery = Boolean(query.trim());
-  const stockItems = publishedEditorialSummaryIndex.filter((item) => item.kind === 'stock').slice(0, 3);
-  const threeReadsItems = publishedEditorialSummaryIndex.filter((item) => item.kind === 'threeReads').slice(0, 1);
+  const stockItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'stock');
+  const threeReadsItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'threeReads');
 
   useEffect(() => {
     if (activeIndex >= results.length) setActiveIndex(-1);
@@ -101,13 +102,13 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
         </section>
 
         <section className="editorial-home-section" id="today-dissections" aria-labelledby="today-stock-title">
-          <div className="editorial-section-heading"><p>Daily Stock Dissection</p><h2 id="today-stock-title">오늘의 주가 해부</h2><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>전체 리서치 <ArrowRight size={15} aria-hidden="true" /></a></div>
-          {stockItems.length ? <div className="editorial-stock-grid">{stockItems.map((item) => <StockSummaryCard item={item} onNavigate={onNavigate} key={item.id} />)}</div> : <div className="editorial-empty-state"><h3>오늘의 해부를 준비하고 있습니다.</h3><p>새로운 시장 사건을 기업의 사업·재무·가치평가와 연결해 확인한 뒤 게시합니다.</p></div>}
+          <div className="editorial-section-heading"><p>Latest Stock Dissection</p><h2 id="today-stock-title">오늘의 주가해부</h2><a href="/ko/insights?tab=stock" onClick={editorialInternalLink('/ko/insights?tab=stock', onNavigate)}>지난 주가해부 보기 <ArrowRight size={15} aria-hidden="true" /></a></div>
+          {stockItem ? <div className="editorial-stock-grid"><StockSummaryCard item={stockItem} onNavigate={onNavigate} /></div> : <div className="editorial-empty-state"><h3>오늘의 해부를 준비하고 있습니다.</h3><p>새로운 시장 사건을 기업의 사업·재무·가치평가와 연결해 확인한 뒤 게시합니다.</p></div>}
         </section>
 
         <section className="editorial-home-section editorial-home-three" aria-labelledby="today-three-title">
-          <div className="editorial-section-heading"><p>One Question · Three Cases</p><h2 id="today-three-title">오늘의 월스트리트</h2></div>
-          {threeReadsItems.length ? threeReadsItems.map((item) => <ThreeReadsSummaryCard item={item} onNavigate={onNavigate} key={item.id} />) : <div className="editorial-empty-state"><h3>오늘의 월스트리트를 준비하고 있습니다.</h3><p>세 개의 뉴스, 하나의 투자 질문으로 연결합니다.</p></div>}
+          <div className="editorial-section-heading"><p>Latest Wall Street Edition</p><h2 id="today-three-title">오늘의 월스트리트</h2><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>지난 월스트리트 보기 <ArrowRight size={15} aria-hidden="true" /></a></div>
+          {threeReadsItem ? <ThreeReadsSummaryCard item={threeReadsItem} onNavigate={onNavigate} /> : <div className="editorial-empty-state"><h3>오늘의 월스트리트를 준비하고 있습니다.</h3><p>세 개의 뉴스, 하나의 투자 질문으로 연결합니다.</p></div>}
         </section>
 
       </main>

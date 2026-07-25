@@ -40,7 +40,7 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
     return observeEditorialReading(articleRef.current, properties);
   }, [publicItem?.id]);
   if (item === undefined) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>오늘의 월스트리트를 불러오는 중입니다.</h1></main></div>;
-  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 오늘의 월스트리트를 찾을 수 없습니다.</h1><p>세 원문의 출처와 기준일 검증을 마친 독자적 콘텐츠만 표시합니다.</p><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치 목록으로 이동</a></main></div>;
+  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 오늘의 월스트리트를 찾을 수 없습니다.</h1><p>세 원문의 출처와 기준일 검증을 마친 독자적 콘텐츠만 표시합니다.</p><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>월스트리트 보관함으로 이동</a></main></div>;
 
   const relatedStocks = publishedEditorialSummaryIndex.filter((summary): summary is StockDissectionSummary => summary.kind === 'stock' && publicItem.relatedStockDissectionIds.includes(summary.id)).slice(0, 3);
   const relatedCompanySlugs = Array.from(new Set([...publicItem.relatedCompanySlugs, ...publicItem.reads.flatMap((read) => read.relatedCompanySlugs)])).slice(0, 3);
@@ -48,7 +48,7 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
     <div className="pick-shell editorial-shell">
       {navigation}
       <main className="editorial-detail-main" ref={articleRef}>
-        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치</a><span aria-hidden="true">/</span><strong>오늘의 월스트리트</strong></nav>
+        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>콘텐츠 보관함</a><span aria-hidden="true">/</span><strong>오늘의 월스트리트</strong></nav>
         <header className="editorial-detail-header editorial-three-detail-header">
           <p>오늘의 월스트리트 · <time dateTime={publicItem.contentAsOf}>{editorialDate(publicItem.contentAsOf)}</time></p>
           <h1>{publicItem.title}</h1>
