@@ -36,7 +36,7 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
     return observeEditorialReading(articleRef.current, properties);
   }, [publicItem?.id]);
   if (item === undefined) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>주가 해부를 불러오는 중입니다.</h1></main></div>;
-  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 주가 해부를 찾을 수 없습니다.</h1><p>출처와 기준일 검증을 마친 콘텐츠만 표시합니다.</p><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치 목록으로 이동</a></main></div>;
+  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 주가 해부를 찾을 수 없습니다.</h1><p>출처와 기준일 검증을 마친 콘텐츠만 표시합니다.</p><a href="/ko/insights?tab=stock" onClick={editorialInternalLink('/ko/insights?tab=stock', onNavigate)}>주가해부 보관함으로 이동</a></main></div>;
 
   const comparisons = [publicItem.comparison?.market, publicItem.comparison?.sector].filter((value): value is NonNullable<typeof value> => Boolean(value) && value?.asOf === publicItem.priceAsOf);
   const relatedThreeReads = publishedEditorialSummaryIndex.filter((summary): summary is ThreeReadsSummary => summary.kind === 'threeReads' && publicItem.relatedThreeReadsIds.includes(summary.id)).slice(0, 3);
@@ -49,7 +49,7 @@ export default function StockDissectionRoute({ slug, navigation, onNavigate }: {
     <div className="pick-shell editorial-shell">
       {navigation}
       <main className="editorial-detail-main" ref={articleRef}>
-        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights" onClick={editorialInternalLink('/ko/insights', onNavigate)}>리서치</a><span aria-hidden="true">/</span><strong>주가 해부</strong></nav>
+        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights?tab=stock" onClick={editorialInternalLink('/ko/insights?tab=stock', onNavigate)}>콘텐츠 보관함</a><span aria-hidden="true">/</span><strong>주가해부</strong></nav>
         <header className="editorial-detail-header"><p>{publicItem.company.name}{publicItem.company.ticker ? ` · ${publicItem.company.ticker}` : ''}</p><h1>{publicItem.headline}</h1><div><time dateTime={publicItem.eventAsOf}>사건 기준 {editorialDate(publicItem.eventAsOf)}</time><time dateTime={publicItem.priceAsOf}>가격 기준 {editorialDate(publicItem.priceAsOf)}</time>{publicItem.intake ? <span>세션 {publicItem.intake.session === 'regular' ? '정규장' : publicItem.intake.session === 'preMarket' ? '장전' : '시간외'}</span> : null}</div></header>
         <dl className="editorial-verification editorial-authorship"><div><dt>작성·분석</dt><dd>주가해부실</dd></div><div><dt>편집 검증</dt><dd>Owner Verified{publicItem.verification ? ` · ${publicItem.verification.verifiedAt.replace('T', ' ').replace('+09:00', ' KST')}` : ''}</dd></div><div><dt>분석 기준</dt><dd>{editorialDate(publicItem.eventAsOf)} 사건 · {editorialDate(publicItem.priceAsOf)} 가격{publicItem.intake ? ` · ${publicItem.intake.session === 'regular' ? '정규장' : publicItem.intake.session === 'preMarket' ? '장전' : '시간외'}` : ''}</dd></div><div><dt>근거 자료</dt><dd>기업 공시 · 공식 발표 · 시장 데이터 · 주요 보도</dd></div></dl>
 

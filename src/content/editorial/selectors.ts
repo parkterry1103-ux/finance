@@ -108,3 +108,25 @@ export function summariesForCompany(items: EditorialSummary[], companySlug: stri
     ? item.company.companySlug === companySlug
     : item.relatedCompanySlugs.includes(companySlug)).slice(0, limit);
 }
+
+export function sortPublishedEditorialSummaries(items: EditorialSummary[]) {
+  return items
+    .filter((item) => isHomepageVisible(item.status))
+    .slice()
+    .sort((left, right) => right.publishedAt.localeCompare(left.publishedAt) || left.id.localeCompare(right.id));
+}
+
+export function publishedSummariesByKind<TKind extends EditorialSummary['kind']>(
+  items: EditorialSummary[],
+  kind: TKind,
+) {
+  return sortPublishedEditorialSummaries(items)
+    .filter((item): item is Extract<EditorialSummary, { kind: TKind }> => item.kind === kind);
+}
+
+export function latestPublishedSummary<TKind extends EditorialSummary['kind']>(
+  items: EditorialSummary[],
+  kind: TKind,
+) {
+  return publishedSummariesByKind(items, kind)[0];
+}

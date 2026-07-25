@@ -33,7 +33,7 @@
     "industryFlows": 4,
     "macroSeries": 9,
     "marketRelations": 3,
-    "editorialPublished": 5
+    "editorialPublished": 7
   },
   "lazyRoutes": [
     { "name": "CompaniesRoute", "source": "src/routes/CompaniesRoute.tsx" },

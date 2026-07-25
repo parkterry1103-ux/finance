@@ -47,7 +47,7 @@
       <p class="eyebrow">Phase 5H · Content Publishing &amp; Archive</p>
       <h1>최신 두 콘텐츠를 게시하고, 이전 기록을 하나의 보관함에서 찾게 합니다.</h1>
       <p class="lead">Editorial Summary Registry를 단일 공개 목록으로 유지하고 최신 Published 한 건은 홈에, 전체 Published 기록은 유형별 탭에 파생합니다. 기존 콘텐츠·ID·slug·point-in-time 근거는 보존합니다.</p>
-      <div class="status" aria-label="현재 상태: 계획">Planning</div>
+      <div class="status" aria-label="현재 상태: 검토">Review</div>
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd><code>e93a5e3d0415d6e2eb1d71e99ef3623a519ef11f</code></dd></div>
         <div><dt>Feature branch</dt><dd><code>feat/content-publishing-archive-phase-5h</code></dd></div>
@@ -99,7 +99,7 @@
           <li>Newsroom 홈 최신 카드 링크</li>
           <li><code>InsightsRoute</code> 통합 보관함</li>
           <li>archive 탭·검색 반응형 CSS</li>
-          <li>analytics route 분류와 release inventory</li>
+          <li>release inventory와 browser QA</li>
           <li>Phase 5H QA script·README·본 Plan</li>
         </ul>
       </section>
@@ -114,7 +114,7 @@
           <li>월스트리트 탭 전환</li>
           <li>상세 후 뒤로가기</li>
         </ol>
-        <p>탭 상태는 <code>/ko/insights?tab=stock</code>과 <code>?tab=wall-street</code>로 유지합니다. 잘못된 값은 주가해부로 정규화하며 locale path는 바꾸지 않습니다. 주가해부 검색어는 로컬 상태로만 관리합니다.</p>
+        <p>탭 상태는 <code>/ko/insights?tab=stock</code>과 <code>?tab=wall-street</code>로 유지합니다. 잘못된 값은 URL을 깨뜨리지 않고 주가해부를 안전하게 기본 선택하며 locale path는 바꾸지 않습니다. 주가해부 검색어는 로컬 상태로만 관리합니다.</p>
       </section>
 
       <section>
@@ -157,17 +157,25 @@
         <h2>작업 진행 체크리스트</h2>
         <ol>
           <li><strong>완료</strong> · Git·입력·Registry·route 감사</li>
-          <li><strong>진행 중</strong> · Plan HTML 작성·계획 커밋</li>
-          <li><strong>계획</strong> · Intel·월스트리트 등록</li>
-          <li><strong>계획</strong> · 최신 selector·보관함·검색</li>
-          <li><strong>계획</strong> · unit·Release Gate·브라우저 QA</li>
-          <li><strong>계획</strong> · PR·Production·완료 기록</li>
+          <li><strong>완료</strong> · Plan HTML 작성·계획 커밋</li>
+          <li><strong>완료</strong> · Intel·월스트리트 등록</li>
+          <li><strong>완료</strong> · 최신 selector·보관함·검색</li>
+          <li><strong>완료</strong> · unit·Release Gate·브라우저 QA</li>
+          <li><strong>진행 중</strong> · PR·Production·완료 기록</li>
         </ol>
       </section>
 
       <section class="wide">
         <h2>계획 대비 실제 결과</h2>
-        <p>구현 완료 후 계획대로 완료된 항목, 달라진 사항과 이유, 추가·제외 항목, 테스트 및 Production 결과, 남은 위험을 이 영역에 기록합니다.</p>
+        <p>계획한 두 콘텐츠 등록, 최신 한 건 자동 선택, Published 7건의 통합 보관함, query 탭, 주가해부 검색, 상세 복귀 경로를 모두 구현했습니다. Intel은 기존 Company Registry에 없어 계획대로 <code>companySlug</code>와 기업 CTA 없이 게시했습니다.</p>
+        <ul>
+          <li><strong>콘텐츠:</strong> 주가해부 3건, 월스트리트 4건 · 기존 ID·slug 삭제 0</li>
+          <li><strong>검증:</strong> TypeScript·build·Editorial 7건·Release Gate 28개·npm audit 0</li>
+          <li><strong>브라우저:</strong> Chromium·WebKit 26개 시나리오, 320·375·768·1024·1440px overflow 0</li>
+          <li><strong>실제 Safari:</strong> desktop 렌더링·INTC 공백 검색·탭 URL·뒤로가기·Intel 상세 정상</li>
+          <li><strong>계획 변경:</strong> 기존 PostCSS advisory를 신규 dependency 없이 안전한 transitive patch로 갱신</li>
+          <li><strong>남은 작업:</strong> PR 병합, finance1 Production 배포와 공개 URL smoke</li>
+        </ul>
       </section>
     </div>
     <footer>저장소 상대 경로 · <code>docs/plans/phase-5h-content-publishing-archive-plan.html</code></footer>

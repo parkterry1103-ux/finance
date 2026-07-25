@@ -6,8 +6,11 @@ import {
   formatRelativeReturn,
   isDetailVisible,
   isHomepageVisible,
+  latestPublishedSummary,
   publishedEditorialSummaries,
+  publishedSummariesByKind,
   relativeReturn,
+  sortPublishedEditorialSummaries,
   summariesForCompany,
 } from '../src/content/editorial/selectors.js';
 import { publishedEditorialSummaryIndex } from '../src/content/editorial/summaries.js';
@@ -18,7 +21,7 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-const today = '2026-07-24';
+const today = '2026-07-25';
 const supportedCompanySlugs = companyProfiles.map((profile) => profile.slug);
 const verification = { authoredBy: 'owner', verifiedBy: 'owner', verifiedAt: '2026-07-17T16:55:00+09:00', status: 'ownerVerified' } as const;
 
@@ -85,7 +88,7 @@ assert(!isHomepageVisible('draft') && !isHomepageVisible('verified') && isHomepa
 assert(!isDetailVisible('draft') && !isDetailVisible('verified') && isDetailVisible('published') && isDetailVisible('archived'), '상세 상태 selector가 다릅니다.');
 assert(publishedEditorialSummaries([{ ...validStock, status: 'verified' }], [{ ...validThreeReads, status: 'archived' }], today).length === 0, 'published 외 상태가 홈 index에 포함됐습니다.');
 
-const future = validate([{ ...validStock, publishedAt: '2026-07-25' }], [validThreeReads]);
+const future = validate([{ ...validStock, publishedAt: '2026-07-26' }], [validThreeReads]);
 assert(!future.ok && future.errors.some((error) => error.includes('미래 날짜')), '미래 날짜 fixture가 실패하지 않았습니다.');
 
 for (const count of [2, 4]) {
@@ -132,10 +135,25 @@ assert(!supportedCompanySlugs.includes('burberry'), 'Burberry 가짜 기업 프�
 const realRegistry = await loadEditorialRegistry();
 const registryResult = validateEditorialRegistry({ ...realRegistry, supportedCompanySlugs, today });
 assert(registryResult.ok, `실제 editorial registry 검증 실패: ${registryResult.errors.join(' | ')}`);
-assert(registryResult.publishedCount === 5, '2026-07-24 릴리스 Published 콘텐츠 수가 5개가 아닙니다.');
+assert(registryResult.publishedCount === 7, '2026-07-25 릴리스 Published 콘텐츠 수가 7개가 아닙니다.');
 assert(realRegistry.stockDissections.find((item) => item.id === 'paypal-control-premium-draft')?.status === 'draft', 'PayPal draft 상태가 바뀌었습니다.');
 assert(realRegistry.threeReadsEditions.find((item) => item.id === 'three-reads-switching-power-draft')?.status === 'draft', 'ASML 포함 draft 상태가 바뀌었습니다.');
-assert(publishedEditorialSummaryIndex.length === 5 && publishedEditorialSummaryIndex.every((item) => item.status === 'published'), '홈 요약 index에 draft가 포함됐습니다.');
+assert(publishedEditorialSummaryIndex.length === 7 && publishedEditorialSummaryIndex.every((item) => item.status === 'published'), '홈 요약 index에 draft가 포함됐습니다.');
+assert(latestPublishedSummary(publishedEditorialSummaryIndex, 'stock')?.id === 'stock-2026-07-25-intel-earnings-capex-reversal', '홈 최신 주가해부가 Intel이 아닙니다.');
+assert(latestPublishedSummary(publishedEditorialSummaryIndex, 'threeReads')?.id === 'wall-street-2026-07-25-switching-costs', '홈 최신 월스트리트가 7월 25일 edition이 아닙니다.');
+assert(publishedSummariesByKind(publishedEditorialSummaryIndex, 'stock').length === 3, '주가해부 보관함 항목 수가 다릅니다.');
+assert(publishedSummariesByKind(publishedEditorialSummaryIndex, 'threeReads').length === 4, '월스트리트 보관함 항목 수가 다릅니다.');
+const sameDateOrder = sortPublishedEditorialSummaries([
+  { ...publishedEditorialSummaryIndex[0], id: 'z-item' },
+  { ...publishedEditorialSummaryIndex[0], id: 'a-item' },
+]);
+assert(sameDateOrder.map((item) => item.id).join(',') === 'a-item,z-item', '같은 발행일의 결정적 정렬이 ID 오름차순이 아닙니다.');
+const intelDissection = realRegistry.stockDissections.find((item) => item.id === 'stock-2026-07-25-intel-earnings-capex-reversal');
+assert(intelDissection?.company.companySlug === undefined, '미지원 Intel 기업 CTA가 생성됐습니다.');
+assert(intelDissection?.intake?.researchSourceFile.endsWith('/01_verified-research.md'), 'Intel verified research lineage가 없습니다.');
+assert(intelDissection?.intake?.detailSourceFile.endsWith('/04_website-article.md'), 'Intel website article lineage가 없습니다.');
+assert(intelDissection?.intake?.handoffSourceFile.endsWith('/05_website-handoff.yaml'), 'Intel handoff lineage가 없습니다.');
+assert(realRegistry.threeReadsEditions.find((item) => item.id === 'wall-street-2026-07-25-switching-costs')?.reads.length === 3, '7월 25일 월스트리트가 정확히 세 사례가 아닙니다.');
 assert(realRegistry.stockDissections.find((item) => item.id === 'stock-2026-07-18-netflix-guidance-disclosure-reset')?.company.companySlug === 'netflix', 'Netflix Published 주가해부가 기업에 연결되지 않았습니다.');
 assert(realRegistry.stockDissections.find((item) => item.id === 'stock-2026-07-22-smci-orders-margin')?.company.companySlug === 'supermicro', 'SMCI Published 주가해부가 기업에 연결되지 않았습니다.');
 assert(realRegistry.threeReadsEditions.find((item) => item.id === 'wall-street-2026-07-18-capital-gate-premium')?.relatedCompanySlugs.length === 0, '7월 18일 월가인사이트에 임의 기업 relation이 생겼습니다.');

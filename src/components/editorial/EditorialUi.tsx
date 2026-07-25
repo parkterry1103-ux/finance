@@ -37,8 +37,9 @@ export function StockSummaryCard({ item, onNavigate, compact = false }: { item: 
     <article className={`editorial-card editorial-stock-card${compact ? ' is-compact' : ''}`}>
       <div className="editorial-card-meta">
         <span>{item.company.name}{item.company.ticker ? ` · ${item.company.ticker}` : ''}</span>
-        <time dateTime={item.priceAsOf}>{editorialDate(item.priceAsOf)}</time>
+        <time dateTime={item.publishedAt}>{editorialDate(item.publishedAt)} 발행</time>
       </div>
+      <p className="editorial-card-basis"><time dateTime={item.priceAsOf}>{editorialDate(item.priceAsOf)} 분석</time> · {item.priceMove.periodLabel}</p>
       <div className="editorial-move-row">
         <strong aria-label={`등락률 ${formatSignedPercent(item.priceMove.value, item.priceMove.precision)}`}>{formatSignedPercent(item.priceMove.value, item.priceMove.precision)}</strong>
         {comparisons.map((comparison) => <span key={comparison.label}>{comparison.label} {formatRelativeReturn(comparison.value, comparison.precision)}</span>)}
@@ -63,7 +64,8 @@ export function ThreeReadsSummaryCard({ item, onNavigate, compact = false }: { i
   const path = editorialPath(item);
   return (
     <article className={`editorial-card editorial-three-card${compact ? ' is-compact' : ''}`}>
-      <div className="editorial-card-meta"><span>오늘의 월스트리트</span><time dateTime={item.contentAsOf}>{editorialDate(item.contentAsOf)}</time></div>
+      <div className="editorial-card-meta"><span>오늘의 월스트리트</span><time dateTime={item.publishedAt}>{editorialDate(item.publishedAt)} 발행</time></div>
+      <p className="editorial-card-basis"><time dateTime={item.contentAsOf}>{editorialDate(item.contentAsOf)} 분석</time></p>
       <h3>{item.title}</h3>
       <p className="editorial-three-question">{item.centralQuestion}</p>
       {!compact ? <p className="editorial-three-thread">세 개의 뉴스, 하나의 투자 질문</p> : null}
