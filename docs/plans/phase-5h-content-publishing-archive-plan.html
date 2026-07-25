@@ -47,13 +47,13 @@
       <p class="eyebrow">Phase 5H · Content Publishing &amp; Archive</p>
       <h1>최신 두 콘텐츠를 게시하고, 이전 기록을 하나의 보관함에서 찾게 합니다.</h1>
       <p class="lead">Editorial Summary Registry를 단일 공개 목록으로 유지하고 최신 Published 한 건은 홈에, 전체 Published 기록은 유형별 탭에 파생합니다. 기존 콘텐츠·ID·slug·point-in-time 근거는 보존합니다.</p>
-      <div class="status" aria-label="현재 상태: 검토">Review</div>
+      <div class="status" aria-label="현재 상태: 완료">Completed</div>
       <dl class="meta">
         <div><dt>시작 SHA</dt><dd><code>e93a5e3d0415d6e2eb1d71e99ef3623a519ef11f</code></dd></div>
         <div><dt>Feature branch</dt><dd><code>feat/content-publishing-archive-phase-5h</code></dd></div>
-        <div><dt>Pull Request</dt><dd>구현 완료 후 기록</dd></div>
-        <div><dt>최종 main SHA</dt><dd>병합 후 기록</dd></div>
-        <div><dt>Production</dt><dd>배포 후 기록</dd></div>
+        <div><dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/31">#31</a> · Merged</dd></div>
+        <div><dt>구현 main SHA</dt><dd><code>4b93221a0227f413f82ef49e28325f524255ea5a</code></dd></div>
+        <div><dt>Production</dt><dd><code>dpl_3kgfsfhsmCvAFKFSLK8uSqKMr1SA</code> · Ready · Current</dd></div>
         <div><dt>최종 수정일</dt><dd>2026-07-25 KST</dd></div>
       </dl>
     </header>
@@ -161,7 +161,7 @@
           <li><strong>완료</strong> · Intel·월스트리트 등록</li>
           <li><strong>완료</strong> · 최신 selector·보관함·검색</li>
           <li><strong>완료</strong> · unit·Release Gate·브라우저 QA</li>
-          <li><strong>진행 중</strong> · PR·Production·완료 기록</li>
+          <li><strong>완료</strong> · PR #31 병합·Production·완료 기록</li>
         </ol>
       </section>
 
@@ -171,10 +171,13 @@
         <ul>
           <li><strong>콘텐츠:</strong> 주가해부 3건, 월스트리트 4건 · 기존 ID·slug 삭제 0</li>
           <li><strong>검증:</strong> TypeScript·build·Editorial 7건·Release Gate 28개·npm audit 0</li>
-          <li><strong>브라우저:</strong> Chromium·WebKit 26개 시나리오, 320·375·768·1024·1440px overflow 0</li>
-          <li><strong>실제 Safari:</strong> desktop 렌더링·INTC 공백 검색·탭 URL·뒤로가기·Intel 상세 정상</li>
+          <li><strong>Production smoke:</strong> 55 routes·70 assets·15 content·9 APIs·6 sync contracts 통과</li>
+          <li><strong>브라우저:</strong> Production Chromium·WebKit 26개 시나리오, 320·375·768·1024·1440px overflow 0</li>
+          <li><strong>실제 Safari:</strong> Production 홈 최신 두 콘텐츠·보관함 3/4건·<code>  intc  </code> 공백 검색 1건·탭 URL 정상</li>
           <li><strong>계획 변경:</strong> 기존 PostCSS advisory를 신규 dependency 없이 안전한 transitive patch로 갱신</li>
-          <li><strong>남은 작업:</strong> PR 병합, finance1 Production 배포와 공개 URL smoke</li>
+          <li><strong>완료율:</strong> 100% · 미완료 항목 없음</li>
+          <li><strong>Production:</strong> SHA <code>4b93221</code> · <code>dpl_3kgfsfhsmCvAFKFSLK8uSqKMr1SA</code> · Ready · Current</li>
+          <li><strong>남은 위험:</strong> 사용자 인터뷰·사용성 테스트는 이번 단계의 명시적 비범위로 수행하지 않음</li>
         </ul>
       </section>
     </div>
