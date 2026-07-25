@@ -4,6 +4,11 @@ export const editorialSources: EditorialSource[] = [];
 
 export const stockDissectionRegistry = [
   {
+    id: 'stock-2026-07-25-intel-earnings-capex-reversal',
+    slug: '2026-07-25-intel-earnings-capex-reversal',
+    load: () => import('./stock-dissections/2026-07-25-intel-earnings-capex-reversal.js').then((module) => module.intelEarningsCapexReversal),
+  },
+  {
     id: 'stock-2026-07-22-smci-orders-margin',
     slug: '2026-07-22-smci-orders-margin',
     load: () => import('./stock-dissections/2026-07-22-smci-orders-margin.js').then((module) => module.smciOrdersMarginDissection),
@@ -21,6 +26,11 @@ export const stockDissectionRegistry = [
 ] as const;
 
 export const threeReadsRegistry = [
+  {
+    id: 'wall-street-2026-07-25-switching-costs',
+    slug: '2026-07-25-switching-costs',
+    load: () => import('./three-reads/2026-07-25-switching-costs.js').then((module) => module.switchingCostsEdition),
+  },
   {
     id: 'wall-street-2026-07-23-option-cost',
     slug: '2026-07-23-option-cost',
