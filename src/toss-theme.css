@@ -1,0 +1,1125 @@
+/*
+ * Site-wide visual language mapped from the published ko-design-md Toss entry.
+ * The source brand name is intentionally absent from product-facing UI.
+ */
+:root {
+  --app-brand: oklch(0.624 0.176 254);
+  --app-brand-pressed: oklch(0.522 0.176 257);
+  --app-brand-strong: oklch(0.476 0.174 259);
+  --app-brand-weak: oklch(0.965 0.02 250);
+  --app-ink: oklch(0.234 0.03 254);
+  --app-ink-2: oklch(0.342 0.03 253);
+  --app-muted: oklch(0.452 0.028 253);
+  --app-muted-2: oklch(0.555 0.022 253);
+  --app-disabled: oklch(0.752 0.016 251);
+  --app-line-strong: oklch(0.84 0.012 248);
+  --app-line: oklch(0.913 0.008 247);
+  --app-surface-2: oklch(0.957 0.005 247);
+  --app-surface-weak: oklch(0.978 0.003 247);
+  --app-surface: oklch(1 0 0);
+  --app-danger: oklch(0.628 0.218 22);
+  --app-success: oklch(0.493 0.143 154);
+  --app-warning: oklch(0.748 0.183 56);
+  --app-overlay: oklch(0 0 0 / 0.56);
+  --app-press: oklch(0 0 0 / 0.26);
+  --app-shadow-1:
+    0 1px 2px oklch(0.155 0.06 261 / 0.04),
+    0 1px 1px oklch(0.155 0.06 261 / 0.04);
+  --app-shadow-2:
+    0 4px 12px oklch(0.155 0.06 261 / 0.06),
+    0 1px 2px oklch(0.155 0.06 261 / 0.04);
+  --app-shadow-3:
+    0 12px 32px oklch(0.155 0.06 261 / 0.1),
+    0 2px 6px oklch(0.155 0.06 261 / 0.06);
+  --app-radius-xs: 4px;
+  --app-radius-s: 8px;
+  --app-radius-m: 12px;
+  --app-radius-l: 14px;
+  --app-radius-xl: 16px;
+  --app-radius-2xl: 20px;
+  --app-radius-3xl: 24px;
+  --app-radius-4xl: 32px;
+  --app-radius-full: 999px;
+  --app-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --app-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --app-duration-fast: 120ms;
+  --app-duration-base: 200ms;
+  --app-duration-slow: 320ms;
+
+  color: var(--app-ink);
+  background: var(--app-surface-weak);
+  --font-sans:
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  --border: var(--app-line);
+  --muted: var(--app-muted);
+  --panel: var(--app-surface);
+  --ink: var(--app-ink);
+  --blue: var(--app-brand);
+  --green: var(--app-success);
+  --orange: var(--app-warning);
+  --red: var(--app-danger);
+  --jg-primary-blue: var(--app-brand);
+  --jg-secondary-blue: var(--app-brand-weak);
+  --jg-text-primary: var(--app-ink);
+  --jg-text-secondary: var(--app-muted);
+  --jg-border: var(--app-line);
+  --jg-card: var(--app-surface);
+  --jg-page: var(--app-surface-weak);
+  --jg-shadow-soft: var(--app-shadow-1);
+  --jg-shadow-elevated: var(--app-shadow-3);
+  --jg-radius-sm: var(--app-radius-m);
+  --jg-radius-md: var(--app-radius-xl);
+  --jg-radius-lg: var(--app-radius-3xl);
+  --home-blue: var(--app-brand);
+  --home-blue-strong: var(--app-brand-strong);
+  --home-blue-soft: var(--app-brand-weak);
+  --home-muted: var(--app-muted);
+  --beginner-ink: var(--app-ink);
+  --beginner-line: var(--app-line);
+  --story-text-primary: var(--app-ink);
+  --story-text-secondary: var(--app-muted);
+  --story-text-muted: var(--app-muted-2);
+  --story-accent-blue: var(--app-brand);
+  --story-accent-cyan: var(--app-brand);
+  --story-accent-purple: var(--app-brand);
+  --story-accent-mint: var(--app-brand);
+}
+
+html {
+  background: var(--app-surface-weak);
+  color: var(--app-ink);
+  scroll-behavior: smooth;
+}
+
+body,
+#root {
+  min-height: 100%;
+  color: var(--app-ink);
+  background: var(--app-surface-weak);
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+}
+
+button {
+  min-height: 44px;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+:where(p, li, dd) {
+  color: var(--app-muted);
+}
+
+:where(
+  time,
+  output,
+  td,
+  th,
+  [class*="price"],
+  [class*="metric"],
+  [class*="multiple"],
+  [class*="valuation"],
+  [class*="financial"]
+) {
+  font-variant-numeric: tabular-nums;
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid oklch(0.624 0.176 254 / 0.28) !important;
+  outline-offset: 3px;
+}
+
+:where(button, a, input, select, textarea, summary) {
+  transition:
+    color var(--app-duration-fast) var(--app-ease),
+    background-color var(--app-duration-base) var(--app-ease),
+    border-color var(--app-duration-base) var(--app-ease),
+    box-shadow var(--app-duration-base) var(--app-ease),
+    opacity var(--app-duration-fast) var(--app-ease);
+}
+
+:where(button:disabled, [aria-disabled="true"]) {
+  opacity: 0.3 !important;
+}
+
+/* Shared shell and navigation */
+:where(
+  .home-shell,
+  .story-dark-shell,
+  .pick-shell,
+  .analysis-shell,
+  .app-shell,
+  .editorial-shell,
+  .company-profiles-shell,
+  .company-profile-shell,
+  .financial-pivot-shell,
+  .valuation-shell,
+  .research-report-shell,
+  .market-relations-shell
+) {
+  color: var(--app-ink) !important;
+  background: var(--app-surface-weak) !important;
+  background-image: none !important;
+}
+
+.primary-navigation {
+  top: 8px;
+  min-height: 64px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-2xl);
+  color: var(--app-ink);
+  background: oklch(1 0 0 / 0.94);
+  box-shadow: var(--app-shadow-2);
+  backdrop-filter: blur(12px);
+}
+
+.primary-navigation .home-brand,
+.primary-navigation .home-brand strong {
+  color: var(--app-ink) !important;
+}
+
+.primary-navigation .home-logo,
+:where(.story-dark-shell, .editorial-shell) :where(.home-logo, .landing-logo, .brand-mark) {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--app-radius-l);
+  color: var(--app-surface);
+  background: var(--app-brand) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.primary-navigation__group > button,
+.primary-navigation__mobile-toggle,
+.primary-navigation > nav > a {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--app-radius-m);
+  color: var(--app-muted) !important;
+  background: transparent !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.primary-navigation__group.is-active > button,
+.primary-navigation__group > button[aria-expanded="true"],
+.primary-navigation > nav > a:hover,
+.primary-navigation > nav > a:focus-visible,
+.primary-navigation > nav > a.active,
+.primary-navigation > nav > a[aria-current="page"] {
+  color: var(--app-brand-strong) !important;
+  background: var(--app-brand-weak) !important;
+}
+
+.primary-navigation__menu,
+.company-search-autocomplete,
+.editorial-home-search-results {
+  padding: 8px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-3);
+}
+
+.primary-navigation__menu a,
+.company-search-autocomplete [role="option"],
+.editorial-home-search-results > a {
+  border: 0;
+  border-radius: var(--app-radius-m);
+  color: var(--app-ink);
+}
+
+.primary-navigation__menu a:hover,
+.primary-navigation__menu a:focus-visible,
+.primary-navigation__menu a.active,
+.company-search-autocomplete [role="option"]:hover,
+.company-search-autocomplete [role="option"][aria-selected="true"],
+.editorial-home-search-results > a:hover,
+.editorial-home-search-results > a[aria-selected="true"] {
+  color: var(--app-brand-strong);
+  background: var(--app-brand-weak);
+}
+
+/* Inputs and segmented controls */
+:where(
+  .editorial-home-combobox > input,
+  .editorial-archive-search-field,
+  .company-search-combobox > input,
+  input[type="search"],
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea
+) {
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-m);
+  color: var(--app-ink);
+  background: var(--app-surface-2);
+  box-shadow: none;
+}
+
+:where(
+  .editorial-home-combobox > input,
+  .company-search-combobox > input,
+  input,
+  select,
+  textarea
+):focus {
+  border-color: var(--app-brand) !important;
+  outline: 0;
+  background: var(--app-surface);
+  box-shadow: 0 0 0 3px oklch(0.624 0.176 254 / 0.12) !important;
+}
+
+:where(input, textarea)::placeholder {
+  color: oklch(0.155 0.06 261 / 0.28);
+}
+
+:where(
+  .editorial-archive-tabs,
+  .financial-pivot-controls fieldset,
+  .financial-pivot-group-tabs,
+  .market-tab-row,
+  [role="tablist"]
+) {
+  padding: 5px;
+  border: 0;
+  border-radius: var(--app-radius-l);
+  background: var(--app-surface-2);
+  box-shadow: none;
+}
+
+:where(
+  .editorial-archive-tabs a,
+  .financial-pivot-controls button,
+  .financial-pivot-group-tabs button,
+  .market-tab-row button,
+  [role="tab"]
+) {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--app-radius-m);
+  color: var(--app-muted);
+  background: transparent;
+}
+
+:where(
+  .editorial-archive-tabs a[aria-selected="true"],
+  .financial-pivot-controls button[aria-pressed="true"],
+  .financial-pivot-group-tabs button[aria-selected="true"],
+  .market-tab-row button.active,
+  [role="tab"][aria-selected="true"]
+) {
+  color: var(--app-ink) !important;
+  background: var(--app-surface) !important;
+  box-shadow: var(--app-shadow-1) !important;
+}
+
+/* Page heroes */
+:where(
+  .editorial-home-hero,
+  .editorial-page-header,
+  .editorial-detail-header,
+  .company-dashboard-header,
+  .financial-pivot-header,
+  .valuation-hero,
+  .market-relations-intro,
+  .industry-reports-hero,
+  .bottleneck-hero,
+  .pick-hero,
+  .pick-detail-hero,
+  .analysis-hero,
+  .research-report-cover,
+  .company-brief-card--lead
+) {
+  border: 0 !important;
+  border-radius: var(--app-radius-4xl) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-brand-weak) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+:where(
+  .editorial-home-hero,
+  .editorial-page-header,
+  .editorial-detail-header,
+  .company-dashboard-header,
+  .financial-pivot-header,
+  .valuation-hero,
+  .market-relations-intro,
+  .industry-reports-hero,
+  .bottleneck-hero,
+  .pick-hero,
+  .pick-detail-hero,
+  .analysis-hero,
+  .research-report-cover,
+  .company-brief-card--lead
+) :where(h1, h2, h3, h4, strong, p, span, small, a) {
+  color: var(--app-ink) !important;
+  font-family: var(--font-sans) !important;
+  text-shadow: none !important;
+}
+
+:where(
+  .editorial-home-hero,
+  .editorial-page-header,
+  .editorial-detail-header,
+  .company-dashboard-header,
+  .financial-pivot-header,
+  .valuation-hero,
+  .market-relations-intro,
+  .industry-reports-hero,
+  .bottleneck-hero,
+  .pick-hero,
+  .pick-detail-hero,
+  .analysis-hero,
+  .research-report-cover
+) > :where(p, span),
+:where(
+  .editorial-home-hero,
+  .editorial-page-header,
+  .editorial-detail-header,
+  .company-dashboard-header,
+  .financial-pivot-header,
+  .valuation-hero,
+  .market-relations-intro,
+  .industry-reports-hero
+) :where(.eyebrow, .home-kicker, small) {
+  color: var(--app-muted) !important;
+}
+
+.editorial-home-hero {
+  min-height: 520px;
+  padding: clamp(32px, 7vw, 80px);
+}
+
+.editorial-home-hero-copy h1,
+.editorial-page-header h1,
+.editorial-detail-header h1,
+.company-profiles-hero h1,
+.company-dashboard-header h1,
+.valuation-hero h1 {
+  color: var(--app-ink) !important;
+  font-family: var(--font-sans) !important;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.editorial-home-hero-copy > p:first-child,
+.editorial-section-heading > p,
+.editorial-archive-toolbar > div > p,
+.company-dashboard-kicker,
+.company-dashboard-section-heading > span,
+.financial-pivot-header > div > p,
+.valuation-section-heading > p {
+  color: var(--app-brand) !important;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Flat cards and content surfaces */
+:where(
+  article[class*="-card"],
+  section[class*="-card"],
+  div[class*="-card"],
+  figure[class*="-card"],
+  .editorial-card,
+  .editorial-empty-state,
+  .editorial-reason-grid article,
+  .editorial-certainty-grid article,
+  .editorial-factor-grid article,
+  .editorial-evidence-grid article,
+  .editorial-fact-status-grid section,
+  .editorial-related-links a,
+  .editorial-source-list li,
+  .company-brief-card,
+  .company-dashboard-assessment-grid article,
+  .company-dashboard-metric-grid article,
+  .company-dashboard-macro-grid article,
+  .company-dissection-core-grid article,
+  .company-dissection-radar,
+  .company-dissection-panel,
+  .financial-pivot-summary article,
+  .financial-multiple-grid article,
+  .financial-pivot-analysis,
+  .financial-pivot-industry-card,
+  .financial-pivot-sources,
+  .valuation-section,
+  .valuation-snapshot article,
+  .valuation-scenario-grid article,
+  .valuation-comparison-grid article,
+  .valuation-assumption-grid article,
+  .research-report-section,
+  .research-report-toc
+) {
+  border-color: var(--app-line) !important;
+  border-width: 1px !important;
+  border-radius: var(--app-radius-xl) !important;
+  color: var(--app-ink);
+  background: var(--app-surface) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+:where(
+  .editorial-card,
+  .company-profile-list-card,
+  .company-brief-card,
+  .company-dashboard-assessment-grid article,
+  .company-dashboard-metric-grid article,
+  .company-dissection-core-grid article,
+  .financial-pivot-summary article,
+  .valuation-snapshot article
+):hover {
+  border-color: var(--app-line-strong) !important;
+  box-shadow: var(--app-shadow-1) !important;
+  transform: none !important;
+}
+
+:where(
+  .editorial-card,
+  .editorial-read,
+  .editorial-detail-section,
+  .company-dashboard-section,
+  .company-brief-section,
+  .company-brief-metrics,
+  .research-report-section
+) :where(h1, h2, h3, h4, strong) {
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+}
+
+:where(
+  .editorial-card,
+  .editorial-read,
+  .editorial-detail-section,
+  .company-dashboard-section,
+  .company-brief-section,
+  .company-brief-metrics,
+  .research-report-section
+) :where(p, li, dd, small, time) {
+  color: var(--app-muted);
+}
+
+/* Primary and secondary actions */
+:where(
+  a[class*="primary"],
+  button[class*="primary"],
+  .editorial-card-actions a:first-child,
+  .company-profile-list-card > .company-profile-list-cta,
+  .company-brief-actions a:first-child,
+  .company-dissection-panel > a,
+  .financial-pivot-empty a,
+  .valuation-section a[class*="cta"]
+) {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0 !important;
+  border-radius: var(--app-radius-l) !important;
+  color: var(--app-surface) !important;
+  background: var(--app-brand) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:where(
+  a[class*="primary"],
+  button[class*="primary"],
+  .editorial-card-actions a:first-child,
+  .company-profile-list-card > .company-profile-list-cta,
+  .company-brief-actions a:first-child,
+  .company-dissection-panel > a,
+  .financial-pivot-empty a
+):hover {
+  background: var(--app-brand-pressed) !important;
+}
+
+:where(
+  .company-brief-actions a + a,
+  .editorial-card-actions a + a,
+  a[class*="secondary"],
+  button[class*="secondary"],
+  .ghost-action,
+  .text-button
+) {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0 !important;
+  border-radius: var(--app-radius-l) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-surface-2) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+:where(
+  .editorial-section-heading > a,
+  .editorial-breadcrumb a,
+  .editorial-evidence-grid a,
+  .editorial-source-list a,
+  .company-dashboard-main a,
+  .company-profiles-main a,
+  .financial-pivot-main a,
+  .valuation-main a,
+  .research-report-main a
+) {
+  color: var(--app-brand-strong);
+  text-decoration-color: oklch(0.624 0.176 254 / 0.34);
+}
+
+/* Editorial surfaces */
+.editorial-home,
+.editorial-shell {
+  background: var(--app-surface-weak) !important;
+}
+
+.editorial-home > main,
+.editorial-main,
+.editorial-detail-main {
+  width: min(1120px, calc(100% - 40px));
+}
+
+.editorial-home-search {
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-3xl);
+  background: var(--app-surface);
+  box-shadow: none;
+}
+
+.editorial-section-heading h2,
+.editorial-archive-toolbar h2,
+.editorial-card h3,
+.editorial-read h2,
+.editorial-detail-heading h2,
+.editorial-route-state h1 {
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+.editorial-three-card > ol li {
+  border-top: 1px solid var(--app-line);
+}
+
+.editorial-three-card > ol li::before,
+.editorial-card-facts dt,
+.editorial-evidence-grid article > div,
+.editorial-verification dt,
+.editorial-read-order,
+.editorial-read dt,
+.editorial-detail-heading > span {
+  color: var(--app-brand);
+}
+
+.editorial-takeaway,
+.editorial-character-panel,
+.editorial-conclusion,
+.editorial-detail-takeaway {
+  border: 0 !important;
+  border-radius: var(--app-radius-3xl) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-brand-weak) !important;
+  background-image: none !important;
+}
+
+:where(
+  .editorial-takeaway,
+  .editorial-character-panel,
+  .editorial-conclusion,
+  .editorial-detail-takeaway
+) :where(h2, h3, strong, p, span) {
+  color: var(--app-ink) !important;
+  font-family: var(--font-sans);
+}
+
+.editorial-watch-list li::before {
+  background: var(--app-brand);
+}
+
+.editorial-key-numbers,
+.research-warning-box,
+.research-market-percentile,
+.research-uncertainty-limit,
+.company-dissection-next {
+  border: 0 !important;
+  border-radius: var(--app-radius-xl) !important;
+  background: var(--app-brand-weak) !important;
+}
+
+/* Company list and dashboards */
+.company-profiles-shell,
+.company-profile-shell {
+  background: var(--app-surface-weak) !important;
+}
+
+.company-profiles-main,
+.company-dashboard-main {
+  width: min(1120px, calc(100% - 40px));
+}
+
+.company-profiles-hero {
+  padding: 40px 0 24px;
+}
+
+.company-search-combobox > input {
+  min-height: 56px;
+  border-color: transparent;
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface-2);
+  box-shadow: none;
+}
+
+.company-profile-list-card {
+  min-height: 270px;
+  border-color: var(--app-line);
+  border-radius: var(--app-radius-xl);
+  background: var(--app-surface);
+  box-shadow: none;
+}
+
+.company-profile-list-card > .company-profile-list-industry,
+.company-dashboard-security,
+.company-brief-no-comparison,
+.company-brief-comparison div,
+.company-dissection-panel-summary div,
+.company-dissection-interpretation,
+.company-dissection-next,
+.company-market-momentum-card dl div {
+  color: var(--app-brand-strong);
+  background: var(--app-brand-weak);
+}
+
+.company-dashboard-header .company-profile-monogram {
+  border-radius: var(--app-radius-xl);
+  background: var(--app-brand);
+}
+
+.company-brief-card--lead {
+  min-height: 420px;
+}
+
+.company-brief-card--lead :where(span, h3, p, footer, a) {
+  color: var(--app-ink) !important;
+}
+
+.company-deep-links {
+  border-radius: var(--app-radius-3xl);
+  color: var(--app-ink);
+  background: var(--app-brand-weak);
+}
+
+.company-deep-links :where(h2, strong, span) {
+  color: var(--app-ink) !important;
+}
+
+.company-deep-links a {
+  border-color: var(--app-line);
+  border-radius: var(--app-radius-l);
+  color: var(--app-ink);
+  background: var(--app-surface);
+}
+
+.company-radar-grid,
+.company-radar-spoke {
+  stroke: var(--app-line-strong);
+}
+
+.company-radar-shape {
+  fill: oklch(0.624 0.176 254 / 0.16);
+  stroke: var(--app-brand);
+}
+
+.company-radar-point {
+  fill: var(--app-brand);
+  stroke: var(--app-surface);
+}
+
+.company-radar-controls button {
+  border-radius: var(--app-radius-m);
+  color: var(--app-ink);
+  background: oklch(1 0 0 / 0.92);
+}
+
+.company-radar-controls button:hover,
+.company-radar-controls button.is-selected {
+  border-color: var(--app-brand);
+  box-shadow: var(--app-shadow-2);
+}
+
+.company-dissection-sheet-backdrop {
+  background: var(--app-overlay);
+}
+
+.company-dissection-sheet {
+  border-radius: var(--app-radius-3xl) var(--app-radius-3xl) 0 0;
+  box-shadow: 0 -2px 12px oklch(0.155 0.06 261 / 0.06);
+}
+
+/* Financial, valuation, research, maps and tables */
+.financial-pivot-shell,
+.valuation-shell,
+.research-report-shell,
+.market-relations-shell {
+  background: var(--app-surface-weak) !important;
+}
+
+.financial-multiple-panel,
+.financial-pivot-table-scroll thead th,
+.financial-pivot-group-tabs,
+.valuation-range-card,
+.valuation-review-facts section,
+.valuation-review-drivers > span,
+.valuation-review-assumptions li,
+.research-diagnostic-row article,
+.research-price-compare > div,
+.research-terminal-diagnostics,
+.research-glossary article {
+  border-color: var(--app-line) !important;
+  border-radius: var(--app-radius-xl) !important;
+  color: var(--app-ink);
+  background: var(--app-surface-2) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .financial-pivot-table-scroll,
+  .valuation-sensitivity-scroll,
+  .research-sensitivity-scroll,
+  .research-chart-data,
+  .research-monte-carlo-table-scroll
+) {
+  border-color: var(--app-line) !important;
+  border-radius: var(--app-radius-l);
+}
+
+:where(table) {
+  color: var(--app-ink);
+}
+
+:where(th, td) {
+  border-color: var(--app-line) !important;
+}
+
+:where(thead th) {
+  color: var(--app-muted) !important;
+  background: var(--app-surface-2) !important;
+}
+
+.research-chart-axis,
+.research-chart-gridline {
+  stroke: var(--app-line-strong);
+}
+
+.research-chart-bar.series-1,
+.company-dashboard-chart-bar,
+.valuation-range-fill,
+.valuation-range-market {
+  fill: var(--app-brand);
+  background: var(--app-brand);
+}
+
+.research-chart-bar.series-2,
+.company-dashboard-chart-bar.chart-bar-2 {
+  fill: var(--app-line-strong);
+  background: var(--app-line-strong);
+}
+
+.research-model-diagnostics article,
+.research-uncertainty-diagnostics > article {
+  border: 0;
+  border-radius: var(--app-radius-xl);
+  color: var(--app-ink);
+  background: var(--app-brand-weak);
+}
+
+:where(.research-model-diagnostics, .research-uncertainty-diagnostics) :where(h3, strong, p, dt, dd, small, li) {
+  color: var(--app-ink) !important;
+}
+
+.valuation-section-heading > span,
+.financial-card-step {
+  color: var(--app-surface);
+  background: var(--app-brand);
+}
+
+.valuation-review-decision,
+.financial-impact-inline {
+  border-left: 0;
+  border-radius: var(--app-radius-xl);
+  background: var(--app-brand-weak);
+}
+
+/* Retire the old dark/gradient visual layer without changing its information model. */
+.story-dark-shell,
+.story-dark-shell.home-shell,
+.story-dark-shell.pick-shell,
+.story-dark-shell.analysis-shell,
+.story-dark-shell.app-shell {
+  color: var(--app-ink) !important;
+  background: var(--app-surface-weak) !important;
+  background-image: none !important;
+}
+
+.story-dark-shell::before,
+.story-dark-shell::after,
+.story-home-shell .home-hero.mvp-hero::before,
+.story-home-shell .home-hero.mvp-hero::after,
+.story-dark-shell :is(
+  .home-hero-card-stack article,
+  .home-issue-card,
+  .pick-home-card,
+  .pick-card,
+  .explainer-card-grid article,
+  .financial-priority-grid article
+)::after,
+.story-analysis-shell .financial-priority-grid article::before {
+  display: none !important;
+}
+
+.story-dark-shell :where(h1, h2, h3, h4, strong, b, p, li, small, em, span) {
+  color: var(--app-ink) !important;
+  text-shadow: none !important;
+}
+
+.story-dark-shell :where(.home-kicker, .eyebrow, .breadcrumb, .home-mvp-note, small, em) {
+  color: var(--app-muted) !important;
+}
+
+.story-dark-shell :where(
+  .home-hero-card-stack article,
+  .home-issue-card,
+  .flow-step-card,
+  .pick-home-card,
+  .beginner-guide-grid article,
+  .advanced-reference-note,
+  .pick-card,
+  .pick-detail-card,
+  .analysis-card,
+  .explainer-highlight-card,
+  .explainer-card-grid article,
+  .financial-one-line-panel,
+  .financial-priority-card,
+  .financial-priority-grid article,
+  .financial-signal-grid section,
+  .financial-advanced-card,
+  .analysis-disclosure-section,
+  .sector-flow-card,
+  .flow-stage-nav button,
+  .flow-focus-explorer,
+  .flow-connection-column,
+  .flow-focus-company-card,
+  .flow-connection-list button
+) {
+  border: 1px solid var(--app-line) !important;
+  border-radius: var(--app-radius-xl) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-surface) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.story-home-shell .home-hero.mvp-hero,
+.story-pick-shell .pick-hero,
+.story-pick-shell .pick-detail-hero,
+.story-analysis-shell .analysis-hero,
+.story-analysis-shell .company-explainer-card,
+.story-analysis-shell .financial-learning-card,
+.story-home-shell .flow-preview-section.mvp-flow-preview {
+  border: 0 !important;
+  border-radius: var(--app-radius-4xl) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-brand-weak) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.story-home-shell .home-hero h1 span:last-child {
+  color: var(--app-brand) !important;
+  text-shadow: none;
+}
+
+.story-dark-shell :where(
+  .home-hero-actions button.primary,
+  .pick-primary-action,
+  .flow-preview-copy button,
+  .explainer-primary-actions button:first-child,
+  .financial-more-actions button:first-child,
+  .flow-focus-actions button:first-child
+) {
+  border: 0 !important;
+  border-radius: var(--app-radius-l) !important;
+  color: var(--app-surface) !important;
+  background: var(--app-brand) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.story-dark-shell :where(
+  .home-hero-actions button.secondary,
+  .ghost-action,
+  .explainer-primary-actions button:nth-child(2),
+  .financial-more-actions button,
+  .pick-detail-actions button,
+  .pick-advanced-actions summary
+) {
+  border: 0 !important;
+  border-radius: var(--app-radius-l) !important;
+  color: var(--app-ink) !important;
+  background: var(--app-surface-2) !important;
+  box-shadow: none !important;
+}
+
+.story-dark-shell :where(
+  .home-hero-card-stack article > svg,
+  .home-issue-card > svg,
+  .explainer-card-grid article > svg,
+  .section-title > svg,
+  .financial-signal-grid strong > svg,
+  .company-logo,
+  .company-explainer-logo
+) {
+  border: 0 !important;
+  border-radius: var(--app-radius-l) !important;
+  color: var(--app-brand) !important;
+  background: var(--app-brand-weak) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Meaningful status colors remain semantic rather than decorative accents. */
+:where(.up, .positive, .state-improving, .state-healthy, .status-normal) {
+  color: var(--app-success) !important;
+}
+
+:where(.down, .negative, .state-needsReview, .state-stretched, .state-slowing, .status-critical) {
+  color: var(--app-danger) !important;
+}
+
+:where(.pending, .warning, .status-watch, .status-tight) {
+  color: var(--app-warning) !important;
+}
+
+/* Mobile-first density and touch targets */
+@media (max-width: 1023px) {
+  :where(
+    .editorial-stock-grid,
+    .editorial-three-card > ol,
+    .company-profile-list-grid,
+    .company-brief-grid,
+    .company-brief-metric-grid,
+    .company-dashboard-assessment-grid,
+    .company-dashboard-metric-grid,
+    .financial-pivot-summary,
+    .financial-multiple-grid,
+    .valuation-snapshot
+  ) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .company-brief-card--lead {
+    grid-row: auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  :where(
+    .editorial-home > main,
+    .editorial-main,
+    .editorial-detail-main,
+    .company-profiles-main,
+    .company-dashboard-main,
+    .financial-pivot-main,
+    .valuation-main,
+    .research-report-main
+  ) {
+    width: min(100% - 24px, 1120px);
+  }
+
+  .primary-navigation {
+    width: min(100% - 16px, 1180px);
+    border-radius: var(--app-radius-xl);
+  }
+
+  .editorial-home-hero,
+  :where(.editorial-page-header, .editorial-detail-header, .company-dashboard-header, .financial-pivot-header, .valuation-hero) {
+    min-height: 0;
+    padding: 28px 20px;
+    border-radius: var(--app-radius-3xl) !important;
+  }
+
+  .editorial-home-search {
+    border-radius: var(--app-radius-xl);
+  }
+
+  :where(
+    button,
+    a,
+    summary,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="tab"]
+  ) {
+    min-height: 44px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
