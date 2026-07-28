@@ -102,6 +102,7 @@ import {
   validateCompanyDashboardRegistry,
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
+import { validateCompanyJudgmentRegistry } from '../src/content/company-judgments/validation.js';
 import { loadReleaseGateConfig } from './release-gate-config.js';
 
 const releaseConfig = loadReleaseGateConfig();
@@ -2608,6 +2609,8 @@ validateDisclosureClassification();
 validateSecDisclosureRegistry();
 validateSecFilingHelpers();
 validateSecFilingDetailParsers();
+const companyJudgmentErrors = await validateCompanyJudgmentRegistry();
+companyJudgmentErrors.forEach((message) => addError(`company judgment: ${message}`));
 
 warnings.forEach((warning) => console.warn(warning));
 
@@ -2647,6 +2650,7 @@ console.log(`✓ 산업 흐름 검증 (flow ${industryFlowValidation.flowCount}�
 console.log(`✓ 기업 profile reference 검증 (관계 ${companyProfileRelationValidation.relationCount}개, 연결 profile ${companyProfileRelationValidation.profileWithRelationsCount}개, 잘못된 ref ${companyProfileRelationValidation.invalidRefCount}개)`);
 console.log(`✓ 시장지도 폐기 검증 (legacy route ${marketMapRetirementValidation.legacyRouteCount}개, navigation ${marketMapRetirementValidation.publicNavigationLinkCount}개, CTA ${marketMapRetirementValidation.publicCtaCount}개, relation consumer ${marketMapRetirementValidation.runtimeRelationConsumerCount}개, ReactFlow import ${marketMapRetirementValidation.reactFlowImportCount}개)`);
 console.log(`✓ 기업 한눈에 보기 검증 (profile ${companyProfileValidation.profileCount}개, 잘못된 ref·규칙 ${companyProfileValidation.invalidCount}개)`);
+console.log(`✓ 기업 판단 최신성 검증 (초기 기업 3개, 오류 ${companyJudgmentErrors.length}개)`);
 console.log(`✓ 홈 진입 검증 (보존 기능 registry ${homeValidation.featureCount}개, primary navigation ${homeValidation.navigationItemCount}개, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');

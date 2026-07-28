@@ -19,6 +19,7 @@ import { loadCompanyBrief } from '../content/company-briefs/registry.js';
 import type { CompanyBrief } from '../content/company-briefs/types.js';
 import { buildCompanyDissection, loadCompanyDissectionConfig, type CompanyDissectionModel } from '../content/company-dissections/index.js';
 import { loadEventImpacts, type EventImpactRecord } from '../content/event-impacts/index.js';
+import { loadCompanyJudgment, type CompanyJudgmentModel } from '../content/company-judgments/index.js';
 import { companySearchIndex } from '../content/company-profiles/search.js';
 import { fetchOwnershipTrades } from '../services/trades.js';
 
@@ -46,24 +47,24 @@ type CompaniesRouteProps = CompanyProfilesRouteProps | OwnershipRouteProps | Fin
 
 function CompanyProfileDetailRoute({ navigation, onNavigate, slug }: Omit<CompanyProfilesRouteProps, 'slug'> & { slug: string }) {
   const profile = buildCompanyResearchProfile(slug);
-  const [briefState, setBriefState] = useState<{ slug: string; brief: CompanyBrief | null; dissection: CompanyDissectionModel | null; impacts: EventImpactRecord[]; failed: boolean }>({ slug: '', brief: null, dissection: null, impacts: [], failed: false });
+  const [briefState, setBriefState] = useState<{ slug: string; brief: CompanyBrief | null; dissection: CompanyDissectionModel | null; judgment: CompanyJudgmentModel | null; impacts: EventImpactRecord[]; failed: boolean }>({ slug: '', brief: null, dissection: null, judgment: null, impacts: [], failed: false });
 
   useEffect(() => {
     let cancelled = false;
     if (!profile) return () => { cancelled = true; };
-    setBriefState({ slug, brief: null, dissection: null, impacts: [], failed: false });
-    Promise.all([loadCompanyBrief(slug, profile), loadCompanyDissectionConfig(slug), loadEventImpacts(slug)]).then(([brief, dissectionConfig, impacts]) => {
+    setBriefState({ slug, brief: null, dissection: null, judgment: null, impacts: [], failed: false });
+    Promise.all([loadCompanyBrief(slug, profile), loadCompanyDissectionConfig(slug), loadCompanyJudgment(slug), loadEventImpacts(slug)]).then(([brief, dissectionConfig, judgment, impacts]) => {
       const dissection = brief && dissectionConfig ? buildCompanyDissection({ config: dissectionConfig, brief, viewModel: profile }) : null;
-      if (!cancelled) setBriefState({ slug, brief, dissection, impacts, failed: !brief || !dissection });
+      if (!cancelled) setBriefState({ slug, brief, dissection, judgment, impacts, failed: !brief || (!judgment && !dissection) });
     }).catch(() => {
-      if (!cancelled) setBriefState({ slug, brief: null, dissection: null, impacts: [], failed: true });
+      if (!cancelled) setBriefState({ slug, brief: null, dissection: null, judgment: null, impacts: [], failed: true });
     });
     return () => { cancelled = true; };
   }, [slug]);
 
   if (!profile) return <CompanyProfileNotFoundPage navigation={navigation} onNavigate={onNavigate} />;
-  if (briefState.slug !== slug || !briefState.brief || !briefState.dissection) return <CompanyBriefLoadingPage viewModel={profile} navigation={navigation} onNavigate={onNavigate} failed={briefState.slug === slug && briefState.failed} />;
-  return <CompanyResearchProfilePage viewModel={profile} brief={briefState.brief} dissection={briefState.dissection} eventImpacts={briefState.impacts} navigation={navigation} onNavigate={onNavigate} />;
+  if (briefState.slug !== slug || !briefState.brief || (!briefState.judgment && !briefState.dissection)) return <CompanyBriefLoadingPage viewModel={profile} navigation={navigation} onNavigate={onNavigate} failed={briefState.slug === slug && briefState.failed} />;
+  return <CompanyResearchProfilePage viewModel={profile} brief={briefState.brief} dissection={briefState.dissection} judgment={briefState.judgment} eventImpacts={briefState.impacts} navigation={navigation} onNavigate={onNavigate} />;
 }
 
 function CompanyProfilesRoute({ navigation, onNavigate, searchQuery = '', slug }: CompanyProfilesRouteProps) {

@@ -25,8 +25,8 @@
     "entryGzipMaxBytes": 225000
   },
   "content": {
-    "companyProfiles": 9,
-    "companyEvents": 13,
+    "companyProfiles": 11,
+    "companyEvents": 15,
     "demandSupplyEntries": 4,
     "bottlenecks": 6,
     "reports": 15,
@@ -86,6 +86,8 @@
       "/ko/companies/supermicro/valuation",
       "/ko/companies/supermicro",
       "/ko/companies/netflix",
+      "/ko/companies/alphabet",
+      "/ko/companies/hana-financial",
       "/ko/companies/sk-hynix/financials",
       "/ko/companies/lg-electronics/financials",
       "/ko/companies/nvidia/financials",

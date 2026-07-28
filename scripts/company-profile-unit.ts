@@ -28,14 +28,14 @@ check(companyProfiles.length === releaseConfig.content.companyProfiles, 'profile
 check(companyProfileByIdOrSlug('nvidia')?.companyId === 'us-semiconductors-nvidia', 'profile slug resolve');
 check(companyProfileByIdOrSlug('us-semiconductors-nvidia')?.slug === 'nvidia', 'canonical company resolve');
 check(companyProfileByIdOrSlug('not-a-company') === undefined, 'invalid slug not found');
-check(companyProfiles.map((profile) => profile.order).join('|') === '1|2|3|4|5|6|7|8|9', 'profile order');
+check(companyProfiles.map((profile) => profile.order).join('|') === '1|2|3|4|5|6|7|8|9|10|11', 'profile order');
 check(canonicalCompanyProfileId('kr-semiconductors-sk-hynix') === 'ai-datacenter-sk-hynix', 'SK hynix canonical alias');
 check(canonicalCompanyProfileId('datacenter-power-eaton') === 'ai-datacenter-eaton', 'Eaton canonical alias');
 check(companyProfilePathForCompanyId('us-energy-grid-eaton') === '/ko/companies/eaton', 'canonical alias path');
 check(companySearchIndex.length === companyProfiles.length, 'search index count matches profile registry');
 check(new Set(companySearchIndex.map(({ profile }) => profile.slug)).size === companySearchIndex.length, 'search index slug deduplicated');
 check(new Set(companySearchIndex.map(({ company }) => company.ticker)).size === companySearchIndex.length, 'search ticker deduplicated');
-check(new Set(companySearchIndex.flatMap(({ profile }) => profile.stockCode ? [profile.stockCode] : [])).size === 2, 'search stock code deduplicated');
+check(new Set(companySearchIndex.flatMap(({ profile }) => profile.stockCode ? [profile.stockCode] : [])).size === 3, 'search stock code deduplicated');
 check(normalizeCompanySearchTerm('  SK  hynix ') === normalizeCompanySearchTerm('SK-Hynix'), 'space and hyphen normalization');
 check(normalizeCompanySearchTerm('ＮＶＤＡ') === 'nvda', 'NFKC full-width normalization');
 check(normalizeCompanySearchTerm('LG.전자') === 'lg전자', 'punctuation normalization');
@@ -50,6 +50,8 @@ const expectedSearches: Array<[string, string]> = [
   ['Meta', 'meta'], ['메타', 'meta'], ['Facebook', 'meta'], ['META', 'meta'],
   ['Supermicro', 'supermicro'], ['Super Micro', 'supermicro'], ['슈퍼마이크로', 'supermicro'], ['SMCI', 'supermicro'],
   ['Netflix', 'netflix'], ['넷플릭스', 'netflix'], ['NFLX', 'netflix'],
+  ['Alphabet', 'alphabet'], ['알파벳', 'alphabet'], ['Google', 'alphabet'], ['GOOGL', 'alphabet'],
+  ['하나금융지주', 'hana-financial'], ['하나금융', 'hana-financial'], ['086790', 'hana-financial'],
 ];
 expectedSearches.forEach(([query, slug]) => check(searchCompanyProfiles(query)[0]?.profile.slug === slug, `search ${query}`));
 check(searchCompanyProfiles('NVIDIA').map(({ profile }) => profile.slug).join('|') === searchCompanyProfiles('nvidia').map(({ profile }) => profile.slug).join('|'), 'search case insensitive');
@@ -124,6 +126,6 @@ check(!companyProfileSectionVisibility(nvidia).showPrice, 'price absent section 
 check(companyProfileSectionVisibility({ ...nvidia, companyEvents: [] }).showEventEmpty, 'event empty state');
 check(!companyProfileSectionVisibility({ ...nvidia, picks: [] }).showPick, 'pick absent section omitted');
 check(!companyProfileSectionVisibility({ ...nvidia, verifiedMetrics: [] }).showMetrics, 'metric absent section omitted');
-check(validateCompanyProfileRegistry(new Date('2026-07-24T12:00:00Z')).length === 0, 'registry validation');
+check(validateCompanyProfileRegistry(new Date('2026-07-29T12:00:00Z')).length === 0, 'registry validation');
 
 console.log(`✓ 기업 프로필 unit ${checks}개 검증`);

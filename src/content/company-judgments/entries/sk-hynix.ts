@@ -1,0 +1,117 @@
+import type { CompanyJudgmentConfig } from '../types.js';
+
+const source = {
+  sourceId: 'sk-hynix-q1-2026-results',
+  sourceType: 'company-ir' as const,
+  sourceTitle: 'SK hynix Announces 1Q26 Financial Results',
+  sourceUrl: 'https://news.skhynix.com/en/q1-2026-business-results/',
+  publishedAt: '2026-04-23',
+  asOf: '2026-03-31',
+  period: '2026년 1분기',
+  scope: 'consolidated' as const,
+  metricDefinition: 'K-IFRS 연결 기준 분기 실적과 분기 말 현금·이자부부채',
+  limitation: '회사 발표의 잠정 수치로 외부감사 과정에서 달라질 수 있습니다.',
+};
+
+const config: CompanyJudgmentConfig = {
+  companySlug: 'sk-hynix',
+  latestOfficialUpdate: {
+    latestQuarterlyResultsAt: '2026-04-23',
+    latestMaterialEventAt: '2026-04-23',
+  },
+  companyDirection: {
+    state: 'opportunity',
+    horizon: '향후 6~12개월',
+    reason: '고부가 AI 메모리 판매와 순현금 전환이 선행 설비투자 부담보다 더 크게 작용할 것으로 봅니다.',
+    asOf: '2026-04-23',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [source.sourceId],
+  },
+  marketExpectation: {
+    state: 'balanced',
+    horizon: '다음 1~2개 분기',
+    reason: '기록적인 이익과 우호적 가격 환경은 강하지만, 높아진 실적 기준과 큰 폭의 투자 확대가 동시에 반영될 구간입니다.',
+    asOf: '2026-04-23',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [source.sourceId],
+  },
+  cards: [
+    {
+      key: 'businessGrowth',
+      state: 'good',
+      reason: 'HBM·고용량 서버 DRAM·eSSD 판매 증가가 계절적 비수기에도 외형 성장을 끌어냈습니다.',
+      trend: 'improving',
+      causeFlow: ['AI 인프라 수요 확대', '고부가 메모리 판매 증가', '분기 매출 사상 최대'],
+      metrics: [
+        { label: '매출', value: '52.58조원', comparison: '전년 동기 대비 +198%', period: '2026년 1분기', metricDefinition: 'K-IFRS 연결 매출' },
+        { label: '직전 분기 매출', value: '32.83조원', comparison: '분기 대비 +60%', period: '2025년 4분기', metricDefinition: 'K-IFRS 연결 매출' },
+      ],
+      reversalCondition: '고부가 메모리 판매가 줄어 분기 매출이 두 분기 연속 감소하면 성장 판단을 낮춥니다.',
+      asOf: '2026-04-23',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [source.sourceId],
+    },
+    {
+      key: 'earningsQuality',
+      state: 'good',
+      reason: '고부가 제품 믹스와 가격 회복이 매출뿐 아니라 영업이익률의 큰 폭 개선으로 이어졌습니다.',
+      trend: 'improving',
+      causeFlow: ['고부가 제품 믹스 개선', '가격·물량 효과 확대', '영업이익률 상승'],
+      metrics: [
+        { label: '영업이익률', value: '72%', comparison: '직전 분기보다 +14%p', period: '2026년 1분기', metricDefinition: '영업이익 ÷ 매출' },
+        { label: '영업이익', value: '37.61조원', comparison: '전년 동기 대비 +405%', period: '2026년 1분기', metricDefinition: 'K-IFRS 연결 영업이익' },
+        { label: '전년 동기 영업이익률', value: '42%', comparison: '전년 동기보다 +30%p', period: '2025년 1분기', metricDefinition: '영업이익 ÷ 매출' },
+      ],
+      reversalCondition: '영업이익률이 50% 아래로 내려가고 고부가 제품 믹스 개선이 멈추면 이익의 질 판단을 낮춥니다.',
+      asOf: '2026-04-23',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [source.sourceId],
+    },
+    {
+      key: 'cashQuality',
+      state: 'good',
+      reason: '기록적 이익이 현금 증가와 이자부부채 감소로 이어져 분기 말 순현금으로 전환됐습니다.',
+      trend: 'improving',
+      causeFlow: ['본업 이익 확대', '현금 19.4조원 증가', '순현금 35조원 전환'],
+      metrics: [
+        { label: '현금·현금성자산', value: '54.3조원', comparison: '직전 분기보다 +19.4조원', period: '2026년 1분기 말', metricDefinition: '회사 발표 현금 및 현금성자산' },
+        { label: '이자부부채', value: '19.3조원', comparison: '직전 분기보다 -2.9조원', period: '2026년 1분기 말', metricDefinition: '회사 발표 이자부부채' },
+        { label: '순현금', value: '35.0조원', comparison: '현금에서 이자부부채 차감', period: '2026년 1분기 말', metricDefinition: '현금 및 현금성자산 - 이자부부채' },
+      ],
+      reversalCondition: '순현금이 두 분기 연속 감소하고 영업이익 증가가 현금 증가로 이어지지 않으면 판단을 낮춥니다.',
+      asOf: '2026-04-23',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [source.sourceId],
+    },
+    {
+      key: 'investmentBurden',
+      state: 'caution',
+      reason: '현재 순현금 여력은 충분하지만 M15X·용인·EUV 투자 규모가 크게 늘어 회수 속도를 함께 봐야 합니다.',
+      trend: 'steady',
+      causeFlow: ['공급능력 선점 투자 확대', 'M15X·용인·EUV 자금 집행', '향후 현금 회수 부담 증가'],
+      metrics: [
+        { label: '순현금', value: '35.0조원', comparison: '투자 전 재무 완충력', period: '2026년 1분기 말', metricDefinition: '현금 및 현금성자산 - 이자부부채' },
+        { label: '현금·현금성자산', value: '54.3조원', comparison: '직전 분기보다 +19.4조원', period: '2026년 1분기 말', metricDefinition: '회사 발표 현금 및 현금성자산' },
+        { label: '이자부부채', value: '19.3조원', comparison: '직전 분기보다 -2.9조원', period: '2026년 1분기 말', metricDefinition: '회사 발표 이자부부채' },
+      ],
+      reversalCondition: '선행 투자가 늘어 순현금이 사라지거나 신규 라인의 수율·고객 인증이 지연되면 부담 판단을 나쁨으로 낮춥니다.',
+      asOf: '2026-04-23',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [source.sourceId],
+    },
+  ],
+  sources: [source],
+  anomalyReview: {
+    reviewedAt: '2026-07-29',
+    findings: ['1분기 수치는 회사 발표 잠정치', '순이익이 영업이익을 웃도는 배경은 사용자 판단 카드와 분리해 후속 공시에서 재검토'],
+    operatorDecision: '공식 발표로 직접 확인되는 매출·영업이익·현금·부채만 현재 판단 근거로 채택',
+  },
+};
+
+export default config;

@@ -1,0 +1,130 @@
+import type { CompanyJudgmentConfig } from '../types.js';
+
+const sec = {
+  sourceId: 'alphabet-2026-q1-10q',
+  sourceType: 'official-filing' as const,
+  sourceTitle: 'Alphabet Inc. Form 10-Q for the quarter ended March 31, 2026',
+  sourceUrl: 'https://www.sec.gov/Archives/edgar/data/1652044/000165204426000048/goog-20260331.htm',
+  publishedAt: '2026-04-30',
+  asOf: '2026-03-31',
+  period: '2026년 1분기',
+  scope: 'consolidated' as const,
+  metricDefinition: 'US GAAP 연결 재무제표와 Google Services·Google Cloud 세그먼트 공시',
+};
+
+const wiz = {
+  sourceId: 'alphabet-wiz-completion-2026',
+  sourceType: 'company-ir' as const,
+  sourceTitle: 'Google Completes Acquisition of Wiz',
+  sourceUrl: 'https://abc.xyz/investor/news/news-details/2026/Google-Completes-Acquisition-of-Wiz-2026-ta7OaU2uA0/default.aspx',
+  publishedAt: '2026-03-11',
+  asOf: '2026-03-11',
+  period: '2026년 1분기',
+  scope: 'segment' as const,
+  metricDefinition: 'Google Cloud의 Wiz 인수 완료와 거래 금액',
+  limitation: '인수 시너지와 통합 성과는 아직 실적으로 충분히 관찰되지 않았습니다.',
+};
+
+const config: CompanyJudgmentConfig = {
+  companySlug: 'alphabet',
+  latestOfficialUpdate: {
+    latestQuarterlyResultsAt: '2026-04-30',
+    latestMaterialEventAt: '2026-04-30',
+  },
+  companyDirection: {
+    state: 'opportunity',
+    horizon: '향후 6~12개월',
+    reason: '광고의 견조한 성장에 Cloud의 매출·마진 확대가 더해져 AI 투자 부담을 감당할 사업 기반이 강화됐습니다.',
+    asOf: '2026-04-30',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [sec.sourceId, wiz.sourceId],
+  },
+  marketExpectation: {
+    state: 'burden',
+    horizon: '다음 1~2개 분기',
+    reason: 'Cloud 성장은 강하지만 설비투자와 대형 인수로 잉여현금이 줄어 투자 수익화 속도에 대한 기대가 높아졌습니다.',
+    asOf: '2026-04-30',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [sec.sourceId, wiz.sourceId],
+  },
+  cards: [
+    {
+      key: 'businessGrowth',
+      state: 'good',
+      reason: 'Google Services가 두 자릿수 성장하고 Cloud가 60% 넘게 늘어 두 성장축이 함께 확대됐습니다.',
+      trend: 'improving',
+      causeFlow: ['광고·Cloud 수요 확대', 'Services와 Cloud 동반 성장', '연결 매출 22% 증가'],
+      metrics: [
+        { label: '연결 매출', value: '$109.90B', comparison: '전년 동기 대비 +22%', period: '2026년 1분기', metricDefinition: 'US GAAP 연결 매출' },
+        { label: 'Google Services 매출', value: '$89.64B', comparison: '전년 동기 대비 +16.0%', period: '2026년 1분기', metricDefinition: 'Google Services 세그먼트 매출' },
+        { label: 'Google Cloud 매출', value: '$20.03B', comparison: '전년 동기 대비 +63.4%', period: '2026년 1분기', metricDefinition: 'Google Cloud 세그먼트 매출' },
+      ],
+      reversalCondition: 'Cloud 성장률이 두 분기 연속 크게 둔화하고 Services 성장도 한 자릿수로 내려가면 성장 판단을 낮춥니다.',
+      asOf: '2026-04-30',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [sec.sourceId],
+    },
+    {
+      key: 'earningsQuality',
+      state: 'good',
+      reason: '연결 영업이익률과 Cloud 마진이 함께 개선돼 성장의 상당 부분이 반복 가능한 본업 이익으로 이어졌습니다.',
+      trend: 'improving',
+      causeFlow: ['Cloud 규모 확대', '세그먼트 마진 개선', '연결 영업이익 증가'],
+      metrics: [
+        { label: '연결 영업이익률', value: '36.1%', comparison: '전년 동기보다 +2.2%p', period: '2026년 1분기', metricDefinition: '연결 영업이익 ÷ 연결 매출' },
+        { label: 'Cloud 영업이익률', value: '32.9%', comparison: '전년 동기보다 +15.2%p', period: '2026년 1분기', metricDefinition: 'Google Cloud 영업이익 ÷ Google Cloud 매출' },
+        { label: 'Cloud 영업이익', value: '$6.60B', comparison: '전년 동기 대비 +203.1%', period: '2026년 1분기', metricDefinition: 'Google Cloud 세그먼트 영업이익' },
+      ],
+      reversalCondition: '감가상각 증가로 연결 영업이익률이 전년보다 하락하고 Cloud 마진도 두 분기 연속 낮아지면 판단을 낮춥니다.',
+      asOf: '2026-04-30',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [sec.sourceId],
+    },
+    {
+      key: 'cashQuality',
+      state: 'caution',
+      reason: '영업현금은 늘었지만 설비투자가 두 배 이상 증가해 분기 잉여현금은 전년의 절반 수준으로 줄었습니다.',
+      trend: 'worsening',
+      causeFlow: ['영업현금 27% 증가', 'AI 인프라 CAPEX 107% 증가', '잉여현금 47% 감소'],
+      metrics: [
+        { label: '영업현금흐름', value: '$45.79B', comparison: '전년 동기 대비 +26.7%', period: '2026년 1분기', metricDefinition: '영업활동으로 인한 순현금' },
+        { label: '설비투자', value: '$35.67B', comparison: '전년 동기 대비 +107.4%', period: '2026년 1분기', metricDefinition: '유형자산 취득 현금지출' },
+        { label: '잉여현금흐름', value: '$10.12B', comparison: '전년 동기 대비 -46.6%', period: '2026년 1분기', metricDefinition: '영업현금흐름 - 유형자산 취득' },
+      ],
+      reversalCondition: '영업현금 증가율이 설비투자 증가율을 다시 웃돌아 잉여현금이 두 분기 연속 회복되면 좋음으로 높입니다.',
+      asOf: '2026-04-30',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [sec.sourceId],
+    },
+    {
+      key: 'investmentBurden',
+      state: 'caution',
+      reason: '현금성 자산은 충분하지만 AI 설비투자와 Wiz 인수가 동시에 진행돼 투자 회수 기준이 높아졌습니다.',
+      trend: 'worsening',
+      causeFlow: ['AI 인프라 증설', 'Wiz 인수 자금 집행', '투자 회수 부담 확대'],
+      metrics: [
+        { label: '설비투자', value: '$35.67B', comparison: '전년 동기의 2.1배', period: '2026년 1분기', metricDefinition: '유형자산 취득 현금지출' },
+        { label: 'Wiz 인수금액', value: '$29.5B', comparison: '2026년 3월 거래 완료', period: '2026년 1분기', metricDefinition: '매수가격 조정 후 인수대금' },
+        { label: '현금·시장성증권', value: '$126.84B', comparison: '2025년 말과 유사', period: '2026년 1분기 말', metricDefinition: '현금·현금성자산 + 시장성증권' },
+      ],
+      reversalCondition: 'Cloud 성장과 마진이 둔화하는데 연간 설비투자 속도가 유지되면 투자 부담 판단을 나쁨으로 낮춥니다.',
+      asOf: '2026-04-30',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [sec.sourceId, wiz.sourceId],
+    },
+  ],
+  sources: [sec, wiz],
+  anomalyReview: {
+    reviewedAt: '2026-07-29',
+    findings: ['분기 순이익에는 비시장성 지분증권 평가이익 영향이 큼', '현금의 질 판단에서는 순이익 대신 영업현금과 CAPEX를 사용'],
+    operatorDecision: '일회성 평가손익을 이익의 질 근거에서 제외하고 세그먼트 영업이익을 우선',
+  },
+};
+
+export default config;

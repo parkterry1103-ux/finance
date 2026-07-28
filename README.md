@@ -2,6 +2,8 @@
 
 기업의 사업과 재무 흐름, 금리·환율·원자재의 거시경제 흐름을 각각 살펴보고 서로 연결해 설명하는 리서치 웹사이트입니다.
 
+Phase 5I 기업 판단의 모델과 freshness 규칙은 [docs/company-judgment-model.md](docs/company-judgment-model.md), 구현·공식 기준은 [docs/site-restructure-phase-5i.md](docs/site-restructure-phase-5i.md), 브라우저용 진행 기록은 [docs/plans/phase-5i-company-judgment-plan.html](docs/plans/phase-5i-company-judgment-plan.html)에서 확인할 수 있습니다.
+
 ## 사이트 재개편 방향
 
 주가해부실은 기업 분석과 거시경제라는 두 축으로 구성됩니다.
@@ -22,11 +24,12 @@
 - 4C단계 완료 — 4A 엔진을 재사용한 5만 회 Monte Carlo 정적 실행으로 P50·P25–P75·P10–P90 범위, 입력 영향도와 장기 구간 의존도를 공개했습니다.
 - 5C단계 완료 — 8개 기업의 `숫자와 비교 보기`를 연간·분기, 기간 추세·비교기업·산업 집계로 읽는 비교 중심 재무 피벗 분석판으로 분리했습니다.
 - 5C.1단계 완료 — 최신 SEC·OpenDART 공시 식별자와 연결·독립 분기 기준을 감사하고, 연속 4분기 TTM·PER·PBR·PSR·외부 2곳 교차검증 규칙을 Production에 반영했습니다.
+- 5I단계 완료 — SK하이닉스·Alphabet·하나금융지주의 기업 상세를 `기업 방향·시장 기대 → 네 가지 판단` 흐름으로 개편하고 공식 자료 최신성 게이트를 추가했습니다.
 - 5단계 예정 — 거시경제 화면을 재구성합니다.
 - 6단계 예정 — 기업과 거시경제의 연결을 강화합니다.
 - 7단계 예정 — 시장 변곡점 연동을 다룹니다.
 
-기업 검색은 기존 8개 프로필 registry에서 index를 파생합니다. 외부 검색 API, 실시간 주가 검색, 추천 점수와 검색 기록 저장은 사용하지 않습니다.
+기업 검색은 현재 11개 프로필 registry에서 index를 파생합니다. 외부 검색 API, 실시간 주가 검색, 추천 점수와 검색 기록 저장은 사용하지 않습니다.
 
 ## 포트폴리오 설명
 
@@ -4894,13 +4897,13 @@ Phase 5A.1에서는 SK하이닉스 주가 해부와 2026-07-17 오늘의 월스�
 
 ## Phase 5B · 기업 Brief
 
-현재 9개 기업 상세는 한 문장 사업 정의와 `돈을 버는 구조 → 최근 변화 → 왜 중요한가 → 가장 큰 위험 → 다음 확인`을 먼저 보여줍니다. 첫 화면 지표는 기존 source가 있는 최대 3개로 제한하고, 비교가 없으면 0을 만들지 않습니다. NVIDIA와 Meta만 실제 심층 리포트 CTA를 표시하며 기존 재무·공시·차트·산업 연결은 결론 아래에서 유지합니다. Netflix는 2026-07-18 릴리스에서 같은 Brief 계약으로 추가했습니다. 모델과 게시 계약은 `docs/company-brief-model.md`, `docs/stock-dissection-intake.md`, 실행 기록은 `docs/plans/phase-5b-company-brief-plan.html`을 참고하세요.
+현재 11개 기업 상세는 검증된 Company Brief를 바탕으로 첫 판단을 제공합니다. 이 가운데 SK하이닉스·Alphabet·하나금융지주는 Phase 5I의 `기업 방향·시장 기대 → 본업 성장·이익의 질·현금의 질·투자·재무 부담` 흐름을 적용했고, 나머지 기업은 기존 다섯 질문 구조를 유지합니다. 첫 화면 지표는 기존 source가 있는 최대 3개로 제한하고, 비교가 없으면 0을 만들지 않습니다. NVIDIA와 Meta만 실제 심층 리포트 CTA를 표시하며 기존 재무·공시·차트·산업 연결은 결론 아래에서 유지합니다. 모델과 게시 계약은 `docs/company-brief-model.md`, `docs/company-judgment-model.md`, `docs/stock-dissection-intake.md`를 참고하세요.
 
 PayPal·ASML·커넥티드카 예시는 draft fixture로 계속 유지해 홈·목록·직접 route에서 공개하지 않습니다. 신규 API, Function, DB, dependency, runtime 외부 뉴스·WSJ·AI 요청과 자동 생성은 없습니다. Function은 12개입니다. 상세 설계와 운영 절차는 `docs/site-restructure-phase-5a.md`, `docs/editorial-content-model.md`, `docs/editorial-publishing-workflow.md`, `docs/editorial-validation.md`, `docs/plans/phase-5a1-editorial-go-live-plan.html`에 기록했습니다. 다음 편집 단계는 Phase 5B입니다.
 
 ## Phase 5D · 시장가격에 반영된 기대
 
-NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격과 기준시각, 보수·기준·낙관 가치 범위, 범위 안 가격 위치, Reverse DCF의 7년 내재 매출 CAGR, 근거 상태가 붙은 기대 후보, WACC×영구성장률 민감도와 다음 확인 항목을 순서대로 설명합니다. Netflix를 포함한 나머지 7개 기업은 검증 모형 부재를 0이나 빈 그래프로 대체하지 않습니다.
+NVIDIA와 Meta는 `/ko/companies/{slug}/valuation`에서 저장된 시장가격과 기준시각, 보수·기준·낙관 가치 범위, 범위 안 가격 위치, Reverse DCF의 7년 내재 매출 CAGR, 근거 상태가 붙은 기대 후보, WACC×영구성장률 민감도와 다음 확인 항목을 순서대로 설명합니다. 나머지 9개 기업은 검증 모형 부재를 0이나 빈 그래프로 대체하지 않습니다.
 
 기업 상세·재무 피벗·심층 리포트는 실제 full 기업만 가치평가로 연결합니다. 기업별 report data는 route 진입 뒤 하나만 dynamic import하며 뉴스·편집 콘텐츠는 사업 가정을 자동 변경하지 않습니다. 신규 API·Function·DB·dependency는 없고 Function은 12개입니다. 모델과 운영 기준은 `docs/valuation-expectation-model.md`, `docs/reverse-dcf-methodology.md`, `docs/valuation-validation.md`, 실행 기록은 `docs/plans/phase-5d-valuation-expectations-plan.html`을 참고하세요.
 

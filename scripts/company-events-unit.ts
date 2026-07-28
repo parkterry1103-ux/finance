@@ -19,7 +19,7 @@ const check = (condition: unknown, message: string) => {
 };
 
 const sorted = sortCompanyEvents();
-check(sorted[0]?.id === 'netflix-q2-2026-guidance-disclosure', 'latest event sort');
+check(sorted[0]?.id === 'hana-financial-1h26-results', 'latest event sort');
 
 const tieFixture = [
   { ...companyEvents[0], id: 'z-event', eventDate: '2026-01-01', reviewedAt: '2026-01-02' },
@@ -28,7 +28,7 @@ const tieFixture = [
 check(sortCompanyEvents(tieFixture).map((event) => event.id).join('|') === 'a-event|z-event', 'stable id tie-break');
 
 const earnings = resolveCompanyEventSelection('earnings-guidance', null);
-check(earnings.filteredEvents.length === 5 && earnings.filteredEvents.every((event) => event.group === 'earnings-guidance'), 'group filter');
+check(earnings.filteredEvents.length === 7 && earnings.filteredEvents.every((event) => event.group === 'earnings-guidance'), 'group filter');
 check(resolveCompanyEventSelection('invalid', null).group === 'all', 'invalid group fallback');
 check(resolveCompanyEventSelection(null, 'meta-senior-notes-2025').selectedEvent?.id === 'meta-senior-notes-2025', 'valid event query');
 check(resolveCompanyEventSelection(null, 'invalid').selectedEvent?.id === sorted[0]?.id, 'invalid event fallback');
@@ -45,7 +45,7 @@ check(companyEvents.every((event) => event.sourceRefs.every((sourceId) => offici
 
 const filingKeys = companyEvents.flatMap((event) => [event.officialFiling?.accessionNumber, event.officialFiling?.rceptNo].filter(Boolean) as string[]);
 check(new Set(filingKeys).size === filingKeys.length, 'duplicate filing absent');
-check(companyEvents.every((event) => event.eventDate <= '2026-07-18'), 'future event absent');
+check(companyEvents.every((event) => event.eventDate <= '2026-07-24'), 'future event absent');
 check(companyEventCompanies.every((company) => companyEvents.filter((event) => event.companyId === company.id).length <= 3), 'company event maximum');
 check(companyEventGroupOrder.every((group) => companyEvents.filter((event) => event.group === group).length >= 2), 'group minimum');
 check(companyEvents.every((event) => event.nextCheckpoints.length >= 1 && event.nextCheckpoints.length <= 3), 'checkpoint count');

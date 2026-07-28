@@ -16,6 +16,14 @@ const fullResearchSearch: CompanySearchStatus = {
   reportStatus: 'supported',
 };
 
+const judgmentOnlySearch: CompanySearchStatus = {
+  searchVisible: true,
+  analysisStatus: 'supported',
+  financialsStatus: 'unavailable',
+  valuationStatus: 'unavailable',
+  reportStatus: 'unavailable',
+};
+
 export const companyProfiles: CompanyProfileEntry[] = [
   {
     id: 'profile-sk-hynix',
@@ -189,6 +197,45 @@ export const companyProfiles: CompanyProfileEntry[] = [
     sourceRefs: ['netflix-q2-2026-10q', 'netflix-q2-2026-letter'],
     reviewedAt: '2026-07-18',
     searchStatus: supportedSearch,
+  },
+  {
+    id: 'profile-alphabet',
+    companyId: 'alphabet',
+    slug: 'alphabet',
+    order: 10,
+    englishName: 'Alphabet Inc.',
+    exchange: 'NASDAQ',
+    industry: '디지털 광고·클라우드 플랫폼',
+    searchDescription: 'Google 광고·구독·Cloud를 운영하고 AI 인프라에 투자하는 플랫폼 기업입니다.',
+    aliases: ['Google', '구글', '알파벳', 'GOOG'],
+    beginnerSummary: '검색·YouTube 광고와 구독, Google Cloud에서 수익을 얻는 글로벌 플랫폼 기업입니다.',
+    businessDescription: 'Google Search와 YouTube의 광고, 소비자 구독과 기기, Google Cloud 사용료로 수익을 얻습니다. AI 인프라 투자가 광고 효율과 Cloud 성장·현금흐름으로 이어지는지를 함께 봅니다.',
+    primaryRole: '디지털 광고·Cloud·AI 플랫폼',
+    keyQuestions: ['광고와 Cloud가 함께 성장하는가', 'Cloud 마진 개선이 반복 가능한가', 'AI 설비투자가 잉여현금 회복으로 이어지는가'],
+    caution: commonCaution,
+    sourceRefs: ['alphabet-2026-q1-10q', 'alphabet-wiz-completion-2026'],
+    reviewedAt: '2026-07-29',
+    searchStatus: judgmentOnlySearch,
+  },
+  {
+    id: 'profile-hana-financial',
+    companyId: 'hana-financial',
+    slug: 'hana-financial',
+    order: 11,
+    englishName: 'Hana Financial Group Inc.',
+    stockCode: '086790',
+    exchange: 'KRX',
+    industry: '금융지주·은행',
+    searchDescription: '은행을 중심으로 증권·카드·캐피탈을 운영하는 금융지주회사입니다.',
+    aliases: ['하나금융', 'Hana Financial', '하나은행'],
+    beginnerSummary: '예금과 대출, 수수료 사업을 중심으로 금융 자회사를 운영하는 금융지주회사입니다.',
+    businessDescription: '하나은행을 중심으로 증권·카드·캐피탈 등 금융 자회사를 운영합니다. 순이자이익과 비이자이익의 성장뿐 아니라 대손비용·자산건전성·자본비율을 함께 봅니다.',
+    primaryRole: '은행·종합금융',
+    keyQuestions: ['순이자이익과 수수료 수익이 건전하게 성장하는가', '대손비용과 부실채권이 통제되는가', '예금 조달과 CET1 자본이 충분한가'],
+    caution: commonCaution,
+    sourceRefs: ['hana-financial-1h26-presentation', 'hana-financial-1h26-databook'],
+    reviewedAt: '2026-07-29',
+    searchStatus: judgmentOnlySearch,
   },
 ];
 
