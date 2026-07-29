@@ -23,7 +23,10 @@ import type { EventImpactRecord } from '../../content/event-impacts/index.js';
 import { CompanyEventImpactSection } from '../event-impacts/EventImpactUi.js';
 import { CompanyDissectionRadar } from './CompanyDissectionRadar.js';
 import { CompanyJudgmentPanel } from './CompanyJudgmentPanel.js';
-import type { CompanyJudgmentModel } from '../../content/company-judgments/index.js';
+import {
+  resolveCompanyJudgmentDisplayMode,
+  type CompanyJudgmentModel,
+} from '../../content/company-judgments/index.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 type Navigate = (path: string) => void;
@@ -273,10 +276,12 @@ export function CompanyResearchProfilePage({
   brief,
   dissection,
   judgment,
+  isJudgmentCompany,
+  previousJudgmentAsOf,
   eventImpacts,
   navigation,
   onNavigate,
-}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; dissection: CompanyDissectionModel | null; judgment: CompanyJudgmentModel | null; eventImpacts: EventImpactRecord[] }) {
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; dissection: CompanyDissectionModel | null; judgment: CompanyJudgmentModel | null; isJudgmentCompany: boolean; previousJudgmentAsOf: string | null; eventImpacts: EventImpactRecord[] }) {
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
@@ -286,6 +291,11 @@ export function CompanyResearchProfilePage({
   const completedRadar = dissection && Object.values(dissection.axes).every((axis) => axis.state !== 'insufficientData')
     ? dissection
     : null;
+  const judgmentDisplayMode = resolveCompanyJudgmentDisplayMode({
+    isRegistered: isJudgmentCompany,
+    hasCurrentJudgment: Boolean(judgment),
+    hasLegacyDissection: Boolean(dissection),
+  });
   const watchItems = dissection?.watchItems ?? profile.keyQuestions.slice(0, 3).map((title) => ({
     title,
     why: brief.questions.watchNext.summary,
@@ -332,16 +342,20 @@ export function CompanyResearchProfilePage({
           </div>
         </header>
 
-        {judgment ? <CompanyJudgmentPanel companyName={company.name} model={judgment} /> : dissection ? <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
+        {judgmentDisplayMode === 'current' && judgment ? <CompanyJudgmentPanel companyName={company.name} model={judgment} /> : judgmentDisplayMode === 'preparing' ? <section className="company-judgment-summary company-judgment-preparing" aria-labelledby="company-judgment-preparing-title">
+          <div className="company-dashboard-section-heading"><h2 id="company-judgment-preparing-title">현재 판단</h2></div>
+          <p>최신 실적을 반영한 분석을 준비하고 있습니다.</p>
+          {previousJudgmentAsOf ? <small>이전 분석 기준: <time dateTime={previousJudgmentAsOf}>{formatDate(previousJudgmentAsOf)}</time></small> : null}
+        </section> : judgmentDisplayMode === 'legacy' && dissection ? <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
           <div className="company-dashboard-section-heading"><span>10초 핵심 상태</span><h2 id="company-dissection-core-title">네 가지 핵심 카드</h2><p>각 카드는 한 개의 대표 근거와 비교 기준만 보여줍니다.</p></div>
           <div className="company-dissection-core-grid">{dissection.coreCards.map((card) => <article key={card.key} className={`state-${card.state}`}>
             <span>{card.label}</span><h3>{card.statusLabel}</h3><strong>{card.value}</strong><p>{card.comparisonLabel}</p><small>{formatDate(card.period)}</small>
           </article>)}</div>
         </section> : null}
 
-        {judgment ? (completedRadar ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null) : dissection ? <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} /> : null}
+        {judgmentDisplayMode === 'current' ? (completedRadar ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null) : judgmentDisplayMode === 'legacy' && dissection ? <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} /> : null}
 
-        {judgment ? <details className="company-market-momentum company-market-momentum--judgment">
+        {isJudgmentCompany ? <details className="company-market-momentum company-market-momentum--judgment">
           <summary><span>보조 정보</span><strong>최근 사건과 주가 반응</strong><small>특정 사건과 가격 반응을 필요할 때만 펼쳐 봅니다.</small></summary>
           <div className="company-market-momentum-content">{marketMomentumContent}</div>
         </details> : <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
@@ -349,7 +363,7 @@ export function CompanyResearchProfilePage({
           {marketMomentumContent}
         </section>}
 
-        {!judgment ? <section className="company-next-watch" aria-labelledby="company-next-watch-title">
+        {!isJudgmentCompany ? <section className="company-next-watch" aria-labelledby="company-next-watch-title">
           <div className="company-dashboard-section-heading"><span>최대 3개</span><h2 id="company-next-watch-title">다음 확인</h2><p>다음 판단을 바꿀 수 있는 공식 지표와 시점을 우선합니다.</p></div>
           <ol>{watchItems.map((item) => <li key={item.title}><strong>{item.title}</strong><p>{item.why}</p><small>{item.timing}</small></li>)}</ol>
         </section> : null}

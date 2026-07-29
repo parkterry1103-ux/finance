@@ -5,6 +5,7 @@ import {
   companyJudgmentSlugs,
   isCompanyJudgmentCardCurrent,
   loadAllCompanyJudgmentConfigs,
+  resolveCompanyJudgmentDisplayMode,
 } from '../src/content/company-judgments/index.js';
 import { validateCompanyJudgmentRegistry } from '../src/content/company-judgments/validation.js';
 
@@ -37,20 +38,21 @@ check(buildCompanyJudgment(missingFixture)?.cards.length === 3, 'missing card is
 
 const uiSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyJudgmentPanel.tsx'), 'utf8');
 const profileUiSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
+const routeSource = readFileSync(join(process.cwd(), 'src', 'routes', 'CompaniesRoute.tsx'), 'utf8');
 const stylesSource = readFileSync(join(process.cwd(), 'src', 'toss-theme.css'), 'utf8');
-check(/useState<CompanyJudgmentCardKey \| null>\(null\)/.test(uiSource), 'all cards initially closed');
-check(/setOpenCard\(isOpen \? null : card\.key\)/.test(uiSource), 'one-open accordion state');
-check(/aria-expanded=\{isOpen\}/.test(uiSource) && /aria-controls=\{panelId\}/.test(uiSource), 'accordion accessibility');
-check(/<details className="company-judgment-sources">/.test(uiSource) && /근거 자료 보기/.test(uiSource), 'sources nested disclosure');
+check(/useState<CompanyJudgmentCardKey \| null>\(null\)/.test(uiSource) && /setOpenCard\(isOpen \? null : card\.key\)/.test(uiSource), 'all cards initially closed with one-open state');
+check(/aria-expanded=\{isOpen\}/.test(uiSource) && /aria-controls=\{panelId\}/.test(uiSource) && /<details className="company-judgment-sources">/.test(uiSource), 'accessible accordion with nested source disclosure');
 check(!/(종합 시각|전체 등급|최종 점수)/.test(uiSource), 'no combined verdict');
 check(/hidden=\{!isOpen\}/.test(uiSource), 'metrics and trend only after expansion');
 check(!/company-judgment-summary-note/.test(uiSource) && !/두 가지 방향/.test(uiSource), 'summary duplicate title and permanent note removed');
 check(/officialSourceTypes/.test(uiSource) && /공식 원문 보기/.test(uiSource) && /'원문 보기'/.test(uiSource), 'source link labels follow source type');
 check(/completedRadar/.test(profileUiSource) && /axis\.state !== 'insufficientData'/.test(profileUiSource), 'incomplete pentagon hidden');
 check(/company-market-momentum--judgment/.test(profileUiSource) && /최근 사건과 주가 반응/.test(profileUiSource), 'judgment momentum renamed and collapsed');
-check(/\{!judgment \? <section className="company-next-watch"/.test(profileUiSource), 'standalone next watch hidden for judgment companies');
+check(/\{!isJudgmentCompany \? <section className="company-next-watch"/.test(profileUiSource), 'standalone next watch hidden for registered judgment companies');
 check(/min-height: 88px/.test(stylesSource) && /overflow-wrap: anywhere/.test(stylesSource), 'touch target and long URL wrapping');
-check(/\.company-judgment-summary-grid \{\s*display: block;/.test(stylesSource) && !/\.company-judgment-summary-grid \{[^}]*repeat\(2/.test(stylesSource), 'summary uses one vertical two-row container');
-check(/\.company-judgment-summary-grid article \+ article \{\s*border-top: 1px solid/.test(stylesSource), 'summary rows use divider only');
+check(/\.company-judgment-summary-grid \{\s*display: block;/.test(stylesSource) && !/\.company-judgment-summary-grid \{[^}]*repeat\(2/.test(stylesSource) && /\.company-judgment-summary-grid article \+ article \{\s*border-top: 1px solid/.test(stylesSource), 'summary uses one vertical two-row container with divider');
+check(resolveCompanyJudgmentDisplayMode({ isRegistered: true, hasCurrentJudgment: true, hasLegacyDissection: true }) === 'current' && /judgmentDisplayMode === 'current' && judgment \? <CompanyJudgmentPanel/.test(profileUiSource), 'registered slug with current judgment uses judgment panel');
+check(resolveCompanyJudgmentDisplayMode({ isRegistered: true, hasCurrentJudgment: false, hasLegacyDissection: true }) === 'preparing' && /최신 실적을 반영한 분석을 준비하고 있습니다\./.test(profileUiSource) && /isCompanyJudgmentSlug\(slug\)/.test(routeSource), 'registered slug with stale judgment shows preparing state instead of legacy');
+check(resolveCompanyJudgmentDisplayMode({ isRegistered: false, hasCurrentJudgment: false, hasLegacyDissection: true }) === 'legacy' && /judgmentDisplayMode === 'legacy' && dissection \? <section className="company-dissection-core"/.test(profileUiSource), 'non-registered slug keeps legacy dissection');
 
 console.log(`✓ 기업 판단 unit ${checks}개 검증 · 초기 기업 3 · 판단 카드 12 · freshness gate`);

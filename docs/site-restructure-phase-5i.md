@@ -8,6 +8,7 @@
 - 중첩된 근거 자료 disclosure
 - 기본 접힘 `최근 사건과 주가 반응`, Phase 5I 기업의 별도 `다음 확인` 제거
 - 최신 분기·중요 이벤트 기반 stale gate
+- stale 판단은 준비 상태와 이전 분석 기준일로 대체하고 legacy 핵심 카드로 fallback하지 않음
 - SK하이닉스, Alphabet, 하나금융지주의 공식 자료 기반 판단
 - Alphabet과 하나금융지주의 검색·기업 상세 route
 

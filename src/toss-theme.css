@@ -1186,6 +1186,20 @@ body {
   line-height: 1.65;
 }
 
+.company-judgment-preparing > p {
+  margin: 16px 0 6px;
+  color: var(--app-ink);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.company-judgment-preparing > small {
+  color: var(--app-ink-3);
+  font-size: 13px;
+  font-weight: 650;
+}
+
 .company-judgment-accordion {
   display: grid;
   gap: 12px;
