@@ -114,7 +114,7 @@
       <li class="done">Plan HTML 및 공식 자료 기준 확정</li>
       <li class="done">typed 판단 모델·lazy registry·freshness validation 구현</li>
       <li class="done">세 기업 프로필·Brief·공식 근거·판단 데이터 등록</li>
-      <li class="done">상단 압축 카드·단일 오픈 아코디언·중첩 근거 disclosure 구현</li>
+      <li class="done">단일 외곽 카드의 방향 2행·단일 오픈 아코디언·중첩 근거 disclosure 구현</li>
       <li class="done">단위 테스트, typecheck, build, audit, Release Gate</li>
       <li class="done">390px·1440px 브라우저 및 키보드·콘솔 QA</li>
       <li class="done">이 문서를 실제 결과로 갱신</li>
@@ -134,10 +134,10 @@
   <section>
     <h2>계획 대비 실제 결과</h2>
     <div class="grid">
-      <article class="card"><h3>계획대로 완료</h3><p>두 방향 판단, 고정 순서의 네 카드, 단일 오픈 아코디언, 3단계 원인, 2~3개 수치, 판단 변경 조건, 중첩 근거, latest-event 기반 freshness gate를 구현했습니다.</p></article>
+      <article class="card"><h3>계획대로 완료</h3><p>두 방향 판단을 하나의 외곽 카드 안 세로 2행으로 정리하고, 고정 순서의 네 카드, 단일 오픈 아코디언, 3단계 원인, 2~3개 수치, 판단 변경 조건, 중첩 근거, latest-event 기반 freshness gate를 구현했습니다.</p></article>
       <article class="card"><h3>적용 범위</h3><p>SK하이닉스·Alphabet·하나금융지주 3개 기업에 적용했습니다. 검색 가능한 기업은 11개이며, 판단 근거가 완성되지 않은 기업은 기존 화면을 유지합니다.</p></article>
-      <article class="card"><h3>검증 결과</h3><p>Release Gate 28개와 기업 판단 unit 20개가 통과했습니다. Production build는 entry 799,862 bytes, gzip 217,737 bytes로 예산 825,000/225,000 bytes 이내입니다.</p></article>
-      <article class="card"><h3>브라우저 QA</h3><p>390px와 1440px에서 세 기업 모두 가로 overflow 0, 상단 방향 2개, 판단 카드 4개, 미완성 오각형 미표시를 확인했습니다. 단일 카드 열림, Space 키 토글, 중첩 근거와 콘솔 오류 0도 확인했습니다.</p></article>
+      <article class="card"><h3>검증 결과</h3><p>Release Gate 28개와 기업 판단 unit 26개가 통과했습니다. Production build는 entry 799,862 bytes, gzip 217,736 bytes로 예산 825,000/225,000 bytes 이내입니다.</p></article>
+      <article class="card"><h3>브라우저 QA</h3><p>390px와 1440px에서 세 기업 모두 가로 overflow 0, 상단 세로 2행, 판단 카드 4개, 미완성 오각형 미표시를 확인했습니다. 첫 진입 전체 닫힘, 단일 카드 열림, 중첩 근거, 기본 접힘 최근 사건과 콘솔 오류 0도 확인했습니다.</p></article>
       <article class="card"><h3>계획에서 달라진 점</h3><p>기업 판단이 없는 기존 기업은 일괄 전환하지 않고 현재 UI를 유지했습니다. SK하이닉스 2분기 실적은 검토 시점에 공식 발표 전이어서 1분기 기준을 사용하고, 발표 등록 즉시 stale gate가 기존 판단을 숨기도록 했습니다.</p></article>
       <article class="card"><h3>남은 위험·다음 단계</h3><p>SK하이닉스 2분기 공식 실적 발표 후 해당 판단의 재검토가 필요합니다. PR 검토가 끝난 뒤에만 병합과 Production 배포를 별도로 진행합니다.</p></article>
     </div>

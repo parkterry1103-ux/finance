@@ -3,6 +3,7 @@ import type {
   CompanyDirectionState,
   CompanyJudgmentCardKey,
   CompanyJudgmentModel,
+  CompanyJudgmentSourceType,
 } from '../../content/company-judgments/index.js';
 
 const directionLabels: Record<CompanyDirectionState, string> = {
@@ -28,6 +29,15 @@ const sourceTypeLabels = {
   'external-analysis': '외부 분석자료',
 } as const;
 const scopeLabels = { consolidated: '연결', separate: '별도', segment: '세그먼트' } as const;
+const officialSourceTypes = new Set<CompanyJudgmentSourceType>([
+  'official-filing',
+  'company-ir',
+  'exchange-public-data',
+]);
+
+function sourceLinkLabel(sourceType: CompanyJudgmentSourceType) {
+  return officialSourceTypes.has(sourceType) ? '공식 원문 보기' : '원문 보기';
+}
 
 export function CompanyJudgmentPanel({
   companyName,
@@ -43,8 +53,7 @@ export function CompanyJudgmentPanel({
     <>
       <section className="company-judgment-summary" aria-labelledby={`${sectionId}-summary-title`}>
         <div className="company-dashboard-section-heading">
-          <span>주가해부실의 현재 판단</span>
-          <h2 id={`${sectionId}-summary-title`}>{companyName}의 두 가지 방향</h2>
+          <h2 id={`${sectionId}-summary-title`}>{companyName} 현재 판단</h2>
         </div>
         <div className="company-judgment-summary-grid">
           {[
@@ -58,7 +67,6 @@ export function CompanyJudgmentPanel({
             </article>
           ))}
         </div>
-        <p className="company-judgment-summary-note">기업 방향은 사업·실적·현금흐름, 시장 기대는 가까운 분기의 기대 수준과 투자 부담을 판단합니다. 기업 방향이 기회 우세여도 주가 상승을 뜻하지 않습니다.</p>
       </section>
 
       <section className="company-judgment-cards" aria-labelledby={`${sectionId}-cards-title`}>
@@ -123,7 +131,7 @@ export function CompanyJudgmentPanel({
                           <div><dt>지표 정의</dt><dd>{source.metricDefinition}</dd></div>
                           {source.limitation ? <div><dt>한계</dt><dd>{source.limitation}</dd></div> : null}
                         </dl>
-                        <a href={source.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`${source.sourceTitle} 원문 열기`}>공식 원문 보기</a>
+                        <a href={source.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`${source.sourceTitle} ${sourceLinkLabel(source.sourceType)}`}>{sourceLinkLabel(source.sourceType)}</a>
                       </article>
                     ))}</div>
                   </details>

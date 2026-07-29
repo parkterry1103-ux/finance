@@ -1139,18 +1139,20 @@ body {
 }
 
 .company-judgment-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 20px;
+  display: block;
+  margin-top: 12px;
 }
 
 .company-judgment-summary-grid article {
   min-width: 0;
-  padding: 22px;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-2xl);
-  background: var(--app-surface-2);
+  padding: 18px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.company-judgment-summary-grid article + article {
+  border-top: 1px solid var(--app-line);
 }
 
 .company-judgment-summary-grid article > div {
@@ -1177,18 +1179,11 @@ body {
 .company-judgment-summary-grid .direction-burden strong { color: var(--app-danger); }
 
 .company-judgment-summary-grid p {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: var(--app-ink-2);
   font-size: 16px;
   font-weight: 650;
   line-height: 1.65;
-}
-
-.company-judgment-summary-note {
-  margin: 16px 2px 0;
-  color: var(--app-ink-3);
-  font-size: 13px;
-  line-height: 1.6;
 }
 
 .company-judgment-accordion {
@@ -1470,16 +1465,75 @@ body {
   font-weight: 800;
 }
 
+.company-market-momentum--judgment {
+  padding: 0;
+  border-top: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--app-line);
+}
+
+.company-market-momentum--judgment > summary {
+  position: relative;
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 18px;
+  align-content: center;
+  padding: 14px 58px 14px 4px;
+  color: var(--app-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.company-market-momentum--judgment > summary::-webkit-details-marker {
+  display: none;
+}
+
+.company-market-momentum--judgment > summary > span,
+.company-market-momentum--judgment > summary > small {
+  color: var(--app-ink-3);
+  font-size: 12px;
+}
+
+.company-market-momentum--judgment > summary > strong {
+  grid-column: 1;
+  font-size: 18px;
+}
+
+.company-market-momentum--judgment > summary > small {
+  grid-column: 1;
+  line-height: 1.5;
+}
+
+.company-market-momentum--judgment > summary::after {
+  content: "보기";
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  color: var(--app-brand);
+  font-size: 13px;
+  font-weight: 800;
+  transform: translateY(-50%);
+}
+
+.company-market-momentum--judgment[open] > summary::after {
+  content: "접기";
+}
+
+.company-market-momentum--judgment > summary:focus-visible {
+  border-radius: var(--app-radius-l);
+  outline: 3px solid color-mix(in srgb, var(--app-brand) 35%, transparent);
+  outline-offset: 3px;
+}
+
+.company-market-momentum-content {
+  padding: 4px 0 22px;
+}
+
 @media (max-width: 700px) {
   .company-judgment-summary {
     padding: 22px 18px;
   }
 
-  .company-judgment-summary-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .company-judgment-summary-grid article,
   .company-judgment-card h3 > button {
     padding-left: 18px;
     padding-right: 54px;

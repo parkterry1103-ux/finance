@@ -298,6 +298,20 @@ export function CompanyResearchProfilePage({
   useEffect(() => {
     trackAnalyticsEvent('company_view', { companySlug: profile.slug }, { oncePerPage: true, dedupeKey: profile.slug });
   }, [profile.slug]);
+  const marketMomentumContent = <>
+    {recentStock ? <article className="company-market-momentum-card">
+      <div><span>최근 주요 사건</span><time dateTime={recentStock.priceAsOf}>{formatDate(recentStock.priceAsOf)}</time></div>
+      <h3>{recentStock.headline}</h3>
+      <strong>{recentStock.priceMove.value > 0 ? '+' : ''}{recentStock.priceMove.value.toFixed(recentStock.priceMove.precision ?? 2)}%</strong>
+      <p>{recentStock.directCatalyst}</p>
+      <dl>
+        <div><dt>시장 대비</dt><dd>{recentStock.comparison?.market ? `${recentStock.comparison.market.name} ${recentStock.comparison.market.value > 0 ? '+' : ''}${recentStock.comparison.market.value.toFixed(recentStock.comparison.market.precision ?? 2)}%` : '직접 비교 자료 없음'}</dd></div>
+        <div><dt>확인된 변화</dt><dd>{recentStock.confirmedItems.slice(0, 2).join(' · ')}</dd></div>
+        <div><dt>아직 확인되지 않음</dt><dd>{recentStock.unconfirmedItems.slice(0, 2).join(' · ')}</dd></div>
+      </dl>
+    </article> : <article className="company-market-momentum-empty"><h3>공식 데이터 기준 최근 변화</h3><p>{brief.questions.recentChange.summary}</p><small>공식 공시 기반으로 확인 가능한 내용만 표시합니다.</small></article>}
+    <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={profile.searchStatus.valuationStatus === 'full'} />
+  </>;
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -327,26 +341,18 @@ export function CompanyResearchProfilePage({
 
         {judgment ? (completedRadar ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null) : dissection ? <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} /> : null}
 
-        <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
+        {judgment ? <details className="company-market-momentum company-market-momentum--judgment">
+          <summary><span>보조 정보</span><strong>최근 사건과 주가 반응</strong><small>특정 사건과 가격 반응을 필요할 때만 펼쳐 봅니다.</small></summary>
+          <div className="company-market-momentum-content">{marketMomentumContent}</div>
+        </details> : <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
           <div className="company-dashboard-section-heading"><span>단기 상태 · 오각형과 분리</span><h2 id="company-market-momentum-title">시장 기대·모멘텀</h2><p>특정 사건과 주가 반응은 구조적 기업 상태에 합산하지 않습니다.</p></div>
-          {recentStock ? <article className="company-market-momentum-card">
-            <div><span>최근 주요 사건</span><time dateTime={recentStock.priceAsOf}>{formatDate(recentStock.priceAsOf)}</time></div>
-            <h3>{recentStock.headline}</h3>
-            <strong>{recentStock.priceMove.value > 0 ? '+' : ''}{recentStock.priceMove.value.toFixed(recentStock.priceMove.precision ?? 2)}%</strong>
-            <p>{recentStock.directCatalyst}</p>
-            <dl>
-              <div><dt>시장 대비</dt><dd>{recentStock.comparison?.market ? `${recentStock.comparison.market.name} ${recentStock.comparison.market.value > 0 ? '+' : ''}${recentStock.comparison.market.value.toFixed(recentStock.comparison.market.precision ?? 2)}%` : '직접 비교 자료 없음'}</dd></div>
-              <div><dt>확인된 변화</dt><dd>{recentStock.confirmedItems.slice(0, 2).join(' · ')}</dd></div>
-              <div><dt>아직 확인되지 않음</dt><dd>{recentStock.unconfirmedItems.slice(0, 2).join(' · ')}</dd></div>
-            </dl>
-          </article> : <article className="company-market-momentum-empty"><h3>공식 데이터 기준 최근 변화</h3><p>{brief.questions.recentChange.summary}</p><small>공식 공시 기반으로 확인 가능한 내용만 표시합니다.</small></article>}
-          <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={profile.searchStatus.valuationStatus === 'full'} />
-        </section>
+          {marketMomentumContent}
+        </section>}
 
-        <section className="company-next-watch" aria-labelledby="company-next-watch-title">
+        {!judgment ? <section className="company-next-watch" aria-labelledby="company-next-watch-title">
           <div className="company-dashboard-section-heading"><span>최대 3개</span><h2 id="company-next-watch-title">다음 확인</h2><p>다음 판단을 바꿀 수 있는 공식 지표와 시점을 우선합니다.</p></div>
           <ol>{watchItems.map((item) => <li key={item.title}><strong>{item.title}</strong><p>{item.why}</p><small>{item.timing}</small></li>)}</ol>
-        </section>
+        </section> : null}
 
         {hasDeepLinks ? <nav className="company-deep-links" aria-label={`${company.name} 더 깊게 보기`}>
           <div><span>더 깊게 보기</span><h2>필요한 화면만 선택하세요</h2></div>

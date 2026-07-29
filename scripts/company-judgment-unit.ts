@@ -44,7 +44,13 @@ check(/aria-expanded=\{isOpen\}/.test(uiSource) && /aria-controls=\{panelId\}/.t
 check(/<details className="company-judgment-sources">/.test(uiSource) && /근거 자료 보기/.test(uiSource), 'sources nested disclosure');
 check(!/(종합 시각|전체 등급|최종 점수)/.test(uiSource), 'no combined verdict');
 check(/hidden=\{!isOpen\}/.test(uiSource), 'metrics and trend only after expansion');
+check(!/company-judgment-summary-note/.test(uiSource) && !/두 가지 방향/.test(uiSource), 'summary duplicate title and permanent note removed');
+check(/officialSourceTypes/.test(uiSource) && /공식 원문 보기/.test(uiSource) && /'원문 보기'/.test(uiSource), 'source link labels follow source type');
 check(/completedRadar/.test(profileUiSource) && /axis\.state !== 'insufficientData'/.test(profileUiSource), 'incomplete pentagon hidden');
+check(/company-market-momentum--judgment/.test(profileUiSource) && /최근 사건과 주가 반응/.test(profileUiSource), 'judgment momentum renamed and collapsed');
+check(/\{!judgment \? <section className="company-next-watch"/.test(profileUiSource), 'standalone next watch hidden for judgment companies');
 check(/min-height: 88px/.test(stylesSource) && /overflow-wrap: anywhere/.test(stylesSource), 'touch target and long URL wrapping');
+check(/\.company-judgment-summary-grid \{\s*display: block;/.test(stylesSource) && !/\.company-judgment-summary-grid \{[^}]*repeat\(2/.test(stylesSource), 'summary uses one vertical two-row container');
+check(/\.company-judgment-summary-grid article \+ article \{\s*border-top: 1px solid/.test(stylesSource), 'summary rows use divider only');
 
 console.log(`✓ 기업 판단 unit ${checks}개 검증 · 초기 기업 3 · 판단 카드 12 · freshness gate`);
