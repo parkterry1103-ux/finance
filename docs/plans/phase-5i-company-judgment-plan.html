@@ -61,10 +61,14 @@
     <dl>
       <dt>시작 SHA</dt><dd><code>d1de1181bdaa2112e3ca7bb755edface67ab71a1</code></dd>
       <dt>Feature branch</dt><dd><code>codex/phase-5i-company-judgment</code></dd>
-      <dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/34">Draft PR #34</a></dd>
-      <dt>최종 main SHA</dt><dd>병합하지 않음</dd>
-      <dt>Production</dt><dd>이번 단계에서 배포하지 않음</dd>
-      <dt>최종 수정일</dt><dd><time datetime="2026-07-29">2026년 7월 29일</time></dd>
+      <dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/34">PR #34 · MERGED</a></dd>
+      <dt>병합 방식</dt><dd>Squash merge</dd>
+      <dt>최종 main SHA</dt><dd><code>a9a283fd32ed671156ed0dc912b676341aea7eb4</code></dd>
+      <dt>Deployment ID</dt><dd><code>dpl_Gy5t3YAUGUtMau7yT91vQ7pmENRG</code></dd>
+      <dt>Production URL</dt><dd><a href="https://finance1-flax.vercel.app">https://finance1-flax.vercel.app</a></dd>
+      <dt>배포 상태</dt><dd>Ready · Production · Current</dd>
+      <dt>Release Gate</dt><dd>28/28 checks</dd>
+      <dt>최종 수정일</dt><dd><time datetime="2026-08-04">2026년 8월 4일</time></dd>
     </dl>
   </header>
 
@@ -74,7 +78,7 @@
       <article class="card"><h3>기업 상세</h3><p><code>CompaniesRoute.tsx</code>가 Brief·Dissection·Event Impact를 동적 로드하고, <code>CompanyProfiles.tsx</code>가 헤더·항상 펼친 핵심 카드·오각형·모멘텀·상세 자료 순으로 렌더링합니다.</p></article>
       <article class="card"><h3>현재 문제</h3><p>네 핵심 카드가 결론 대신 숫자를 먼저 보여주며, 카드별 최신성·발행 시점·범위·지표 정의와 분기 발표 이후 무효화 규칙이 없습니다.</p></article>
       <article class="card"><h3>보존 범위</h3><p>홈, 검색, 인사이트, 기존 기업 route, Financial Pivot, Valuation, Report, Event Impact와 Toss 전역 테마를 유지합니다.</p></article>
-      <article class="card"><h3>백엔드 영향</h3><p>정적 typed registry와 기존 lazy import만 사용합니다. 신규 dependency·API·DB·Serverless Function은 없습니다.</p></article>
+      <article class="card"><h3>백엔드 영향</h3><p>정적 typed registry와 기존 lazy import만 사용합니다. 신규 dependency·API·DB·Serverless Function은 없으며 기존 Serverless Function 12개를 유지합니다.</p></article>
     </div>
   </section>
 
@@ -116,9 +120,11 @@
       <li class="done">세 기업 프로필·Brief·공식 근거·판단 데이터 등록</li>
       <li class="done">단일 외곽 카드의 방향 2행·단일 오픈 아코디언·중첩 근거 disclosure 구현</li>
       <li class="done">단위 테스트, typecheck, build, audit, Release Gate</li>
-      <li class="done">390px·1440px 브라우저 및 키보드·콘솔 QA</li>
+      <li class="done">390px·1440×900 브라우저 및 키보드·콘솔 QA</li>
       <li class="done">이 문서를 실제 결과로 갱신</li>
       <li class="done">commit·push·Draft PR 생성</li>
+      <li class="done">PR #34 Squash merge 및 최종 main SHA 확인</li>
+      <li class="done">finance1 Production 배포와 Ready · Current 상태 확인</li>
     </ol>
     <details>
       <summary>위험과 대응</summary>
@@ -135,11 +141,12 @@
     <h2>계획 대비 실제 결과</h2>
     <div class="grid">
       <article class="card"><h3>계획대로 완료</h3><p>두 방향 판단을 하나의 외곽 카드 안 세로 2행으로 정리하고, 고정 순서의 네 카드, 단일 오픈 아코디언, 3단계 원인, 2~3개 수치, 판단 변경 조건, 중첩 근거, latest-event 기반 freshness gate를 구현했습니다.</p></article>
-      <article class="card"><h3>적용 범위</h3><p>SK하이닉스·Alphabet·하나금융지주 3개 기업에 적용했습니다. 검색 가능한 기업은 11개이며, 판단 근거가 완성되지 않은 기업은 기존 화면을 유지합니다.</p></article>
-      <article class="card"><h3>검증 결과</h3><p>Release Gate 28개와 기업 판단 unit 26개가 통과했습니다. Production build는 entry 799,862 bytes, gzip 217,736 bytes로 예산 825,000/225,000 bytes 이내입니다.</p></article>
-      <article class="card"><h3>브라우저 QA</h3><p>390px와 1440px에서 세 기업 모두 가로 overflow 0, 상단 세로 2행, 판단 카드 4개, 미완성 오각형 미표시를 확인했습니다. 첫 진입 전체 닫힘, 단일 카드 열림, 중첩 근거, 기본 접힘 최근 사건과 콘솔 오류 0도 확인했습니다.</p></article>
+      <article class="card"><h3>적용 범위</h3><p>SK하이닉스·Alphabet·하나금융지주 3개 기업에 적용했습니다. 검색 가능한 기업은 11개이며, 판단 근거가 완성되지 않은 기업은 기존 화면을 유지합니다. 신규 dependency·API·DB·Function은 없고 Serverless Function은 12개입니다.</p></article>
+      <article class="card"><h3>검증 결과</h3><p>Release Gate 28/28 checks와 기업 판단 unit 26개가 통과했습니다. 최종 main Production build는 entry 799,862 bytes, gzip 219,133 bytes로 예산 825,000/225,000 bytes 이내입니다.</p></article>
+      <article class="card"><h3>브라우저 QA</h3><p>390px와 1440×900에서 SK하이닉스·Alphabet·하나금융지주·NVIDIA·기업 목록·인사이트·홈을 확인했습니다. 전체 대상의 가로 overflow는 0이고 Production 콘솔 error·warning도 0입니다. Phase 5I 기업은 상단 세로 2행, 판단 카드 4개, 첫 진입 전체 닫힘, 단일 카드 열림, 중첩 근거, 기본 접힘 최근 사건과 미완성 오각형 미표시를 통과했습니다.</p></article>
+      <article class="card"><h3>Production 결과</h3><p>PR #34를 Squash merge해 main <code>a9a283fd32ed671156ed0dc912b676341aea7eb4</code>를 확정했습니다. Vercel 배포 <code>dpl_Gy5t3YAUGUtMau7yT91vQ7pmENRG</code>는 <a href="https://finance1-flax.vercel.app">finance1 Production</a>에서 Ready · Production · Current 상태입니다.</p></article>
       <article class="card"><h3>계획에서 달라진 점</h3><p>기업 판단이 없는 기존 기업은 일괄 전환하지 않고 현재 UI를 유지했습니다. Phase 5I 등록 기업의 판단이 stale이면 legacy 핵심 카드로 되돌아가지 않고 준비 상태와 이전 분석 기준일만 표시합니다. SK하이닉스 2분기 발표 등록 시에도 같은 fallback을 적용합니다.</p></article>
-      <article class="card"><h3>남은 위험·다음 단계</h3><p>SK하이닉스 2분기 공식 실적 발표 후 해당 판단의 재검토가 필요합니다. PR 검토가 끝난 뒤에만 병합과 Production 배포를 별도로 진행합니다.</p></article>
+      <article class="card"><h3>남은 위험·다음 단계</h3><p>SK하이닉스의 다음 공식 분기 실적을 반영한 뒤 판단 데이터를 재검토합니다. GitHub Actions의 Node 지원 종료 경고와 관련된 action 버전 정리는 별도 유지보수 작업으로 진행합니다.</p></article>
     </div>
   </section>
 
