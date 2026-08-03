@@ -452,6 +452,98 @@ const dashboardMetricsBySlug: Record<string, DashboardMetric[]> = {
       qualityStatus: 'ok',
     }),
   ],
+  alphabet: [
+    metric({
+      id: 'alphabet-q1-2026-revenue-growth',
+      label: '분기 매출 성장률',
+      value: 22,
+      formattedValue: '+22.0%',
+      unit: '%',
+      currency: 'USD',
+      period: '2026년 1분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 대비', value: 22, formattedValue: '+22.0%', direction: 'up' },
+      description: 'US GAAP 연결 매출의 전년 동기 대비 변화입니다.',
+      sourceIds: ['alphabet-2026-q1-10q'],
+      updatedAt: '2026-04-30',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'alphabet-q1-2026-cloud-growth',
+      label: 'Google Cloud 매출 성장률',
+      value: 63.4,
+      formattedValue: '+63.4%',
+      unit: '%',
+      currency: 'USD',
+      period: '2026년 1분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 대비', value: 63.4, formattedValue: '+63.4%', direction: 'up' },
+      description: 'Google Cloud 세그먼트 매출의 전년 동기 대비 변화입니다.',
+      sourceIds: ['alphabet-2026-q1-10q'],
+      updatedAt: '2026-04-30',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'alphabet-q1-2026-free-cash-flow',
+      label: '잉여현금흐름',
+      value: 10.116,
+      formattedValue: '$10.12B',
+      unit: '십억 달러',
+      currency: 'USD',
+      period: '2026년 1분기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 동기 대비', value: -46.6, formattedValue: '-46.6%', direction: 'down' },
+      description: '영업현금흐름에서 유형자산 취득 현금지출을 차감한 값입니다.',
+      sourceIds: ['alphabet-2026-q1-10q'],
+      updatedAt: '2026-04-30',
+      qualityStatus: 'ok',
+    }),
+  ],
+  'hana-financial': [
+    metric({
+      id: 'hana-1h26-operating-income-growth',
+      label: '일반영업이익 성장률',
+      value: 9,
+      formattedValue: '+9.0%',
+      unit: '%',
+      currency: 'KRW',
+      period: '2026년 상반기',
+      periodType: 'quarterly',
+      comparison: { label: '전년 상반기 대비', value: 9, formattedValue: '+9.0%', direction: 'up' },
+      description: '순이자이익과 비이자이익을 합한 일반영업이익의 전년 동기 대비 변화입니다.',
+      sourceIds: ['hana-financial-1h26-databook'],
+      updatedAt: '2026-07-24',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'hana-2q26-npl-ratio',
+      label: '고정이하여신비율',
+      value: 0.9264,
+      formattedValue: '0.93%',
+      unit: '%',
+      period: '2026년 2분기 말',
+      periodType: 'pointInTime',
+      comparison: { label: '전년 동기 대비', value: 0.174, formattedValue: '+0.17%p', direction: 'up' },
+      description: '고정이하여신을 총여신으로 나눈 그룹 연결 자산건전성 지표입니다.',
+      sourceIds: ['hana-financial-1h26-databook'],
+      updatedAt: '2026-07-24',
+      qualityStatus: 'ok',
+    }),
+    metric({
+      id: 'hana-2q26-cet1-ratio',
+      label: 'CET1 비율',
+      value: 13.213,
+      formattedValue: '13.21%',
+      unit: '%',
+      period: '2026년 2분기 말',
+      periodType: 'pointInTime',
+      comparison: { label: '전년 동기 대비', value: -0.18, formattedValue: '-0.18%p', direction: 'down' },
+      description: 'Basel III 기준 보통주자본을 위험가중자산으로 나눈 비율입니다.',
+      sourceIds: ['hana-financial-1h26-databook'],
+      updatedAt: '2026-07-24',
+      qualityStatus: 'ok',
+    }),
+  ],
 };
 
 const dashboardChartsBySlug: Record<string, DashboardChart[]> = {
@@ -518,6 +610,8 @@ const dashboardChartsBySlug: Record<string, DashboardChart[]> = {
   }],
   supermicro: [],
   netflix: [],
+  alphabet: [],
+  'hana-financial': [],
 };
 
 function assessment(
@@ -587,6 +681,14 @@ const assessmentsBySlug: Record<string, CompanyAssessment[]> = {
     assessment('cashFlow', '현금창출력', 'needsReview', '2분기 잉여현금흐름은 15억2,500만달러로 전년 동기보다 감소했지만 회사는 연간 전망을 유지했습니다.', ['nflx-q2-2026-free-cash-flow'], ['netflix-q2-2026-10q', 'netflix-q2-2026-letter']),
     assessment('valuation', '밸류에이션', 'insufficientData', '외부 배수 검산은 제공하지만 검증된 자체 가치평가 모형은 아직 없습니다.', [], ['netflix-q2-2026-10q']),
   ],
+  alphabet: [
+    assessment('growth', '성장성', 'improving', '연결 매출과 Google Cloud 매출이 모두 두 자릿수로 성장했습니다.', ['alphabet-q1-2026-revenue-growth', 'alphabet-q1-2026-cloud-growth'], ['alphabet-2026-q1-10q']),
+    assessment('cashFlow', '현금창출력', 'slowing', '영업현금은 늘었지만 설비투자 증가로 잉여현금은 전년 동기보다 감소했습니다.', ['alphabet-q1-2026-free-cash-flow'], ['alphabet-2026-q1-10q']),
+  ],
+  'hana-financial': [
+    assessment('growth', '성장성', 'improving', '순이자이익과 비이자이익을 합한 일반영업이익이 전년 상반기보다 증가했습니다.', ['hana-1h26-operating-income-growth'], ['hana-financial-1h26-databook']),
+    assessment('financialHealth', '재무건전성', 'needsReview', 'CET1 비율은 13%대를 유지하지만 고정이하여신비율이 상승했습니다.', ['hana-2q26-cet1-ratio', 'hana-2q26-npl-ratio'], ['hana-financial-1h26-databook']),
+  ],
 };
 
 export const companyDashboardConfigs: CompanyDashboardConfig[] = [
@@ -599,6 +701,8 @@ export const companyDashboardConfigs: CompanyDashboardConfig[] = [
   { companySlug: 'meta', metricIds: ['meta-2026-capex-low', 'meta-2026-capex-high', 'meta-2025-senior-notes'], chartIds: ['meta-2026-capex-range'], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
   { companySlug: 'supermicro', metricIds: ['smci-2026-ai-orders', 'smci-fy2026-q3-revenue-growth', 'smci-fy2026-q3-gross-margin', 'smci-fy2026-q3-free-cash-flow', 'smci-fy2025-per-2026-07-22', 'smci-2026-potential-financing'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
   { companySlug: 'netflix', metricIds: ['nflx-q2-2026-revenue-growth', 'nflx-q2-2026-operating-margin', 'nflx-q2-2026-free-cash-flow'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
+  { companySlug: 'alphabet', metricIds: ['alphabet-q1-2026-revenue-growth', 'alphabet-q1-2026-cloud-growth', 'alphabet-q1-2026-free-cash-flow'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
+  { companySlug: 'hana-financial', metricIds: ['hana-1h26-operating-income-growth', 'hana-2q26-npl-ratio', 'hana-2q26-cet1-ratio'], chartIds: [], macroVariableIds: ['us-treasury-10y', 'us-financial-conditions', 'us-m2-money-stock', 'us-industrial-production'] },
 ];
 
 function macroCopy(viewModel: DashboardInput, variableId: string) {

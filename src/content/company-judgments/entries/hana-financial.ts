@@ -1,0 +1,130 @@
+import type { CompanyJudgmentConfig } from '../types.js';
+
+const presentation = {
+  sourceId: 'hana-financial-1h26-presentation',
+  sourceType: 'company-ir' as const,
+  sourceTitle: 'Hana Financial Group 1H26 Presentation',
+  sourceUrl: 'https://www.hanafn.com:8002/download/10079717/crossDownload.do',
+  publishedAt: '2026-07-24',
+  asOf: '2026-06-30',
+  period: '2026년 상반기',
+  scope: 'consolidated' as const,
+  metricDefinition: 'IFRS 연결 기준 손익·자산건전성·자본적정성 IR 요약',
+};
+
+const databook = {
+  sourceId: 'hana-financial-1h26-databook',
+  sourceType: 'company-ir' as const,
+  sourceTitle: 'Hana Financial Group 1H26 IR Databook',
+  sourceUrl: 'https://www.hanafn.com:8002/download/10079741/crossDownload.do',
+  publishedAt: '2026-07-24',
+  asOf: '2026-06-30',
+  period: '2026년 2분기·상반기',
+  scope: 'consolidated' as const,
+  metricDefinition: '그룹 연결 손익, 대출·예금, 자산건전성, Basel III 자본비율',
+  limitation: '은행업의 현금의 질은 일반 기업 FCF가 아니라 예금·조달·유동성 구조로 판단합니다.',
+};
+
+const config: CompanyJudgmentConfig = {
+  companySlug: 'hana-financial',
+  latestOfficialUpdate: {
+    latestQuarterlyResultsAt: '2026-07-24',
+    latestMaterialEventAt: '2026-07-24',
+  },
+  companyDirection: {
+    state: 'opportunity',
+    horizon: '향후 6~12개월',
+    reason: '순이자마진과 비이자이익이 개선돼 이익 기반이 넓어졌고, 자산건전성 부담을 아직 자본 여력으로 흡수할 수 있습니다.',
+    asOf: '2026-07-24',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [presentation.sourceId, databook.sourceId],
+  },
+  marketExpectation: {
+    state: 'burden',
+    horizon: '다음 1~2개 분기',
+    reason: '이익 성장은 이어지지만 고정이하여신과 대손비용이 늘어 가까운 분기에는 건전성 개선을 증명해야 합니다.',
+    asOf: '2026-07-24',
+    reviewedAt: '2026-07-29',
+    analysisVersion: '5I.1',
+    sourceIds: [presentation.sourceId, databook.sourceId],
+  },
+  cards: [
+    {
+      key: 'businessGrowth',
+      state: 'good',
+      reason: '순이자이익은 완만했고 비이자·수수료 수익이 크게 늘어 영업수익 성장이 한 축에만 의존하지 않았습니다.',
+      trend: 'improving',
+      causeFlow: ['NIM·수수료 수익 개선', '비이자이익 확대', '상반기 영업수익 증가'],
+      metrics: [
+        { label: '일반영업이익', value: '6.42조원', comparison: '전년 상반기 대비 +9.0%', period: '2026년 상반기', metricDefinition: '순이자이익 + 비이자이익' },
+        { label: '2분기 비이자이익', value: '1.03조원', comparison: '전년 동기 대비 +39.6%', period: '2026년 2분기', metricDefinition: '그룹 연결 비이자이익' },
+        { label: '2분기 수수료이익', value: '0.82조원', comparison: '전년 동기 대비 +46.7%', period: '2026년 2분기', metricDefinition: '그룹 연결 수수료이익' },
+      ],
+      reversalCondition: '비이자이익 증가가 되돌려지고 순이자이익도 전년보다 감소하면 성장 판단을 낮춥니다.',
+      asOf: '2026-07-24',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [databook.sourceId],
+    },
+    {
+      key: 'earningsQuality',
+      state: 'caution',
+      reason: '지배주주 순이익은 늘었지만 대손충당금과 고정이하여신 비율이 함께 상승해 위험비용의 질은 약해졌습니다.',
+      trend: 'worsening',
+      causeFlow: ['대출자산 확대', '고정이하여신 증가', '대손비용 상승'],
+      metrics: [
+        { label: '지배주주 순이익', value: '2.40조원', comparison: '전년 상반기 대비 +4.4%', period: '2026년 상반기', metricDefinition: '지배기업 소유주 귀속 순이익' },
+        { label: '대손충당금', value: '0.68조원', comparison: '전년 상반기 대비 +6.9%', period: '2026년 상반기', metricDefinition: '그룹 연결 신용손실충당금 전입액' },
+        { label: '고정이하여신비율', value: '0.93%', comparison: '전년 동기보다 +0.17%p', period: '2026년 2분기 말', metricDefinition: '고정이하여신 ÷ 총여신' },
+      ],
+      reversalCondition: '고정이하여신비율이 1%를 넘고 대손비용률도 두 분기 연속 상승하면 나쁨으로 낮춥니다.',
+      asOf: '2026-07-24',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [presentation.sourceId, databook.sourceId],
+    },
+    {
+      key: 'cashQuality',
+      state: 'good',
+      reason: '예금 증가가 대출 증가를 웃돌아 은행업의 핵심 조달 기반이 성장 속도를 뒷받침했습니다.',
+      trend: 'improving',
+      causeFlow: ['고객 예금 9.4% 증가', '대출 8.3% 증가', '조달 기반 상대 개선'],
+      metrics: [
+        { label: '총예금', value: '415.63조원', comparison: '전년 동기 대비 +9.4%', period: '2026년 2분기 말', metricDefinition: '그룹 연결 총예금' },
+        { label: '총대출', value: '436.80조원', comparison: '전년 동기 대비 +8.3%', period: '2026년 2분기 말', metricDefinition: '그룹 연결 총대출' },
+        { label: '대출·예금 비율', value: '105.1%', comparison: '전년 동기 106.1%보다 하락', period: '2026년 2분기 말', metricDefinition: '총대출 ÷ 총예금' },
+      ],
+      reversalCondition: '예금 증가가 멈추고 대출·예금 비율이 110%를 넘으면 조달 안정 판단을 낮춥니다.',
+      asOf: '2026-07-24',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [databook.sourceId],
+    },
+    {
+      key: 'investmentBurden',
+      state: 'caution',
+      reason: 'CET1 비율은 13%대를 유지하지만 위험가중자산 증가와 건전성 저하로 자본 완충력이 소폭 약해졌습니다.',
+      trend: 'worsening',
+      causeFlow: ['위험가중자산 9.3% 증가', 'CET1 비율 소폭 하락', '주주환원·성장 여력 제약'],
+      metrics: [
+        { label: 'CET1 비율', value: '13.21%', comparison: '전년 동기보다 -0.18%p', period: '2026년 2분기 말', metricDefinition: '보통주자본 ÷ 위험가중자산' },
+        { label: 'BIS 비율', value: '15.26%', comparison: '전년 동기보다 -0.34%p', period: '2026년 2분기 말', metricDefinition: '총BIS자본 ÷ 위험가중자산' },
+        { label: '위험가중자산', value: '307.78조원', comparison: '전년 동기 대비 +9.3%', period: '2026년 2분기 말', metricDefinition: 'Basel III 시장위험 기준 위험가중자산' },
+      ],
+      reversalCondition: 'CET1 비율이 13% 아래로 내려가거나 대규모 환원 후 자본 회복 경로가 약해지면 나쁨으로 낮춥니다.',
+      asOf: '2026-07-24',
+      reviewedAt: '2026-07-29',
+      analysisVersion: '5I.1',
+      sourceIds: [presentation.sourceId, databook.sourceId],
+    },
+  ],
+  sources: [presentation, databook],
+  anomalyReview: {
+    reviewedAt: '2026-07-29',
+    findings: ['비이자이익 증가와 함께 유가증권 처분·평가손익도 증가', 'NPL coverage ratio 하락과 대손비용 증가를 순이익과 분리 검토'],
+    operatorDecision: '순이익 크기만으로 좋음 처리하지 않고 자산건전성 악화를 이익의 질과 자본 부담에 반영',
+  },
+};
+
+export default config;

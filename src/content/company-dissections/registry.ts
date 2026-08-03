@@ -1,6 +1,6 @@
 import type { CompanyDissectionConfig } from './types.js';
 
-export const companyDissectionSlugs = ['sk-hynix', 'lg-electronics', 'nvidia', 'micron', 'dell', 'eaton', 'meta', 'supermicro', 'netflix'] as const;
+export const companyDissectionSlugs = ['sk-hynix', 'lg-electronics', 'nvidia', 'micron', 'dell', 'eaton', 'meta', 'supermicro', 'netflix', 'alphabet', 'hana-financial'] as const;
 export type CompanyDissectionSlug = (typeof companyDissectionSlugs)[number];
 
 const loaders: Record<CompanyDissectionSlug, () => Promise<{ default: CompanyDissectionConfig }>> = {
@@ -13,6 +13,8 @@ const loaders: Record<CompanyDissectionSlug, () => Promise<{ default: CompanyDis
   meta: () => import('./entries/meta.js'),
   supermicro: () => import('./entries/supermicro.js'),
   netflix: () => import('./entries/netflix.js'),
+  alphabet: () => import('./entries/alphabet.js'),
+  'hana-financial': () => import('./entries/hana-financial.js'),
 };
 
 export function isCompanyDissectionSlug(value: string): value is CompanyDissectionSlug {

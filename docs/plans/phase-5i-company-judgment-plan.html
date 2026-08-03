@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 5I · 기업 판단 구조와 최신성</title>
+  <style>
+    :root { color-scheme: light; --ink:#191f28; --muted:#6b7684; --line:#e5e8eb; --blue:#3182f6; --pale:#f2f4f6; --good:#087f5b; --warn:#b54708; --bad:#c92a2a; }
+    * { box-sizing:border-box; }
+    html { overflow-wrap:anywhere; }
+    body { margin:0; background:#f7f8fa; color:var(--ink); font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; word-break:keep-all; }
+    a { color:#1b64da; text-underline-offset:.18em; }
+    a:focus-visible, summary:focus-visible { outline:3px solid rgba(49,130,246,.35); outline-offset:3px; border-radius:8px; }
+    main { width:min(1080px,calc(100% - 32px)); margin:32px auto 72px; }
+    header, section { background:#fff; border:1px solid var(--line); border-radius:24px; padding:clamp(22px,4vw,40px); margin-bottom:18px; }
+    .eyebrow { margin:0 0 8px; color:var(--blue); font-weight:800; }
+    h1 { margin:0; font-size:clamp(30px,6vw,52px); line-height:1.15; letter-spacing:-.035em; }
+    h2 { margin:0 0 14px; font-size:clamp(22px,3vw,30px); line-height:1.25; }
+    h3 { margin:22px 0 8px; font-size:18px; }
+    p { margin:8px 0; }
+    .lede { max-width:760px; color:var(--muted); font-size:18px; }
+    .status { display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:9px 13px; border-radius:999px; background:#e8f3ff; color:#1b64da; font-weight:800; }
+    .status::before { content:"완료"; font-size:12px; padding:2px 6px; border:1px solid currentColor; border-radius:999px; }
+    dl { display:grid; grid-template-columns:minmax(120px,.7fr) minmax(0,2fr); gap:8px 18px; margin:24px 0 0; }
+    dt { color:var(--muted); }
+    dd { margin:0; font-weight:700; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .card { padding:18px; border:1px solid var(--line); border-radius:18px; background:#fff; }
+    .card h3 { margin:0 0 6px; }
+    ul,ol { padding-left:22px; }
+    li + li { margin-top:7px; }
+    code { padding:.15em .35em; background:var(--pale); border-radius:6px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em; }
+    .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .flow span { padding:9px 12px; background:var(--pale); border-radius:12px; font-weight:700; }
+    .done { color:var(--good); } .pending { color:var(--warn); }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:12px 10px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-size:14px; }
+    details { border-top:1px solid var(--line); padding-top:14px; margin-top:14px; }
+    summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-weight:800; }
+    footer { color:var(--muted); text-align:center; font-size:14px; }
+    @media (max-width:640px) {
+      main { width:min(100% - 20px,1080px); margin-top:10px; }
+      header,section { border-radius:20px; padding:20px; }
+      .grid { grid-template-columns:1fr; }
+      dl { grid-template-columns:1fr; gap:2px; }
+      dd + dt { margin-top:10px; }
+      table,thead,tbody,tr,th,td { display:block; }
+      thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+      td::before { content:attr(data-label); display:block; color:var(--muted); font-size:13px; font-weight:700; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Phase 5I · Company Judgment</p>
+    <h1>기업 판단 구조와 데이터 최신성</h1>
+    <p class="lede">숫자와 출처를 사용자가 직접 종합하게 두지 않고, 공개 자료에서 더 중요한 요인을 골라 6~12개월 사업 방향과 다음 1~2개 분기의 시장 기대를 설명합니다.</p>
+    <div class="status">Completed</div>
+    <dl>
+      <dt>시작 SHA</dt><dd><code>d1de1181bdaa2112e3ca7bb755edface67ab71a1</code></dd>
+      <dt>Feature branch</dt><dd><code>codex/phase-5i-company-judgment</code></dd>
+      <dt>Pull Request</dt><dd><a href="https://github.com/parkterry1103-ux/finance/pull/34">Draft PR #34</a></dd>
+      <dt>최종 main SHA</dt><dd>병합하지 않음</dd>
+      <dt>Production</dt><dd>이번 단계에서 배포하지 않음</dd>
+      <dt>최종 수정일</dt><dd><time datetime="2026-07-29">2026년 7월 29일</time></dd>
+    </dl>
+  </header>
+
+  <section>
+    <h2>현재 구조 감사</h2>
+    <div class="grid">
+      <article class="card"><h3>기업 상세</h3><p><code>CompaniesRoute.tsx</code>가 Brief·Dissection·Event Impact를 동적 로드하고, <code>CompanyProfiles.tsx</code>가 헤더·항상 펼친 핵심 카드·오각형·모멘텀·상세 자료 순으로 렌더링합니다.</p></article>
+      <article class="card"><h3>현재 문제</h3><p>네 핵심 카드가 결론 대신 숫자를 먼저 보여주며, 카드별 최신성·발행 시점·범위·지표 정의와 분기 발표 이후 무효화 규칙이 없습니다.</p></article>
+      <article class="card"><h3>보존 범위</h3><p>홈, 검색, 인사이트, 기존 기업 route, Financial Pivot, Valuation, Report, Event Impact와 Toss 전역 테마를 유지합니다.</p></article>
+      <article class="card"><h3>백엔드 영향</h3><p>정적 typed registry와 기존 lazy import만 사용합니다. 신규 dependency·API·DB·Serverless Function은 없습니다.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>사용자 흐름</h2>
+    <div class="flow" aria-label="기업 판단 사용자 흐름">
+      <span>기업 헤더</span><b aria-hidden="true">→</b><span>기업 방향·시장 기대</span><b aria-hidden="true">→</b><span>닫힌 판단 카드 4개</span><b aria-hidden="true">→</b><span>원인·숫자·변경 조건</span><b aria-hidden="true">→</b><span>요청할 때만 근거</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>데이터 모델과 최신성</h2>
+    <div class="grid">
+      <article class="card"><h3>상단 판단</h3><p>기업 방향과 시장 기대만 저장하며 상태는 기회 우세·균형·부담 우세입니다. 두 판단을 합산하는 필드는 만들지 않습니다.</p></article>
+      <article class="card"><h3>판단 카드</h3><p>본업 성장·이익의 질·현금의 질·투자·재무 부담에 상태, 추세, 3단계 원인, 최대 3개 수치, 판단 변경 조건과 출처를 연결합니다.</p></article>
+      <article class="card"><h3>근거 메타데이터</h3><p><code>asOf</code>, <code>reviewedAt</code>, <code>publishedAt</code>, <code>period</code>, <code>sourceType</code>, <code>sourceTitle</code>, <code>sourceUrl</code>, <code>scope</code>, <code>metricDefinition</code>, <code>analysisVersion</code>을 검증합니다.</p></article>
+      <article class="card"><h3>Freshness gate</h3><p>실적 카드의 기준일보다 최신 분기 실적이 있거나 중요 이벤트 이후 관련 카드가 재검토되지 않았으면 해당 판단을 숨깁니다. 누락을 ‘확인 부족’ 상태로 대체하지 않습니다.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>초기 적용과 공식 기준</h2>
+    <table>
+      <thead><tr><th>기업</th><th>기준 자료</th><th>산업별 핵심</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td data-label="기업">SK하이닉스</td><td data-label="기준 자료">2026년 1분기 공식 실적, 2026년 4월 23일 발표</td><td data-label="산업별 핵심">HBM 믹스, 마진, 현금창출, 선행 CAPEX</td><td data-label="상태" class="done">반영 완료</td></tr>
+        <tr><td data-label="기업">Alphabet</td><td data-label="기준 자료">2026년 1분기 SEC 10-Q, 2026년 4월 30일 제출</td><td data-label="산업별 핵심">광고·Cloud 성장, 사업별 마진, FCF, AI 인프라</td><td data-label="상태" class="done">반영 완료</td></tr>
+        <tr><td data-label="기업">하나금융지주</td><td data-label="기준 자료">2026년 1H IR Presentation·Databook, 2026년 7월 24일</td><td data-label="산업별 핵심">비이자이익, 대손비용, 자산건전성, CET1</td><td data-label="상태" class="done">반영 완료</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>작업 순서와 완료 기준</h2>
+    <ol>
+      <li class="done">Git 기준점과 현재 데이터 흐름 감사</li>
+      <li class="done">Plan HTML 및 공식 자료 기준 확정</li>
+      <li class="done">typed 판단 모델·lazy registry·freshness validation 구현</li>
+      <li class="done">세 기업 프로필·Brief·공식 근거·판단 데이터 등록</li>
+      <li class="done">단일 외곽 카드의 방향 2행·단일 오픈 아코디언·중첩 근거 disclosure 구현</li>
+      <li class="done">단위 테스트, typecheck, build, audit, Release Gate</li>
+      <li class="done">390px·1440px 브라우저 및 키보드·콘솔 QA</li>
+      <li class="done">이 문서를 실제 결과로 갱신</li>
+      <li class="done">commit·push·Draft PR 생성</li>
+    </ol>
+    <details>
+      <summary>위험과 대응</summary>
+      <ul>
+        <li>새 실적 발표: latest official event 날짜와 분석 기준일을 비교해 stale 카드를 숨깁니다.</li>
+        <li>은행과 일반 기업의 현금 개념 차이: 하나금융은 예금·조달·유동성을 현금의 질로 정의합니다.</li>
+        <li>정보 과밀: 모든 세부 수치와 출처는 아코디언 내부와 중첩 disclosure로 이동합니다.</li>
+        <li>기존 기능 회귀: 새 판단이 없는 기업은 기존 Dissection 흐름을 그대로 사용합니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>계획 대비 실제 결과</h2>
+    <div class="grid">
+      <article class="card"><h3>계획대로 완료</h3><p>두 방향 판단을 하나의 외곽 카드 안 세로 2행으로 정리하고, 고정 순서의 네 카드, 단일 오픈 아코디언, 3단계 원인, 2~3개 수치, 판단 변경 조건, 중첩 근거, latest-event 기반 freshness gate를 구현했습니다.</p></article>
+      <article class="card"><h3>적용 범위</h3><p>SK하이닉스·Alphabet·하나금융지주 3개 기업에 적용했습니다. 검색 가능한 기업은 11개이며, 판단 근거가 완성되지 않은 기업은 기존 화면을 유지합니다.</p></article>
+      <article class="card"><h3>검증 결과</h3><p>Release Gate 28개와 기업 판단 unit 26개가 통과했습니다. Production build는 entry 799,862 bytes, gzip 217,736 bytes로 예산 825,000/225,000 bytes 이내입니다.</p></article>
+      <article class="card"><h3>브라우저 QA</h3><p>390px와 1440px에서 세 기업 모두 가로 overflow 0, 상단 세로 2행, 판단 카드 4개, 미완성 오각형 미표시를 확인했습니다. 첫 진입 전체 닫힘, 단일 카드 열림, 중첩 근거, 기본 접힘 최근 사건과 콘솔 오류 0도 확인했습니다.</p></article>
+      <article class="card"><h3>계획에서 달라진 점</h3><p>기업 판단이 없는 기존 기업은 일괄 전환하지 않고 현재 UI를 유지했습니다. Phase 5I 등록 기업의 판단이 stale이면 legacy 핵심 카드로 되돌아가지 않고 준비 상태와 이전 분석 기준일만 표시합니다. SK하이닉스 2분기 발표 등록 시에도 같은 fallback을 적용합니다.</p></article>
+      <article class="card"><h3>남은 위험·다음 단계</h3><p>SK하이닉스 2분기 공식 실적 발표 후 해당 판단의 재검토가 필요합니다. PR 검토가 끝난 뒤에만 병합과 Production 배포를 별도로 진행합니다.</p></article>
+    </div>
+  </section>
+
+  <footer>주가해부실 · 계획 → 구현 → 검증 기록</footer>
+</main>
+</body>
+</html>

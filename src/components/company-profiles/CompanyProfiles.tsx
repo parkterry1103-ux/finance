@@ -22,6 +22,11 @@ import { publishedEditorialSummaryIndex } from '../../content/editorial/summarie
 import type { EventImpactRecord } from '../../content/event-impacts/index.js';
 import { CompanyEventImpactSection } from '../event-impacts/EventImpactUi.js';
 import { CompanyDissectionRadar } from './CompanyDissectionRadar.js';
+import { CompanyJudgmentPanel } from './CompanyJudgmentPanel.js';
+import {
+  resolveCompanyJudgmentDisplayMode,
+  type CompanyJudgmentModel,
+} from '../../content/company-judgments/index.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
 
 type Navigate = (path: string) => void;
@@ -270,19 +275,53 @@ export function CompanyResearchProfilePage({
   viewModel,
   brief,
   dissection,
+  judgment,
+  isJudgmentCompany,
+  previousJudgmentAsOf,
   eventImpacts,
   navigation,
   onNavigate,
-}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; dissection: CompanyDissectionModel; eventImpacts: EventImpactRecord[] }) {
+}: SharedProps & { viewModel: CompanyResearchProfileViewModel; brief: CompanyBrief; dissection: CompanyDissectionModel | null; judgment: CompanyJudgmentModel | null; isJudgmentCompany: boolean; previousJudgmentAsOf: string | null; eventImpacts: EventImpactRecord[] }) {
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
   const relatedEditorialIds = new Set(brief.relatedEditorialIds);
   const recentEditorial = publishedEditorialSummaryIndex.filter((item) => relatedEditorialIds.has(item.id)).slice(0, 2);
   const recentStock = recentEditorial.find((item) => item.kind === 'stock');
+  const completedRadar = dissection && Object.values(dissection.axes).every((axis) => axis.state !== 'insufficientData')
+    ? dissection
+    : null;
+  const judgmentDisplayMode = resolveCompanyJudgmentDisplayMode({
+    isRegistered: isJudgmentCompany,
+    hasCurrentJudgment: Boolean(judgment),
+    hasLegacyDissection: Boolean(dissection),
+  });
+  const watchItems = dissection?.watchItems ?? profile.keyQuestions.slice(0, 3).map((title) => ({
+    title,
+    why: brief.questions.watchNext.summary,
+    timing: '다음 공식 실적·공시',
+  }));
+  const hasDeepLinks = profile.searchStatus.financialsStatus === 'supported'
+    || profile.searchStatus.valuationStatus === 'full'
+    || (profile.searchStatus.reportStatus === 'supported' && brief.reportSlug)
+    || recentStock;
   useEffect(() => {
     trackAnalyticsEvent('company_view', { companySlug: profile.slug }, { oncePerPage: true, dedupeKey: profile.slug });
   }, [profile.slug]);
+  const marketMomentumContent = <>
+    {recentStock ? <article className="company-market-momentum-card">
+      <div><span>최근 주요 사건</span><time dateTime={recentStock.priceAsOf}>{formatDate(recentStock.priceAsOf)}</time></div>
+      <h3>{recentStock.headline}</h3>
+      <strong>{recentStock.priceMove.value > 0 ? '+' : ''}{recentStock.priceMove.value.toFixed(recentStock.priceMove.precision ?? 2)}%</strong>
+      <p>{recentStock.directCatalyst}</p>
+      <dl>
+        <div><dt>시장 대비</dt><dd>{recentStock.comparison?.market ? `${recentStock.comparison.market.name} ${recentStock.comparison.market.value > 0 ? '+' : ''}${recentStock.comparison.market.value.toFixed(recentStock.comparison.market.precision ?? 2)}%` : '직접 비교 자료 없음'}</dd></div>
+        <div><dt>확인된 변화</dt><dd>{recentStock.confirmedItems.slice(0, 2).join(' · ')}</dd></div>
+        <div><dt>아직 확인되지 않음</dt><dd>{recentStock.unconfirmedItems.slice(0, 2).join(' · ')}</dd></div>
+      </dl>
+    </article> : <article className="company-market-momentum-empty"><h3>공식 데이터 기준 최근 변화</h3><p>{brief.questions.recentChange.summary}</p><small>공식 공시 기반으로 확인 가능한 내용만 표시합니다.</small></article>}
+    <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={profile.searchStatus.valuationStatus === 'full'} />
+  </>;
   return (
     <div className="pick-shell company-profiles-shell company-profile-detail-shell">
       {navigation}
@@ -297,49 +336,45 @@ export function CompanyResearchProfilePage({
             <span className="company-dashboard-kicker">{company.countryLabel} 기업 분석</span>
             <h1 id="company-profile-title">{company.name}</h1>
             <p className="company-dashboard-english-name">{profile.englishName}</p>
-            <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {dissection.industryProfile.primaryIndustry}</p>
+            <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {dissection?.industryProfile.primaryIndustry ?? profile.industry}</p>
             <p className="company-dashboard-description">{brief.oneLineBusiness}</p>
             <p className="company-dashboard-asof">분석 기준 <time dateTime={brief.asOf}>{formatDate(brief.asOf)}</time></p>
           </div>
         </header>
 
-        <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
+        {judgmentDisplayMode === 'current' && judgment ? <CompanyJudgmentPanel companyName={company.name} model={judgment} /> : judgmentDisplayMode === 'preparing' ? <section className="company-judgment-summary company-judgment-preparing" aria-labelledby="company-judgment-preparing-title">
+          <div className="company-dashboard-section-heading"><h2 id="company-judgment-preparing-title">현재 판단</h2></div>
+          <p>최신 실적을 반영한 분석을 준비하고 있습니다.</p>
+          {previousJudgmentAsOf ? <small>이전 분석 기준: <time dateTime={previousJudgmentAsOf}>{formatDate(previousJudgmentAsOf)}</time></small> : null}
+        </section> : judgmentDisplayMode === 'legacy' && dissection ? <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
           <div className="company-dashboard-section-heading"><span>10초 핵심 상태</span><h2 id="company-dissection-core-title">네 가지 핵심 카드</h2><p>각 카드는 한 개의 대표 근거와 비교 기준만 보여줍니다.</p></div>
           <div className="company-dissection-core-grid">{dissection.coreCards.map((card) => <article key={card.key} className={`state-${card.state}`}>
             <span>{card.label}</span><h3>{card.statusLabel}</h3><strong>{card.value}</strong><p>{card.comparisonLabel}</p><small>{formatDate(card.period)}</small>
           </article>)}</div>
-        </section>
+        </section> : null}
 
-        <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} />
+        {judgmentDisplayMode === 'current' ? (completedRadar ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null) : judgmentDisplayMode === 'legacy' && dissection ? <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} /> : null}
 
-        <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
+        {isJudgmentCompany ? <details className="company-market-momentum company-market-momentum--judgment">
+          <summary><span>보조 정보</span><strong>최근 사건과 주가 반응</strong><small>특정 사건과 가격 반응을 필요할 때만 펼쳐 봅니다.</small></summary>
+          <div className="company-market-momentum-content">{marketMomentumContent}</div>
+        </details> : <section className="company-market-momentum" aria-labelledby="company-market-momentum-title">
           <div className="company-dashboard-section-heading"><span>단기 상태 · 오각형과 분리</span><h2 id="company-market-momentum-title">시장 기대·모멘텀</h2><p>특정 사건과 주가 반응은 구조적 기업 상태에 합산하지 않습니다.</p></div>
-          {recentStock ? <article className="company-market-momentum-card">
-            <div><span>최근 주요 사건</span><time dateTime={recentStock.priceAsOf}>{formatDate(recentStock.priceAsOf)}</time></div>
-            <h3>{recentStock.headline}</h3>
-            <strong>{recentStock.priceMove.value > 0 ? '+' : ''}{recentStock.priceMove.value.toFixed(recentStock.priceMove.precision ?? 2)}%</strong>
-            <p>{recentStock.directCatalyst}</p>
-            <dl>
-              <div><dt>시장 대비</dt><dd>{recentStock.comparison?.market ? `${recentStock.comparison.market.name} ${recentStock.comparison.market.value > 0 ? '+' : ''}${recentStock.comparison.market.value.toFixed(recentStock.comparison.market.precision ?? 2)}%` : '직접 비교 자료 없음'}</dd></div>
-              <div><dt>확인된 변화</dt><dd>{recentStock.confirmedItems.slice(0, 2).join(' · ')}</dd></div>
-              <div><dt>아직 확인되지 않음</dt><dd>{recentStock.unconfirmedItems.slice(0, 2).join(' · ')}</dd></div>
-            </dl>
-          </article> : <article className="company-market-momentum-empty"><h3>공식 데이터 기준 최근 변화</h3><p>{brief.questions.recentChange.summary}</p><small>공식 공시 기반으로 확인 가능한 내용만 표시합니다.</small></article>}
-          <CompanyEventImpactSection companyName={company.name} companySlug={profile.slug} impacts={eventImpacts} onNavigate={onNavigate} showValuationReview={profile.searchStatus.valuationStatus === 'full'} />
-        </section>
+          {marketMomentumContent}
+        </section>}
 
-        <section className="company-next-watch" aria-labelledby="company-next-watch-title">
+        {!isJudgmentCompany ? <section className="company-next-watch" aria-labelledby="company-next-watch-title">
           <div className="company-dashboard-section-heading"><span>최대 3개</span><h2 id="company-next-watch-title">다음 확인</h2><p>다음 판단을 바꿀 수 있는 공식 지표와 시점을 우선합니다.</p></div>
-          <ol>{dissection.watchItems.map((item) => <li key={item.title}><strong>{item.title}</strong><p>{item.why}</p><small>{item.timing}</small></li>)}</ol>
-        </section>
+          <ol>{watchItems.map((item) => <li key={item.title}><strong>{item.title}</strong><p>{item.why}</p><small>{item.timing}</small></li>)}</ol>
+        </section> : null}
 
-        <nav className="company-deep-links" aria-label={`${company.name} 더 깊게 보기`}>
+        {hasDeepLinks ? <nav className="company-deep-links" aria-label={`${company.name} 더 깊게 보기`}>
           <div><span>더 깊게 보기</span><h2>필요한 화면만 선택하세요</h2></div>
-          <a href={`/ko/companies/${profile.slug}/financials`} onClick={(event) => { trackAnalyticsEvent('company_financials_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'financials' }); internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)(event); }}><strong>숫자와 비교</strong><span>공시 숫자·기간·추세·lineage</span><ArrowRight size={15} aria-hidden="true" /></a>
+          {profile.searchStatus.financialsStatus === 'supported' ? <a href={`/ko/companies/${profile.slug}/financials`} onClick={(event) => { trackAnalyticsEvent('company_financials_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'financials' }); internalLink(`/ko/companies/${profile.slug}/financials`, onNavigate)(event); }}><strong>숫자와 비교</strong><span>공시 숫자·기간·추세·lineage</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
           {profile.searchStatus.valuationStatus === 'full' ? <a href={`/ko/companies/${profile.slug}/valuation`} onClick={(event) => { trackAnalyticsEvent('company_valuation_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'valuation' }); internalLink(`/ko/companies/${profile.slug}/valuation`, onNavigate)(event); }}><strong>시장가격에 반영된 기대</strong><span>DCF·Reverse DCF·민감도</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
           {profile.searchStatus.reportStatus === 'supported' && brief.reportSlug ? <a href={`/ko/companies/${brief.reportSlug}/report`} onClick={(event) => { trackAnalyticsEvent('company_report_click', { companySlug: profile.slug, placement: 'company_brief', destinationType: 'report' }); internalLink(`/ko/companies/${brief.reportSlug}/report`, onNavigate)(event); }}><strong>장기 기업 판단</strong><span>사업·해자·위험·반증 조건</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
           {recentStock ? <a href={`/ko/insights/stock/${encodeURIComponent(recentStock.slug)}`} onClick={(event) => internalLink(`/ko/insights/stock/${encodeURIComponent(recentStock.slug)}`, onNavigate)(event)}><strong>최근 주가 움직임</strong><span>사건·가격 반응·확인/미확인</span><ArrowRight size={15} aria-hidden="true" /></a> : null}
-        </nav>
+        </nav> : null}
 
         {recentEditorial.length ? <section className="company-dashboard-section company-dashboard-editorial" aria-labelledby="company-editorial-title">
           <div className="company-dashboard-section-heading"><span>사건 기록</span><h2 id="company-editorial-title">최근 관련 해부</h2><p>기업의 영구 점수가 아니라 특정 시점 사건과 가격 반응 기록입니다.</p></div>
