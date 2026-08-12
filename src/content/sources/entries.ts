@@ -150,6 +150,22 @@ export const contentSources: ContentSource[] = [
     url: 'https://kind.krx.co.kr/common/disclsviewer.do?acptno=20260323001354&docno=&method=search&viewerhost=',
   },
   {
+    id: 'kind-krx-20260515001553',
+    kind: 'kind-filing',
+    title: '어보브반도체 2026년 1분기 보고서',
+    publisher: '한국거래소 KIND',
+    url: 'https://kind.krx.co.kr/external/2026/05/15/000726/20260515001553/11013.htm',
+    publishedAt: '2026-05-15',
+  },
+  {
+    id: 'kind-krx-20260310002441',
+    kind: 'kind-filing',
+    title: '넥스트칩 2025 사업보고서',
+    publisher: '한국거래소 KIND',
+    url: 'https://kind.krx.co.kr/external/2026/03/10/001047/20260310002441/00591.htm',
+    publishedAt: '2026-03-10',
+  },
+  {
     id: 'korea-customs-10167371',
     kind: 'government',
     title: '관세청 2026년 6월 1~20일 수출입 현황',

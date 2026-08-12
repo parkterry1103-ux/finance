@@ -29,6 +29,7 @@ export type AnalyticsPageType =
   | 'insights_index'
   | 'stock_dissection'
   | 'wall_street_edition'
+  | 'investment_case'
   | 'company'
   | 'financials'
   | 'valuation'
@@ -39,6 +40,7 @@ export type AnalyticsPageType =
 export type AnalyticsContentType =
   | 'stock_dissection'
   | 'wall_street_edition'
+  | 'investment_case'
   | 'company_brief'
   | 'financial_pivot'
   | 'valuation'

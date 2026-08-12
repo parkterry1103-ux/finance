@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase 6A · Investment Thinking Lab · Pilot #001</title>
+  <style>
+    :root { color-scheme:light; --ink:#191f28; --muted:#6b7684; --line:#e5e8eb; --blue:#3182f6; --pale:#f2f4f6; --good:#087f5b; --warn:#b54708; }
+    * { box-sizing:border-box; }
+    html { overflow-wrap:anywhere; }
+    body { margin:0; background:#f7f8fa; color:var(--ink); font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; word-break:keep-all; }
+    a { color:#1b64da; text-underline-offset:.18em; }
+    a:focus-visible, summary:focus-visible { outline:3px solid rgba(49,130,246,.35); outline-offset:3px; border-radius:8px; }
+    main { width:min(1080px,calc(100% - 32px)); margin:32px auto 72px; }
+    header, section { margin-bottom:18px; padding:clamp(22px,4vw,40px); border:1px solid var(--line); border-radius:24px; background:#fff; }
+    .eyebrow { margin:0 0 8px; color:var(--blue); font-weight:800; }
+    h1 { margin:0; font-size:clamp(30px,6vw,52px); line-height:1.15; letter-spacing:-.035em; }
+    h2 { margin:0 0 14px; font-size:clamp(22px,3vw,30px); line-height:1.25; }
+    h3 { margin:22px 0 8px; font-size:18px; }
+    p { margin:8px 0; }
+    .lede { max-width:780px; color:var(--muted); font-size:18px; }
+    .status { display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:9px 13px; border-radius:999px; background:#e7f7f1; color:var(--good); font-weight:800; }
+    .status::before { content:"완료"; font-size:12px; padding:2px 6px; border:1px solid currentColor; border-radius:999px; }
+    dl { display:grid; grid-template-columns:minmax(120px,.7fr) minmax(0,2fr); gap:8px 18px; margin:24px 0 0; }
+    dt { color:var(--muted); }
+    dd { margin:0; font-weight:700; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .card { padding:18px; border:1px solid var(--line); border-radius:18px; background:#fff; }
+    .card h3 { margin:0 0 6px; }
+    .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .flow span { padding:9px 12px; border-radius:12px; background:var(--pale); font-weight:700; }
+    ul,ol { padding-left:22px; }
+    li + li { margin-top:7px; }
+    code { padding:.15em .35em; border-radius:6px; background:var(--pale); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:12px 10px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-size:14px; }
+    .done { color:var(--good); }
+    .pending { color:var(--warn); }
+    details { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+    summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-weight:800; }
+    footer { color:var(--muted); text-align:center; font-size:14px; }
+    @media (max-width:640px) {
+      main { width:min(100% - 20px,1080px); margin-top:10px; }
+      header,section { padding:20px; border-radius:20px; }
+      .grid { grid-template-columns:1fr; }
+      dl { grid-template-columns:1fr; gap:2px; }
+      dd + dt { margin-top:10px; }
+      table,thead,tbody,tr,th,td { display:block; }
+      thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+      td::before { content:attr(data-label); display:block; color:var(--muted); font-size:13px; font-weight:700; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Phase 6A · Investment Thinking Lab</p>
+    <h1>생각이 투자 원칙이 되어가는 과정을 기록합니다</h1>
+    <p class="lede">완성된 기업 정답을 제시하는 대신 사건을 보고, 첫 생각과 편향을 기록하고, 가설과 반증 신호를 남기는 가벼운 투자 사고 실험을 시작합니다.</p>
+    <div class="status">Completed</div>
+    <dl>
+      <dt>시작 SHA</dt><dd><code>d34b7015a03fad06a95b1c7d887aefda0c82d414</code></dd>
+      <dt>Feature branch</dt><dd><code>codex/phase-6a-investment-thinking-lab</code></dd>
+      <dt>Pull Request</dt><dd>Draft PR 생성 단계 · main 병합 금지</dd>
+      <dt>최종 main SHA</dt><dd>병합하지 않음</dd>
+      <dt>Production deployment</dt><dd>배포하지 않음</dd>
+      <dt>최종 수정일</dt><dd><time datetime="2026-08-12">2026년 8월 12일</time></dd>
+    </dl>
+  </header>
+
+  <section>
+    <h2>이번 단계가 해결하는 문제</h2>
+    <div class="grid">
+      <article class="card"><h3>현재 문제</h3><p>홈과 기업 화면이 최신 수치·평가·완성된 판단을 먼저 요구합니다. 사용자가 사건을 보고 어떤 생각을 했는지, 무엇이 편향일 수 있는지, 언제 생각을 바꿀지는 기록하기 어렵습니다.</p></article>
+      <article class="card"><h3>제품 전환</h3><p>기업 coverage가 아니라 사고의 과정을 중심에 둡니다. Rule·Hypothesis·Case를 연결해 지금의 원칙, 시험 중인 가설, 실제 사건에서의 적용을 구분합니다.</p></article>
+      <article class="card"><h3>Pilot #001</h3><p>2026년 8월 10일 국내 중소형 반도체 지원 정책 뉴스를 본 뒤 제주반도체·어보브반도체·넥스트칩을 어떤 순서로 확인하려 했는지 세 화면으로 기록합니다.</p></article>
+      <article class="card"><h3>이번 단계의 경계</h3><p>기존 Company Judgment·Financial Pivot·Valuation·Report는 삭제하지 않습니다. 신규 API·DB·Function·dependency·자동 분석도 추가하지 않습니다.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>구현 전 정보 구조 감사</h2>
+    <table>
+      <thead><tr><th>분류</th><th>대상</th><th>판단</th></tr></thead>
+      <tbody>
+        <tr><td data-label="분류" class="done">KEEP</td><td data-label="대상">lazy route, Newsroom 검색·카드·접근성, Source Registry, route analytics, Toss theme</td><td data-label="판단">새 제품에서도 재사용 가능한 경량 기반입니다.</td></tr>
+        <tr><td data-label="분류" class="done">MIGRATE</td><td data-label="대상">사실·해석 구분, 제주반도체 공식 KIND 근거, lazy registry와 validation 패턴</td><td data-label="판단">새 Case 모델에 필요한 부분만 옮기고 현재 상태 모델에는 의존하지 않습니다.</td></tr>
+        <tr><td data-label="분류" class="pending">DELETE IN 6B</td><td data-label="대상">구형 홈 구현, legacy Picks 런타임, 중복 CTA, Company Judgment·DCF·Radar·재무 중심 진입 구조</td><td data-label="판단">6A에서 삭제하지 않고 새 흐름 검증 후 런타임과 감사 기록을 분리합니다.</td></tr>
+        <tr><td data-label="분류">DO NOT TOUCH</td><td data-label="대상">공시·가격·동기화·API·DB·Serverless Function, 기존 route와 데이터, Phase 5F provider 설정</td><td data-label="판단">이번 제품 실험과 무관한 기반을 보존합니다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>핵심 사용자 흐름</h2>
+    <div class="flow" aria-label="Investment Thinking Lab 사용자 흐름">
+      <span>홈 Pilot #001</span><b aria-hidden="true">→</b><span>01 사건</span><b aria-hidden="true">→</b><span>02 가설</span><b aria-hidden="true">→</b><span>03 판단</span><b aria-hidden="true">→</b><span>반증 신호</span>
+    </div>
+    <p>모바일과 데스크톱 모두 같은 순서를 유지합니다. 한 화면에는 하나의 핵심 생각만 보여주며 이전·다음·진행률·키보드 조작을 제공합니다.</p>
+  </section>
+
+  <section>
+    <h2>데이터 구조</h2>
+    <div class="grid">
+      <article class="card"><h3>Rule</h3><p>현재의 투자 원칙 다섯 개를 v0.1로 등록합니다. 절대 법칙이나 점수가 아니라 이후 사례로 수정할 수 있는 원칙입니다.</p></article>
+      <article class="card"><h3>Hypothesis</h3><p><code>KR-THEME-001</code>을 한국 시장 전체의 법칙이 아니라 일부 중소형 테마 구간에서 시험 중인 설명으로 등록합니다.</p></article>
+      <article class="card"><h3>Case</h3><p>사건·첫 생각·익숙함·가능한 편향·영향 흐름·반대 흐름·관심 순서·반증 신호·연결 원칙·근거를 독립 typed model로 저장합니다.</p></article>
+      <article class="card"><h3>근거 경계</h3><p>저장소의 공식 출처는 확인된 사업 구조에만 연결합니다. 출처가 없는 정책 금액·주가·수치는 넣지 않고 개인의 판단은 해석 또는 가설로 명시합니다.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>화면과 파일 계획</h2>
+    <div class="grid">
+      <article class="card"><h3>홈</h3><p>Pilot #001과 새 제품 문장을 최우선으로 배치하고 Rulebook v0.1을 짧게 보여줍니다. 기존 기업 검색·주가해부·월가인사이트는 삭제하지 않고 보조 영역으로 내립니다.</p></article>
+      <article class="card"><h3>Case route</h3><p><code>/ko/lab/cases/pilot-001</code>에서 01 사건·02 가설·03 판단을 순차적으로 보여주는 lazy route를 추가합니다.</p></article>
+      <article class="card"><h3>콘텐츠</h3><p><code>../../src/content/investment-thinking/</code>에 타입, Rulebook, Pilot Case, lazy registry와 validation을 둡니다.</p></article>
+      <article class="card"><h3>검증</h3><p>Case 참조, Rule·Hypothesis ID, 3화면 구조, familiarity, 출처, 금지 표현, 키보드와 진행 흐름을 자동 검증합니다.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>작업 순서와 완료 기준</h2>
+    <ol>
+      <li class="done">최신 main·working tree·Node·audit 기준점 확인</li>
+      <li class="done">홈·콘텐츠·기업·내비게이션·analytics·theme·legacy 감사</li>
+      <li class="done">KEEP·MIGRATE·DELETE IN 6B·DO NOT TOUCH 확정</li>
+      <li class="done">Plan HTML과 새 정보 구조 확정</li>
+      <li class="done">Rule·Hypothesis·Case typed model과 Pilot #001 작성</li>
+      <li class="done">홈 우선순위와 세 화면 narrative route 구현</li>
+      <li class="done">validation·unit·typecheck·build·Release Gate</li>
+      <li class="done">390px·desktop·keyboard·console·회귀 QA</li>
+      <li class="done">실제 결과와 bundle 변화를 이 문서에 반영</li>
+      <li class="pending">commit·push·Draft PR 생성</li>
+    </ol>
+    <details>
+      <summary>위험과 대응</summary>
+      <ul>
+        <li>사실과 개인 해석 혼합: 모든 서술에 사실·해석·가설의 역할을 표시하고 미검증 수치를 사용하지 않습니다.</li>
+        <li>새 화면의 과밀: 3단계 순차 화면과 화면당 하나의 핵심 생각으로 제한합니다.</li>
+        <li>기존 제품 회귀: 기존 route와 데이터는 유지하고 홈의 우선순위만 조정합니다.</li>
+        <li>bundle 증가: Case 본문은 lazy import하고 홈에는 경량 metadata만 포함합니다.</li>
+        <li>공급망 audit 변동: 현재 full audit의 새로운 transitive <code>nanoid</code> advisory는 dependency·lockfile을 임의 변경하지 않고 결과와 영향 범위를 분리해 보고합니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>계획 대비 실제 결과</h2>
+    <div class="grid">
+      <article class="card"><h3>계획대로 완료</h3><p>Rule 5개, 검증 중인 Hypothesis 1개, Case 1개를 현재 Company Judgment와 독립된 typed model로 만들었습니다. 홈은 Pilot #001과 Rulebook을 먼저 보여주고 기업 검색·주가해부·월가인사이트를 보조 영역으로 유지합니다.</p></article>
+      <article class="card"><h3>세 화면 결과</h3><p><code>/ko/lab/cases/pilot-001</code>에 01 사건·02 가설·03 판단을 한 화면씩 렌더링했습니다. 이전·다음·단계 버튼과 ← →·Page Up·Down·Home·End 키를 지원하며, 제주반도체·어보브반도체·넥스트칩 관심 순서와 반증 신호 5개를 표시합니다.</p></article>
+      <article class="card"><h3>사실과 해석 경계</h3><p>8월 10일 정책 뉴스는 사용자 입력 사건 메모로 표시하고 확인되지 않은 규모·가격을 쓰지 않았습니다. 세 기업의 사업 설명은 KIND 공식 사업·분기보고서 3개에 연결했습니다.</p></article>
+      <article class="card"><h3>검증 결과</h3><p>Release Gate 29/29, Thinking Lab unit 21개, analytics unit 44개, TypeScript, content validation, Production build가 통과했습니다. npm audit와 Production audit는 모두 0이며 Serverless Function은 12개입니다.</p></article>
+      <article class="card"><h3>브라우저 QA</h3><p>390×844와 1440×900에서 홈·Pilot direct URL·reload·01→02→03·이전·키보드·기업 검색을 확인했습니다. 가로 overflow와 text clipping은 0, 터치 대상은 44px 이상, console error·warning은 0입니다. 인사이트·기업 목록·NVIDIA 상세·Financial·Valuation·Report·거시 route도 회귀를 통과했습니다.</p></article>
+      <article class="card"><h3>성능과 lazy loading</h3><p>홈 entry는 799,862 → 804,990 bytes, gzip 219,133 → 219,310 bytes로 예산 825,000/225,000 bytes 안입니다. Case route는 8,628 bytes, Pilot 본문은 별도 4,307 bytes 동적 chunk로 분리돼 홈에서 본문을 선로딩하지 않습니다.</p></article>
+      <article class="card"><h3>계획에서 달라진 점</h3><p>시작 시 새로 공개된 transitive nanoid advisory를 발견해 직접 dependency를 추가하지 않고 lockfile-only로 3.3.16 → 3.3.18 보안 패치를 적용했습니다. 신규 dependency 수는 0입니다.</p></article>
+      <article class="card"><h3>미완료와 다음 단계</h3><p>기능 미완료 항목은 없습니다. main 병합과 Production 배포는 요청 범위에서 제외했습니다. Phase 6B에서는 구형 LandingPage·legacy Picks·중복 CTA와 기존 무거운 분석 진입 구조를 감사해 런타임에서 정리하고, Review 모델은 Phase 6C에서 다룹니다.</p></article>
+    </div>
+  </section>
+
+  <footer>주가해부실 · 계획 → 구현 → 검증 기록</footer>
+</main>
+</body>
+</html>

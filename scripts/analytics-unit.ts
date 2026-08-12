@@ -60,6 +60,8 @@ equal(resolveAnalyticsRoute('/ko/companies/nvidia/financials?ignored=yes').route
 equal(resolveAnalyticsRoute('/ko/insights/3reads/example#source').contentType, 'wall_street_edition');
 equal(resolveAnalyticsRoute('/ko/insights/stock/example').pageType, 'stock_dissection');
 equal(resolveAnalyticsRoute('/ko/insights/3reads/example').pageType, 'wall_street_edition');
+equal(resolveAnalyticsRoute('/ko/lab/cases/pilot-001').routeTemplate, '/ko/lab/cases/:slug');
+equal(resolveAnalyticsRoute('/ko/lab/cases/pilot-001').contentType, 'investment_case');
 check(!resolveAnalyticsRoute('/ko/companies/nvidia').routeTemplate.includes('?'), 'route templates must omit query strings');
 
 equal(categorizeReferrer('', 'https://finance1-flax.vercel.app'), 'direct');

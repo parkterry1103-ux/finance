@@ -10,6 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "validate:content": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/validate-content.js",
     "validate:editorial": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/editorial-unit.js",
+    "validate:thinking-lab": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/investment-thinking-unit.js",
     "validate:financials": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/financial-pivot-unit.js",
     "validate:multiples": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/market-multiple-unit.js",
     "validate:filing-freshness": "tsc -p tsconfig.scripts.json && node .sync-build/scripts/filing-freshness-unit.js",

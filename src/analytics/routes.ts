@@ -36,6 +36,12 @@ export function resolveAnalyticsRoute(pathname: string): AnalyticsRoute {
     contentType: 'wall_street_edition', contentSlug: decodeSegment(threeReads[1]),
   };
 
+  const investmentCase = normalizedPath.match(/^\/ko\/lab\/cases\/([^/]+)$/);
+  if (investmentCase) return {
+    pageType: 'investment_case', routeTemplate: '/ko/lab/cases/:slug', normalizedPath,
+    contentType: 'investment_case', contentSlug: decodeSegment(investmentCase[1]),
+  };
+
   if (normalizedPath === '/ko/companies') {
     return { pageType: 'other', routeTemplate: '/ko/companies', normalizedPath };
   }
