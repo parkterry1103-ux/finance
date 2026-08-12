@@ -30,8 +30,8 @@ const eventPropertyKeys: Record<AnalyticsEventName, string[]> = {
   macro_dashboard_view: [],
 };
 const commonPayloadKeys = new Set(['schemaVersion', 'locale', 'pageType', 'routeTemplate', 'attribution', 'contentType']);
-const pageTypes = new Set(['home', 'insights_index', 'stock_dissection', 'wall_street_edition', 'company', 'financials', 'valuation', 'research_report', 'macro', 'other']);
-const contentTypes = new Set(['stock_dissection', 'wall_street_edition', 'company_brief', 'financial_pivot', 'valuation', 'research_report']);
+const pageTypes = new Set(['home', 'insights_index', 'stock_dissection', 'wall_street_edition', 'investment_case', 'company', 'financials', 'valuation', 'research_report', 'macro', 'other']);
+const contentTypes = new Set(['stock_dissection', 'wall_street_edition', 'investment_case', 'company_brief', 'financial_pivot', 'valuation', 'research_report']);
 const placements = new Set(['home', 'insights_index', 'editorial_header', 'editorial_body', 'editorial_footer', 'company_brief', 'financial_pivot', 'valuation', 'report', 'search', 'related_research']);
 const destinationTypes = new Set(['editorial', 'company', 'financials', 'valuation', 'report', 'source', 'macro']);
 const companyEvents = new Set<AnalyticsEventName>([

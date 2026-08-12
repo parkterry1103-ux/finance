@@ -54,7 +54,7 @@ export const homeFeatureLabels: HomeFeatureLabel[] = [
 ];
 
 export const primaryNavigationItems: PrimaryNavigationItem[] = [
-  { id: 'today', label: '오늘의 해부', href: '/ko/#today-dissections', activeKey: 'today' },
+  { id: 'today', label: '생각 실험', href: '/ko/#thinking-lab', activeKey: 'today' },
   { id: 'companies', label: '기업 찾기', href: '/ko/companies', activeKey: 'companies' },
   { id: 'insights', label: '리서치', href: '/ko/insights', activeKey: 'insights' },
 ];

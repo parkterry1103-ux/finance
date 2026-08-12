@@ -67,7 +67,7 @@ export function trackRoutePageView(location: Pick<Location, 'pathname' | 'search
   }
 
   const isResearchLanding = isInitialPageview && attribution.referrerCategory !== 'internal'
-    && ['home', 'insights_index', 'stock_dissection', 'wall_street_edition', 'company', 'research_report'].includes(route.pageType);
+    && ['home', 'insights_index', 'stock_dissection', 'wall_street_edition', 'investment_case', 'company', 'research_report'].includes(route.pageType);
   if (isResearchLanding) {
     trackAnalyticsEvent('research_landing_view', {}, { oncePerPage: true, dedupeKey: 'landing' });
   }

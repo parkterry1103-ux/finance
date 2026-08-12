@@ -171,6 +171,7 @@ const ValuationExpectationsRoute = lazy(() => import('./routes/ValuationExpectat
 const InsightsRoute = lazy(() => import('./routes/InsightsRoute'));
 const StockDissectionRoute = lazy(() => import('./routes/StockDissectionRoute'));
 const ThreeReadsRoute = lazy(() => import('./routes/ThreeReadsRoute'));
+const InvestmentCaseRoute = lazy(() => import('./routes/InvestmentCaseRoute'));
 
 type NewsItem = {
   title: string;
@@ -6910,6 +6911,7 @@ function App() {
   const routeValuationExpectationsMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/valuation\/?$/);
   const routeStockDissectionMatch = routePath.match(/^\/ko\/insights\/stock\/([^/]+)\/?$/);
   const routeThreeReadsMatch = routePath.match(/^\/ko\/insights\/3reads\/([^/]+)\/?$/);
+  const routeInvestmentCaseMatch = routePath.match(/^\/ko\/lab\/cases\/([^/]+)\/?$/);
   const routeInsightsMatch = routePath.match(/^\/ko\/insights\/?$/);
   const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
@@ -6929,6 +6931,7 @@ function App() {
   const routeValuationExpectationsSlug = routeValuationExpectationsMatch?.[1] ? decodeURIComponent(routeValuationExpectationsMatch[1]) : undefined;
   const routeStockDissectionSlug = routeStockDissectionMatch?.[1] ? decodeURIComponent(routeStockDissectionMatch[1]) : undefined;
   const routeThreeReadsSlug = routeThreeReadsMatch?.[1] ? decodeURIComponent(routeThreeReadsMatch[1]) : undefined;
+  const routeInvestmentCaseSlug = routeInvestmentCaseMatch?.[1] ? decodeURIComponent(routeInvestmentCaseMatch[1]) : undefined;
   const routeResearchReportEntry = routeResearchReportSlug ? companyProfileByIdOrSlug(routeResearchReportSlug) : undefined;
   const routeResearchReportIdentity = routeResearchReportEntry ? canonicalCompanyProfileIdentity(routeResearchReportEntry.companyId) : undefined;
   const routeReportSlug = routeReportDetailMatch?.[1] ? decodeURIComponent(routeReportDetailMatch[1]) : undefined;
@@ -6963,11 +6966,13 @@ function App() {
 
   useEffect(() => {
     const title = isHomeRoute
-      ? '주가해부실 | 오늘의 주가 해부와 기업 리서치'
+      ? '주가해부실 | Investment Thinking Lab'
       : routeStockDissectionMatch
         ? '주가 해부 | 주가해부실'
       : routeThreeReadsMatch
         ? '오늘의 월스트리트 | 주가해부실'
+      : routeInvestmentCaseMatch
+        ? 'Investment Thinking Lab · Pilot #001 | 주가해부실'
       : routeInsightsMatch
         ? '리서치 | 주가해부실'
       : routeResearchReportMatch
@@ -6988,11 +6993,13 @@ function App() {
             ? '수요와 공급을 함께 보기 | 주가해부실'
             : '주가해부실';
     const metaDescription = isHomeRoute
-      ? '오늘 주가가 움직인 이유와 다음 확인 항목을 기업의 사업·재무·가치평가로 연결합니다.'
+      ? '사건을 분석하고 가설을 세우고 결과로 검증하며 나만의 투자 원칙을 만들어가는 과정을 기록합니다.'
       : routeStockDissectionMatch
         ? '확인된 사실과 아직 확인되지 않은 내용을 구분해 주가 움직임과 다음 확인 항목을 설명합니다.'
       : routeThreeReadsMatch
         ? '서로 다른 세 뉴스를 하나의 구조적 질문으로 연결합니다.'
+      : routeInvestmentCaseMatch
+        ? '사건을 보고 떠오른 생각, 검증할 가설과 틀렸다는 신호를 세 단계로 기록합니다.'
       : routeInsightsMatch
         ? '최근 주가 해부와 오늘의 월스트리트를 확인합니다.'
       : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
@@ -7020,14 +7027,14 @@ function App() {
     canonical.href = routeResearchReportMatch && routeResearchReportSlug
       ? `${window.location.origin}/ko/companies/${encodeURIComponent(routeResearchReportSlug)}/report`
       : `${window.location.origin}${routePath}`;
-  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch), Boolean(routeInsightsMatch), Boolean(routeStockDissectionMatch), Boolean(routeThreeReadsMatch)]);
+  }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch), Boolean(routeInsightsMatch), Boolean(routeStockDissectionMatch), Boolean(routeThreeReadsMatch), Boolean(routeInvestmentCaseMatch)]);
 
   useEffect(() => {
-    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;
+    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute || routeInvestmentCaseMatch) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => { if (!cancelled) setMarketPrices(items); });
     return () => { cancelled = true; };
-  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute]);
+  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute, Boolean(routeInvestmentCaseMatch)]);
 
   useEffect(() => {
     if (!needsDisclosureFeed) return;
@@ -7136,6 +7143,14 @@ function App() {
       onOpenReports={openReports}
     />
   );
+
+  if (routeInvestmentCaseMatch) {
+    return (
+      <DeferredRoute fallback={<div className="pick-shell thinking-lab-shell">{navigation('today')}<RouteLoadingFallback /></div>} resetKey={routePath}>
+        <InvestmentCaseRoute slug={routeInvestmentCaseSlug ?? ''} navigation={navigation('today')} onNavigate={navigateWithinApp} />
+      </DeferredRoute>
+    );
+  }
 
   if (routeStockDissectionMatch) {
     return (

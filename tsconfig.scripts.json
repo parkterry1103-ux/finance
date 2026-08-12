@@ -22,6 +22,7 @@
     "src/domain/valuation/**/*.ts",
     "src/content/research-reports/**/*.ts",
     "src/content/editorial/**/*.ts",
+    "src/content/investment-thinking/**/*.ts",
     "src/content/monte-carlo/**/*.ts",
     "src/content/valuation/**/*.ts",
     "src/content/financial-pivots/**/*.ts",

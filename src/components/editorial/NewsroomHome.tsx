@@ -6,6 +6,8 @@ import { latestPublishedSummary } from '../../content/editorial/selectors.js';
 import type { CompanySearchRecord } from '../../content/company-profiles/types.js';
 import { StockSummaryCard, ThreeReadsSummaryCard, editorialInternalLink, type EditorialNavigate } from './EditorialUi.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
+import { investmentCaseSummaries } from '../../content/investment-thinking/registry.js';
+import { investmentHypotheses, investmentRules } from '../../content/investment-thinking/rulebook.js';
 
 export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const listboxId = useId();
@@ -17,6 +19,8 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
   const hasQuery = Boolean(query.trim());
   const stockItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'stock');
   const threeReadsItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'threeReads');
+  const pilot = investmentCaseSummaries[0];
+  const activeHypothesis = investmentHypotheses[0];
 
   useEffect(() => {
     if (activeIndex >= results.length) setActiveIndex(-1);
@@ -53,9 +57,27 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
       <main>
         <section className="editorial-home-hero" aria-labelledby="editorial-home-title">
           <div className="editorial-home-hero-copy">
-            <p>Stock Autopsy · Daily Research</p>
-            <h1 id="editorial-home-title"><span>오늘 주가가 움직인 이유와</span><span>다음에 확인할 것을 해부합니다.</span></h1>
+            <p>Investment Thinking Lab</p>
+            <h1 id="editorial-home-title"><span>생각이 투자 원칙이 되어가는</span><span>과정을 기록합니다.</span></h1>
+            <p>사건을 분석하고, 가설을 세우고, 결과로 검증하며 나만의 투자 원칙을 만들어갑니다.</p>
           </div>
+          {pilot ? <article className="thinking-lab-home-pilot" id="thinking-lab">
+            <div><span>{pilot.eyebrow}</span><time dateTime={pilot.eventDate}>{pilot.eventDate.replace(/-/g, '.')}</time></div>
+            <h2>{pilot.title}</h2>
+            <p>{pilot.summary}</p>
+            <ol aria-label="Pilot 구성"><li>01 사건</li><li>02 가설</li><li>03 판단</li></ol>
+            <a href={pilot.path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'investment_case', contentId: pilot.id, placement: 'home', destinationType: 'editorial' }); editorialInternalLink(pilot.path, onNavigate)(event); }}>Pilot #001 시작하기 <ArrowRight size={16} aria-hidden="true" /></a>
+          </article> : null}
+        </section>
+
+        <section className="thinking-lab-home-rulebook" aria-labelledby="thinking-lab-rulebook-title">
+          <div className="editorial-section-heading"><p>Rulebook v0.1</p><h2 id="thinking-lab-rulebook-title">현재 나의 원칙</h2><span>사례가 쌓이면 수정할 수 있는 원칙입니다.</span></div>
+          <ol>{investmentRules.slice(0, 3).map((rule) => <li key={rule.id}><strong>{rule.id}</strong><span>{rule.principle}</span></li>)}</ol>
+          {activeHypothesis ? <article><span>검증 중인 가설 · {activeHypothesis.id}</span><p>{activeHypothesis.statement}</p><small>{activeHypothesis.scopeNote}</small></article> : null}
+        </section>
+
+        <section className="editorial-home-section editorial-home-company-search" aria-labelledby="home-company-search-title">
+          <div className="editorial-section-heading"><p>Research tools</p><h2 id="home-company-search-title">필요할 때 기업 근거 확인</h2></div>
           <form className="editorial-home-search" role="search" onSubmit={(event) => event.preventDefault()}>
             <label htmlFor="editorial-home-search-input">기업 찾기</label>
             <div className="editorial-home-combobox">

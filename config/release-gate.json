@@ -46,7 +46,8 @@
     { "name": "ValuationExpectationsRoute", "source": "src/routes/ValuationExpectationsRoute.tsx" },
     { "name": "InsightsRoute", "source": "src/routes/InsightsRoute.tsx" },
     { "name": "StockDissectionRoute", "source": "src/routes/StockDissectionRoute.tsx" },
-    { "name": "ThreeReadsRoute", "source": "src/routes/ThreeReadsRoute.tsx" }
+    { "name": "ThreeReadsRoute", "source": "src/routes/ThreeReadsRoute.tsx" },
+    { "name": "InvestmentCaseRoute", "source": "src/routes/InvestmentCaseRoute.tsx" }
   ],
   "smoke": {
     "timeoutMs": 20000,
@@ -63,6 +64,7 @@
       "/ko/insights/3reads/2026-07-23-option-cost",
       "/ko/insights/stock/paypal-control-premium-draft",
       "/ko/insights/3reads/switching-power-draft",
+      "/ko/lab/cases/pilot-001",
       "/ko/demand-supply",
       "/ko/companies",
       "/ko/companies?q=nvda",
@@ -117,6 +119,7 @@
       { "id": "wall-street-edition", "all": ["오늘의 월스트리트", "먼저 고정한 표준이 가격을 정한다"] },
       { "id": "wsj-non-affiliation", "all": ["The Wall Street Journal", "제휴·후원 관계가 없습니다"] },
       { "id": "phase-5g-home-core", "all": ["기업명 또는 종목코드를 검색해보세요", "오늘의 주가 해부", "오늘의 월스트리트"] },
+      { "id": "phase-6a-thinking-lab", "all": ["Investment Thinking Lab", "반도체 지원 뉴스에서 내가 제주반도체를 먼저 떠올린 이유", "KR-THEME-001", "내가 틀렸다는 신호"] },
       { "id": "phase-5g-company-dissection", "all": ["네 가지 핵심 카드", "오각형 기업 해부", "시장 기대·모멘텀", "확인 부족", "필요한 화면만 선택하세요"] },
       { "id": "phase-5g-research-boundaries", "all": ["핵심 브리프", "고급 보기 · 사업부·해자·공시 근거", "시장가격에 반영된 기대 보기"] },
       { "id": "financial-pivot", "all": ["숫자와 비교", "기간 추세", "비교기업", "산업 집계", "출처와 계산 기준", "자료 미수집"] },

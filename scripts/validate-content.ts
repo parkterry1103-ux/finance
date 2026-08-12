@@ -103,6 +103,8 @@ import {
   validateCompanyProfileRegistry,
 } from '../src/content/company-profiles/index.js';
 import { validateCompanyJudgmentRegistry } from '../src/content/company-judgments/validation.js';
+import { investmentCase } from '../src/content/investment-thinking/cases/pilot-001.js';
+import { validateInvestmentThinkingRegistry } from '../src/content/investment-thinking/validation.js';
 import { loadReleaseGateConfig } from './release-gate-config.js';
 
 const releaseConfig = loadReleaseGateConfig();
@@ -944,6 +946,7 @@ function validateHomeExperience() {
     '/ko/company-events',
     '/ko/companies',
     '/ko/#today-dissections',
+    '/ko/#thinking-lab',
     '/ko/insights',
     '/ko/bottlenecks',
     '/ko/picks',
@@ -983,10 +986,10 @@ function validateHomeExperience() {
   });
 
   if (primaryNavigationItems.length !== 3) addError(`primary navigation item count must be 3: ${primaryNavigationItems.length}`);
-  if (primaryNavigationItems.map((item) => item.label).join('|') !== '오늘의 해부|기업 찾기|리서치') {
-    addError(`primary navigation labels must be 오늘의 해부|기업 찾기|리서치: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
+  if (primaryNavigationItems.map((item) => item.label).join('|') !== '생각 실험|기업 찾기|리서치') {
+    addError(`primary navigation labels must be 생각 실험|기업 찾기|리서치: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
   }
-  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/#today-dissections|/ko/companies|/ko/insights') {
+  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/#thinking-lab|/ko/companies|/ko/insights') {
     addError(`primary navigation routes mismatch: ${primaryNavigationItems.map((item) => item.href).join('|')}`);
   }
   duplicateValues(primaryNavigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate primary navigation item id: ${id}`));
@@ -1133,13 +1136,14 @@ function validateHomeExperience() {
   if (!simplifiedHomeSource) addError('SimplifiedHome component missing');
   if (!/NewsroomHome/.test(simplifiedHomeSource)) addError('SimplifiedHome must render NewsroomHome');
   if ((newsroomHomeSource.match(/<h1\b/g) ?? []).length !== 1) addError('NewsroomHome must render exactly one h1');
-  if (!/오늘 주가가 움직인 이유와/.test(newsroomHomeSource) || !/다음에 확인할 것을 해부합니다\./.test(newsroomHomeSource)) addError('NewsroomHome h1 copy mismatch');
+  if (!/생각이 투자 원칙이 되어가는/.test(newsroomHomeSource) || !/과정을 기록합니다\./.test(newsroomHomeSource)) addError('NewsroomHome h1 copy mismatch');
+  if (!/investmentCaseSummaries/.test(newsroomHomeSource) || !/Pilot #001 시작하기/.test(newsroomHomeSource) || !/Rulebook v0\.1/.test(newsroomHomeSource)) addError('NewsroomHome Thinking Lab entry missing');
   if (!/placeholder="기업명 또는 종목코드를 검색해보세요"/.test(newsroomHomeSource) || !/role="combobox"/.test(newsroomHomeSource)) addError('NewsroomHome company search missing');
   if (!/publishedEditorialSummaryIndex/.test(newsroomHomeSource)) addError('NewsroomHome must use the static editorial summary index');
   if (!/오늘의 해부를 준비하고 있습니다\./.test(newsroomHomeSource) || !/오늘의 월스트리트를 준비하고 있습니다\./.test(newsroomHomeSource)) addError('NewsroomHome verified empty states missing');
   if (/(고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(newsroomHomeSource)) addError('NewsroomHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
-  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute\) return;/.test(appSource)) addError('home and company routes must not load market prices');
+  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute \|\| routeInvestmentCaseMatch\) return;/.test(appSource)) addError('home, company, and investment case routes must not load market prices');
   if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
   if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
   if (!/\.editorial-home :is\(a, input\):focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
@@ -1310,7 +1314,7 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, and company routes must skip unrelated global API preloads');
+  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute || routeInvestmentCaseMatch) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, company, and investment case routes must skip unrelated global API preloads');
 }
 
 function validateCompanyEventContent() {
@@ -2611,6 +2615,8 @@ validateSecFilingHelpers();
 validateSecFilingDetailParsers();
 const companyJudgmentErrors = await validateCompanyJudgmentRegistry();
 companyJudgmentErrors.forEach((message) => addError(`company judgment: ${message}`));
+const investmentThinkingErrors = validateInvestmentThinkingRegistry([investmentCase]);
+investmentThinkingErrors.forEach((message) => addError(`investment thinking: ${message}`));
 
 warnings.forEach((warning) => console.warn(warning));
 
@@ -2651,6 +2657,7 @@ console.log(`✓ 기업 profile reference 검증 (관계 ${companyProfileRelatio
 console.log(`✓ 시장지도 폐기 검증 (legacy route ${marketMapRetirementValidation.legacyRouteCount}개, navigation ${marketMapRetirementValidation.publicNavigationLinkCount}개, CTA ${marketMapRetirementValidation.publicCtaCount}개, relation consumer ${marketMapRetirementValidation.runtimeRelationConsumerCount}개, ReactFlow import ${marketMapRetirementValidation.reactFlowImportCount}개)`);
 console.log(`✓ 기업 한눈에 보기 검증 (profile ${companyProfileValidation.profileCount}개, 잘못된 ref·규칙 ${companyProfileValidation.invalidCount}개)`);
 console.log(`✓ 기업 판단 최신성 검증 (초기 기업 3개, 오류 ${companyJudgmentErrors.length}개)`);
+console.log(`✓ Investment Thinking Lab 검증 (Rule 5개, Hypothesis 1개, Case 1개, 오류 ${investmentThinkingErrors.length}개)`);
 console.log(`✓ 홈 진입 검증 (보존 기능 registry ${homeValidation.featureCount}개, primary navigation ${homeValidation.navigationItemCount}개, insight ${homeValidation.insightCount}개, 거시 ${homeValidation.macroCardCount}개, 병목 ${homeValidation.bottleneckCardCount}개)`);
 console.log(`✓ 홈 연결 검증 (산업 flow ${homeValidation.flowCount}개, 공시 유형 ${homeValidation.disclosureEventTypeCount}개, 보고서 ${homeValidation.reportCount}개, 용어 ${homeValidation.termCount}개, 잘못된 ref ${homeValidation.invalidRefCount}개)`);
 console.log('✓ 홈 route/표시 상한/투자 추천·가짜 점수·외부 이미지·client secret 검증 정상');
