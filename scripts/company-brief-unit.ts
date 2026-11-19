@@ -70,7 +70,7 @@ const companiesRoute = readFileSync(join(process.cwd(), 'src', 'routes', 'Compan
 check(companiesRoute.includes('loadCompanyBrief') && companiesRoute.includes('CompanyBriefLoadingPage'), 'company brief loads only after company route');
 const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
 check(componentSource.includes('brief.questions.recentChange.summary'), 'Company Brief feeds official recent-change fallback');
-check(componentSource.includes('dissection.coreCards.map'), 'first screen renders four dissection core cards');
+check(componentSource.includes("dissection.coreCards.filter((card) => card.state !== 'insufficientData').map") && componentSource.includes('데이터 범위와 한계는 상세 자료에서 확인할 수 있습니다.'), 'first screen omits uncollected metric cards while preserving data limitations');
 check(componentSource.includes("profile.searchStatus.reportStatus === 'supported' && brief.reportSlug") && componentSource.includes('장기 기업 판단'), 'report CTA condition');
 check(componentSource.includes('recentEditorial.length ?') && componentSource.includes('최근 관련 해부'), 'related editorial section condition');
 check(!componentSource.includes('최근 관련 해부가 없습니다'), 'no empty editorial message');

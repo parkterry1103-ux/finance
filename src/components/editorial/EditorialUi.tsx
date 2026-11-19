@@ -12,6 +12,7 @@ export type EditorialNavigate = (path: string) => void;
 
 export function editorialInternalLink(path: string, onNavigate: EditorialNavigate) {
   return (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     onNavigate(path);
   };
@@ -64,14 +65,14 @@ export function ThreeReadsSummaryCard({ item, onNavigate, compact = false }: { i
   const path = editorialPath(item);
   return (
     <article className={`editorial-card editorial-three-card${compact ? ' is-compact' : ''}`}>
-      <div className="editorial-card-meta"><span>오늘의 월스트리트</span><time dateTime={item.publishedAt}>{editorialDate(item.publishedAt)} 발행</time></div>
+      <div className="editorial-card-meta"><span>경제 뉴스 해설</span><time dateTime={item.publishedAt}>{editorialDate(item.publishedAt)} 발행</time></div>
       <p className="editorial-card-basis"><time dateTime={item.contentAsOf}>{editorialDate(item.contentAsOf)} 분석</time></p>
       <h3>{item.title}</h3>
       <p className="editorial-three-question">{item.centralQuestion}</p>
       {!compact ? <p className="editorial-three-thread">세 개의 뉴스, 하나의 투자 질문</p> : null}
       <ol>{item.readHeadlines.map((headline, index) => <li key={headline}><strong>{headline}</strong><span>{item.readSummaries[index]}</span></li>)}</ol>
-      <div className="editorial-takeaway"><span>오늘의 한 줄</span><p>{item.oneLineTakeaway}</p></div>
-      <div className="editorial-card-actions"><a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'wall_street_edition', contentId: item.id, placement: compact ? 'insights_index' : 'home', destinationType: 'editorial' }); editorialInternalLink(path, onNavigate)(event); }}>오늘의 월스트리트 전체 읽기 <ArrowRight size={15} aria-hidden="true" /></a></div>
+      <div className="editorial-takeaway"><span>핵심 요약</span><p>{item.oneLineTakeaway}</p></div>
+      <div className="editorial-card-actions"><a href={path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'wall_street_edition', contentId: item.id, placement: compact ? 'insights_index' : 'home', destinationType: 'editorial' }); editorialInternalLink(path, onNavigate)(event); }}>해설 전체 읽기 <ArrowRight size={15} aria-hidden="true" /></a></div>
     </article>
   );
 }

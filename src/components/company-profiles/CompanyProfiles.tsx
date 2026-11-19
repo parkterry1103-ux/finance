@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { ArrowRight, ExternalLink, FileSearch, Network, Search, ShieldAlert } from 'lucide-react';
+import { ArrowRight, ExternalLink, Network, Search, ShieldAlert } from 'lucide-react';
 import {
   companyEventStageLabels,
   companyEventTypeLabels,
@@ -285,6 +285,8 @@ export function CompanyResearchProfilePage({
   const { company, profile } = viewModel;
   const { dashboard } = viewModel;
   const security = profile.stockCode ?? company.ticker;
+  const analysisAsOf = judgment?.companyDirection.asOf ?? brief.asOf;
+  const availableMetrics = dashboard.metrics.filter((metric) => metric.value !== null && Boolean(metric.formattedValue));
   const relatedEditorialIds = new Set(brief.relatedEditorialIds);
   const recentEditorial = publishedEditorialSummaryIndex.filter((item) => relatedEditorialIds.has(item.id)).slice(0, 2);
   const recentStock = recentEditorial.find((item) => item.kind === 'stock');
@@ -338,22 +340,19 @@ export function CompanyResearchProfilePage({
             <p className="company-dashboard-english-name">{profile.englishName}</p>
             <p className="company-dashboard-security">{security} <span aria-hidden="true">·</span> {profile.exchange} <span aria-hidden="true">·</span> {dissection?.industryProfile.primaryIndustry ?? profile.industry}</p>
             <p className="company-dashboard-description">{brief.oneLineBusiness}</p>
-            <p className="company-dashboard-asof">분석 기준 <time dateTime={brief.asOf}>{formatDate(brief.asOf)}</time></p>
+            <p className="company-dashboard-asof">분석 기준 <time dateTime={analysisAsOf}>{formatDate(analysisAsOf)}</time></p>
+            <p className="portfolio-basis-note">표시된 기준일의 리서치 기록입니다. 이후 실적과 시장 변화는 자동 반영하지 않습니다.</p>
           </div>
         </header>
 
-        {judgmentDisplayMode === 'current' && judgment ? <CompanyJudgmentPanel companyName={company.name} model={judgment} /> : judgmentDisplayMode === 'preparing' ? <section className="company-judgment-summary company-judgment-preparing" aria-labelledby="company-judgment-preparing-title">
-          <div className="company-dashboard-section-heading"><h2 id="company-judgment-preparing-title">현재 판단</h2></div>
-          <p>최신 실적을 반영한 분석을 준비하고 있습니다.</p>
-          {previousJudgmentAsOf ? <small>이전 분석 기준: <time dateTime={previousJudgmentAsOf}>{formatDate(previousJudgmentAsOf)}</time></small> : null}
-        </section> : judgmentDisplayMode === 'legacy' && dissection ? <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
-          <div className="company-dashboard-section-heading"><span>10초 핵심 상태</span><h2 id="company-dissection-core-title">네 가지 핵심 카드</h2><p>각 카드는 한 개의 대표 근거와 비교 기준만 보여줍니다.</p></div>
-          <div className="company-dissection-core-grid">{dissection.coreCards.map((card) => <article key={card.key} className={`state-${card.state}`}>
+        {judgmentDisplayMode === 'current' && judgment ? <CompanyJudgmentPanel companyName={company.name} model={judgment} /> : judgmentDisplayMode === 'legacy' && dissection ? <section className="company-dissection-core" aria-labelledby="company-dissection-core-title">
+          <div className="company-dashboard-section-heading"><span>핵심 지표</span><h2 id="company-dissection-core-title">근거로 확인한 항목</h2><p>비교 근거가 있는 항목만 표시합니다. 데이터 범위와 한계는 상세 자료에서 확인할 수 있습니다.</p></div>
+          <div className="company-dissection-core-grid">{dissection.coreCards.filter((card) => card.state !== 'insufficientData').map((card) => <article key={card.key} className={`state-${card.state}`}>
             <span>{card.label}</span><h3>{card.statusLabel}</h3><strong>{card.value}</strong><p>{card.comparisonLabel}</p><small>{formatDate(card.period)}</small>
           </article>)}</div>
         </section> : null}
 
-        {judgmentDisplayMode === 'current' ? (completedRadar ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null) : judgmentDisplayMode === 'legacy' && dissection ? <CompanyDissectionRadar companyName={company.name} model={dissection} onNavigate={onNavigate} /> : null}
+        {completedRadar && judgmentDisplayMode !== 'preparing' ? <CompanyDissectionRadar companyName={company.name} model={completedRadar} onNavigate={onNavigate} /> : null}
 
         {isJudgmentCompany ? <details className="company-market-momentum company-market-momentum--judgment">
           <summary><span>보조 정보</span><strong>최근 사건과 주가 반응</strong><small>특정 사건과 가격 반응을 필요할 때만 펼쳐 봅니다.</small></summary>
@@ -396,7 +395,7 @@ export function CompanyResearchProfilePage({
               </div>
             </section>
 
-            <section className="company-profile-section" aria-labelledby="company-flow-title">
+            {viewModel.industryFlows.length ? <section className="company-profile-section" aria-labelledby="company-flow-title">
               <div className="company-profile-section-heading"><span>산업 연결</span><h2 id="company-flow-title">산업 흐름에서 어디에 있나요?</h2><p>정적 산업 흐름은 기업의 역할과 앞뒤 단계를 설명하며 특정 직접 계약을 뜻하지 않습니다.</p></div>
               {viewModel.industryFlows.length ? <div className="company-profile-flow-list">{viewModel.industryFlows.map(({ flow }) => (
                 <div key={flow.id}>
@@ -407,17 +406,17 @@ export function CompanyResearchProfilePage({
                   </div>
                 </div>
               ))}</div> : <p className="company-profile-empty-copy">현재 연결된 정적 산업 흐름이 없습니다. 공식 자료에 근거한 기업 역할 설명은 계속 제공합니다.</p>}
-            </section>
+            </section> : null}
 
-            <section className="company-profile-section" aria-labelledby="company-events-title">
+            {viewModel.companyEvents.length ? <section className="company-profile-section" aria-labelledby="company-events-title">
               <div className="company-profile-section-heading"><span>공식 사실</span><h2 id="company-events-title">최근 공식적으로 밝힌 변화</h2></div>
               {viewModel.companyEvents.length ? <div className="company-profile-event-grid">{viewModel.companyEvents.map((event) => {
                 const source = sourceRegistry[event.sourceRefs[0]];
                 return <article key={event.id}><div><time dateTime={event.eventDate}>{formatDate(event.eventDate)}</time><span>{companyEventTypeLabels[event.eventType]} · {companyEventStageLabels[event.stage]}</span></div><h3>{event.title}</h3><p><strong>확인된 사실</strong>{event.factualSummary}</p><p><strong>왜 확인할 변화인가</strong>{event.whyItMatters}</p><details><summary>앞으로 확인할 것</summary><ul>{event.nextCheckpoints.map((checkpoint) => <li key={checkpoint}>{checkpoint}</li>)}</ul></details>{source ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.publisher} 공식 원문 <ExternalLink size={13} aria-hidden="true" /></a> : null}</article>;
               })}</div> : <p className="company-profile-empty-copy">현재 등록된 검토 이벤트가 없습니다. 공식 공시와 기업 발표를 추가 확인할 예정입니다.</p>}
-            </section>
+            </section> : null}
 
-            <section className="company-profile-section" aria-labelledby="company-demand-title">
+            {viewModel.demandSupply.length ? <section className="company-profile-section" aria-labelledby="company-demand-title">
               <div className="company-profile-section-heading"><span>산업 배경</span><h2 id="company-demand-title">수요와 공급 배경</h2><p>이 기업과 함께 살펴볼 산업 배경이며 기업 실적을 직접 의미하지 않습니다.</p></div>
               <div className="company-profile-demand-grid">
                 {viewModel.demandSupply.map((entry) => {
@@ -425,23 +424,21 @@ export function CompanyResearchProfilePage({
                   return <article key={entry.id}><span>수요·공급</span><h3>{entry.title}</h3><p><strong>수요 배경</strong>{entry.demandContext}</p><p><strong>공급 상태</strong>{bottleneck ? `${bottleneckStatusLabels[bottleneck.status]} · ${bottleneckTrendLabels[bottleneck.trend]}` : entry.supplyContext}</p>{bottleneck ? <p><strong>완화 신호</strong>{bottleneck.reliefSignals[0]}</p> : null}<small>검토일 {formatDate(bottleneck?.reviewedAt ?? '')}</small></article>;
                 })}
               </div>
-            </section>
+            </section> : null}
 
-            <section className="company-profile-section" aria-labelledby="company-relations-title">
+            {viewModel.companyRelations.length ? <section className="company-profile-section" aria-labelledby="company-relations-title">
               <div className="company-profile-section-heading"><span>산업 맥락</span><h2 id="company-relations-title">같이 볼 기업</h2><p>같은 수요나 생산·인프라 단계를 이해하기 위한 참고이며 직접 계약을 뜻하지 않습니다.</p></div>
               {viewModel.companyRelations.length ? <div className="company-profile-relation-grid">{viewModel.companyRelations.map(({ relation, company: related, companyPath }) => {
                 const evidence = sourceRegistry[relation.sourceRefs[0]];
                 return <article key={`${relation.companyId}-${relation.relatedCompanyId}`}><div><Network size={18} aria-hidden="true" /><span>{related.countryLabel} · {related.ticker || 'ticker 확인 제한'}</span></div><h3>{related.name}</h3><div className="company-profile-relation-badges"><span>{companyProfileRelationTypeLabels[relation.relationType]}</span></div><p>{relation.explanation}</p><small>산업 맥락 참고이며 직접 계약을 의미하지 않습니다.</small><div className="company-profile-relation-actions"><a href={companyPath} onClick={internalLink(companyPath, onNavigate)}>기업 보기</a>{evidence ? <a href={evidence.url} target="_blank" rel="noopener noreferrer">공식 근거 보기</a> : null}</div></article>;
               })}</div> : <p className="company-profile-empty-copy">현재 함께 볼 기업 reference가 없습니다. 직접 관계를 임의로 만들지 않습니다.</p>}
-            </section>
+            </section> : null}
 
-            {viewModel.picks.length ? <section className="company-profile-section" aria-labelledby="company-pick-title"><div className="company-profile-section-heading"><span>편집 관점</span><h2 id="company-pick-title">관련 Pick</h2></div>{viewModel.picks.map((pick) => <article className="company-profile-pick-card" key={pick.id}><FileSearch size={20} aria-hidden="true" /><span>{formatDate(pick.publishedAt ?? '')} 검토</span><h3>{pick.title}</h3><p>{pick.reasonSummary}</p><a href={`/ko/picks/${encodeURIComponent(pick.id)}`} onClick={internalLink(`/ko/picks/${encodeURIComponent(pick.id)}`, onNavigate)}>Pick 자세히 보기 <ArrowRight size={14} aria-hidden="true" /></a></article>)}</section> : null}
-
-            <section className="company-profile-section" aria-labelledby="company-dashboard-archive-title">
+            {availableMetrics.length || dashboard.charts.length ? <section className="company-profile-section" aria-labelledby="company-dashboard-archive-title">
               <div className="company-profile-section-heading"><span>기존 상세 데이터</span><h2 id="company-dashboard-archive-title">공식 숫자와 차트</h2><p>첫 화면에서는 대표 근거만 보여주고, 기존 지표와 접근 가능한 차트는 이 영역에 보존합니다.</p></div>
-              <div className="company-dashboard-metric-grid">{dashboard.metrics.map((item) => <article key={item.id}><span>{item.label}</span><strong>{item.formattedValue ?? '자료 미수집'}</strong><small>{item.period} · {item.unit}{item.currency ? ` · ${item.currency}` : ''}</small><p>{item.description}</p></article>)}</div>
+              <div className="company-dashboard-metric-grid">{availableMetrics.map((item) => <article key={item.id}><span>{item.label}</span><strong>{item.formattedValue}</strong><small>{item.period} · {item.unit}{item.currency ? ` · ${item.currency}` : ''}</small><p>{item.description}</p></article>)}</div>
               {dashboard.charts.length ? <div className="company-dashboard-chart-grid">{dashboard.charts.map((chart) => <DashboardBarChart key={chart.id} chart={chart} metrics={dashboard.metrics} />)}</div> : null}
-            </section>
+            </section> : null}
 
             {viewModel.verifiedMetrics.length ? <section className="company-profile-section" aria-labelledby="company-metrics-title"><div className="company-profile-section-heading"><span>기존 공식 수치</span><h2 id="company-metrics-title">리포트에서 확인한 숫자</h2></div><div className="company-profile-metric-grid">{viewModel.verifiedMetrics.map((item) => <article key={`${item.reportId}-${item.label}`}><span>{item.label}</span><strong>{item.value}</strong><p>{item.context}</p><small>{item.asOf ? `${item.asOf} · ` : ''}{item.reportTitle}</small></article>)}</div></section> : null}
 

@@ -66,14 +66,17 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
       for (const [field, value] of [['publishedAt', item.publishedAt], ['eventAsOf', item.eventAsOf], ['priceAsOf', item.priceAsOf]] as const) {
         if (!dateIsNotFuture(value, input.today)) errors.push(`${label}: ${field}가 없거나 미래 날짜입니다.`);
       }
-      if (item.verification?.status !== 'ownerVerified' || item.verification.authoredBy !== 'owner' || item.verification.verifiedBy !== 'owner' || !hasText(item.verification.verifiedAt)) errors.push(`${label}: owner verification이 없습니다.`);
+      const verification = item.verification;
+      const ownerVerified = verification?.status === 'ownerVerified' && verification.authoredBy === 'owner' && verification.verifiedBy === 'owner';
+      const sourceVerified = verification?.status === 'sourceVerified' && verification.authoredBy === 'editorial' && verification.verifiedBy === 'sourceReview' && hasText(verification.note);
+      if ((!ownerVerified && !sourceVerified) || !hasText(verification?.verifiedAt)) errors.push(`${label}: owner verification 또는 출처 대조 기록이 없습니다.`);
       if (!hasText(item.company.name) || (!hasText(item.company.ticker) && !hasText(item.company.companySlug))) errors.push(`${label}: 회사명과 ticker 또는 company slug가 필요합니다.`);
       if (!hasText(item.directCatalyst) && !hasText(item.marketInterpretation)) errors.push(`${label}: 직접 촉매 또는 시장 해석이 필요합니다.`);
       if (!item.confirmedItems.length || !item.unconfirmedItems.length || !item.watchItems.length) errors.push(`${label}: 확인·미확인·다음 확인 항목이 필요합니다.`);
       if (!item.fullArticle?.length || !item.fullArticle.every(hasText)) errors.push(`${label}: 완성 원고가 없습니다.`);
       if (!item.evidence?.length) errors.push(`${label}: 분석 근거가 없습니다.`);
       if (intake?.contentType !== 'stock_dissection'
-        || intake.status !== 'owner_verified'
+        || intake.status !== (ownerVerified ? 'owner_verified' : 'source_verified')
         || !hasText(intake.session)
         || !intake.researchSourceFile.endsWith('01_verified-research.md')
         || !intake.detailSourceFile.endsWith('04_website-article.md')
@@ -81,6 +84,7 @@ export function validateEditorialRegistry(input: EditorialValidationInput): Edit
         || intake.keyFiguresConsistent !== true) {
         errors.push(`${label}: 3파일 intake 계약 또는 핵심 수치 일치 확인이 없습니다.`);
       }
+      if (item.industryFactors && (!item.industryFactors.length || !item.industryFactors.every(hasText))) errors.push(`${label}: 산업 요인에는 비어 있지 않은 설명이 필요합니다.`);
       const evidenceIds = new Set(item.evidence?.map((evidence) => evidence.id) ?? []);
       if (evidenceIds.size !== (item.evidence?.length ?? 0)) errors.push(`${label}: 근거 ID가 중복됐습니다.`);
       item.evidence?.forEach((evidence) => {

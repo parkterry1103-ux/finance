@@ -1,10 +1,15 @@
 export type EditorialStatus = 'draft' | 'verified' | 'published' | 'archived';
 
-export type EditorialVerification = {
+export type EditorialVerification = ({
   authoredBy: 'owner';
   verifiedBy: 'owner';
-  verifiedAt: string;
   status: 'ownerVerified';
+} | {
+  authoredBy: 'editorial';
+  verifiedBy: 'sourceReview';
+  status: 'sourceVerified';
+}) & {
+  verifiedAt: string;
   note?: string;
 };
 
@@ -121,7 +126,7 @@ export type ComparableReturn = {
 
 export type StockDissectionIntake = {
   contentType: 'stock_dissection';
-  status: 'owner_verified';
+  status: 'owner_verified' | 'source_verified';
   session: 'regular' | 'preMarket' | 'afterHours';
   researchSourceFile: string;
   detailSourceFile: string;
@@ -178,8 +183,10 @@ export type DailyStockDissection = {
     sector?: ComparableReturn;
   };
   marketWideFactors: string[];
+  industryFactors?: string[];
   companySpecificFactors: string[];
   thesisImpact: 'maintain' | 'partiallyRevise' | 'reassess' | 'notApplicable';
+  thesisImpactNote?: string;
   watchItems: string[];
   relatedThreeReadsIds: string[];
   sourceIds: string[];

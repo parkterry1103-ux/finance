@@ -155,6 +155,7 @@ import {
 } from './content/company-profiles/paths';
 import { industryFlows } from './content/industry-flows';
 import { replaceLegacyMarketMapLocation, resolveLegacyMarketMapRoute } from './lib/legacyMarketMapRoutes';
+import { replacePortfolioLocation, resolvePortfolioRoute } from './lib/portfolioRoutes';
 import { DeferredRoute, RouteLoadingFallback } from './routes/RouteBoundary';
 import { NewsroomHome } from './components/editorial/NewsroomHome';
 import { trackRoutePageView } from './analytics';
@@ -172,6 +173,7 @@ const InsightsRoute = lazy(() => import('./routes/InsightsRoute'));
 const StockDissectionRoute = lazy(() => import('./routes/StockDissectionRoute'));
 const ThreeReadsRoute = lazy(() => import('./routes/ThreeReadsRoute'));
 const InvestmentCaseRoute = lazy(() => import('./routes/InvestmentCaseRoute'));
+const JournalArchiveRoute = lazy(() => import('./routes/JournalArchiveRoute'));
 
 type NewsItem = {
   title: string;
@@ -747,11 +749,11 @@ function picksArchivePath() {
 }
 
 function navigateWithinApp(href: string) {
-  window.history.pushState({}, '', href);
+  window.history.pushState({}, '', resolvePortfolioRoute(href) ?? href);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-type PrimaryNavKey = 'today' | 'insights' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
+type PrimaryNavKey = 'today' | 'records' | 'insights' | 'picks' | 'market-map' | 'macro' | 'relations' | 'demand-supply' | 'bottlenecks' | 'companies' | 'company-events' | 'disclosures' | 'reports' | 'analysis';
 
 type PrimaryNavigationProps = {
   active: PrimaryNavKey;
@@ -813,6 +815,7 @@ function PrimaryNavigation({
       <a
         href="/ko/"
         onClick={(event) => {
+          if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
           event.preventDefault();
           closeNavigation();
           onHome();
@@ -846,6 +849,7 @@ function PrimaryNavigation({
             className={activeItem === item.activeKey ? 'active' : ''}
             aria-current={activeItem === item.activeKey ? 'page' : undefined}
             onClick={(event) => {
+              if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
               event.preventDefault();
               closeNavigation();
               navigateWithinApp(item.href);
@@ -4938,7 +4942,7 @@ function SupplyChainBottlenecksPage({
 
       <main className="bottleneck-main">
         <section className="bottleneck-hero">
-          <p className="home-kicker">공개 자료로 지속 관찰하는 편집형 모니터링</p>
+          <p className="home-kicker">공식 자료로 정리한 산업 기록</p>
           <h1>공급이 부족한 곳</h1>
           <span className="beginner-professional-name">공급망 병목 레이더</span>
           <p>공급 제약의 근거와 변화 방향을 확인하고, 산업 흐름·보고서·기업으로 이어지는 구조를 봅니다.</p>
@@ -4948,7 +4952,7 @@ function SupplyChainBottlenecksPage({
         <section className="bottleneck-summary" aria-labelledby="bottleneck-summary-title">
           <div className="bottleneck-section-head">
             <span>한눈에 보기</span>
-            <h2 id="bottleneck-summary-title">관찰 중인 병목 {supplyChainBottlenecks.length}개</h2>
+            <h2 id="bottleneck-summary-title">기록한 공급 병목 {supplyChainBottlenecks.length}개</h2>
           </div>
           <div className="bottleneck-summary-grid">
             <article><span>정상</span><strong>{counts.normal}</strong></article>
@@ -4962,7 +4966,7 @@ function SupplyChainBottlenecksPage({
         <a className="bottleneck-demand-supply-cta" href={demandSupplyPath()} onClick={(event) => {
           event.preventDefault();
           navigateWithinApp(demandSupplyPath());
-        }}>수요 배경과 함께 보기 <ArrowRight size={15} /></a>
+        }}>산업 연결 구조 보기 <ArrowRight size={15} /></a>
 
         {featured ? (
           <section className={`bottleneck-featured status-${featured.status}`} aria-labelledby="bottleneck-featured-title">
@@ -5277,11 +5281,6 @@ function SupplyChainBottleneckDetailPage({
             <h2>근거 배경 읽기</h2>
             <div>{reports.map((report) => <button type="button" key={report.id} onClick={() => onOpenReports(report.id)}>{report.titleKo}</button>)}</div>
           </article>
-          <article>
-            <span>관련 Pick</span>
-            <h2>기업 가설 확인</h2>
-            {picks.length ? <div>{picks.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}</div> : <p>현재 연결된 Pick이 없습니다.</p>}
-          </article>
         </section>
 
         {macroIndicators.length ? (
@@ -5373,7 +5372,7 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
           <div className="industry-reports-principles">
             <article><strong>공식 원문</strong><p>공공기관·산업단체·회사 IR의 공개 자료만 등록합니다.</p></article>
             <article><strong>전망과 실제</strong><p>예측치, 실적치, 조사 범위를 수치 카드에서 구분합니다.</p></article>
-            <article><strong>연결 뒤 검증</strong><p>산업 흐름과 Pick에서 수주·공시·현금흐름을 다시 확인합니다.</p></article>
+            <article><strong>연결 뒤 검증</strong><p>산업 흐름과 기업 리서치에서 수주·공시·현금흐름을 함께 확인합니다.</p></article>
           </div>
         </section>
 
@@ -5458,12 +5457,6 @@ function IndustryReportsPage({ onHome, onOpenMarketMap, onOpenPicks, onOpenDiscl
                         <div>
                           <span>같이 볼 기업</span>
                           <p>{linkedCompanies.join(' · ')}</p>
-                        </div>
-                      ) : null}
-                      {relatedPickItems.length ? (
-                        <div>
-                          <span>연결된 Pick</span>
-                          <div>{relatedPickItems.slice(0, 3).map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName}</button>)}</div>
                         </div>
                       ) : null}
                     </div>
@@ -5604,17 +5597,12 @@ function IndustryReportDetailPage({ report, onHome, onOpenReports, onOpenPicks, 
           </article>
           <article className="industry-report-detail-card industry-report-detail-connections">
             <span>현재 무엇을 봐야 하나요?</span>
-            <h2>산업 흐름·기업·Pick</h2>
+            <h2>관련 산업과 기업</h2>
             <div>
               {report.marketMapIds.map((mapId) => (
                 <button type="button" key={mapId} onClick={() => onOpenCategory(mapId)}>{reportMapLabels[mapId] ?? mapId}</button>
               ))}
             </div>
-            {relatedPickItems.length ? (
-              <div>
-                {relatedPickItems.map((pick) => <button type="button" key={pick.id} onClick={() => onOpenPick(pick)}>{pick.companyName} Pick</button>)}
-              </div>
-            ) : null}
             {linkedBottlenecks.length ? (
               <div>
                 {linkedBottlenecks.map((entry) => <a key={entry.id} href={bottlenecksPath(entry.id)}>연결된 병목 · {entry.shortTitle}</a>)}
@@ -6882,7 +6870,8 @@ function AnalysisPage({ company, anchor, newsState, onHome, onBack, onOpenAnalys
 
 function App() {
   const [route, setRoute] = useState(() => {
-    const replacement = replaceLegacyMarketMapLocation();
+    const legacyReplacement = replaceLegacyMarketMapLocation();
+    const replacement = replacePortfolioLocation() ?? legacyReplacement;
     return replacement ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
   });
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
@@ -6912,6 +6901,8 @@ function App() {
   const routeStockDissectionMatch = routePath.match(/^\/ko\/insights\/stock\/([^/]+)\/?$/);
   const routeThreeReadsMatch = routePath.match(/^\/ko\/insights\/3reads\/([^/]+)\/?$/);
   const routeInvestmentCaseMatch = routePath.match(/^\/ko\/lab\/cases\/([^/]+)\/?$/);
+  const routeJournalMatch = routePath.match(/^\/ko\/records(?:\/([a-z0-9-]+))?\/?$/);
+  const isJournalArchiveRoute = Boolean(routeJournalMatch);
   const routeInsightsMatch = routePath.match(/^\/ko\/insights\/?$/);
   const routeCompanyProfileMatch = routePath.match(/^\/ko\/companies\/([^/]+)\/?$/) ?? routePath.match(/^\/companies\/([^/]+)\/?$/);
   const routePickArchiveMatch = routePath.match(/^\/ko\/picks\/archive\/?$/);
@@ -6950,10 +6941,12 @@ function App() {
   const isCompanyEventsRoute = Boolean(routeCompanyEventsMatch);
   const isCompaniesRoute = Boolean(routeCompaniesMatch || routeCompanyProfileMatch);
   const needsDisclosureFeed = isPicksRoute || isDisclosuresRoute;
+  const needsMarketPrices = isPicksRoute || Boolean(routeAnalysisMatch);
 
   useEffect(() => {
     const syncRoute = () => {
-      const replacement = replaceLegacyMarketMapLocation();
+      const legacyReplacement = replaceLegacyMarketMapLocation();
+      const replacement = replacePortfolioLocation() ?? legacyReplacement;
       setRoute(replacement ?? `${window.location.pathname}${window.location.search}${window.location.hash}`);
     };
     window.addEventListener('popstate', syncRoute);
@@ -6966,13 +6959,15 @@ function App() {
 
   useEffect(() => {
     const title = isHomeRoute
-      ? '주가해부실 | Investment Thinking Lab'
+      ? '주가해부실 | 뉴스와 시장'
       : routeStockDissectionMatch
         ? '주가 해부 | 주가해부실'
       : routeThreeReadsMatch
-        ? '오늘의 월스트리트 | 주가해부실'
+        ? '경제 뉴스 해설 | 주가해부실'
       : routeInvestmentCaseMatch
-        ? 'Investment Thinking Lab · Pilot #001 | 주가해부실'
+        ? '사건과 내 기록 | 주가해부실'
+      : isJournalArchiveRoute
+        ? '내 기록 | 주가해부실'
       : routeInsightsMatch
         ? '리서치 | 주가해부실'
       : routeResearchReportMatch
@@ -6990,16 +6985,18 @@ function App() {
         : routeCompaniesMatch
           ? '기업 분석 | 주가해부실'
           : isDemandSupplyRoute
-            ? '수요와 공급을 함께 보기 | 주가해부실'
+            ? '산업 연결 구조 | 주가해부실'
             : '주가해부실';
     const metaDescription = isHomeRoute
-      ? '사건을 분석하고 가설을 세우고 결과로 검증하며 나만의 투자 원칙을 만들어가는 과정을 기록합니다.'
+      ? '기업의 발표부터 시장과 산업의 흐름까지, 근거를 따라 살펴봅니다.'
       : routeStockDissectionMatch
         ? '확인된 사실과 아직 확인되지 않은 내용을 구분해 주가 움직임과 다음 확인 항목을 설명합니다.'
       : routeThreeReadsMatch
         ? '서로 다른 세 뉴스를 하나의 구조적 질문으로 연결합니다.'
       : routeInvestmentCaseMatch
-        ? '사건을 보고 떠오른 생각, 검증할 가설과 틀렸다는 신호를 세 단계로 기록합니다.'
+        ? '과거 사건에서 시장·산업·기업 요인을 비교하고, 내 판단과 확인 근거, 판단의 변화를 이 브라우저에 기록합니다.'
+      : isJournalArchiveRoute
+        ? '직접 투자하고 살펴본 기업의 공개 복기와 이 브라우저에 남긴 개인 메모를 모아봅니다.'
       : routeInsightsMatch
         ? '최근 주가 해부와 오늘의 월스트리트를 확인합니다.'
       : routeResearchReportMatch && routeResearchReportIdentity && ['nvidia', 'meta'].includes(routeResearchReportSlug ?? '')
@@ -7030,11 +7027,11 @@ function App() {
   }, [isDemandSupplyRoute, isHomeRoute, routeCompanyIdentity?.name, routePath, routeResearchReportIdentity?.name, routeResearchReportSlug, Boolean(routeCompaniesMatch), Boolean(routeCompanyProfileMatch), Boolean(routeResearchReportMatch), Boolean(routeInsightsMatch), Boolean(routeStockDissectionMatch), Boolean(routeThreeReadsMatch), Boolean(routeInvestmentCaseMatch)]);
 
   useEffect(() => {
-    if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute || routeInvestmentCaseMatch) return;
+    if (!needsMarketPrices) return;
     let cancelled = false;
     fetchMarketPrices().then((items) => { if (!cancelled) setMarketPrices(items); });
     return () => { cancelled = true; };
-  }, [isCompaniesRoute, isCompanyEventsRoute, isDemandSupplyRoute, isHomeRoute, Boolean(routeInvestmentCaseMatch)]);
+  }, [needsMarketPrices]);
 
   useEffect(() => {
     if (!needsDisclosureFeed) return;
@@ -7143,6 +7140,14 @@ function App() {
       onOpenReports={openReports}
     />
   );
+
+  if (isJournalArchiveRoute) {
+    return (
+      <DeferredRoute fallback={<div className="pick-shell thinking-lab-shell">{navigation('records')}<RouteLoadingFallback /></div>} resetKey={routePath}>
+        <JournalArchiveRoute navigation={navigation('records')} onNavigate={navigateWithinApp} entryId={routeJournalMatch?.[1]} />
+      </DeferredRoute>
+    );
+  }
 
   if (routeInvestmentCaseMatch) {
     return (

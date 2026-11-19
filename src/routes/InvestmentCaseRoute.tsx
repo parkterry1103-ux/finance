@@ -5,11 +5,13 @@ import {
   investmentCaseStepCount,
   investmentCaseStepForKey,
 } from '../content/investment-thinking/navigation.js';
-import { investmentHypothesisById, investmentRuleById } from '../content/investment-thinking/rulebook.js';
+import { investmentHypothesisById } from '../content/investment-thinking/rulebook.js';
 import { loadInvestmentCase } from '../content/investment-thinking/registry.js';
 import type { InvestmentCase, InvestmentCaseStep } from '../content/investment-thinking/types.js';
 import { resolveSource } from '../content/sources/registry.js';
 import { trackAnalyticsEvent } from '../analytics/index.js';
+import { hasPracticeCaseSlug } from '../content/investment-thinking/practice.js';
+import ThinkingPracticeRoute from './ThinkingPracticeRoute.js';
 
 const stepLabels = ['사건', '가설', '판단'] as const;
 const familiarityLabels = { high: '높음', medium: '중간', low: '낮음' } as const;
@@ -65,7 +67,7 @@ function HypothesisScreen({ item }: { item: InvestmentCase }) {
   return (
     <section className="thinking-lab-slide" aria-labelledby="thinking-lab-slide-title">
       <div className="thinking-lab-slide-heading"><span>02 · 가설</span><h1 id="thinking-lab-slide-title">나는 시장이 이렇게 반응할 수 있다고 생각했다</h1></div>
-      <article className="thinking-lab-lead"><span>가설 · {hypothesis?.id}</span><p>{item.hypothesis}</p><small>{hypothesis?.scopeNote}</small></article>
+      <article className="thinking-lab-lead"><span>가설</span><p>{item.hypothesis}</p><small>{hypothesis?.scopeNote}</small></article>
       <ol className="thinking-lab-flow" aria-label="가설의 영향 흐름">
         {item.impactFlow.map((entry, index) => <li key={entry}><span>{String(index + 1).padStart(2, '0')}</span><p>{entry}</p></li>)}
       </ol>
@@ -96,7 +98,12 @@ function JudgmentScreen({ item }: { item: InvestmentCase }) {
   );
 }
 
-export default function InvestmentCaseRoute({ slug, navigation, onNavigate }: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
+export default function InvestmentCaseRoute(props: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
+  if (hasPracticeCaseSlug(props.slug) || props.slug.startsWith('practice-')) return <ThinkingPracticeRoute {...props} />;
+  return <AuthorInvestmentCaseRoute {...props} />;
+}
+
+function AuthorInvestmentCaseRoute({ slug, navigation, onNavigate }: { slug: string; navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const [item, setItem] = useState<InvestmentCase | null | undefined>(undefined);
   const [step, setStep] = useState<InvestmentCaseStep>(0);
   const storyRef = useRef<HTMLElement>(null);
@@ -126,26 +133,25 @@ export default function InvestmentCaseRoute({ slug, navigation, onNavigate }: { 
     moveTo(nextStep);
   };
 
-  if (item === undefined) return <div className="pick-shell thinking-lab-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>생각 실험을 불러오는 중입니다.</h1></main></div>;
-  if (!item) return <div className="pick-shell thinking-lab-shell">{navigation}<main className="editorial-route-state"><h1>공개된 생각 실험을 찾을 수 없습니다.</h1><p>사건·가설·반증 신호를 함께 기록한 Case만 표시합니다.</p><a href="/ko/" onClick={editorialInternalLink('/ko/', onNavigate)}>홈으로 이동</a></main></div>;
+  if (item === undefined) return <div className="pick-shell thinking-lab-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>기록을 불러오는 중입니다.</h1></main></div>;
+  if (!item) return <div className="pick-shell thinking-lab-shell">{navigation}<main className="editorial-route-state"><h1>공개된 기록을 찾을 수 없습니다.</h1><a href="/ko/" onClick={editorialInternalLink('/ko/', onNavigate)}>홈으로 이동</a></main></div>;
 
-  const linkedRules = item.ruleIds.map((id) => investmentRuleById[id]).filter(Boolean);
   return (
     <div className="pick-shell thinking-lab-shell">
       {navigation}
       <main className="thinking-lab-main">
-        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/#thinking-lab" onClick={editorialInternalLink('/ko/#thinking-lab', onNavigate)}>Investment Thinking Lab</a><span aria-hidden="true">/</span><strong>Pilot #001</strong></nav>
+        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/#thinking-lab" onClick={editorialInternalLink('/ko/#thinking-lab', onNavigate)}>사건 보기</a><span aria-hidden="true">/</span><strong>정책 뉴스 기록</strong></nav>
         <article
           className="thinking-lab-story"
           ref={storyRef}
           tabIndex={0}
           onKeyDown={handleStoryKeyDown}
-          aria-label={`Pilot #001 ${step + 1}단계 ${stepLabels[step]}`}
+          aria-label={`정책 뉴스 기록 ${step + 1}단계 ${stepLabels[step]}`}
           aria-describedby="thinking-lab-keyboard-help"
         >
           <header className="thinking-lab-progress">
-            <div><span>Investment Thinking Lab</span><strong>{String(step + 1).padStart(2, '0')} / {String(investmentCaseStepCount).padStart(2, '0')}</strong></div>
-            <ol aria-label="Case 진행 단계">{stepLabels.map((label, index) => <li key={label}><button type="button" aria-current={step === index ? 'step' : undefined} onClick={() => moveTo(index as InvestmentCaseStep)}><span>{index + 1}</span><small>{label}</small></button></li>)}</ol>
+            <div><span>정책 뉴스 기록</span><strong>{String(step + 1).padStart(2, '0')} / {String(investmentCaseStepCount).padStart(2, '0')}</strong></div>
+            <ol aria-label="기록 단계">{stepLabels.map((label, index) => <li key={label}><button type="button" aria-current={step === index ? 'step' : undefined} onClick={() => moveTo(index as InvestmentCaseStep)}><span>{index + 1}</span><small>{label}</small></button></li>)}</ol>
             <p id="thinking-lab-keyboard-help">이 영역에서 ← →, Page Up·Down, Home·End 키로 이동할 수 있습니다.</p>
           </header>
 
@@ -160,7 +166,6 @@ export default function InvestmentCaseRoute({ slug, navigation, onNavigate }: { 
           </footer>
         </article>
 
-        <aside className="thinking-lab-linked-rules" aria-labelledby="thinking-lab-linked-rules-title"><div><span>Rulebook v0.1</span><h2 id="thinking-lab-linked-rules-title">이 Case에서 사용한 현재 원칙</h2></div><ul>{linkedRules.map((rule) => <li key={rule.id}><strong>{rule.id}</strong><span>{rule.principle}</span></li>)}</ul><p>이 원칙은 절대 법칙이 아니며 다음 사례에서 수정될 수 있습니다.</p></aside>
         <p className="thinking-lab-disclaimer">이 기록은 투자 행동을 권하는 자료가 아니라 생각과 검증 과정을 공개하는 개인 리서치 노트입니다.</p>
       </main>
     </div>

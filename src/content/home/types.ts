@@ -15,10 +15,10 @@ export type HomeFeatureLabel = {
 };
 
 export type PrimaryNavigationItem = {
-  id: 'today' | 'companies' | 'insights';
+  id: 'today' | 'records' | 'companies' | 'insights';
   label: string;
   href: string;
-  activeKey: 'today' | 'companies' | 'insights';
+  activeKey: 'today' | 'records' | 'companies' | 'insights';
 };
 
 export type HomeInsightReference = {

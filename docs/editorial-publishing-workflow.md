@@ -17,6 +17,10 @@
 
 ## 판형별 게시 조건
 
+2026-11-06 인텔 업데이트부터, 사용자가 AI 보조 리서치·로컬 반영을 요청한 주가해부에는 소유자 직접 검토를 사칭하지 않는 `sourceVerified` 기록을 허용한다. `authoredBy: editorial`, `verifiedBy: sourceReview`, 검토 시각과 AI 보조·검토 범위 메모가 모두 필요하며 intake의 `source_verified`와 일치해야 한다. 기존 `ownerVerified` 및 오늘의 월스트리트 검토 정책은 변경하지 않는다. 내부 handoff v2는 `source_verified`와 선택 `industry_factors`를 추가한다. 외부 API 계약은 바꾸지 않는다. 문서의 `published`는 로컬 공개 상태이며 git push·Production 배포 완료를 의미하지 않는다.
+
+시장 전체 요인은 `marketWideFactors`, 선택 산업 요인은 `industryFactors`, 기업 개별 요인은 `companySpecificFactors`에 분리한다. 상대수익률은 원인별 기여도로 표시하지 않는다. 동일 회사 새 시점 글은 기존 ID·가격일과 사용자 메모를 보존하고 새 ID로 추가한다. 과거 글에는 최신 가격일의 공개 글로 가는 안내를 표시한다.
+
 주가 해부는 대표 기사 URL을 강제하지 않는다. 대신 회사 식별자, 사건일·가격일, 유한 등락률, 직접 계기 또는 시장 해석, 확인·미확인·다음 확인, `ownerVerified`, 완성 원고와 하나 이상의 복수 근거가 필요하다. 근거는 URL이 없어도 유형, 수치의 성격과 기준일을 추적할 수 있어야 한다.
 
 오늘의 월스트리트는 정확히 세 기사와 각 매체명·제목·발행 시각·원문 URL, 사용자가 작성한 분석, 공식 교차검증 자료, 팩트체크 상태, 통합 질문·인사이트·한 줄, `ownerVerified`를 요구한다. 기사 전문과 이미지는 저장하지 않는다. draft와 verified는 route slug를 알아도 사용자 화면에 본문이 나타나지 않는다.

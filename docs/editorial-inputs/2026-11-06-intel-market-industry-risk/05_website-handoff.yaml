@@ -1,0 +1,153 @@
+website_handoff:
+  schema_version: 2
+  content_type: stock_dissection
+  status: source_verified
+  verification_note: "AI 보조 공개 출처 대조. 소유자 직접 검토를 뜻하지 않음. v2는 source_verified와 industry_factors를 추가하며 기존 owner_verified를 보존."
+  suggested_id: "stock-2026-11-06-intel-market-industry-risk"
+  suggested_slug: "2026-11-06-intel-market-industry-risk"
+  company:
+    name: "Intel Corporation"
+    ticker: "INTC"
+    company_slug: null
+    market: "NASDAQ"
+  event_as_of: "2026-11-05"
+  price_as_of: "2026-11-05"
+  verified_at: "2026-11-06T23:00:00+09:00"
+  session:
+    type: regular_close
+    label: "미국 2026-11-05 정규장 종가 · 한국 2026-11-06 06:00 종료"
+  price_move:
+    value: -10.33
+    unit: percent
+  comparisons:
+    - comparison_type: broad_market
+      name: "시장 · SPY"
+      value: -4.41
+      as_of: "2026-11-05"
+      difference_percentage_points: -5.92
+      comparability_reason: "동일 세션 S&P 500 추종 ETF. 지수 자체와 구분."
+    - comparison_type: sector
+      name: "반도체 · SOXX"
+      value: -12.15
+      as_of: "2026-11-05"
+      difference_percentage_points: 1.82
+      comparability_reason: "동일 세션 반도체 ETF, 3대 1 분할 조정. 인텔과 동일한 사업 구조는 아님."
+  direct_catalyst:
+    summary: "검토 자료에서 인텔 고유 당일 촉매는 미확정. 시장·반도체 동반 약세를 비교."
+    confidence: market_background
+  move_character:
+    - "expectation reset"
+    - "mixed"
+  home:
+    headline: "인텔 -10.33%, 기업 문제만으로 볼 수 있을까?"
+    move_summary: "11월 5일 미국 정규장 $52.25, -10.33%"
+    character_label: "시장 위험회피와 반도체 동반 약세"
+    confirmed_summary: "SPY -4.41%, SOXX -12.15%, 인텔은 업종 대비 +1.82%p"
+    unconfirmed_summary: "당일 인텔 고유 촉매와 요인별 기여도"
+    watch_summary: "상대수익률, Q4 회사 전망, Xeon 공급과 현금흐름"
+  confirmed_items:
+    - "INTC $58.27 → $52.25, -10.33%"
+    - "SPY -4.41%, SOXX -12.15%, 모두 2026-11-05 미국 정규장"
+    - "SOXX 11월 5일 3대 1 분할 조정 거래"
+    - "10월 29일 회사 발표: Q3 매출 $16.5B, +21% YoY"
+    - "Q4 회사 전망: 매출 $15.0B~$16.0B, 비GAAP EPS $0.25"
+  unconfirmed_items:
+    - "당일 인텔 고유 촉매"
+    - "시장·산업·기업의 인과적 기여도"
+    - "실제 정책 변경·주문 취소·강제매도"
+  market_wide_factors:
+    - "시장 ETF SPY -4.41%, 주요 보도의 전반 매도 배경"
+  industry_factors:
+    - "SOXX -12.15%, 인텔은 업종 대비 +1.82%p"
+    - "AI 투자·자금조달·데이터센터 관련 우려는 보도된 배경이며 확정 정책과 구분"
+  company_specific_factors:
+    - "10월 29일 실적과 Q4 회사 전망"
+    - "Xeon 공급 확대, PC 둔화, 운전자본·현금흐름 확인"
+  editorial_interpretation: "하락 전부를 인텔 문제로 돌리지 않고 세 요인을 구분한다. 상대수익률은 원인별 기여도가 아니다."
+  thesis_impact:
+    status: partially_revise
+    reason: "7월 자료만 사용한 가정은 최신 공식 전망으로 갱신. 11월 5일 가격 변화만으로 사업가치를 수정하지 않음."
+    valuation_review_required: true
+  watch_items:
+    - "11월 6일 미국 종가(한국 11월 7일 06:00): INTC·SPY·SOXX"
+    - "11월 9~13일: 실제 데이터센터 정책 문서"
+    - "다음 공식 실적, 일정 미공개: Q4 전망"
+    - "다음 사업 발표: Xeon 공급·출하"
+    - "차기 공시: PC 업황·운전자본·현금흐름"
+  detail_source_file: "04_website-article.md"
+  research_source_file: "01_verified-research.md"
+  evidence:
+    - type: price
+      publisher: "Stock Analysis / S&P Global"
+      title: "INTC Historical Data"
+      published_at: ""
+      as_of: "2026-11-05"
+      url: "https://stockanalysis.com/stocks/intc/history/"
+      supports_claim: "종가와 일간 수익률"
+      status: market_data_confirmation
+    - type: price
+      publisher: "ChartExchange"
+      title: "INTC Historical Data"
+      published_at: ""
+      as_of: "2026-11-05"
+      url: "https://chartexchange.com/symbol/nasdaq-intc/historical/"
+      supports_claim: "인텔 종가 교차 확인"
+      status: market_data_confirmation
+    - type: market
+      publisher: "Stock Analysis / S&P Global"
+      title: "SPY Historical Data"
+      published_at: ""
+      as_of: "2026-11-05"
+      url: "https://stockanalysis.com/etf/spy/history/"
+      supports_claim: "시장 ETF -4.41%"
+      status: market_data_confirmation
+    - type: sector
+      publisher: "Stock Analysis / S&P Global"
+      title: "SOXX Historical Data"
+      published_at: ""
+      as_of: "2026-11-05"
+      url: "https://stockanalysis.com/etf/soxx/history/"
+      supports_claim: "분할 조정 업종 ETF -12.15%"
+      status: market_data_confirmation
+    - type: filing
+      publisher: "iShares"
+      title: "SOXX October 23 supplement, PDF first page"
+      published_at: "2026-10-23"
+      as_of: "2026-11-05"
+      url: "https://www.ishares.com/us/literature/sai/sai-ishares-trust-3-31.pdf"
+      supports_claim: "SOXX 분할과 조정 거래일"
+      status: official_confirmation
+    - type: company
+      publisher: "Intel IR"
+      title: "Intel Reports Third-Quarter 2026 Financial Results"
+      published_at: "2026-10-29"
+      as_of: "2026-10-29"
+      url: "https://www.intc.com/news-events/press-releases/detail/1786/intel-reports-third-quarter-2026-financial-results?v=2"
+      supports_claim: "Q3 매출·Q4 전망·공급·PC 업황"
+      status: official_confirmation
+    - type: news
+      publisher: "AP / The Hour"
+      title: "How major US stock indexes fared Thursday 11/5/2026"
+      published_at: "2026-11-05"
+      as_of: "2026-11-05"
+      url: "https://www.thehour.com/business/article/how-major-us-stock-indexes-fared-thursday-22514954.php"
+      supports_claim: "시장 배경, 개별 기업 원인 확정 아님"
+      status: major_news_reporting
+    - type: news
+      publisher: "Reuters / Investing.com"
+      title: "Tech-stock rout accelerates retreat from the AI trade"
+      published_at: "2026-11-05"
+      as_of: "2026-11-05"
+      url: "https://ca.investing.com/news/stock-market-news/techstock-rout-accelerates-retreat-from-the-ai-trade-4935818"
+      supports_claim: "투자·자금조달·데이터센터 우려, 장중 가격 제외"
+      status: major_news_reporting
+    - type: company
+      publisher: "Intel IR"
+      title: "IR Calendar"
+      published_at: ""
+      as_of: "2026-11-06"
+      url: "https://www.intc.com/news-events/ir-calendar"
+      supports_claim: "발표 일정. 사후 열람 자료로 전일 원인 근거에서 제외."
+      status: official_confirmation
+  disclaimer: >-
+    본 콘텐츠는 투자 권유가 아닌 종목 분석 목적의 자료입니다.

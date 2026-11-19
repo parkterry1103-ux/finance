@@ -4,6 +4,28 @@ import type { EditorialSummary } from './types.js';
 export const publishedEditorialSummaryIndex: EditorialSummary[] = [
   {
     kind: 'stock',
+    id: 'stock-2026-11-06-intel-market-industry-risk',
+    slug: '2026-11-06-intel-market-industry-risk',
+    status: 'published',
+    publishedAt: '2026-11-06',
+    eventAsOf: '2026-11-05',
+    priceAsOf: '2026-11-05',
+    company: { name: 'Intel Corporation', ticker: 'INTC' },
+    headline: '인텔 -10.33%, 기업 문제만으로 볼 수 있을까?',
+    priceMove: { value: -10.33, unit: 'percent', periodLabel: '2026년 11월 5일 미국 정규장 종가 · $58.27 → $52.25', sourceId: 'intel-close-2026-11-05', precision: 2 },
+    directCatalyst: '11월 5일 인텔은 10.33% 하락했습니다. 같은 정규장에서 SPY는 4.41%, 반도체 ETF SOXX는 12.15% 하락했습니다. 검토한 자료에서는 인텔만의 당일 직접 촉매를 확정하지 못했습니다.',
+    moveCharacter: 'mixed',
+    cardCharacter: '시장 위험회피와 반도체 동반 약세',
+    confirmedItems: ['INTC -10.33%', 'SPY -4.41% · SOXX -12.15%', 'SOXX 대비 +1.82%p'],
+    unconfirmedItems: ['당일 인텔 고유 촉매', '시장·산업·기업의 인과적 기여도'],
+    watchItems: ['동일 세션 상대수익률', 'Q4 회사 전망', 'Xeon 공급과 현금흐름'],
+    comparison: {
+      market: { name: '시장 · SPY', value: -4.41, asOf: '2026-11-05', sourceId: 'spy-close-2026-11-05', precision: 2 },
+      sector: { name: '반도체 · SOXX', value: -12.15, asOf: '2026-11-05', sourceId: 'soxx-close-2026-11-05', precision: 2 },
+    },
+  },
+  {
+    kind: 'stock',
     id: 'stock-2026-07-25-intel-earnings-capex-reversal',
     slug: '2026-07-25-intel-earnings-capex-reversal',
     status: 'published',

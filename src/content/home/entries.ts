@@ -54,9 +54,10 @@ export const homeFeatureLabels: HomeFeatureLabel[] = [
 ];
 
 export const primaryNavigationItems: PrimaryNavigationItem[] = [
-  { id: 'today', label: '생각 실험', href: '/ko/#thinking-lab', activeKey: 'today' },
-  { id: 'companies', label: '기업 찾기', href: '/ko/companies', activeKey: 'companies' },
-  { id: 'insights', label: '리서치', href: '/ko/insights', activeKey: 'insights' },
+  { id: 'today', label: '홈', href: '/ko/', activeKey: 'today' },
+  { id: 'insights', label: '분석 글', href: '/ko/insights', activeKey: 'insights' },
+  { id: 'companies', label: '기업 리서치', href: '/ko/companies', activeKey: 'companies' },
+  { id: 'records', label: '내 기록', href: '/ko/records', activeKey: 'records' },
 ];
 
 export const homeInsightReferences: HomeInsightReference[] = [

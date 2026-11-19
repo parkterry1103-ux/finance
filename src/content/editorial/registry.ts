@@ -4,6 +4,11 @@ export const editorialSources: EditorialSource[] = [];
 
 export const stockDissectionRegistry = [
   {
+    id: 'stock-2026-11-06-intel-market-industry-risk',
+    slug: '2026-11-06-intel-market-industry-risk',
+    load: () => import('./stock-dissections/2026-11-06-intel-market-industry-risk.js').then((module) => module.intelMarketIndustryRisk),
+  },
+  {
     id: 'stock-2026-07-25-intel-earnings-capex-reversal',
     slug: '2026-07-25-intel-earnings-capex-reversal',
     load: () => import('./stock-dissections/2026-07-25-intel-earnings-capex-reversal.js').then((module) => module.intelEarningsCapexReversal),

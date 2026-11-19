@@ -948,6 +948,7 @@ function validateHomeExperience() {
     '/ko/#today-dissections',
     '/ko/#thinking-lab',
     '/ko/insights',
+    '/ko/records',
     '/ko/bottlenecks',
     '/ko/picks',
     '/analysis',
@@ -985,11 +986,11 @@ function validateHomeExperience() {
     if (!allowedRoutes.has(feature.href)) addError(`invalid home feature route: ${feature.id} / ${feature.href}`);
   });
 
-  if (primaryNavigationItems.length !== 3) addError(`primary navigation item count must be 3: ${primaryNavigationItems.length}`);
-  if (primaryNavigationItems.map((item) => item.label).join('|') !== '생각 실험|기업 찾기|리서치') {
-    addError(`primary navigation labels must be 생각 실험|기업 찾기|리서치: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
+  if (primaryNavigationItems.length !== 4) addError(`primary navigation item count must be 4: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.map((item) => item.label).join('|') !== '홈|분석 글|기업 리서치|내 기록') {
+    addError(`primary navigation labels must be 홈|분석 글|기업 리서치|내 기록: ${primaryNavigationItems.map((item) => item.label).join('|')}`);
   }
-  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/#thinking-lab|/ko/companies|/ko/insights') {
+  if (primaryNavigationItems.map((item) => item.href).join('|') !== '/ko/|/ko/insights|/ko/companies|/ko/records') {
     addError(`primary navigation routes mismatch: ${primaryNavigationItems.map((item) => item.href).join('|')}`);
   }
   duplicateValues(primaryNavigationItems.map((item) => item.id)).forEach((id) => addError(`duplicate primary navigation item id: ${id}`));
@@ -1136,14 +1137,16 @@ function validateHomeExperience() {
   if (!simplifiedHomeSource) addError('SimplifiedHome component missing');
   if (!/NewsroomHome/.test(simplifiedHomeSource)) addError('SimplifiedHome must render NewsroomHome');
   if ((newsroomHomeSource.match(/<h1\b/g) ?? []).length !== 1) addError('NewsroomHome must render exactly one h1');
-  if (!/생각이 투자 원칙이 되어가는/.test(newsroomHomeSource) || !/과정을 기록합니다\./.test(newsroomHomeSource)) addError('NewsroomHome h1 copy mismatch');
-  if (!/investmentCaseSummaries/.test(newsroomHomeSource) || !/Pilot #001 시작하기/.test(newsroomHomeSource) || !/Rulebook v0\.1/.test(newsroomHomeSource)) addError('NewsroomHome Thinking Lab entry missing');
+  if (!/무슨 일이 있었고,/.test(newsroomHomeSource) || !/시장은 왜 움직였을까요\?/.test(newsroomHomeSource)) addError('NewsroomHome h1 copy mismatch');
+  if (!/practiceCaseSummaries/.test(newsroomHomeSource) || !/내 생각 기록하기/.test(newsroomHomeSource)) addError('NewsroomHome case entry missing');
+  if (/Rulebook|RULE-\d|Investment Thinking Lab|연습 도구|현재 원칙/.test(newsroomHomeSource)) addError('internal product framing must not appear on the home screen');
   if (!/placeholder="기업명 또는 종목코드를 검색해보세요"/.test(newsroomHomeSource) || !/role="combobox"/.test(newsroomHomeSource)) addError('NewsroomHome company search missing');
   if (!/publishedEditorialSummaryIndex/.test(newsroomHomeSource)) addError('NewsroomHome must use the static editorial summary index');
-  if (!/오늘의 해부를 준비하고 있습니다\./.test(newsroomHomeSource) || !/오늘의 월스트리트를 준비하고 있습니다\./.test(newsroomHomeSource)) addError('NewsroomHome verified empty states missing');
+  if (/오늘의 (?:주가해부|월스트리트)|오늘의 해부를 준비/.test(newsroomHomeSource)) addError('home archive content must not be described as current daily coverage');
+  if (!/표시된 기준일의 분석 기록/.test(newsroomHomeSource)) addError('home must explain the point-in-time basis');
   if (/(고객 맞춤형|당신에게 맞는|추천 종목|AI 추천|포트폴리오 프로젝트|증권사 취업|면접용)/.test(newsroomHomeSource)) addError('NewsroomHome contains forbidden positioning copy');
   if (!/const needsDisclosureFeed = isPicksRoute \|\| isDisclosuresRoute;/.test(appSource)) addError('home must not load the disclosure feeds');
-  if (!/if \(isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute \|\| routeInvestmentCaseMatch\) return;/.test(appSource)) addError('home, company, and investment case routes must not load market prices');
+  if (!/const needsMarketPrices = isPicksRoute \|\| Boolean\(routeAnalysisMatch\);/.test(appSource) || !/if \(!needsMarketPrices\) return;/.test(appSource)) addError('published analysis and archive routes must use dated snapshots without live price preload');
   if (!/IntersectionObserver/.test(macroComponentSource) || !/if \(!shouldLoad\) return;/.test(macroComponentSource)) addError('macro dashboard request deferral changed unexpectedly');
   if (!/navigateWithinApp\(item\.href\)/.test(appSource)) addError('primary navigation must preserve SPA transitions');
   if (!/\.editorial-home :is\(a, input\):focus-visible/.test(stylesSource) || !/\.primary-navigation > nav > a:focus-visible/.test(stylesSource)) addError('home or primary navigation focus styles missing');
@@ -1314,7 +1317,7 @@ function validateDemandSupplyContent() {
   if (/fetch\s*\(|\/api\/market-relations|\/api\/market-prices|api\.stlouisfed|query[12]\.finance\.yahoo/i.test(componentSource)) addError('demand supply client has forbidden direct or extra API request');
   const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8');
   if (!/home-demand-supply-shortcut/.test(appSource) || /beginner-home-section[^>]*demand-supply/i.test(appSource)) addError('demand supply home connection must be a shortcut, not a new section');
-  if (!appSource.includes('if (isHomeRoute || isDemandSupplyRoute || isCompanyEventsRoute || isCompaniesRoute || routeInvestmentCaseMatch) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('home, demand supply, company events, company, and investment case routes must skip unrelated global API preloads');
+  if (!appSource.includes('if (!needsMarketPrices) return;') || !appSource.includes('if (!needsDisclosureFeed) return;')) addError('published content routes must skip unrelated global API preloads');
 }
 
 function validateCompanyEventContent() {
@@ -2558,7 +2561,7 @@ function validateCompanyProfiles() {
   profileErrors.forEach((message) => addError(`company profile: ${message}`));
   validateCompanyDashboardRegistry().forEach((message) => addError(`company dashboard: ${message}`));
   if (!existsSync(join(process.cwd(), 'docs', 'company-profile-inventory.md'))) addError('company profile pre-implementation inventory missing');
-  if (primaryNavigationItems.length !== 3) addError(`primary navigation must keep exactly 3 entries: ${primaryNavigationItems.length}`);
+  if (primaryNavigationItems.length !== 4) addError(`primary navigation must keep exactly 4 entries: ${primaryNavigationItems.length}`);
   if (primaryNavigationItems.filter((item) => item.href === '/ko/companies').length !== 1) addError('company profile navigation route must appear exactly once');
   const componentSource = readFileSync(join(process.cwd(), 'src', 'components', 'company-profiles', 'CompanyProfiles.tsx'), 'utf8');
   const stylesSource = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
@@ -2581,7 +2584,7 @@ function validateCompanyProfiles() {
   if (!/routeCompanyProfileMatch/.test(appSource) || !/lazy\(\(\) => import\('\.\/routes\/CompaniesRoute'\)\)/.test(appSource) || !/CompanyProfileNotFoundPage/.test(routeSource)) {
     addError('company profile canonical and invalid routes missing');
   }
-  if (!/isHomeRoute \|\| isDemandSupplyRoute \|\| isCompanyEventsRoute \|\| isCompaniesRoute/.test(appSource)) addError('company routes must skip market price request');
+  if (!/const needsMarketPrices = isPicksRoute \|\| Boolean\(routeAnalysisMatch\);/.test(appSource)) addError('company routes must skip market price request');
   if (!/<details className="company-dashboard-details">/.test(componentSource)) addError('company dashboard detail disclosure missing');
   if (!/role="img"/.test(componentSource) || !/<div className="sr-only"><table>/.test(componentSource)) addError('company dashboard chart accessibility missing');
   if (!/\.company-dashboard-main \.company-profile-breadcrumb a,[\s\S]*?min-height: 44px;/.test(stylesSource) || !/\.company-dashboard-detail-content \.industry-flow-step__companies a {[\s\S]*?min-width: 44px;[\s\S]*?min-height: 44px;/.test(stylesSource)) addError('company dashboard touch targets must be at least 44px');

@@ -2,12 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type R
 import { ArrowRight, Search } from 'lucide-react';
 import { companySearchIndex, companySearchRecordPath, searchCompanyProfiles } from '../../content/company-profiles/search.js';
 import { publishedEditorialSummaryIndex } from '../../content/editorial/summaries.js';
-import { latestPublishedSummary } from '../../content/editorial/selectors.js';
+import { latestPublishedSummary, publishedSummariesByKind } from '../../content/editorial/selectors.js';
 import type { CompanySearchRecord } from '../../content/company-profiles/types.js';
-import { StockSummaryCard, ThreeReadsSummaryCard, editorialInternalLink, type EditorialNavigate } from './EditorialUi.js';
+import { StockSummaryCard, editorialDate, editorialInternalLink, editorialPath, type EditorialNavigate } from './EditorialUi.js';
 import { trackAnalyticsEvent } from '../../analytics/index.js';
-import { investmentCaseSummaries } from '../../content/investment-thinking/registry.js';
-import { investmentHypotheses, investmentRules } from '../../content/investment-thinking/rulebook.js';
+import { practiceCaseSummaries } from '../../content/investment-thinking/practice.js';
 
 export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode; onNavigate: EditorialNavigate }) {
   const listboxId = useId();
@@ -19,8 +18,9 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
   const hasQuery = Boolean(query.trim());
   const stockItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'stock');
   const threeReadsItem = latestPublishedSummary(publishedEditorialSummaryIndex, 'threeReads');
-  const pilot = investmentCaseSummaries[0];
-  const activeHypothesis = investmentHypotheses[0];
+  const practice = practiceCaseSummaries.find((entry) => entry.id === stockItem?.id);
+  const otherStocks = publishedSummariesByKind(publishedEditorialSummaryIndex, 'stock')
+    .filter((entry) => entry.company.ticker !== stockItem?.company.ticker).slice(0, 2);
 
   useEffect(() => {
     if (activeIndex >= results.length) setActiveIndex(-1);
@@ -57,27 +57,21 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
       <main>
         <section className="editorial-home-hero" aria-labelledby="editorial-home-title">
           <div className="editorial-home-hero-copy">
-            <p>Investment Thinking Lab</p>
-            <h1 id="editorial-home-title"><span>생각이 투자 원칙이 되어가는</span><span>과정을 기록합니다.</span></h1>
-            <p>사건을 분석하고, 가설을 세우고, 결과로 검증하며 나만의 투자 원칙을 만들어갑니다.</p>
+            <p>뉴스와 시장</p>
+            <h1 id="editorial-home-title"><span>무슨 일이 있었고,</span><span>시장은 왜 움직였을까요?</span></h1>
+            <p>기업의 발표부터 시장과 산업의 흐름까지, 근거를 따라 살펴봅니다.</p>
           </div>
-          {pilot ? <article className="thinking-lab-home-pilot" id="thinking-lab">
-            <div><span>{pilot.eyebrow}</span><time dateTime={pilot.eventDate}>{pilot.eventDate.replace(/-/g, '.')}</time></div>
-            <h2>{pilot.title}</h2>
-            <p>{pilot.summary}</p>
-            <ol aria-label="Pilot 구성"><li>01 사건</li><li>02 가설</li><li>03 판단</li></ol>
-            <a href={pilot.path} onClick={(event) => { trackAnalyticsEvent('related_research_click', { contentType: 'investment_case', contentId: pilot.id, placement: 'home', destinationType: 'editorial' }); editorialInternalLink(pilot.path, onNavigate)(event); }}>Pilot #001 시작하기 <ArrowRight size={16} aria-hidden="true" /></a>
+          {stockItem ? <article className="thinking-lab-home-pilot" id="thinking-lab">
+            <div><span>주가 움직임 분석</span><time dateTime={stockItem.priceAsOf}>분석 기준 {editorialDate(stockItem.priceAsOf)}</time></div>
+            <h2>{stockItem.headline}</h2>
+            <p>{stockItem.directCatalyst}</p>
+            <a href={editorialPath(stockItem)} onClick={editorialInternalLink(editorialPath(stockItem), onNavigate)}>분석 읽기 <ArrowRight size={16} aria-hidden="true" /></a>
+            {practice ? <a className="thinking-practice-records-link" href={practice.path} onClick={editorialInternalLink(practice.path, onNavigate)}>내 생각 기록하기 <ArrowRight size={15} aria-hidden="true" /></a> : null}
           </article> : null}
         </section>
 
-        <section className="thinking-lab-home-rulebook" aria-labelledby="thinking-lab-rulebook-title">
-          <div className="editorial-section-heading"><p>Rulebook v0.1</p><h2 id="thinking-lab-rulebook-title">현재 나의 원칙</h2><span>사례가 쌓이면 수정할 수 있는 원칙입니다.</span></div>
-          <ol>{investmentRules.slice(0, 3).map((rule) => <li key={rule.id}><strong>{rule.id}</strong><span>{rule.principle}</span></li>)}</ol>
-          {activeHypothesis ? <article><span>검증 중인 가설 · {activeHypothesis.id}</span><p>{activeHypothesis.statement}</p><small>{activeHypothesis.scopeNote}</small></article> : null}
-        </section>
-
         <section className="editorial-home-section editorial-home-company-search" aria-labelledby="home-company-search-title">
-          <div className="editorial-section-heading"><p>Research tools</p><h2 id="home-company-search-title">필요할 때 기업 근거 확인</h2></div>
+          <div className="editorial-section-heading"><p>기업 리서치</p><h2 id="home-company-search-title">기업의 사업과 숫자 확인</h2></div>
           <form className="editorial-home-search" role="search" onSubmit={(event) => event.preventDefault()}>
             <label htmlFor="editorial-home-search-input">기업 찾기</label>
             <div className="editorial-home-combobox">
@@ -124,19 +118,20 @@ export function NewsroomHome({ navigation, onNavigate }: { navigation: ReactNode
         </section>
 
         <section className="editorial-home-section" id="today-dissections" aria-labelledby="today-stock-title">
-          <div className="editorial-section-heading"><p>Latest Stock Dissection</p><h2 id="today-stock-title">오늘의 주가해부</h2><a href="/ko/insights?tab=stock" onClick={editorialInternalLink('/ko/insights?tab=stock', onNavigate)}>지난 주가해부 보기 <ArrowRight size={15} aria-hidden="true" /></a></div>
-          {stockItem ? <div className="editorial-stock-grid"><StockSummaryCard item={stockItem} onNavigate={onNavigate} /></div> : <div className="editorial-empty-state"><h3>오늘의 해부를 준비하고 있습니다.</h3><p>새로운 시장 사건을 기업의 사업·재무·가치평가와 연결해 확인한 뒤 게시합니다.</p></div>}
+          <div className="editorial-section-heading"><p>분석 기록</p><h2 id="today-stock-title">다른 기업의 주가 움직임</h2><a href="/ko/insights?tab=stock" onClick={editorialInternalLink('/ko/insights?tab=stock', onNavigate)}>전체 분석 보기 <ArrowRight size={15} aria-hidden="true" /></a></div>
+          <p className="editorial-archive-note">각 글은 표시된 기준일의 분석 기록입니다. 이후 시장 변화는 자동 반영하지 않습니다.</p>
+          <div className="editorial-stock-grid">{otherStocks.map((entry) => <StockSummaryCard key={entry.id} item={entry} onNavigate={onNavigate} compact />)}</div>
         </section>
 
         <section className="editorial-home-section editorial-home-three" aria-labelledby="today-three-title">
-          <div className="editorial-section-heading"><p>Latest Wall Street Edition</p><h2 id="today-three-title">오늘의 월스트리트</h2><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>지난 월스트리트 보기 <ArrowRight size={15} aria-hidden="true" /></a></div>
-          {threeReadsItem ? <ThreeReadsSummaryCard item={threeReadsItem} onNavigate={onNavigate} /> : <div className="editorial-empty-state"><h3>오늘의 월스트리트를 준비하고 있습니다.</h3><p>세 개의 뉴스, 하나의 투자 질문으로 연결합니다.</p></div>}
+          <div className="editorial-section-heading"><p>경제 뉴스 해설</p><h2 id="today-three-title">여러 뉴스를 하나의 질문으로</h2><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>해설 보관함 <ArrowRight size={15} aria-hidden="true" /></a></div>
+          {threeReadsItem ? <article className="editorial-card editorial-three-card"><p className="editorial-card-basis"><time dateTime={threeReadsItem.contentAsOf}>{editorialDate(threeReadsItem.contentAsOf)} 분석</time></p><h3>{threeReadsItem.title}</h3><p className="editorial-three-question">{threeReadsItem.centralQuestion}</p><div className="editorial-card-actions"><a href={editorialPath(threeReadsItem)} onClick={editorialInternalLink(editorialPath(threeReadsItem), onNavigate)}>해설 읽기 <ArrowRight size={15} aria-hidden="true" /></a></div></article> : null}
         </section>
 
       </main>
       <footer className="editorial-home-footer">
         <div><strong>주가해부실</strong><p>표시된 내용은 정보 제공을 위한 리서치이며 투자 권유가 아닙니다.</p></div>
-        <nav aria-label="보조 탐색"><a href="/ko/reports" onClick={editorialInternalLink('/ko/reports', onNavigate)}>데이터 기준 및 방법론</a><a href="/ko/macro-dashboard" onClick={editorialInternalLink('/ko/macro-dashboard', onNavigate)}>시장 환경</a></nav>
+        <nav aria-label="보조 탐색"><a href="/ko/reports" onClick={editorialInternalLink('/ko/reports', onNavigate)}>공식 자료 모음</a><a href="/ko/demand-supply" onClick={editorialInternalLink('/ko/demand-supply', onNavigate)}>산업 연결 구조</a></nav>
       </footer>
     </div>
   );

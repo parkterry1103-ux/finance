@@ -59,8 +59,8 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     assert(audit.h1 === 1 && !audit.overflow && !audit.badText, `${engineName} ${viewport.width}: archive layout failed`);
     assert(await stockTab.getAttribute('aria-selected') === 'true', `${engineName} ${viewport.width}: stock tab not selected`);
     assert(await wallStreetTab.getAttribute('aria-selected') === 'false', `${engineName} ${viewport.width}: wall tab incorrectly selected`);
-    assert(await page.locator('#archive-panel-stock .editorial-stock-card').count() === 3, `${engineName} ${viewport.width}: Published stock count mismatch`);
-    assert(await page.getByText('2026.07.25 발행').first().isVisible(), `${engineName} ${viewport.width}: published date missing`);
+    assert(await page.locator('#archive-panel-stock .editorial-stock-card').count() === 4, `${engineName} ${viewport.width}: Published stock count mismatch`);
+    assert(await page.getByText('2026.11.06 발행').first().isVisible(), `${engineName} ${viewport.width}: published date missing`);
     assert(errors.length === 0, `${engineName} ${viewport.width}: ${errors.join(' | ')}`);
     results.push({ engine: engineName, route: 'archive-stock', ...viewport, ...audit, consoleErrors: errors.length, status: 'passed' });
     if (engineName === 'chromium' && [1440, 375, 320].includes(viewport.width)) {
@@ -75,12 +75,12 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     const errors = watchErrors(page);
     await page.goto(`${baseUrl}/ko/`, { waitUntil: 'networkidle' });
     await page.getByRole('heading', { level: 1 }).waitFor();
-    assert(await page.locator('#today-dissections .editorial-stock-card').count() === 1, `${engineName}: home must show one stock item`);
+    assert(await page.locator('#today-dissections .editorial-stock-card').count() === 2, `${engineName}: home must show two other companies without duplicating the featured Intel`);
     assert(await page.locator('.editorial-home-three .editorial-three-card').count() === 1, `${engineName}: home must show one Wall Street item`);
-    assert(await page.getByRole('heading', { level: 3, name: '인텔, 왜 -7.892% 움직였을까?' }).isVisible(), `${engineName}: Intel not selected on home`);
+    assert(await page.getByRole('heading', { level: 2, name: '인텔 -10.33%, 기업 문제만으로 볼 수 있을까?' }).isVisible(), `${engineName}: latest Intel not selected on home`);
     assert(await page.getByRole('heading', { level: 3, name: '비용을 낮추는 힘은 대체 가능성에서 나온다' }).isVisible(), `${engineName}: July 25 Wall Street not selected on home`);
-    assert(await page.getByRole('link', { name: /지난 주가해부 보기/ }).getAttribute('href') === '/ko/insights?tab=stock', `${engineName}: stock archive deep link mismatch`);
-    assert(await page.getByRole('link', { name: /지난 월스트리트 보기/ }).getAttribute('href') === '/ko/insights?tab=wall-street', `${engineName}: Wall Street archive deep link mismatch`);
+    assert(await page.getByRole('link', { name: /전체 분석 보기/ }).getAttribute('href') === '/ko/insights?tab=stock', `${engineName}: stock archive deep link mismatch`);
+    assert(await page.getByRole('link', { name: /해설 보관함/ }).getAttribute('href') === '/ko/insights?tab=wall-street', `${engineName}: Wall Street archive deep link mismatch`);
     const audit = await layoutAudit(page);
     assert(!audit.overflow && errors.length === 0, `${engineName}: home layout or console failed`);
     results.push({ engine: engineName, route: 'home-latest', width: 375, height: 812, ...audit, consoleErrors: errors.length, status: 'passed' });
@@ -93,14 +93,14 @@ for (const [engineName, engine] of [['chromium', chromium], ['webkit', webkit]])
     const errors = watchErrors(page);
     await page.goto(`${baseUrl}/ko/insights?tab=stock`, { waitUntil: 'networkidle' });
     const search = page.getByRole('searchbox', { name: '기업명 또는 종목코드 검색' });
-    for (const [query, expected] of [['Intel', 1], ['INTC', 1], ['  intc  ', 1], ['SMCI', 1], ['smci', 1]]) {
+    for (const [query, expected] of [['Intel', 2], ['INTC', 2], ['  intc  ', 2], ['SMCI', 1], ['smci', 1]]) {
       await search.fill(query);
       assert(await page.locator('#archive-panel-stock .editorial-stock-card').count() === expected, `${engineName}: search failed for "${query}"`);
     }
     await search.fill('존재하지않는기업');
     assert(await page.getByRole('heading', { level: 3, name: '검색 결과가 없습니다.' }).isVisible(), `${engineName}: no-result state missing`);
     await page.getByRole('button', { name: '검색어 지우기' }).first().click();
-    assert(await page.locator('#archive-panel-stock .editorial-stock-card').count() === 3, `${engineName}: clear search did not restore list`);
+    assert(await page.locator('#archive-panel-stock .editorial-stock-card').count() === 4, `${engineName}: clear search did not restore list`);
 
     await page.getByRole('tab', { name: /월스트리트/ }).click();
     await page.waitForURL('**/ko/insights?tab=wall-street');

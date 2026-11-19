@@ -53,7 +53,7 @@ export function CompanyJudgmentPanel({
     <>
       <section className="company-judgment-summary" aria-labelledby={`${sectionId}-summary-title`}>
         <div className="company-dashboard-section-heading">
-          <h2 id={`${sectionId}-summary-title`}>{companyName} 현재 판단</h2>
+          <h2 id={`${sectionId}-summary-title`}>{companyName} 분석 시점의 판단</h2>
         </div>
         <div className="company-judgment-summary-grid">
           {[
@@ -62,7 +62,7 @@ export function CompanyJudgmentPanel({
           ].map(({ label, judgment }) => (
             <article key={label} className={`direction-${judgment.state}`}>
               <div><span>{label}</span><strong>{directionLabels[judgment.state]}</strong></div>
-              <small>{judgment.horizon}</small>
+              <small>{judgment.asOf.replace(/-/g, '.')} 기준 · {judgment.horizon}</small>
               <p>{judgment.reason}</p>
             </article>
           ))}
@@ -71,7 +71,7 @@ export function CompanyJudgmentPanel({
 
       <section className="company-judgment-cards" aria-labelledby={`${sectionId}-cards-title`}>
         <div className="company-dashboard-section-heading">
-          <span>현재 정보에서 더 중요한 요인</span>
+          <span>분석 기준일에 확인한 요인</span>
           <h2 id={`${sectionId}-cards-title`}>네 가지 판단</h2>
           <p>카드를 열면 원인과 숫자를 확인할 수 있습니다. 한 번에 하나만 열립니다.</p>
         </div>

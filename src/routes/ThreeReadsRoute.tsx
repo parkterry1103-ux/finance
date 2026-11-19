@@ -39,8 +39,8 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
     trackAnalyticsEvent('editorial_view', properties, { oncePerPage: true, dedupeKey: publicItem.id });
     return observeEditorialReading(articleRef.current, properties);
   }, [publicItem?.id]);
-  if (item === undefined) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>오늘의 월스트리트를 불러오는 중입니다.</h1></main></div>;
-  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 오늘의 월스트리트를 찾을 수 없습니다.</h1><p>세 원문의 출처와 기준일 검증을 마친 독자적 콘텐츠만 표시합니다.</p><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>월스트리트 보관함으로 이동</a></main></div>;
+  if (item === undefined) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state" role="status" aria-live="polite"><h1>경제 뉴스 해설을 불러오는 중입니다.</h1></main></div>;
+  if (!publicItem) return <div className="pick-shell editorial-shell">{navigation}<main className="editorial-route-state"><h1>공개된 경제 뉴스 해설을 찾을 수 없습니다.</h1><p>출처와 기준일이 기록된 해설만 표시합니다.</p><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>해설 보관함으로 이동</a></main></div>;
 
   const relatedStocks = publishedEditorialSummaryIndex.filter((summary): summary is StockDissectionSummary => summary.kind === 'stock' && publicItem.relatedStockDissectionIds.includes(summary.id)).slice(0, 3);
   const relatedCompanySlugs = Array.from(new Set([...publicItem.relatedCompanySlugs, ...publicItem.reads.flatMap((read) => read.relatedCompanySlugs)])).slice(0, 3);
@@ -48,13 +48,14 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
     <div className="pick-shell editorial-shell">
       {navigation}
       <main className="editorial-detail-main" ref={articleRef}>
-        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>콘텐츠 보관함</a><span aria-hidden="true">/</span><strong>오늘의 월스트리트</strong></nav>
+        <nav className="editorial-breadcrumb" aria-label="현재 위치"><a href="/ko/insights?tab=wall-street" onClick={editorialInternalLink('/ko/insights?tab=wall-street', onNavigate)}>콘텐츠 보관함</a><span aria-hidden="true">/</span><strong>경제 뉴스 해설</strong></nav>
         <header className="editorial-detail-header editorial-three-detail-header">
-          <p>오늘의 월스트리트 · <time dateTime={publicItem.contentAsOf}>{editorialDate(publicItem.contentAsOf)}</time></p>
+          <p>경제 뉴스 해설 · <time dateTime={publicItem.contentAsOf}>{editorialDate(publicItem.contentAsOf)}</time> 기준</p>
           <h1>{publicItem.title}</h1>
           <span className="editorial-central-question"><strong>핵심 질문</strong>{publicItem.centralQuestion}</span>
           <div className="editorial-independent-badge"><strong>주가해부실의 독자적 해설</strong><span>주요 출처: The Wall Street Journal</span></div>
         </header>
+        <p className="editorial-archive-note">표시된 기준일의 해설입니다. 이후 뉴스와 시장 변화는 자동 반영하지 않습니다.</p>
 
         <section className="editorial-detail-section" aria-labelledby="three-common-title"><div className="editorial-detail-heading"><span>01</span><h2 id="three-common-title">세 뉴스가 연결되는 이유</h2></div><p className="editorial-lead-copy">{publicItem.commonThread}</p></section>
 
@@ -71,7 +72,7 @@ export default function ThreeReadsRoute({ slug, navigation, onNavigate }: { slug
 
         {publicItem.cashFlowTransmission?.length ? <section className="editorial-detail-section" aria-labelledby="three-cashflow-title"><div className="editorial-detail-heading"><span>05</span><h2 id="three-cashflow-title">가격과 현금흐름으로 전달되는 구조</h2></div><ol className="editorial-watch-list">{publicItem.cashFlowTransmission.map((entry) => <li key={entry}>{entry}</li>)}</ol></section> : null}
         <section className="editorial-detail-section" aria-labelledby="three-questions-title"><div className="editorial-detail-heading"><span>06</span><h2 id="three-questions-title">투자자가 확인할 변수</h2></div><ol className="editorial-watch-list">{publicItem.investorQuestions.map((question) => <li key={question}>{question}</li>)}</ol></section>
-        <section className="editorial-takeaway editorial-detail-takeaway" aria-labelledby="three-takeaway-title"><span>오늘의 한 줄</span><h2 id="three-takeaway-title">{publicItem.oneLineTakeaway}</h2></section>
+        <section className="editorial-takeaway editorial-detail-takeaway" aria-labelledby="three-takeaway-title"><span>핵심 요약</span><h2 id="three-takeaway-title">{publicItem.oneLineTakeaway}</h2></section>
 
         <EditorialEventImpactSection impacts={eventImpacts} headingNumber="07" />
 
