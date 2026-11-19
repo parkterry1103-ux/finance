@@ -141,6 +141,12 @@ for (const entry of publishedJournals) {
 check(publishedJournalById('2026-11-19-korean-re-review')?.ticker === '003690', 'Korean Re review must be addressable');
 check(publishedJournalById('2026-11-19-korean-re-review')?.sections[0].paragraphs[0].includes('코스피가 고점권에 와 있다고 판단해'), 'purchase motivation must remain the owner’s contemporaneous judgment, not an objective market-high claim');
 check(publishedJournalById('2026-11-19-korean-re-review')?.sections[0].paragraphs[0].includes('주식 비중을 줄이고 있었다'), 'review must retain the owner-confirmed defensive portfolio context');
+const koreanReReview = publishedJournalById('2026-11-19-korean-re-review')!;
+check(koreanReReview.subtitle.includes('국내 자동차보험 축소와 유럽·북미 확대'), 'review must center the owner-confirmed business diversification thesis');
+check(koreanReReview.sections[1].paragraphs.some((paragraph) => paragraph.includes('해외에서 유럽 자동차 비비례특약')), 'domestic motor reduction must not be described as withdrawal from all motor business');
+check(koreanReReview.sections[2].paragraphs.some((paragraph) => paragraph.includes('분모가 다르다')), 'IFRS4 overseas regional shares must remain distinct from IFRS17 insurance revenue shares');
+check(koreanReReview.sections[2].paragraphs.some((paragraph) => paragraph.includes('2021년 설립된 미국 뉴저지 보험중개법인')), 'US presence must retain its verified year and brokerage entity type');
+check(koreanReReview.sources.filter((source) => source.id.startsWith('fy2025-')).every((source) => source.publishedAt < koreanReReview.purchasedAt), 'pre-purchase thesis evidence must predate the purchase');
 check(publishedJournalById('missing') === undefined, 'unknown public review must not fall back to another article');
 
 console.log(`Investment Thinking Lab validation passed (${checks} checks, ${investmentRules.length} rules, ${practiceCaseSummaries.length} practice cases).`);
